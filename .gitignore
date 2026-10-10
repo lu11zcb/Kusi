@@ -1,0 +1,24 @@
+# Claves: nunca se suben
+.env
+
+# Python / Django
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Node / React
+node_modules/
+dist/
+
+# Java / Spring Boot
+target/
+
+# Kotlin / Android
+.gradle/
+build/
+local.properties
+
+# Editores
+.idea/
+.vscode/
