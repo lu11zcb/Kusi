@@ -116,3 +116,17 @@ class CambioUsuario(models.Model):
 
     class Meta:
         ordering = ["-fecha", "-id"]
+
+
+class Curso(models.Model):
+    """Catálogo de Django; Spring referencia el UUID, nunca el nombre."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField(max_length=120)
+
+    class Meta:
+        ordering = ["nombre", "id"]
+        constraints = [models.UniqueConstraint(Lower("nombre"), name="curso_nombre_sin_mayusculas_unico")]
+
+    def __str__(self):
+        return self.nombre
