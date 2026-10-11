@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "cuentas",
 ]
 
 MIDDLEWARE = [
@@ -74,8 +75,15 @@ WSGI_APPLICATION = 'kusi_admin.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        "NAME": "kusi",
+        "USER": "postgres",
+        "PASSWORD": "",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
+        "OPTIONS": {
+            "options": "-c search_path=admin",
+        },
     }
 }
 
@@ -125,3 +133,9 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# Django utilizará nuestro modelo para las cuentas y la autenticación.
+AUTH_USER_MODEL = "cuentas.Usuario"
+
+# Mantiene CSRF activo y devuelve errores legibles para el cliente React.
+CSRF_FAILURE_VIEW = "cuentas.views.fallo_csrf"
