@@ -41,3 +41,20 @@ Spring debe respetar el TTL devuelto, nunca superar 60 segundos ni la expiració
 ## Dependencias pendientes
 
 El lado Django y las pruebas del contrato están implementados. La validación desde Spring y el ingreso desde Kotlin se comprobarán después de que Luis cree y confirme sus estructuras. No se presenta una simulación de estas integraciones como un recorrido real.
+
+## Cuentas y catálogo · HU02/HU03/HU04
+
+Todas estas rutas Django exigen administrador activo con contraseña definitiva. Las escrituras exigen CSRF. No basta con ocultar botones en React.
+
+| Ruta | Método / datos | Resultado |
+|---|---|---|
+| `/api/cuentas/usuarios/listado/?buscar=texto&pagina=1` | GET | `{usuarios, pagina, paginas, total}`, hasta 25 cuentas por página. Sin contraseñas. |
+| `/api/cuentas/usuarios/{uuid}/` | GET | `{usuario, historial}`; últimos 50 cambios con actor, fecha y valores anteriores/nuevos. El historial completo se conserva. |
+| `/api/cuentas/usuarios/{uuid}/roles/` | POST `{roles: [...]}` | Administrador, docente, ambos o estudiante solo. No modifica privilegios técnicos. |
+| `/api/cuentas/usuarios/{uuid}/datos/` | PATCH `{nombre, correo}` | Valida correo único sin distinguir mayúsculas; conserva UUID, contraseña, roles e historial. |
+| `/api/cuentas/cursos/` | GET | `{cursos: [{id: UUID, nombre}]}`. Catálogo propiedad de Django. |
+| `/api/cuentas/cursos/{uuid}/` | PATCH `{nombre}` | Renombra conservando UUID; rechaza nombre repetido. |
+
+## Secciones e IA pendientes
+
+El adaptador administrativo de secciones no persiste datos: [HU06_REVISION.md](HU06_REVISION.md) define rutas, permisos, duplicados y configuración pendiente. Las propuestas docentes pertenecerán a Spring: [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md). No se implementó una IA simulada en producto ni se generaron las estructuras reservadas.

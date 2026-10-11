@@ -6,4 +6,4 @@ Django conserva el catálogo en el esquema administrativo. Una migración crea l
 
 Comprobaciones: cinco pruebas nuevas (44 Django al completar HU03; 50 tras incorporar HU04), catálogo inicial, duplicados sin distinguir mayúsculas, UUID conservado, permisos en API directa y CSRF. Build y lint aprobados. En Chrome con PostgreSQL desechable se consultaron los siete cursos, se rechazó `comunicación` duplicado y se guardó `Matemática QA`. Los vínculos con actividades Spring no pudieron probarse porque `edu-api` sigue pendiente; el identificador sí se comprueba por API y persistencia.
 
-No se ejecutaron las migraciones nuevas sobre la base de trabajo `kusi`. Se aplicaron en las bases aisladas de pruebas y navegador. Diseño final y revisión del compañero pendientes.
+Después de comprobarlas en las bases aisladas se aplicaron las migraciones 0002–0004 en la base de trabajo `kusi`: las tres finalizaron correctamente, se conservó la cuenta existente y el catálogo quedó con siete cursos. Diseño final y revisión del compañero pendientes.

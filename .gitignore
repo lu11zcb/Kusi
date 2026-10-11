@@ -1,5 +1,8 @@
 # Claves: nunca se suben
 .env
+.env.*
+!.env.example
+.impeccable/review/
 
 # Python / Django
 .venv/

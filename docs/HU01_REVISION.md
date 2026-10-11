@@ -98,7 +98,7 @@ cd /d D:\Escritorio\Kusi\web
 npm run dev
 ```
 
-1. Abrir `http://127.0.0.1:5173/`. Sin sesión debe pedir acceso. **Iniciar sesión** usa el administrador técnico de Django y devuelve al formulario. Usar la cuenta administradora técnica de prueba existente y siempre este mismo origen, también para `/admin/`; no alternar `localhost`, `127.0.0.1` ni puertos. Si falta la cuenta inicial, solicitar el comando `createsuperuser`; no se crean cuentas automáticamente en la base local.
+1. Abrir `http://127.0.0.1:5173/`. HU11 incorporó el ingreso común con correo y contraseña; el panel se determina por roles registrados, sin exigir acceso técnico Django. Mantener este mismo origen y no alternar `localhost`, `127.0.0.1` ni puertos. No se crean cuentas automáticamente en la base local.
 2. Enviar campos vacíos, correo inválido y correo repetido con distintas mayúsculas. Comprobar errores junto al campo, etiquetas, Tab y foco visible.
 3. Registrar una persona ficticia; revisar nombre, correo, rol y contraseña temporal. Cerrar la confirmación, recargar y probar atrás/adelante: no debe poder recuperarse. Las pruebas Django verifican UUID, hash, rol y cambio obligatorio.
 4. Durante el envío no debe poder registrarse dos veces. Con Django detenido, el formulario debe conservar lo ingresado y mostrar el error; reiniciar Django para continuar. Si caduca la sesión, debe aparecer un enlace para volver a iniciarla, sin repetir el POST automáticamente.
@@ -111,3 +111,5 @@ Antes de cada commit, verificar `git var GIT_AUTHOR_IDENT` y `git var GIT_COMMIT
 La identidad fue confirmada por Luis y comprobada en Git. No cambiar configuración global ni reescribir historial. Después de cada commit, comprobar `git show --no-patch --format=fuller HEAD`.
 
 Registrar HU01, integrar en `main` conforme a la autorización actualizada y continuar allí. El diseño final y la revisión humana siguen separados del estado de implementación comprobada; no se acredita el cierre académico completo.
+
+Actualización final: HU01 se registró en `d76bdc2` y se integró por avance rápido en `main`. La corrección posterior `fd73c26` impide abandonar el registro desde los controles del panel durante el envío y hasta cerrar expresamente la confirmación. Chrome verificó navegación y salida deshabilitadas durante la confirmación; al cerrarla, navegación habilitada y ningún elemento `.contrasena` restante. Build/lint y 15 pruebas cliente aprobados. Los resultados globales y los bloqueos de las ocho historias se registran en [ESTADO_SPRINT1.md](ESTADO_SPRINT1.md).
