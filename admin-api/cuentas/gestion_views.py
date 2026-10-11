@@ -1,13 +1,14 @@
 from django.contrib.auth.models import Group
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from .acceso_views import ROLES, datos_usuario, leer_json
+from .forms import FormularioEdicionUsuario
 from .models import CambioUsuario, Usuario
 from .permisos import exigir_administrador
 
@@ -81,3 +82,34 @@ def asignar_roles(request, usuario_id):
                 anterior={"roles": anterior}, actual={"roles": actual},
             )
     return JsonResponse({"mensaje": "Roles guardados.", "usuario": datos_usuario(usuario)})
+
+
+@never_cache
+@require_http_methods(["PATCH"])
+def editar_usuario(request, usuario_id):
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    datos, error = leer_json(request)
+    if error is not None:
+        return error
+    if set(datos) != {"nombre", "correo"} or any(not isinstance(valor, str) for valor in datos.values()):
+        return JsonResponse({"mensaje": "Envía únicamente nombre y correo como texto."}, status=400)
+    try:
+        with transaction.atomic():
+            usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
+            formulario = FormularioEdicionUsuario(datos, usuario)
+            if not formulario.is_valid():
+                return JsonResponse({"mensaje": "Revisa los datos del usuario.", "errores": formulario.errors.get_json_data()}, status=400)
+            anterior = {"nombre": usuario.nombre, "correo": usuario.correo}
+            actual = formulario.cleaned_data
+            if anterior != actual:
+                usuario.nombre = actual["nombre"]
+                usuario.correo = actual["correo"]
+                usuario.save(update_fields=["nombre", "correo"])
+                CambioUsuario.objects.create(usuario=usuario, administrador=request.user, tipo="datos", anterior=anterior, actual=actual)
+    except IntegrityError:
+        if Usuario.objects.filter(correo__iexact=datos["correo"].strip()).exclude(pk=usuario_id).exists():
+            return JsonResponse({"mensaje": "Ya existe una cuenta con este correo.", "errores": {"correo": [{"message": "Ya existe una cuenta con este correo.", "code": "unique"}]}}, status=409)
+        raise
+    return JsonResponse({"mensaje": "Datos actualizados.", "usuario": datos_usuario(usuario)})

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import type { Rol } from '../servicios/django'
-import { asignarRoles, consultarUsuario, listarUsuarios } from '../servicios/usuarios'
+import { ErrorApi } from '../servicios/django'
+import type { ErroresRegistro, Rol } from '../servicios/django'
+import { CampoFormulario } from '../componentes/CampoFormulario'
+import { asignarRoles, consultarUsuario, editarUsuario, listarUsuarios } from '../servicios/usuarios'
 import type { DetalleUsuario } from '../servicios/usuarios'
 
 const etiquetas: Record<Rol, string> = { administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante' }
@@ -13,6 +15,8 @@ export function GestionarUsuarios() {
   const [pagina, establecerPagina] = useState(1)
   const [detalle, establecerDetalle] = useState<DetalleUsuario | null>(null)
   const [roles, establecerRoles] = useState<Rol[]>([])
+  const [datos, establecerDatos] = useState({ nombre: '', correo: '' })
+  const [erroresCampos, establecerErroresCampos] = useState<ErroresRegistro>({})
   const [error, establecerError] = useState('')
   const [mensaje, establecerMensaje] = useState('')
   const [ocupado, establecerOcupado] = useState(false)
@@ -36,6 +40,7 @@ export function GestionarUsuarios() {
     try {
       const datos = await consultarUsuario(id)
       establecerDetalle(datos); establecerRoles(datos.usuario.roles)
+      establecerDatos({ nombre: datos.usuario.nombre, correo: datos.usuario.correo }); establecerErroresCampos({})
     } catch (fallo) { establecerError((fallo as Error).message) }
     finally { bloqueo.current = false; establecerOcupado(false) }
   }
@@ -52,6 +57,22 @@ export function GestionarUsuarios() {
       establecerMensaje('Roles guardados. Se aplican al próximo acceso a una función protegida.')
     } catch (fallo) { establecerError((fallo as Error).message) }
     finally { bloqueo.current = false; establecerOcupado(false) }
+  }
+
+  async function guardarDatos(evento: FormEvent) {
+    evento.preventDefault()
+    if (!detalle || bloqueo.current) return
+    bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje(''); establecerErroresCampos({})
+    try {
+      await editarUsuario(detalle.usuario.id, datos)
+      const actualizado = await consultarUsuario(detalle.usuario.id)
+      establecerDetalle(actualizado); establecerDatos({ nombre: actualizado.usuario.nombre, correo: actualizado.usuario.correo })
+      establecerLista(null); establecerRevision((valor) => valor + 1)
+      establecerMensaje('Datos actualizados. El identificador y el historial se conservan.')
+    } catch (fallo) {
+      establecerError((fallo as Error).message)
+      if (fallo instanceof ErrorApi) establecerErroresCampos(fallo.errores)
+    } finally { bloqueo.current = false; establecerOcupado(false) }
   }
 
   return <>
@@ -76,6 +97,13 @@ export function GestionarUsuarios() {
     {detalle && <section aria-labelledby="usuario-elegido">
       <h2 id="usuario-elegido" ref={titulo} tabIndex={-1}>{detalle.usuario.nombre}</h2>
       <p>{detalle.usuario.correo}</p>
+      <form onSubmit={guardarDatos}><h2>Datos de la cuenta</h2><fieldset disabled={ocupado}>
+        {(['nombre', 'correo'] as const).map((campo) => <CampoFormulario key={campo} id={'editar-' + campo} etiqueta={campo === 'nombre' ? 'Nombre completo' : 'Correo de la cuenta'} errores={erroresCampos[campo]}>
+          <input id={'editar-' + campo} type={campo === 'correo' ? 'email' : 'text'} value={datos[campo]} required maxLength={campo === 'nombre' ? 150 : 254}
+            aria-invalid={!!erroresCampos[campo]?.length} aria-describedby={erroresCampos[campo]?.length ? 'editar-' + campo + '-error' : undefined}
+            onChange={(evento) => establecerDatos({ ...datos, [campo]: evento.target.value })} />
+        </CampoFormulario>)}
+      </fieldset><button type="submit" disabled={ocupado}>{ocupado ? 'Guardando…' : 'Guardar datos'}</button></form>
       <form onSubmit={guardar}>
         <fieldset disabled={ocupado}><legend>Roles escolares</legend>
           <p id="ayuda-roles">Administrador y docente pueden combinarse. Estudiante se asigna solo.</p>

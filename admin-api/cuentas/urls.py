@@ -11,6 +11,7 @@ urlpatterns = [
     path("usuarios/listado/", gestion_views.listar_usuarios, name="listar_usuarios"),
     path("usuarios/<uuid:usuario_id>/", gestion_views.consultar_usuario, name="consultar_usuario"),
     path("usuarios/<uuid:usuario_id>/roles/", gestion_views.asignar_roles, name="asignar_roles"),
+    path("usuarios/<uuid:usuario_id>/datos/", gestion_views.editar_usuario, name="editar_usuario"),
     path("cursos/", cursos_views.listar_cursos, name="listar_cursos"),
     path("cursos/<uuid:curso_id>/", cursos_views.actualizar_curso, name="actualizar_curso"),
 ]

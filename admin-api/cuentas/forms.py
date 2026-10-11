@@ -47,3 +47,18 @@ class FormularioRegistroUsuario(forms.Form):
             )
 
         return correo
+
+
+class FormularioEdicionUsuario(forms.Form):
+    nombre = forms.CharField(max_length=150, error_messages={"required": "El nombre es obligatorio."})
+    correo = forms.EmailField(max_length=254, error_messages={"required": "El correo es obligatorio.", "invalid": "Escribe un correo válido."})
+
+    def __init__(self, datos, usuario):
+        super().__init__(datos)
+        self.usuario = usuario
+
+    def clean_correo(self):
+        correo = self.cleaned_data["correo"].strip().lower()
+        if Usuario.objects.filter(correo__iexact=correo).exclude(pk=self.usuario.pk).exists():
+            raise forms.ValidationError("Ya existe una cuenta con este correo.")
+        return correo
