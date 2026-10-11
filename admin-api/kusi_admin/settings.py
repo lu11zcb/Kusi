@@ -144,6 +144,7 @@ CSRF_FAILURE_VIEW = "cuentas.views.fallo_csrf"
 
 # Solo se configura en los procesos Django/Spring; nunca se entrega a React.
 CLAVE_INTERNA = os.environ.get("CLAVE_INTERNA", "")
+EDU_API_URL = os.environ.get("EDU_API_URL", "")
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_HTTPONLY = True
 LANGUAGE_CODE = "es-pe"

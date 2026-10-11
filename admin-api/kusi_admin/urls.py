@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from cuentas.acceso_views import validar_sesion_interna
+from cuentas.secciones_views import crear_seccion
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/cuentas/', include('cuentas.urls')),
     path('api/acceso/', include('cuentas.acceso_urls')),
     path('api/interno/sesiones/validar/', validar_sesion_interna, name='validar_sesion_interna'),
+    path('api/educacion/secciones/', crear_seccion, name='crear_seccion'),
 ]

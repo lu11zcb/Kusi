@@ -3,6 +3,7 @@ import type { UsuarioSesion } from '../servicios/django'
 import { RegistrarUsuario } from './RegistrarUsuario'
 import { GestionarUsuarios } from './GestionarUsuarios'
 import { CatalogoCursos } from './CatalogoCursos'
+import { CrearSeccion } from './CrearSeccion'
 
 export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void }) {
   const [seccion, establecerSeccion] = useState('registro')
@@ -22,7 +23,7 @@ export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: U
         <nav aria-label="Administración">
           {([
             ['registro', 'Registrar usuario'], ['usuarios', 'Usuarios y roles'],
-            ['cursos', 'Catálogo de cursos'],
+            ['cursos', 'Catálogo de cursos'], ['secciones', 'Crear sección'],
           ] as const).map(([id, etiqueta]) => <button key={id} type="button" className="enlace-navegacion" disabled={registroBloqueado}
             aria-current={seccion === id ? 'page' : undefined} onClick={() => establecerSeccion(id)}>{etiqueta}</button>)}
         </nav>
@@ -31,7 +32,7 @@ export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: U
             <h1>Registrar usuario</h1>
             <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
             <RegistrarUsuario alCambiarBloqueo={establecerRegistroBloqueado} />
-          </> : seccion === 'usuarios' ? <GestionarUsuarios /> : <CatalogoCursos />}
+          </> : seccion === 'usuarios' ? <GestionarUsuarios /> : seccion === 'cursos' ? <CatalogoCursos /> : <CrearSeccion />}
         </main>
       </div>
     </>
