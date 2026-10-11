@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&+5&2*it%$e2-pk5_u-7o017ojs1y#ihn&e_o-t%cq5kqxfoa-'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -139,3 +141,10 @@ AUTH_USER_MODEL = "cuentas.Usuario"
 
 # Mantiene CSRF activo y devuelve errores legibles para el cliente React.
 CSRF_FAILURE_VIEW = "cuentas.views.fallo_csrf"
+
+# Solo se configura en los procesos Django/Spring; nunca se entrega a React.
+CLAVE_INTERNA = os.environ.get("CLAVE_INTERNA", "")
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = True
+LANGUAGE_CODE = "es-pe"
+TIME_ZONE = "America/Lima"

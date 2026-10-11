@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from cuentas.acceso_views import validar_sesion_interna
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/cuentas/', include('cuentas.urls')),
+    path('api/acceso/', include('cuentas.acceso_urls')),
+    path('api/interno/sesiones/validar/', validar_sesion_interna, name='validar_sesion_interna'),
 ]

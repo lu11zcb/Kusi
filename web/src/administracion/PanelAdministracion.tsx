@@ -1,13 +1,17 @@
 import type { UsuarioSesion } from '../servicios/django'
 import { RegistrarUsuario } from './RegistrarUsuario'
 
-export function PanelAdministracion({ usuario }: { usuario: UsuarioSesion }) {
+export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void }) {
   return (
     <>
       <a className="saltar-contenido" href="#contenido">Ir al contenido</a>
       <header className="cabecera">
         <strong>Kusi · Administración</strong>
         <span>{usuario.nombre} · {usuario.correo}</span>
+        <div className="acciones">
+          {cambiarRol && <button type="button" className="secundario" onClick={cambiarRol}>Cambiar de panel</button>}
+          <button type="button" className="secundario" onClick={salir}>Cerrar sesión</button>
+        </div>
       </header>
       <div className="panel-administracion">
         <nav aria-label="Administración">

@@ -84,7 +84,7 @@ export function RegistrarUsuario() {
     <form onSubmit={enviar} noValidate aria-busy={enviando}>
       <p>Todos los campos son obligatorios.</p>
       {mensaje && <p className="error-resumen" role="alert" tabIndex={-1} ref={resumenError}>{mensaje}</p>}
-      {estadoError === 401 && <p><a href="/admin/login/?next=/">Volver a iniciar sesión</a></p>}
+      {estadoError === 401 && <p><a href="/">Volver a iniciar sesión</a></p>}
       <fieldset disabled={enviando}>
         <legend className="solo-lectores">Datos de la cuenta</legend>
         <CampoFormulario id="nombre" etiqueta="Nombre" errores={errores.nombre}>
