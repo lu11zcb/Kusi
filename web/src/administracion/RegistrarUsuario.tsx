@@ -10,7 +10,7 @@ const nombresRol: Record<Rol, string> = {
   administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante',
 }
 
-export function RegistrarUsuario() {
+export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (bloqueado: boolean) => void }) {
   const [datos, establecerDatos] = useState<DatosRegistro>(datosVacios)
   const [errores, establecerErrores] = useState<ErroresRegistro>({})
   const [mensaje, establecerMensaje] = useState('')
@@ -34,21 +34,24 @@ export function RegistrarUsuario() {
   useEffect(() => {
     // No conservar la contraseña cuando el navegador abandona esta página.
     // Vacía también el DOM antes de que el navegador pueda guardar la página.
-    const descartar = () => flushSync(() => establecerResultado(null))
+    const descartar = () => flushSync(() => { establecerResultado(null); alCambiarBloqueo?.(false) })
     window.addEventListener('pagehide', descartar)
     return () => window.removeEventListener('pagehide', descartar)
-  }, [])
+  }, [alCambiarBloqueo])
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     if (bloqueoEnvio.current) return
     bloqueoEnvio.current = true
+    alCambiarBloqueo?.(true)
+    let creado = false
     establecerEnviando(true)
     establecerMensaje('')
     establecerEstadoError(null)
     establecerErrores({})
     try {
       establecerResultado(await registrarUsuario(datos))
+      creado = true
       establecerDatos(datosVacios)
     } catch (error: unknown) {
       if (error instanceof ErrorApi) {
@@ -61,6 +64,8 @@ export function RegistrarUsuario() {
     } finally {
       bloqueoEnvio.current = false
       establecerEnviando(false)
+      // La confirmación también retiene el panel hasta cerrarla expresamente.
+      if (!creado) alCambiarBloqueo?.(false)
     }
   }
 
@@ -75,7 +80,7 @@ export function RegistrarUsuario() {
           <dt>Contraseña temporal</dt><dd><code className="contrasena">{resultado.contrasena_temporal}</code></dd>
         </dl>
         <p>Entrégala ahora. Al cerrar esta confirmación, no podrás volver a consultarla. La cuenta deberá cambiarla al ingresar.</p>
-        <button type="button" onClick={() => establecerResultado(null)}>Cerrar y registrar otra cuenta</button>
+        <button type="button" onClick={() => { establecerResultado(null); alCambiarBloqueo?.(false) }}>Cerrar y registrar otra cuenta</button>
       </section>
     )
   }

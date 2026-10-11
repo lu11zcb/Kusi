@@ -6,6 +6,7 @@ import { CatalogoCursos } from './CatalogoCursos'
 
 export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void }) {
   const [seccion, establecerSeccion] = useState('registro')
+  const [registroBloqueado, establecerRegistroBloqueado] = useState(false)
   return (
     <>
       <a className="saltar-contenido" href="#contenido">Ir al contenido</a>
@@ -13,21 +14,23 @@ export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: U
         <strong>Kusi · Administración</strong>
         <span>{usuario.nombre} · {usuario.correo}</span>
         <div className="acciones">
-          {cambiarRol && <button type="button" className="secundario" onClick={cambiarRol}>Cambiar de panel</button>}
-          <button type="button" className="secundario" onClick={salir}>Cerrar sesión</button>
+          {cambiarRol && <button type="button" className="secundario" disabled={registroBloqueado} onClick={cambiarRol}>Cambiar de panel</button>}
+          <button type="button" className="secundario" disabled={registroBloqueado} onClick={salir}>Cerrar sesión</button>
         </div>
       </header>
       <div className="panel-administracion">
         <nav aria-label="Administración">
-          <a href="#contenido" aria-current={seccion === 'registro' ? 'page' : undefined} onClick={() => establecerSeccion('registro')}>Registrar usuario</a>
-          <a href="#contenido" aria-current={seccion === 'usuarios' ? 'page' : undefined} onClick={() => establecerSeccion('usuarios')}>Usuarios y roles</a>
-          <a href="#contenido" aria-current={seccion === 'cursos' ? 'page' : undefined} onClick={() => establecerSeccion('cursos')}>Catálogo de cursos</a>
+          {([
+            ['registro', 'Registrar usuario'], ['usuarios', 'Usuarios y roles'],
+            ['cursos', 'Catálogo de cursos'],
+          ] as const).map(([id, etiqueta]) => <button key={id} type="button" className="enlace-navegacion" disabled={registroBloqueado}
+            aria-current={seccion === id ? 'page' : undefined} onClick={() => establecerSeccion(id)}>{etiqueta}</button>)}
         </nav>
         <main id="contenido" tabIndex={-1}>
           {seccion === 'registro' ? <>
             <h1>Registrar usuario</h1>
             <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
-            <RegistrarUsuario />
+            <RegistrarUsuario alCambiarBloqueo={establecerRegistroBloqueado} />
           </> : seccion === 'usuarios' ? <GestionarUsuarios /> : <CatalogoCursos />}
         </main>
       </div>

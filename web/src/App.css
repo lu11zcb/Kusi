@@ -16,7 +16,8 @@
   margin: 0 auto;
 }
 .panel-administracion nav { padding: 2rem 1rem; }
-.panel-administracion nav a { display: block; padding: 0.75rem; font-weight: 600; }
+.panel-administracion nav .enlace-navegacion { display: block; padding: 0.75rem; font-weight: 600; background: transparent; color: var(--color-principal); border: 0; text-align: left; text-decoration: underline; text-underline-offset: 0.2em; }
+.panel-administracion nav .enlace-navegacion[aria-current='page'] { background: #e6eeeb; }
 .panel-administracion main { padding: 2rem clamp(1rem, 4vw, 3rem) 3rem; min-width: 0; }
 form, .confirmacion { margin-top: 2rem; max-width: 36rem; }
 fieldset { border: 0; padding: 0; margin: 1.5rem 0; min-width: 0; }

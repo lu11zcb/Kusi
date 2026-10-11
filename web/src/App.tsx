@@ -31,7 +31,7 @@ export default function App() {
   if (!cuenta) return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}<Ingresar alIngresar={actualizar} /></>
   const roles = cuenta.roles.filter((valor): valor is RolAdulto => valor === 'administrador' || valor === 'docente')
   if (!roles.length) return <main className="acceso"><h1>Acceso web no disponible</h1><p>Los estudiantes ingresan desde la aplicación móvil. Si necesitas otro acceso, consulta con el administrador.</p><button type="button" onClick={cerrarSesion}>Cerrar sesión</button>{mensaje && <p role="alert">{mensaje}</p>}</main>
-  if (cuenta.debe_cambiar_contrasena) return <CambiarContrasena alCambiar={actualizar} salir={cerrarSesion} />
+  if (cuenta.debe_cambiar_contrasena) return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}<CambiarContrasena alCambiar={actualizar} salir={cerrarSesion} /></>
   const seleccionado = rol && roles.includes(rol) ? rol : roles.length === 1 ? roles[0] : null
   if (!seleccionado) return <main className="acceso"><h1>Elige tu panel</h1><p>Tu cuenta tiene acceso a administración y docencia.</p><div className="acciones"><button onClick={() => establecerRol('administrador')}>Administración</button><button onClick={() => establecerRol('docente')}>Docente</button><button className="secundario" onClick={cerrarSesion}>Cerrar sesión</button></div>{mensaje && <p role="alert">{mensaje}</p>}</main>
   const cambiarRol = roles.length > 1 ? () => establecerRol(null) : undefined
