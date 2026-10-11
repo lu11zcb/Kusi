@@ -48,6 +48,13 @@ input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--co
 .panel-docente { max-width: 64rem; padding: 2rem clamp(1rem, 4vw, 3rem); margin: auto; }
 .panel-docente nav { border-bottom: 1px solid #c8d3cf; padding: 1rem 0; }
 .panel-docente section { margin: 2rem 0; }
+.lista-gestion { list-style: none; padding: 0; }
+.lista-gestion li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #c8d3cf; }
+.lista-gestion span { display: block; margin-top: 0.35rem; overflow-wrap: anywhere; }
+.opcion { display: flex; gap: 0.75rem; align-items: center; margin: 0.75rem 0; min-height: 44px; }
+.opcion input { width: 1.2rem; min-height: 1.2rem; height: 1.2rem; accent-color: var(--color-principal); }
+.historial { padding-left: 1.25rem; }
+.historial li { padding: 0.75rem 0; overflow-wrap: anywhere; }
 @media (max-width: 720px) {
   .panel-administracion { grid-template-columns: minmax(0, 1fr); }
   .panel-administracion nav { padding: 0.5rem 1rem; border-bottom: 1px solid #c8d3cf; }

@@ -102,3 +102,17 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.nombre + " - " + self.correo
+
+
+class CambioUsuario(models.Model):
+    """Historial administrativo sin contraseñas ni datos de sesión."""
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="cambios")
+    administrador = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="cambios_realizados")
+    tipo = models.CharField(max_length=20)
+    anterior = models.JSONField()
+    actual = models.JSONField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha", "-id"]

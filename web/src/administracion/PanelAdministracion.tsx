@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import type { UsuarioSesion } from '../servicios/django'
 import { RegistrarUsuario } from './RegistrarUsuario'
+import { GestionarUsuarios } from './GestionarUsuarios'
 
 export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void }) {
+  const [seccion, establecerSeccion] = useState('registro')
   return (
     <>
       <a className="saltar-contenido" href="#contenido">Ir al contenido</a>
@@ -15,12 +18,15 @@ export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: U
       </header>
       <div className="panel-administracion">
         <nav aria-label="Administración">
-          <a href="#contenido" aria-current="page">Registrar usuario</a>
+          <a href="#contenido" aria-current={seccion === 'registro' ? 'page' : undefined} onClick={() => establecerSeccion('registro')}>Registrar usuario</a>
+          <a href="#contenido" aria-current={seccion === 'usuarios' ? 'page' : undefined} onClick={() => establecerSeccion('usuarios')}>Usuarios y roles</a>
         </nav>
         <main id="contenido" tabIndex={-1}>
-          <h1>Registrar usuario</h1>
-          <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
-          <RegistrarUsuario />
+          {seccion === 'registro' ? <>
+            <h1>Registrar usuario</h1>
+            <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
+            <RegistrarUsuario />
+          </> : <GestionarUsuarios />}
         </main>
       </div>
     </>

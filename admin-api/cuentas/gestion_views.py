@@ -1,0 +1,83 @@
+from django.contrib.auth.models import Group
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_POST
+
+from .acceso_views import ROLES, datos_usuario, leer_json
+from .models import CambioUsuario, Usuario
+from .permisos import exigir_administrador
+
+
+@never_cache
+@require_GET
+def listar_usuarios(request):
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    try:
+        pagina = int(request.GET.get("pagina", "1"))
+        if pagina < 1:
+            raise ValueError
+    except ValueError:
+        return JsonResponse({"mensaje": "La página debe ser un entero positivo."}, status=400)
+    busqueda = request.GET.get("buscar", "").strip()[:150]
+    consulta = Usuario.objects.filter(Q(nombre__icontains=busqueda) | Q(correo__icontains=busqueda)).order_by("nombre", "id")
+    paginador = Paginator(consulta, 25)
+    resultado = paginador.get_page(pagina)
+    return JsonResponse({
+        "usuarios": [datos_usuario(usuario) for usuario in resultado],
+        "pagina": resultado.number, "paginas": paginador.num_pages, "total": paginador.count,
+    })
+
+
+@never_cache
+@require_GET
+def consultar_usuario(request, usuario_id):
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    usuario = get_object_or_404(Usuario, pk=usuario_id)
+    cambios = usuario.cambios.select_related("administrador")[:50]
+    return JsonResponse({
+        "usuario": datos_usuario(usuario),
+        "historial": [{
+            "id": cambio.pk, "tipo": cambio.tipo, "fecha": cambio.fecha.isoformat(),
+            "administrador_id": str(cambio.administrador_id),
+            "administrador": cambio.administrador.nombre,
+            "anterior": cambio.anterior, "actual": cambio.actual,
+        } for cambio in cambios],
+    })
+
+
+@never_cache
+@require_POST
+def asignar_roles(request, usuario_id):
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    datos, error = leer_json(request)
+    if error is not None:
+        return error
+    roles = datos.get("roles")
+    if (set(datos) != {"roles"} or not isinstance(roles, list) or not roles
+            or any(not isinstance(rol, str) or rol not in ROLES for rol in roles)
+            or len(set(roles)) != len(roles)
+            or ("estudiante" in roles and len(roles) != 1)):
+        return JsonResponse({"mensaje": "Selecciona administrador, docente, ambos, o únicamente estudiante."}, status=400)
+    with transaction.atomic():
+        usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
+        anterior = datos_usuario(usuario)["roles"]
+        actual = sorted(roles)
+        if anterior != actual:
+            # Solo modifica roles escolares; nunca grupos técnicos ni privilegios Django.
+            usuario.groups.remove(*usuario.groups.filter(name__in=ROLES))
+            usuario.groups.add(*[Group.objects.get_or_create(name=rol)[0] for rol in actual])
+            CambioUsuario.objects.create(
+                usuario=usuario, administrador=request.user, tipo="roles",
+                anterior={"roles": anterior}, actual={"roles": actual},
+            )
+    return JsonResponse({"mensaje": "Roles guardados.", "usuario": datos_usuario(usuario)})
