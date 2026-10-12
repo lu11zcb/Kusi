@@ -19,7 +19,7 @@ export function Ingresar({ alIngresar }: { alIngresar: (cuenta: Cuenta) => void 
       if (resultado.usuario) alIngresar(resultado.usuario)
     } catch (error) {
       establecerContrasena('')
-      establecerMensaje(error instanceof Error ? error.message : 'No se pudo ingresar. Intenta de nuevo.')
+      establecerMensaje(error instanceof Error ? error.message : 'No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo.')
     } finally { establecerEnviando(false) }
   }
   return <main className="acceso">

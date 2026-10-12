@@ -66,7 +66,7 @@ def ingresar(request):
     if isinstance(correo, str) and isinstance(contrasena, str):
         usuario = authenticate(request, correo=correo.strip().lower(), password=contrasena)
     if usuario is None or not usuario.is_active:
-        return JsonResponse({"mensaje": "Correo o contraseña incorrectos"}, status=401)
+        return JsonResponse({"mensaje": "No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo."}, status=401)
     login(request, usuario)
     return JsonResponse({"usuario": datos_usuario(usuario), "csrf_token": get_token(request)})
 
