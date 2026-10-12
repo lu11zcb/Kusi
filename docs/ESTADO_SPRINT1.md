@@ -6,25 +6,27 @@ Repositorio de implementación: `D:\Escritorio\Kusi`. Rama de trabajo final: `ma
 
 | Historia | Estado real | Evidencia / pendiente |
 |---|---|---|
-| HU01 | Implementada y comprobada; integrada desde `hu01-registrar-usuarios` por avance rápido | Registro React/Django, errores, CSRF, UUID, hash, contraseña temporal de 10 caracteres y cierre comprobados. Commit `d76bdc2`; corrección posterior `fd73c26` protege la confirmación al navegar. Revisión del compañero pendiente. |
-| HU11 | Django y web implementados y comprobados; parcial en integración | Ingreso común, contraseña temporal obligatoria, elección de roles, interiores separados, salida y endpoint interno de sesión. Commit `9db70b9`; error de salida corregido en `fd73c26`. Faltan Spring y acceso Kotlin. |
+| HU01 | Implementada y comprobada; integrada en main; rama antigua retirada | Registro React/Django, errores, CSRF, UUID, hash, contraseña temporal de 10 caracteres y cierre comprobados. Commit `d76bdc2`; corrección posterior `fd73c26` protege la confirmación al navegar. Nueva comprobación HTTP y pruebas completas aprobadas. Revisión del compañero pendiente. |
+| HU11 | Django y web implementados y comprobados; parcial en integración | Ingreso común, contraseña temporal obligatoria, elección de roles, interiores separados, salida y endpoint interno de sesión. Commits `9db70b9`, `fd73c26` y `1355b8a` (TTL limitado por la expiración persistida). Faltan consumidor Spring, permisos educativos y acceso Kotlin. |
 | HU02 | Implementada y comprobada en Django/web | Roles individuales y administrador/docente, permisos API y ausencia de privilegios técnicos, historial. Commit `3469ba1`. Spring aún debe consumir roles y validar recursos. Revisión humana pendiente. |
 | HU03 | Implementada y comprobada | Siete cursos iniciales, consulta/renombrado, UUID conservado y duplicados rechazados. Commit `a3e99d2`. El vínculo con futuras actividades Spring no pudo probarse; UUID estable sí. Revisión humana pendiente. |
 | HU04 | Implementada y comprobada | Nombre/correo validados, unicidad, siguiente consulta actualizada, UUID/roles/hash/historial conservados y transacción atómica. Commit `844ff64`. Revisión humana pendiente. |
-| HU06 | Parcial, bloqueada en persistencia e integración | Formulario y adaptador Django → Spring comprobados; contrato y 503 sin servicio. Commit `6d938a5`. Falta estructura confirmada de Spring, migraciones `edu`, creación real, duplicados y permisos de extremo a extremo. |
+| HU06 | Parcial, bloqueada en persistencia e integración | Formulario y adaptador Django → Spring comprobados; contrato y 503 sin servicio. Commits `6d938a5` y `6a9762c` (configuración mal formada rechazada con 503). Falta estructura confirmada de Spring, migraciones `edu`, creación real, duplicados y permisos de extremo a extremo. |
 | HU18 | Bloqueada; contrato preparado | Falta Spring e integración IA real para sugerir objetivo ausente y distinguir su origen docente/IA. No hubo generación simulada en producto. |
 | HU16 | Bloqueada; contrato preparado | Falta Spring, proveedor/modelo y credencial utilizable para generar y persistir solicitud/resultado real. No se llamó a un proveedor ni se activaron gastos. |
 
 ## Comprobaciones ejecutadas
 
-- Django: **56/56 pruebas aprobadas**, con `--settings=kusi_admin.settings_pruebas --noinput`; base desechable `test_kusi_hu01`, `search_path=public`, creada/eliminada por el runner. Incluye 21 HU01, 12 acceso, 6 roles, 5 catálogo, 6 edición y 6 contrato secciones.
+- Django: **58/58 pruebas aprobadas** después de las correcciones, con `--settings=kusi_admin.settings_pruebas --noinput`; base desechable `test_kusi_hu01`, `search_path=public`, creada/eliminada por el runner. Incluye 21 HU01, 14 acceso, 6 roles, 5 catálogo, 6 edición y 6 contrato secciones.
+- Las dos pruebas nuevas comprueban expiración persistida/TTL, roles actuales e invalidación de otras sesiones tras cambiar la contraseña. Las de secciones también comprueban URLs mal formadas y puertos inválidos; no se eliminaron ni debilitaron validaciones.
 - Las 6 pruebas de secciones simulan el transporte Spring expresamente. No acreditan persistencia Spring ni integración educativa real.
-- Django `check`: sin problemas. `makemigrations --check --dry-run`: sin cambios. Las migraciones 0002–0004 se probaron primero en aislamiento y después se aplicaron correctamente en `kusi`, esquema admin. Cuenta existente conservada: 1 antes y 1 después; catálogo: 7 cursos.
+- Django `check` repetido: sin problemas. `makemigrations --check --dry-run` repetido: sin cambios. En la entrega anterior las migraciones 0002–0004 se probaron primero en aislamiento y después se aplicaron correctamente en `kusi`, esquema admin (cuenta existente: 1 antes y 1 después; catálogo: 7). En esta continuación no se aplicaron migraciones ni se modificaron datos de `kusi`.
 - React: build completo, lint completo y **15/15 pruebas del cliente aprobadas**, salidas 0. Las restricciones EPERM de creación de procesos se resolvieron ejecutando las comprobaciones con autorización de la herramienta, sin eliminar validaciones.
-- Chrome: ingreso inválido, elección administrador/docente, cambio de panel y salida; registro válido/errores/contraseña temporal/cierre; búsqueda y roles; duplicados/renombrado de curso; edición de cuenta y nueva consulta con historial; secciones sin servicio muestran error y conservan datos.
+- HTTP real con el servidor Django y la base desechable `test_kusi_navegador_0ef150f8cf`: CSRF, ingreso inválido, registro válido/errores/duplicado, contraseña temporal de diez caracteres y no-store, roles y combinación inválida, edición seguida de consulta con UUID/historial conservados, catálogo de siete cursos y renombrado con UUID estable, sesión interna con clave/no autorizada, salida e invalidación. Docente, estudiante y administrador con contraseña temporal no acceden a operaciones administrativas. Secciones devuelve 400 para grado inválido y 503 sin Spring; no crea datos educativos. Recorrido aprobado, salida 0.
+- Chrome, evidencia de la entrega anterior conservada: ingreso inválido, elección administrador/docente, cambio de panel y salida; registro válido/errores/contraseña temporal/cierre; búsqueda y roles; duplicados/renombrado de curso; edición de cuenta y nueva consulta con historial; secciones sin servicio muestran error y conservan datos. No se repitió navegador en esta continuación, que no modifica React.
 - Correcciones finales: navegación/salida bloqueadas durante registro y confirmación; al cerrar se elimina la contraseña visible. El error de salida durante cambio obligatorio se comprobó deteniendo exclusivamente QA. No se cambió una contraseña mediante navegador; ese recorrido se verifica con las pruebas Django.
 - Revisión responsive: capturas de escritorio y viewport 390, ancho útil/contenido 375/375 sin desbordamiento horizontal en secciones. La captura móvil es parcial. Detector automático Impeccable: `[]`. Revisión automática final `ship` limitada a las dos correcciones, documentada en `REVISION_INTERFAZ.md`; no sustituye revisión humana.
-- Los recorridos de navegador usaron bases `test_kusi_navegador_*` independientes, con datos ficticios. Las bases propias creadas se eliminaron y el servidor QA quedó detenido. No se probaron datos de estudiantes reales.
+- Los recorridos de navegador y HTTP usaron bases `test_kusi_navegador_*` independientes, con datos ficticios. Las bases propias creadas se eliminaron y los servidores QA quedaron detenidos; se comprobó que no quedaba el proceso del servidor de esta continuación. No se probaron datos de estudiantes reales.
 
 ## Git y autoría
 
@@ -34,14 +36,20 @@ Se revisaron remoto, diff, índice y archivos excluidos. Se conserva el traslado
 
 La comprobación del resultado del push y los hashes remotos se entrega en el mensaje final; no se presenta este archivo previo al push como prueba de subida.
 
+Eliminación de la rama antigua HU01: se actualizaron las referencias con `git fetch --prune origin` y main mediante `git merge --ff-only origin/main`. Las puntas local y remota de `hu01-registrar-usuarios` coincidían en `d76bdc28e9a581a9771e1ea33438b328ebdff267`; ambas superaron `git merge-base --is-ancestor ... main` (salida 0), sobre main actualizado `1f227e5`. Se retiró únicamente esa rama con `git push origin --delete hu01-registrar-usuarios` y `git branch -d hu01-registrar-usuarios`, sin eliminación forzada. `git ls-remote origin refs/heads/hu01-registrar-usuarios` devolvió vacío y salida 0; solo quedan main y sus referencias remotas. El commit HU01 sigue siendo ancestro de main. No hubo trabajo adicional que integrar ni se borraron otras ramas.
+
 ## Dependencias imprescindibles para continuar
 
-1. Luis crea y confirma `edu-api` Spring Boot/Maven con web, validación, seguridad, JPA y PostgreSQL. Después se implementarán los permisos por recurso, secciones y propuestas en `edu`; no se trasladan a Django.
-2. Luis crea y confirma `movil` Kotlin/Compose para implementar y comprobar el acceso del estudiante de HU11.
-3. Confirmar proveedor/modelo de IA disponible y configurar su credencial localmente, sin enviarla en chat ni subirla al repositorio. No se detectaron las variables habituales de IA ni `CLAVE_INTERNA` configuradas en los ámbitos consultados; faltan también las configuraciones de comunicación entre servicios.
+Las carpetas se volvieron a comprobar y siguen vacías. Se reunieron estas necesidades en una sola solicitud a Luis; todavía no hay confirmación. Configuración completa: [PREPARAR_EDU_Y_MOVIL.md](PREPARAR_EDU_Y_MOVIL.md).
+
+1. Luis crea y confirma `edu-api` Spring Boot/Maven, Java 21, paquete `pe.kusi.edu`, con web, validación, seguridad, JPA, PostgreSQL y Flyway. Después se implementarán los permisos por recurso, secciones y propuestas en `edu`; no se trasladan a Django.
+2. Luis crea y confirma `movil` Kotlin/Compose, paquete `pe.kusi.movil`, para implementar y comprobar el acceso del estudiante de HU11.
+3. Confirmar proveedor/modelo de IA disponible y configurar su credencial localmente, sin enviarla en chat ni subirla al repositorio. No se detectaron las variables habituales de IA ni `CLAVE_INTERNA` configuradas en proceso/usuario/máquina, ni `ollama`/`lms` en PATH. Ollama (11434) y LM Studio (1234) rechazaron conexión local fuera del aislamiento; no se probó generación. Faltan también las configuraciones de comunicación entre servicios. La clave usada en QA era ficticia y solo existió en ese proceso de prueba.
 
 Contratos: [identidad, cuentas y catálogo](CONTRATOS_SERVICIOS.md), [secciones](HU06_REVISION.md), [propuestas IA](CONTRATO_PROPUESTAS_IA.md).
 
 ## Pendientes separados del código
 
 El diseño final de ingreso, paneles y móvil sigue reservado a Luis; Rive y el cuy quedan fuera. La revisión humana del compañero, su fecha/referencia al commit y la aceptación académica del mecanismo de revisión en main siguen pendientes. No se asumieron las historias restantes de Jesús ni se inició el bloque del lunes.
+
+No se prepara todavía un aviso de «domingo terminado» para Jesús: HU11/HU06/HU18/HU16 siguen incompletas. Cuando su funcionalidad real esté comprobada, se redactará el mensaje para que Luis lo envíe y Jesús avance con HU05/HU07/HU15/HU08; no se enviará automáticamente.
