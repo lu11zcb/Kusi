@@ -40,9 +40,9 @@ Spring debe respetar el TTL devuelto, nunca superar 60 segundos ni la expiració
 
 `DJANGO_SECRET_KEY` debe ser un secreto estable configurado en el entorno del servicio. Sin él se genera una clave efímera para desarrollo: reiniciar el proceso invalida las sesiones. `CLAVE_INTERNA` se configura en los servicios, nunca con prefijo `VITE_` ni en archivos versionados. No se imprime ni se añade un valor real al repositorio.
 
-## Dependencias pendientes
+## Estado de Spring y HU07/HU08
 
-El lado Django y las pruebas del contrato están implementados. La validación desde Spring y el ingreso desde Kotlin se comprobarán después de que Luis cree y confirme sus estructuras. No se presenta una simulación de estas integraciones como un recorrido real.
+Se añadió el módulo `edu-api` con Spring Boot en este paquete. Implementa persistencia educativa para secciones, vínculos estudiante-sección y asignaciones docente-curso-sección-año, validación de sesión con Django y consultas internas de cuentas/cursos. Los adaptadores Django reenvían solicitudes con la clave interna y la sesión; React incorpora formularios administrativos y el panel docente consulta únicamente sus asignaciones. La integración debe ejecutarse y probarse de extremo a extremo en el entorno local antes de considerarse aceptada.
 
 ## Cuentas y catálogo · HU02/HU03/HU04
 
