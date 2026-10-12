@@ -56,12 +56,12 @@ class AccesoTests(TestCase):
         for datos in ({"correo": "nadie@example.com", "contrasena": "ClaveInicialSegura2026!"}, {"correo": self.usuario.correo, "contrasena": "incorrecta"}, {}):
             respuesta = self.post("acceso:ingresar", datos)
             self.assertEqual(respuesta.status_code, 401)
-            self.assertEqual(respuesta.json()["mensaje"], "Correo o contraseña incorrectos")
+            self.assertEqual(respuesta.json()["mensaje"], "No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo.")
         self.usuario.is_active = False
         self.usuario.save(update_fields=["is_active"])
         respuesta = self.ingreso()
         self.assertEqual(respuesta.status_code, 401)
-        self.assertEqual(respuesta.json()["mensaje"], "Correo o contraseña incorrectos")
+        self.assertEqual(respuesta.json()["mensaje"], "No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo.")
 
     def test_estudiante_se_autentica_para_el_contrato_movil(self):
         estudiante = Usuario.objects.create_user(correo="estudiante@example.com", nombre="Estudiante QA", password="ClaveInicialSegura2026!")
