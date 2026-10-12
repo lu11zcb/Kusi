@@ -59,4 +59,6 @@ Todas estas rutas Django exigen administrador activo con contraseña definitiva.
 
 ## Secciones e IA pendientes
 
-El adaptador administrativo de secciones no persiste datos: [HU06_REVISION.md](HU06_REVISION.md) define rutas, permisos, duplicados y configuración pendiente. Las propuestas docentes pertenecerán a Spring: [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md). No se implementó una IA simulada en producto ni se generaron las estructuras reservadas.
+El adaptador administrativo de secciones no persiste datos: [HU06_REVISION.md](HU06_REVISION.md) define rutas, permisos, duplicados y configuración pendiente. El cliente docente consume las rutas futuras Spring de contexto, CSRF y solicitudes definidas en [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md). La propiedad y asignación vigente se comprueban en Spring para cada lectura/escritura, no por la opción seleccionada en React. Se autorizan contextos/asignaciones ficticios exclusivamente para pruebas de integración, sin implementar HU08 ni otorgar permisos generales.
+
+**Prueba real de IA aplazada por Luis hasta configurar su API key**. Las simulaciones están solo en pruebas. El proveedor/modelo no está elegido y su ausencia no bloquea implementación ni simulación. Las estructuras Spring/Kotlin siguen reservadas a Luis y aún no se han generado: esta es la dependencia pendiente de sus implementaciones. El aviso para Jesús está preparado, sin enviar, en [AVISO_JESUS_DOMINGO.md](AVISO_JESUS_DOMINGO.md).

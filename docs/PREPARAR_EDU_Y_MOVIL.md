@@ -44,8 +44,8 @@ La configuración de conexión se completará después de disponer de las estruc
 
 - Django: `EDU_API_URL=http://127.0.0.1:8080` y una `CLAVE_INTERNA` local.
 - Spring: dirección del Django local, la misma clave interna y conexión PostgreSQL; los nombres finales se documentarán junto con la implementación real.
-- IA: confirmar proveedor, identificador de modelo y **nombre de variable o ubicación local** de la credencial disponible. No enviar la clave por chat. Si el proveedor es local, indicar URL y modelo; no se necesita inventar una credencial.
+- IA: Luis configurará su credencial el lunes 12 o martes 13. Hoy se prepara el código y se comprueba con simulaciones exclusivamente en pruebas, sin pedir la clave ni llamar al proveedor. El proveedor/modelo aún no están confirmados: no se elige uno ni se activa una conexión por defecto.
 
-No se detectaron las variables habituales de proveedor/modelo/credencial en proceso, usuario o máquina. Tampoco se detectaron ejecutables `ollama`/`lms` en PATH. Las consultas de modelos a los puertos locales habituales de [Ollama](https://docs.ollama.com/api/tags) y [LM Studio](https://lmstudio.ai/docs/developer/rest/list), repetidas fuera del aislamiento, recibieron conexión rechazada. Esto no descarta una configuración en otra ubicación: Luis debe indicar la que quiera utilizar.
+La inspección previa no detectó una configuración utilizable de IA. No se repitieron consultas a proveedores después del cambio de instrucción. **Prueba real de IA aplazada por Luis hasta configurar su API key**.
 
-No se descargaron modelos, contrataron servicios ni realizaron llamadas de generación. Las credenciales solo pertenecen al backend y quedan fuera de Git y de React. Al confirmar las estructuras y la configuración IA se podrán implementar y probar HU11/HU06/HU18/HU16; este documento no las declara terminadas.
+No se descargaron modelos, contrataron servicios ni realizaron llamadas de generación. Las credenciales solo pertenecen al backend y quedan fuera de Git y de React. Al confirmar las estructuras se implementarán HU11/HU06 y la persistencia, validaciones y adaptador configurable HU18/HU16 con pruebas simuladas. La API key no es requisito para ese trabajo. La prueba real seguirá pendiente hasta que Luis configure su integración; este documento no declara terminadas las historias.
