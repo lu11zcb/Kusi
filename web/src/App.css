@@ -23,7 +23,7 @@ form, .confirmacion { margin-top: 2rem; max-width: 36rem; }
 fieldset { border: 0; padding: 0; margin: 1.5rem 0; min-width: 0; }
 .campo { margin-bottom: 1.5rem; }
 .campo label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
-input, select {
+input, select, textarea {
   width: 100%;
   min-height: 44px;
   padding: 0.65rem 0.75rem;
@@ -32,8 +32,10 @@ input, select {
   border: 1px solid #667b72;
   border-radius: 0.25rem;
 }
-input { caret-color: var(--color-principal); }
-input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--color-error); }
+input, textarea { caret-color: var(--color-principal); }
+textarea { resize: vertical; }
+.texto-conservado { white-space: pre-wrap; overflow-wrap: anywhere; }
+input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--color-error); }
 .error-campo, .error-resumen { color: var(--color-error); }
 .error-campo { margin: 0.5rem 0 0; font-size: 0.95rem; }
 .error-resumen { padding: 1rem; background: #fff0ee; }

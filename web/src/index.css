@@ -11,7 +11,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 a { color: var(--color-principal); text-underline-offset: 0.2em; }
 p { line-height: 1.6; max-width: 68ch; }
 h1 { font-size: clamp(1.6rem, 4vw, 2rem); line-height: 1.2; margin: 0 0 1rem; }
