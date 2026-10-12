@@ -47,7 +47,12 @@ class SeccionesContratoTests(TestCase):
 
     @patch("cuentas.secciones_views.build_opener")
     def test_no_configurado_falla_cerrado_sin_llamar(self, construir):
-        for config in ({"EDU_API_URL": ""}, {"CLAVE_INTERNA": ""}, {"EDU_API_URL": "http://externo.example"}, {"EDU_API_URL": "file:///secreto"}):
+        for config in (
+            {"EDU_API_URL": ""}, {"CLAVE_INTERNA": ""},
+            {"EDU_API_URL": "http://externo.example"}, {"EDU_API_URL": "file:///secreto"},
+            {"EDU_API_URL": "http://["}, {"EDU_API_URL": "http://127.0.0.1:invalido"},
+            {"EDU_API_URL": "http://127.0.0.1:0"}, {"EDU_API_URL": "http://127.0.0.1:65536"},
+        ):
             with self.subTest(config=config), override_settings(**config):
                 self.assertEqual(self.crear().status_code, 503)
         construir.assert_not_called()

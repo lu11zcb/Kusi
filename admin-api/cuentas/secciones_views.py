@@ -38,10 +38,17 @@ def crear_seccion(request):
         return JsonResponse({"mensaje": "Indica primero de primaria, un nombre de hasta 80 caracteres y un año escolar de cuatro cifras."}, status=400)
     datos["nombre"] = " ".join(nombre.split())
     destino = settings.EDU_API_URL.rstrip("/")
-    partes = urlsplit(destino)
-    if (not destino or not settings.CLAVE_INTERNA or partes.scheme not in ("http", "https")
-            or not partes.hostname or partes.username or partes.password or partes.query or partes.fragment
-            or (partes.scheme == "http" and partes.hostname not in ("localhost", "127.0.0.1", "::1"))):
+    try:
+        partes = urlsplit(destino)
+        destino_valido = (
+            partes.scheme in ("http", "https") and partes.hostname
+            and not (partes.username or partes.password or partes.query or partes.fragment)
+            and (partes.port is None or 1 <= partes.port <= 65535)
+            and (partes.scheme == "https" or partes.hostname in ("localhost", "127.0.0.1", "::1"))
+        )
+    except ValueError:
+        destino_valido = False
+    if not destino_valido or not settings.CLAVE_INTERNA:
         return JsonResponse({"mensaje": "El servicio educativo todavía no está disponible. Conserva los datos e intenta más tarde."}, status=503)
     peticion = Request(destino + "/interno/secciones/", data=json.dumps(datos).encode("utf-8"), method="POST", headers={
         "Content-Type": "application/json", "Accept": "application/json",
