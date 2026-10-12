@@ -32,6 +32,8 @@ Spring recibe la cookie de sesión del cliente y consulta exclusivamente desde s
 
 Solo este endpoint de servicio se excluye de CSRF: se autentica mediante clave interna y no autoriza por la cookie de la petición. La protección de los endpoints de navegador permanece activa. Nunca registrar la clave ni la sesión opaca. En producción, transportar por TLS y limitar el acceso a los servicios; no hay despliegue en este encargo.
 
+Django calcula el TTL con la fecha de expiración de la fila persistida en PostgreSQL, redondeando hacia abajo y limitándolo a 60 segundos. Una fila vencida o eliminada produce 401; no se utiliza la duración predeterminada de una sesión para ampliar su vigencia. Las pruebas también comprueban los roles actuales y la invalidación de otras sesiones tras cambiar la contraseña.
+
 Spring debe respetar el TTL devuelto, nunca superar 60 segundos ni la expiración de la sesión y volver a validar al vencer. Después debe comprobar el rol para cada operación y la pertenencia del usuario a cada recurso: conocer un UUID no autoriza a consultar o modificar cursos, grupos o actividades ajenos. No escribir en tablas del otro esquema. La caché puede retrasar hasta ese límite la observación de una revocación.
 
 ## Configuración local

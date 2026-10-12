@@ -1,8 +1,11 @@
 import json
+from datetime import timedelta
 
 from django.contrib.auth.models import Group
+from django.contrib.sessions.models import Session
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import Usuario
 
@@ -141,3 +144,33 @@ class AccesoTests(TestCase):
     def test_clave_interna_sin_configurar_falla_cerrada(self):
         respuesta = self.client.post(reverse("validar_sesion_interna"), "{}", content_type="application/json")
         self.assertEqual(respuesta.status_code, 503)
+
+    @override_settings(CLAVE_INTERNA="clave-interna-prueba")
+    def test_cache_interna_respeta_expiracion_persistida_y_rechaza_expirada(self):
+        self.ingreso()
+        sesion = self.client.cookies["sessionid"].value
+        Session.objects.filter(session_key=sesion).update(expire_date=timezone.now() + timedelta(seconds=25))
+        interno = Client()
+        def validar():
+            return interno.post(reverse("validar_sesion_interna"), json.dumps({"sesion": sesion}), content_type="application/json", HTTP_X_CLAVE_INTERNA="clave-interna-prueba")
+        respuesta = validar()
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertGreaterEqual(respuesta.json()["cache_maxima_segundos"], 0)
+        self.assertLessEqual(respuesta.json()["cache_maxima_segundos"], 25)
+        Session.objects.filter(session_key=sesion).update(expire_date=timezone.now() - timedelta(seconds=1))
+        self.assertEqual(validar().status_code, 401)
+
+    @override_settings(CLAVE_INTERNA="clave-interna-prueba")
+    def test_introspeccion_observa_roles_y_rechaza_otras_sesiones_tras_cambio(self):
+        self.ingreso()
+        otra = Client()
+        otra.force_login(self.usuario)
+        sesion_anterior = otra.cookies["sessionid"].value
+        interno = Client()
+        def validar(sesion):
+            return interno.post(reverse("validar_sesion_interna"), json.dumps({"sesion": sesion}), content_type="application/json", HTTP_X_CLAVE_INTERNA="clave-interna-prueba")
+        self.usuario.groups.remove(Group.objects.get(name="administrador"))
+        self.assertEqual(validar(sesion_anterior).json()["usuario"]["roles"], ["docente"])
+        self.assertEqual(self.cambio().status_code, 200)
+        self.assertEqual(validar(sesion_anterior).status_code, 401)
+        self.assertEqual(validar(self.client.cookies["sessionid"].value).status_code, 200)

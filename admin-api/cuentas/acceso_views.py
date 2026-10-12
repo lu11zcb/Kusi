@@ -6,10 +6,12 @@ from django.conf import settings
 from django.contrib.auth import authenticate, get_user, login, logout, update_session_auth_hash
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.backends.db import SessionStore
+from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
@@ -132,7 +134,15 @@ def validar_sesion_interna(request):
         return JsonResponse({"mensaje": "Sesión inválida."}, status=401)
     if usuario.debe_cambiar_contrasena:
         return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
+    # get_expiry_age() puede usar la duración predeterminada aunque la fila
+    # persistida esté a punto de caducar. Spring no debe ampliar ese plazo.
+    ahora = timezone.now()
+    expiracion = Session.objects.filter(
+        session_key=almacen.session_key, expire_date__gt=ahora,
+    ).values_list("expire_date", flat=True).first()
+    if expiracion is None:
+        return JsonResponse({"mensaje": "Sesión inválida."}, status=401)
     return JsonResponse({
         "usuario": datos_usuario(usuario),
-        "cache_maxima_segundos": min(60, max(0, almacen.get_expiry_age())),
+        "cache_maxima_segundos": min(60, max(0, int((expiracion - ahora).total_seconds()))),
     })
