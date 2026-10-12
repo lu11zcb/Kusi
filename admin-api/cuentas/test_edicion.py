@@ -88,3 +88,33 @@ class EdicionTests(TestCase):
         self.assertEqual(self.client.patch(self.url, '{}', content_type="application/json").status_code, 403)
         self.url = reverse("cuentas:editar_usuario", args=["00000000-0000-0000-0000-000000000000"])
         self.assertEqual(self.guardar(nombre="Nuevo", correo="nuevo@example.com").status_code, 404)
+
+    def test_administrador_activa_y_desactiva_cuenta_con_historial(self):
+        url = reverse("cuentas:cambiar_estado_usuario", args=[self.persona.pk])
+        identificador = self.persona.pk
+        respuesta = self.client.post(url, json.dumps({"activo": False}), content_type="application/json", HTTP_X_CSRFTOKEN=self.token)
+        self.assertEqual(respuesta.status_code, 200)
+        self.persona.refresh_from_db()
+        self.assertFalse(self.persona.is_active)
+        self.assertEqual(self.persona.pk, identificador)
+        self.assertEqual(respuesta.json()["usuario"]["activo"], False)
+        cambio = CambioUsuario.objects.get(usuario=self.persona, tipo="estado")
+        self.assertEqual(cambio.anterior, {"activo": True})
+        self.assertEqual(cambio.actual, {"activo": False})
+        self.assertEqual(self.persona.nombre, "Nombre original")
+        respuesta = self.client.post(url, json.dumps({"activo": True}), content_type="application/json", HTTP_X_CSRFTOKEN=self.token)
+        self.assertEqual(respuesta.status_code, 200)
+        self.persona.refresh_from_db()
+        self.assertTrue(self.persona.is_active)
+        self.assertEqual(CambioUsuario.objects.filter(usuario=self.persona, tipo="estado").count(), 2)
+
+    def test_estado_rechaza_datos_invalidos_y_usuarios_no_admin(self):
+        url = reverse("cuentas:cambiar_estado_usuario", args=[self.persona.pk])
+        for datos in ({}, {"activo": "false"}, {"activo": False, "is_superuser": True}):
+            respuesta = self.client.post(url, json.dumps(datos), content_type="application/json", HTTP_X_CSRFTOKEN=self.token)
+            self.assertEqual(respuesta.status_code, 400)
+        self.client.logout()
+        self.client.force_login(self.persona)
+        token = self.client.get(reverse("acceso:sesion")).json()["csrf_token"]
+        respuesta = self.client.post(url, json.dumps({"activo": False}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(respuesta.status_code, 403)
