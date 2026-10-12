@@ -16,6 +16,7 @@ dist/
 
 # Java / Spring Boot
 target/
+edu-api/data/
 
 # Kotlin / Android
 .gradle/
@@ -25,3 +26,11 @@ local.properties
 # Editores
 .idea/
 .vscode/
+
+*.dump
+*.backup.py
+cuentas_0001.sql
+.env
+
+edu-api/target/
+.idea/

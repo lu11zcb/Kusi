@@ -1,0 +1,21 @@
+server:
+  port: ${PORT:8080}
+spring:
+  datasource:
+    url: ${EDU_DB_URL:jdbc:h2:file:./data/kusi-edu;AUTO_SERVER=TRUE}
+    username: ${EDU_DB_USER:sa}
+    password: ${EDU_DB_PASSWORD:}
+    driver-class-name: ${EDU_DB_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:false}
+kusi:
+  django-url: ${DJANGO_INTERNAL_URL:http://127.0.0.1:8000}
+  internal-key: ${CLAVE_INTERNA:}
