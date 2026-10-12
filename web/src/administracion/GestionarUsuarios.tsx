@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { ErrorApi } from '../servicios/django'
 import type { ErroresRegistro, Rol } from '../servicios/django'
 import { CampoFormulario } from '../componentes/CampoFormulario'
-import { asignarRoles, consultarUsuario, editarUsuario, listarUsuarios } from '../servicios/usuarios'
+import { asignarRoles, cambiarEstadoUsuario, consultarUsuario, editarUsuario, listarUsuarios } from '../servicios/usuarios'
 import type { DetalleUsuario } from '../servicios/usuarios'
 
 const etiquetas: Record<Rol, string> = { administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante' }
@@ -59,6 +59,25 @@ export function GestionarUsuarios() {
     finally { bloqueo.current = false; establecerOcupado(false) }
   }
 
+  async function cambiarEstado() {
+    if (!detalle || bloqueo.current) return
+    const nuevoEstado = !detalle.usuario.activo
+    const confirmar = window.confirm(nuevoEstado
+      ? '¿Deseas activar esta cuenta?'
+      : '¿Deseas desactivar esta cuenta? La persona no podrá ingresar ni usar funciones protegidas.')
+    if (!confirmar) return
+    bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje('')
+    try {
+      const resultado = await cambiarEstadoUsuario(detalle.usuario.id, nuevoEstado)
+      const actualizado = await consultarUsuario(detalle.usuario.id)
+      establecerDetalle(actualizado)
+      establecerLista(null); establecerRevision((valor) => valor + 1)
+      establecerMensaje(resultado.mensaje + ' Se conservan los datos y el historial.')
+    } catch (fallo) {
+      establecerError((fallo as Error).message)
+    } finally { bloqueo.current = false; establecerOcupado(false) }
+  }
+
   async function guardarDatos(evento: FormEvent) {
     evento.preventDefault()
     if (!detalle || bloqueo.current) return
@@ -87,7 +106,7 @@ export function GestionarUsuarios() {
     {lista && <section aria-label="Resultados de usuarios">
       <p>{lista.total} usuarios encontrados.</p>
       <ul className="lista-gestion">{lista.usuarios.map((usuario) => <li key={usuario.id}>
-        <div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span><span>{usuario.roles.map((rol) => etiquetas[rol]).join(', ') || 'Sin rol escolar'}</span></div>
+        <div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span><span>{usuario.roles.map((rol) => etiquetas[rol]).join(', ') || 'Sin rol escolar'}</span><span>Estado: {usuario.activo ? 'Activa' : 'Desactivada'}</span></div>
         <button type="button" className="secundario" disabled={ocupado} onClick={() => elegir(usuario.id)}>Gestionar {usuario.nombre}</button>
       </li>)}</ul>
       <div className="acciones"><button type="button" className="secundario" disabled={pagina <= 1 || ocupado} onClick={() => { establecerLista(null); establecerPagina(pagina - 1) }}>Anterior</button>
@@ -97,6 +116,8 @@ export function GestionarUsuarios() {
     {detalle && <section aria-labelledby="usuario-elegido">
       <h2 id="usuario-elegido" ref={titulo} tabIndex={-1}>{detalle.usuario.nombre}</h2>
       <p>{detalle.usuario.correo}</p>
+      <p>Estado de la cuenta: <strong>{detalle.usuario.activo ? 'Activa' : 'Desactivada'}</strong></p>
+      <button type="button" className="secundario" disabled={ocupado} onClick={cambiarEstado}>{detalle.usuario.activo ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
       <form onSubmit={guardarDatos}><h2>Datos de la cuenta</h2><fieldset disabled={ocupado}>
         {(['nombre', 'correo'] as const).map((campo) => <CampoFormulario key={campo} id={'editar-' + campo} etiqueta={campo === 'nombre' ? 'Nombre completo' : 'Correo de la cuenta'} errores={erroresCampos[campo]}>
           <input id={'editar-' + campo} type={campo === 'correo' ? 'email' : 'text'} value={datos[campo]} required maxLength={campo === 'nombre' ? 150 : 254}
@@ -116,7 +137,7 @@ export function GestionarUsuarios() {
       </form>
       <h2>Historial reciente</h2>
       {detalle.historial.length === 0 ? <p>Esta cuenta todavía no tiene cambios registrados.</p> : <ol className="historial">{detalle.historial.map((cambio) => <li key={cambio.id}>
-        <strong>{cambio.tipo === 'roles' ? 'Cambio de roles' : 'Cambio de datos'}</strong> · {new Date(cambio.fecha).toLocaleString('es-PE')} · {cambio.administrador}
+        <strong>{cambio.tipo === 'roles' ? 'Cambio de roles' : cambio.tipo === 'estado' ? 'Cambio de estado' : 'Cambio de datos'}</strong> · {new Date(cambio.fecha).toLocaleString('es-PE')} · {cambio.administrador}
         <p>Antes: {Object.entries(cambio.anterior).map(([campo, valor]) => campo + ': ' + String(valor)).join(' · ')}</p>
         <p>Después: {Object.entries(cambio.actual).map(([campo, valor]) => campo + ': ' + String(valor)).join(' · ')}</p>
       </li>)}</ol>}
