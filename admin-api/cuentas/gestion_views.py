@@ -13,6 +13,10 @@ from .models import CambioUsuario, Usuario
 from .permisos import exigir_administrador
 
 
+def datos_usuario_administracion(usuario):
+    return {**datos_usuario(usuario), "activo": usuario.is_active}
+
+
 @never_cache
 @require_GET
 def listar_usuarios(request):
@@ -30,7 +34,7 @@ def listar_usuarios(request):
     paginador = Paginator(consulta, 25)
     resultado = paginador.get_page(pagina)
     return JsonResponse({
-        "usuarios": [datos_usuario(usuario) for usuario in resultado],
+        "usuarios": [datos_usuario_administracion(usuario) for usuario in resultado],
         "pagina": resultado.number, "paginas": paginador.num_pages, "total": paginador.count,
     })
 
@@ -44,7 +48,7 @@ def consultar_usuario(request, usuario_id):
     usuario = get_object_or_404(Usuario, pk=usuario_id)
     cambios = usuario.cambios.select_related("administrador")[:50]
     return JsonResponse({
-        "usuario": datos_usuario(usuario),
+        "usuario": datos_usuario_administracion(usuario),
         "historial": [{
             "id": cambio.pk, "tipo": cambio.tipo, "fecha": cambio.fecha.isoformat(),
             "administrador_id": str(cambio.administrador_id),
@@ -71,7 +75,7 @@ def asignar_roles(request, usuario_id):
         return JsonResponse({"mensaje": "Selecciona administrador, docente, ambos, o únicamente estudiante."}, status=400)
     with transaction.atomic():
         usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
-        anterior = datos_usuario(usuario)["roles"]
+        anterior = datos_usuario_administracion(usuario)["roles"]
         actual = sorted(roles)
         if anterior != actual:
             # Solo modifica roles escolares; nunca grupos técnicos ni privilegios Django.
@@ -81,7 +85,7 @@ def asignar_roles(request, usuario_id):
                 usuario=usuario, administrador=request.user, tipo="roles",
                 anterior={"roles": anterior}, actual={"roles": actual},
             )
-    return JsonResponse({"mensaje": "Roles guardados.", "usuario": datos_usuario(usuario)})
+    return JsonResponse({"mensaje": "Roles guardados.", "usuario": datos_usuario_administracion(usuario)})
 
 
 @never_cache
@@ -112,4 +116,32 @@ def editar_usuario(request, usuario_id):
         if Usuario.objects.filter(correo__iexact=datos["correo"].strip()).exclude(pk=usuario_id).exists():
             return JsonResponse({"mensaje": "Ya existe una cuenta con este correo.", "errores": {"correo": [{"message": "Ya existe una cuenta con este correo.", "code": "unique"}]}}, status=409)
         raise
-    return JsonResponse({"mensaje": "Datos actualizados.", "usuario": datos_usuario(usuario)})
+    return JsonResponse({"mensaje": "Datos actualizados.", "usuario": datos_usuario_administracion(usuario)})
+
+
+@never_cache
+@require_POST
+def cambiar_estado_usuario(request, usuario_id):
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    datos, error = leer_json(request)
+    if error is not None:
+        return error
+    if set(datos) != {"activo"} or not isinstance(datos["activo"], bool):
+        return JsonResponse({"mensaje": "Indica el estado de la cuenta con activo: true o activo: false."}, status=400)
+    with transaction.atomic():
+        usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
+        anterior = {"activo": usuario.is_active}
+        actual = {"activo": datos["activo"]}
+        if anterior != actual:
+            usuario.is_active = datos["activo"]
+            usuario.save(update_fields=["is_active"])
+            CambioUsuario.objects.create(
+                usuario=usuario, administrador=request.user, tipo="estado",
+                anterior=anterior, actual=actual,
+            )
+    return JsonResponse({
+        "mensaje": "Cuenta activada." if usuario.is_active else "Cuenta desactivada.",
+        "usuario": datos_usuario_administracion(usuario),
+    })
