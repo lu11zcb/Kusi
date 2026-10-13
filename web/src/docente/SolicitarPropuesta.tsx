@@ -32,21 +32,15 @@ export function SolicitarPropuesta() {
     })
     return () => controlador.abort()
   }, [recarga])
-  // Clear the selection if the teacher's assignments change.
-  useEffect(() => {
-    if (!contextos) return
-    const autorizada = contextos.contextos.some((valor) =>
-      valor.curso_id + '/' + (valor.seccion_id ?? '') === seleccion,
-    )
-    if (seleccion && !autorizada) establecerSeleccion('')
-  }, [contextos, seleccion])
+  // HU17: si el curso deja de estar asignado al recargar, la selección se descarta.
+  const seleccionVigente = contextos && !contextos.contextos.some((valor) => valor.curso_id + '/' + (valor.seccion_id ?? '') === seleccion) ? '' : seleccion
   function recargar() { establecerCargando(true); establecerErrorContexto(''); establecerRecarga((valor) => valor + 1) }
   function cambio() { establecerSolicitud(null); establecerIntentado(false); establecerError('') }
   async function enviar(evento: FormEvent) {
     evento.preventDefault()
     if (bloqueo.current) return
-    const contexto = contextos?.contextos.find((valor) => valor.curso_id + '/' + (valor.seccion_id ?? '') === seleccion)
-    if (seleccion === '' || !contexto) { establecerError('Selecciona un curso autorizado.'); return }
+    const contexto = contextos?.contextos.find((valor) => valor.curso_id + '/' + (valor.seccion_id ?? '') === seleccionVigente)
+    if (seleccionVigente === '' || !contexto) { establecerError('Selecciona un curso autorizado.'); return }
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerIntentado(true)
     try {
       const resultado = await gestor.current.enviar({ curso_id: contexto.curso_id, seccion_id: contexto.seccion_id, tema, objetivo })
@@ -67,7 +61,7 @@ export function SolicitarPropuesta() {
       <fieldset disabled={ocupado}>
         <legend>Tema y objetivo</legend>
         <div className="campo"><label htmlFor="curso-propuesta">Curso y contexto autorizado</label>
-          <select id="curso-propuesta" value={seleccion} onChange={(evento) => { establecerSeleccion(evento.target.value); cambio() }} disabled={cargando || !contextos?.contextos.length} required>
+          <select id="curso-propuesta" value={seleccionVigente} onChange={(evento) => { establecerSeleccion(evento.target.value); cambio() }} disabled={cargando || !contextos?.contextos.length} required>
             <option value="">Selecciona un curso</option>
             {contextos?.contextos.map((contexto) => <option key={contexto.curso_id + '/' + (contexto.seccion_id ?? '')} value={contexto.curso_id + '/' + (contexto.seccion_id ?? '')}>{contexto.curso_nombre}{contexto.seccion_nombre ? ' · ' + contexto.seccion_nombre + ' · ' + contexto.anio_escolar : ''}</option>)}
           </select>

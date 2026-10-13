@@ -22,7 +22,7 @@ export function EstudiantesSecciones() {
     {!error && items.length === 0 && <p>No tienes estudiantes vinculados a tus secciones asignadas.</p>}
     {items.length > 0 && <ul>
       {items.map(v => <li key={v.id}>
-        Estudiante: {v.estudiante_id} · Sección {v.seccion.nombre} · Año escolar {v.anio_escolar}
+        {v.estudiante_nombre ?? 'Estudiante ' + v.estudiante_id} · Sección {v.seccion.nombre} · Año escolar {v.anio_escolar}
       </li>)}
     </ul>}
   </section>

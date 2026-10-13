@@ -10,6 +10,9 @@ from django.views.decorators.debug import sensitive_variables
 from django.views.decorators.http import require_GET, require_POST
 
 from .acceso_views import leer_json
+from django.core.exceptions import ValidationError
+
+from .models import Usuario
 from .permisos import exigir_administrador
 
 
@@ -140,17 +143,18 @@ def mis_estudiantes_docente(request):
         return JsonResponse({"mensaje": "Esta operación requiere el rol docente."}, status=403)
     if usuario.debe_cambiar_contrasena:
         return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
-    return _transportar(request, "docentes/" + str(usuario.id) + "/estudiantes", "GET", "estudiantes")
-
-
-@never_cache
-@require_GET
-def mis_estudiantes_docente(request):
-    usuario = request.user
-    if not usuario.is_authenticated or not usuario.is_active:
-        return JsonResponse({"mensaje": "Debes iniciar sesión."}, status=401)
-    if not usuario.groups.filter(name="docente").exists():
-        return JsonResponse({"mensaje": "Esta operación requiere el rol docente."}, status=403)
-    if usuario.debe_cambiar_contrasena:
-        return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
-    return _transportar(request, "docentes/" + str(usuario.id) + "/estudiantes", "GET", "estudiantes")
+    respuesta = _transportar(request, "docentes/" + str(usuario.id) + "/estudiantes", "GET", "estudiantes")
+    if respuesta.status_code != 200:
+        return respuesta
+    # Spring solo conoce UUID; el nombre lo aporta Django, propietario de las cuentas.
+    datos = json.loads(respuesta.content)
+    identificadores = {v.get("estudiante_id") for v in datos["estudiantes"] if isinstance(v, dict)}
+    try:
+        nombres = dict(Usuario.objects.filter(pk__in=identificadores).values_list("id", "nombre"))
+    except (ValidationError, ValueError):
+        return JsonResponse({"mensaje": "No se pudo completar la operación educativa."}, status=502)
+    nombres = {str(clave): valor for clave, valor in nombres.items()}
+    for vinculo in datos["estudiantes"]:
+        if isinstance(vinculo, dict):
+            vinculo["estudiante_nombre"] = nombres.get(vinculo.get("estudiante_id"))
+    return JsonResponse(datos)
