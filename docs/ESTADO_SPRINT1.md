@@ -1,4 +1,33 @@
-# Estado del Sprint 1 — revisión del 12 de octubre de 2026
+# Estado del Sprint 1 — actualización del 13 de octubre de 2026
+
+## Estado por historia (23 HU / 33 puntos)
+
+| HU | Responsable | Estado | Evidencia / pendiente |
+|---|---|---|---|
+| HU01, HU02, HU03, HU04 | Luis | Implementadas y comprobadas | Django/web. Revisión de Jesús pendiente. |
+| HU05, HU15, HU07, HU08 | Jesús | Implementadas y comprobadas | El 13/10 se corrigió el proxy de Vite: `/api/edu` capturaba `/api/educacion/` y las pantallas de vínculos/asignaciones respondían 404 en el navegador. |
+| HU06 | Luis | Implementada y comprobada | Spring + PostgreSQL real (Flyway V1–V3 aplicado en PostgreSQL 16). |
+| HU09 | Jesús | Implementada; corregida el 13/10 | Se quitaron vista/ruta/decorador duplicados (rompían una prueba Django) y el doble render; Django añade el nombre del estudiante. Recorrido real Django→Spring comprobado. |
+| HU17 | Jesús | Implementada; lint corregido el 13/10 | Solo cursos asignados; la selección se descarta si deja de estar asignada. |
+| HU11 | Luis | Web/Django/Spring comprobados; app móvil sin compilar aquí | Se agregó `GET /api/edu/acceso/estudiante/` (lo usa `movil`). La app Kotlin no se compiló en esta revisión (sin Android SDK). |
+| HU12, HU13 | Jesús | **Pendientes** | No hay commits. `AccesoApi.kt` guarda cookies solo en memoria. |
+| HU18, HU16 | Luis | Implementadas; **prueba real de IA pendiente** | Persistencia, estados, reintentos y permisos comprobados; IA simulada. |
+| HU19 | Luis | Implementada y comprobada | Propósito (preparación/refuerzo) e instrucciones guardados y enviados a la IA. |
+| HU20 | Luis | Implementada y comprobada | «Mis propuestas»: objetivo, historia, acciones, reglas, retos, ayudas y recursos; lo que falta aparece como «Pendiente». |
+| HU21 | Luis | Implementada y comprobada | Aprueba la versión exacta vigente; registra docente y fecha. Solo la versión vigente aprobada es apta para el juego (Sprint 2). |
+| HU24 | Luis | Implementada; alternativa con IA simulada | Rechazada no es apta para juego; «Pedir otra alternativa» conserva la rechazada. |
+| HU22 | Luis | Implementada; **IA simulada** | Las observaciones generan una versión nueva que indica la versión ajustada. |
+| HU23 | Luis | Implementada y comprobada | Edición docente = versión nueva pendiente; si partía de una aprobada necesita otra aprobación. |
+| HU25 | Luis | Implementada y comprobada | Historial de la más reciente a la más antigua, identificando IA o docente. |
+
+## Comprobaciones del 13 de octubre
+
+- Django **76/76** (PostgreSQL temporal). Spring **49/49**: incluye 18 pruebas de propuestas **simuladas** (IA y Django dobles) y una prueba de transporte HTTP real. Web: lint, build y **38/38**.
+- **Recorrido real entre procesos** (Django + Spring + PostgreSQL 16, datos ficticios): 14/14 comprobaciones. Encontró y corrigió que Spring enviaba a Django el cuerpo con `Transfer-Encoding: chunked` y Django respondía 400: ninguna llamada Spring→Django funcionaba fuera de las pruebas simuladas.
+- Navegador (Chromium, Vite): ingreso docente, estudiantes de mis secciones, propósito, aprobar, modificar e historial, sin errores de consola. La propuesta usada se insertó como **SIMULADA** porque no hay IA configurada.
+- Pendientes reales: prueba con IA real (API key de Luis), HU12/HU13, compilar y probar `movil`, revisión cruzada y diseño final.
+
+## Revisión anterior (12 de octubre)
 
 **Actualización 13/10:** se completó el backend Spring de HU18/HU16 (ver [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md)). Spring: **39/39 pruebas aprobadas** (30 anteriores + 9 nuevas de propuestas, todas con Django e IA simulados y H2/Flyway). Siguen pendientes: acceso Kotlin del estudiante (HU11, `movil` no está publicada en GitHub), adaptador y prueba real de IA, recorrido conjunto con PostgreSQL real y revisión del compañero.
 
