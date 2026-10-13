@@ -64,6 +64,24 @@ class EducacionContratoTests(TestCase):
         self.assertEqual(peticion.get_header("X-sesion-kusi"), cliente.session.session_key)
 
     @patch("cuentas.educacion_views.build_opener")
+    def test_docente_consulta_solo_estudiantes_de_sus_secciones(self, construir):
+        cliente, _ = self.cliente_autenticado(self.docente)
+        self.configurar_respuesta(construir, {"estudiantes": []})
+        resultado = cliente.get(
+            reverse("mis_estudiantes_docente"),
+            {"docente_id": str(self.admin.pk)},
+        )
+        self.assertEqual(resultado.status_code, 200)
+        self.assertEqual(resultado.json(), {"estudiantes": []})
+        peticion = construir.return_value.open.call_args.args[0]
+        self.assertEqual(
+            peticion.full_url,
+            "http://127.0.0.1:8080/interno/docentes/" + str(self.docente.pk) + "/estudiantes/",
+        )
+        self.assertEqual(peticion.get_header("X-sesion-kusi"), cliente.session.session_key)
+
+    @patch("cuentas.educacion_views.build_opener")
+    @patch("cuentas.educacion_views.build_opener")
     def test_url_y_puerto_invalidos_fallan_cerrados_para_admin_y_docente(self, construir):
         admin, _ = self.cliente_autenticado(self.admin)
         docente, _ = self.cliente_autenticado(self.docente)

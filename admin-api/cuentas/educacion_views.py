@@ -128,3 +128,29 @@ def mis_asignaciones_docente(request):
     if usuario.debe_cambiar_contrasena:
         return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
     return _transportar(request, "docentes/" + str(usuario.id) + "/recursos", "GET", "asignaciones")
+
+
+@never_cache
+@require_GET
+def mis_estudiantes_docente(request):
+    usuario = request.user
+    if not usuario.is_authenticated or not usuario.is_active:
+        return JsonResponse({"mensaje": "Debes iniciar sesión."}, status=401)
+    if not usuario.groups.filter(name="docente").exists():
+        return JsonResponse({"mensaje": "Esta operación requiere el rol docente."}, status=403)
+    if usuario.debe_cambiar_contrasena:
+        return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
+    return _transportar(request, "docentes/" + str(usuario.id) + "/estudiantes", "GET", "estudiantes")
+
+
+@never_cache
+@require_GET
+def mis_estudiantes_docente(request):
+    usuario = request.user
+    if not usuario.is_authenticated or not usuario.is_active:
+        return JsonResponse({"mensaje": "Debes iniciar sesión."}, status=401)
+    if not usuario.groups.filter(name="docente").exists():
+        return JsonResponse({"mensaje": "Esta operación requiere el rol docente."}, status=403)
+    if usuario.debe_cambiar_contrasena:
+        return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
+    return _transportar(request, "docentes/" + str(usuario.id) + "/estudiantes", "GET", "estudiantes")
