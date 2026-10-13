@@ -9,17 +9,27 @@ export type ContextoPropuesta = {
   seccion_id: string | null; seccion_nombre: string | null; anio_escolar: number | null
 }
 export type ContextosPropuestas = { contextos: ContextoPropuesta[]; ia_configurada: boolean }
-export type EntradaPropuesta = { curso_id: string; seccion_id: string | null; tema: string; objetivo: string }
-export type DatosSolicitud = Omit<EntradaPropuesta, 'objetivo'> & { id_solicitud: string; objetivo: string | null }
+export type Proposito = 'preparacion' | 'refuerzo'
+export type EntradaPropuesta = {
+  curso_id: string; seccion_id: string | null; tema: string; objetivo: string
+  proposito: Proposito; instrucciones: string
+}
+export type DatosSolicitud = Omit<EntradaPropuesta, 'objetivo' | 'instrucciones'> & { id_solicitud: string; objetivo: string | null; instrucciones: string | null }
 export type Propuesta = {
   id: string; objetivo: string; origen_objetivo: 'docente' | 'ia'; historia: string
   acciones: string[]; reglas: string[]; retos: string[]; ayudas: string[]
+  // HU20-HU25: datos de la versión y su revisión.
+  version?: number; origen?: 'ia' | 'docente'; version_base?: number | null; observaciones?: string | null
+  recursos?: string[] | null; estado_revision?: 'pendiente' | 'aprobada' | 'rechazada'
+  apta_para_juego?: boolean; revisada_en?: string | null; creado_en?: string
 }
 export type SolicitudPropuesta = {
   id_solicitud: string; curso_id: string; seccion_id: string | null; tema: string
-  objetivo_docente: string | null; estado: 'pendiente' | 'generando' | 'generada' | 'fallida'
-  propuesta: Propuesta | null
+  objetivo_docente: string | null; proposito: Proposito; instrucciones: string | null
+  estado: 'pendiente' | 'generando' | 'generada' | 'fallida'
+  propuesta: Propuesta | null; creado_en?: string
 }
+export type EdicionPropuesta = Pick<Propuesta, 'objetivo' | 'historia' | 'acciones' | 'reglas' | 'retos' | 'ayudas'> & { recursos: string[] | null }
 
 function objeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === 'object' && valor !== null && !Array.isArray(valor)
@@ -46,9 +56,15 @@ export function prepararSolicitud(entrada: EntradaPropuesta, id: string): DatosS
   if (typeof entrada.objetivo !== 'string' || entrada.objetivo.length > 4000) {
     throw new ErrorApi('El objetivo debe tener como máximo 4000 caracteres.', 400)
   }
+  if (entrada.proposito !== 'preparacion' && entrada.proposito !== 'refuerzo') throw new ErrorApi('Elige preparación o refuerzo.', 400)
+  if (typeof entrada.instrucciones !== 'string' || entrada.instrucciones.length > 4000) {
+    throw new ErrorApi('Las instrucciones deben tener como máximo 4000 caracteres.', 400)
+  }
+  // HU19: como el objetivo, las instrucciones se conservan exactas o quedan ausentes.
   return {
     id_solicitud: id, curso_id: entrada.curso_id, seccion_id: entrada.seccion_id,
     tema: entrada.tema.trim(), objetivo: entrada.objetivo.trim() ? entrada.objetivo : null,
+    proposito: entrada.proposito, instrucciones: entrada.instrucciones.trim() ? entrada.instrucciones : null,
   }
 }
 
@@ -71,6 +87,7 @@ function leerSolicitud(datos: unknown, entrada: DatosSolicitud): SolicitudPropue
   if (!objeto(solicitud) || solicitud.id_solicitud !== entrada.id_solicitud
     || solicitud.curso_id !== entrada.curso_id || solicitud.seccion_id !== entrada.seccion_id
     || solicitud.tema !== entrada.tema || solicitud.objetivo_docente !== entrada.objetivo
+    || solicitud.proposito !== entrada.proposito || solicitud.instrucciones !== entrada.instrucciones
     || typeof solicitud.estado !== 'string' || !['pendiente', 'generando', 'generada', 'fallida'].includes(solicitud.estado)) {
     throw new ErrorApi('No se pudo confirmar la solicitud. Consulta su estado antes de reintentar.', 502)
   }
@@ -132,4 +149,51 @@ export class GestorSolicitud {
       return leerSolicitud(await enviarEducacion(ruta, actual), actual)
     } finally { this.ocupado = false }
   }
+}
+
+// HU20-HU25: consulta y revisión de propuestas propias. El servidor valida
+// propiedad, asignación vigente y versión exacta en cada operación.
+function solicitudRecibida(datos: unknown): SolicitudPropuesta {
+  const solicitud = objeto(datos) ? datos.solicitud : null
+  if (!objeto(solicitud) || !identificador(solicitud.id_solicitud) || typeof solicitud.estado !== 'string'
+    || (solicitud.propuesta !== null && !propuestaValida(solicitud.propuesta))) {
+    throw new ErrorApi('No se pudo comprobar la propuesta. Vuelve a cargarla.', 502)
+  }
+  return solicitud as SolicitudPropuesta
+}
+const rutaSolicitud = (id: string) => {
+  if (!identificador(id)) throw new ErrorApi('Solicitud no válida.', 400)
+  return raiz + 'propuestas/solicitudes/' + id + '/'
+}
+const rutaVersion = (id: string, version: number) => {
+  if (!Number.isInteger(version) || version < 1) throw new ErrorApi('Versión no válida.', 400)
+  return rutaSolicitud(id) + 'versiones/' + version + '/'
+}
+
+export async function listarSolicitudes(): Promise<SolicitudPropuesta[]> {
+  const datos = await solicitar<unknown>(raiz + 'propuestas/solicitudes/')
+  if (!objeto(datos) || !Array.isArray(datos.solicitudes)) throw new ErrorApi('No se pudieron cargar tus propuestas.', 502)
+  return datos.solicitudes.map((solicitud: unknown) => solicitudRecibida({ solicitud }))
+}
+export const consultarSolicitud = async (id: string) => solicitudRecibida(await solicitar<unknown>(rutaSolicitud(id)))
+export async function listarVersiones(id: string): Promise<Propuesta[]> {
+  const datos = await solicitar<unknown>(rutaSolicitud(id) + 'versiones/')
+  if (!objeto(datos) || !Array.isArray(datos.versiones) || !datos.versiones.every(propuestaValida)) {
+    throw new ErrorApi('No se pudo cargar el historial de versiones.', 502)
+  }
+  return datos.versiones as Propuesta[]
+}
+export const aprobarVersion = async (id: string, version: number) => solicitudRecibida(await enviarEducacion(rutaVersion(id, version) + 'aprobar/', {}))
+export const rechazarVersion = async (id: string, version: number) => solicitudRecibida(await enviarEducacion(rutaVersion(id, version) + 'rechazar/', {}))
+export const pedirAlternativa = async (id: string) => solicitudRecibida(await enviarEducacion(rutaSolicitud(id) + 'alternativa/', {}))
+export async function enviarObservaciones(id: string, version: number, observaciones: string) {
+  if (!texto(observaciones, 4000)) throw new ErrorApi('Escribe tus observaciones (hasta 4000 caracteres).', 400)
+  return solicitudRecibida(await enviarEducacion(rutaVersion(id, version) + 'observaciones/', { observaciones }))
+}
+export async function modificarVersion(id: string, version: number, edicion: EdicionPropuesta) {
+  if (!texto(edicion.objetivo, 4000) || !texto(edicion.historia, 10000) || !lista(edicion.acciones) || !lista(edicion.reglas)
+    || !lista(edicion.retos) || !lista(edicion.ayudas) || (edicion.recursos !== null && !lista(edicion.recursos))) {
+    throw new ErrorApi('Completa objetivo, historia, acciones, reglas, retos y ayudas (de 1 a 20 elementos cada lista).', 400)
+  }
+  return solicitudRecibida(await enviarEducacion(rutaVersion(id, version) + 'modificar/', edicion))
 }

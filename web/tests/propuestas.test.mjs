@@ -18,14 +18,14 @@ async function modulo(url) {
   cache.set(url.href, resultado)
   return resultado
 }
-const { GestorSolicitud, obtenerContextosPropuestas, prepararSolicitud } = await import(await modulo(new URL('../src/servicios/propuestas.ts', import.meta.url)))
+const { GestorSolicitud, obtenerContextosPropuestas, prepararSolicitud, listarSolicitudes, listarVersiones, aprobarVersion, rechazarVersion, pedirAlternativa, enviarObservaciones, modificarVersion } = await import(await modulo(new URL('../src/servicios/propuestas.ts', import.meta.url)))
 const curso = '4b757369-2026-4011-8000-000000000001'
 const seccion = '00000000-0000-4000-8000-000000000010'
-const entrada = { curso_id: curso, seccion_id: seccion, tema: '  Sumas hasta diez  ', objetivo: '  Mi objetivo docente.\nSegunda línea.  ' }
+const entrada = { curso_id: curso, seccion_id: seccion, tema: '  Sumas hasta diez  ', objetivo: '  Mi objetivo docente.\nSegunda línea.  ', proposito: 'preparacion', instrucciones: '' }
 const json = (datos, estado = 200) => new Response(JSON.stringify(datos), { status: estado })
 const resultado = (datos, estado = 'pendiente', propuesta = null) => ({ solicitud: {
   id_solicitud: datos.id_solicitud, curso_id: datos.curso_id, seccion_id: datos.seccion_id,
-  tema: datos.tema, objetivo_docente: datos.objetivo, estado, propuesta,
+  tema: datos.tema, objetivo_docente: datos.objetivo, proposito: datos.proposito, instrucciones: datos.instrucciones, estado, propuesta,
 } })
 const propuesta = (objetivo = entrada.objetivo, origen_objetivo = 'docente') => ({
   id: '00000000-0000-4000-8000-000000000020', objetivo, origen_objetivo,
@@ -77,7 +77,7 @@ test('SIMULADO HU16: usa CSRF propio de Spring y no envía identidad ni credenci
     assert.equal(opciones.headers['X-Clave-Interna'], undefined)
     assert.equal(opciones.headers['X-CSRFToken'], undefined)
     const datos = JSON.parse(opciones.body)
-    assert.deepEqual(Object.keys(datos).sort(), ['curso_id', 'id_solicitud', 'objetivo', 'seccion_id', 'tema'])
+    assert.deepEqual(Object.keys(datos).sort(), ['curso_id', 'id_solicitud', 'instrucciones', 'objetivo', 'proposito', 'seccion_id', 'tema'])
     return json(resultado(datos), 201)
   })
   const guardada = await new GestorSolicitud().enviar(entrada)
@@ -207,4 +207,58 @@ test('SIMULADO HU16: sin configuración IA conserva el mensaje y la entrada para
   simular(t, () => json({ mensaje: 'La IA está pendiente de configuración. La solicitud se conserva.' }, 503))
   await assert.rejects(new GestorSolicitud().enviar(entrada), /IA está pendiente de configuración/)
   assert.deepEqual(entrada, original)
+})
+
+test('SIMULADO HU19: propósito obligatorio e instrucciones exactas viajan con la solicitud', async (t) => {
+  const id = '00000000-0000-4000-8000-000000000031'
+  const datos = prepararSolicitud({ ...entrada, proposito: 'refuerzo', instrucciones: ' Usar frutas\n' }, id)
+  assert.equal(datos.proposito, 'refuerzo')
+  assert.equal(datos.instrucciones, ' Usar frutas\n')
+  assert.equal(prepararSolicitud({ ...entrada, instrucciones: '   ' }, id).instrucciones, null)
+  assert.throws(() => prepararSolicitud({ ...entrada, proposito: 'examen' }, id), /preparación o refuerzo/)
+  assert.throws(() => prepararSolicitud({ ...entrada, instrucciones: 'x'.repeat(4001) }, id))
+  // Una respuesta que no conserva propósito/instrucciones no se confirma.
+  simular(t, (ruta, opciones) => json({ solicitud: { ...resultado(JSON.parse(opciones.body)).solicitud, proposito: 'preparacion' } }, 201))
+  await assert.rejects(new GestorSolicitud().enviar({ ...entrada, proposito: 'refuerzo' }), /confirmar la solicitud/)
+})
+
+test('SIMULADO HU20/HU25: consulta propuestas propias e historial de versiones', async (t) => {
+  const id = '00000000-0000-4000-8000-000000000040'
+  const guardada = resultado({ id_solicitud: id, curso_id: curso, seccion_id: seccion, tema: 'Sumas', objetivo: null, proposito: 'preparacion', instrucciones: null }, 'generada', propuesta('Objetivo IA', 'ia')).solicitud
+  simular(t, (ruta) => {
+    if (ruta === '/api/edu/propuestas/solicitudes/') return json({ solicitudes: [guardada] })
+    assert.equal(ruta, '/api/edu/propuestas/solicitudes/' + id + '/versiones/')
+    return json({ versiones: [{ ...propuesta(), version: 2, origen: 'docente' }, { ...propuesta('Objetivo IA', 'ia'), version: 1, origen: 'ia' }] })
+  })
+  assert.equal((await listarSolicitudes())[0].id_solicitud, id)
+  const versiones = await listarVersiones(id)
+  assert.deepEqual(versiones.map((v) => v.origen), ['docente', 'ia'])
+  await assert.rejects(listarVersiones('no-uuid'), /no válida/)
+})
+
+test('SIMULADO HU21/HU22/HU23/HU24: acciones de revisión usan CSRF Spring y la versión exacta', async (t) => {
+  const id = '00000000-0000-4000-8000-000000000041'
+  const rutas = []
+  const respuesta = resultado({ id_solicitud: id, curso_id: curso, seccion_id: seccion, tema: 'Sumas', objetivo: null, proposito: 'preparacion', instrucciones: null }, 'generada', propuesta('Objetivo IA', 'ia'))
+  simular(t, (ruta, opciones) => {
+    assert.equal(opciones.method, 'POST')
+    assert.equal(opciones.headers['X-XSRF-TOKEN'], 'csrf-spring-simulado')
+    rutas.push([ruta, JSON.parse(opciones.body)])
+    return json(respuesta)
+  })
+  const base = '/api/edu/propuestas/solicitudes/' + id + '/'
+  await aprobarVersion(id, 3)
+  await rechazarVersion(id, 3)
+  await pedirAlternativa(id)
+  await enviarObservaciones(id, 2, 'Más corta')
+  const edicion = { objetivo: 'O', historia: 'H', acciones: ['a'], reglas: ['r'], retos: ['t'], ayudas: ['y'], recursos: null }
+  await modificarVersion(id, 2, edicion)
+  assert.deepEqual(rutas, [
+    [base + 'versiones/3/aprobar/', {}], [base + 'versiones/3/rechazar/', {}], [base + 'alternativa/', {}],
+    [base + 'versiones/2/observaciones/', { observaciones: 'Más corta' }], [base + 'versiones/2/modificar/', edicion],
+  ])
+  await assert.rejects(enviarObservaciones(id, 2, '  '), /observaciones/)
+  await assert.rejects(modificarVersion(id, 2, { ...edicion, retos: [] }), /Completa/)
+  await assert.rejects(aprobarVersion(id, 0), /Versión no válida/)
+  assert.equal(rutas.length, 5)
 })

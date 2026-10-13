@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ErrorApi } from '../servicios/django'
 import { GestorSolicitud, obtenerContextosPropuestas } from '../servicios/propuestas'
-import type { ContextosPropuestas, SolicitudPropuesta } from '../servicios/propuestas'
+import type { ContextosPropuestas, Proposito, SolicitudPropuesta } from '../servicios/propuestas'
 
 export function SolicitarPropuesta() {
   const [contextos, establecerContextos] = useState<ContextosPropuestas | null>(null)
@@ -12,6 +12,8 @@ export function SolicitarPropuesta() {
   const [seleccion, establecerSeleccion] = useState('')
   const [tema, establecerTema] = useState('')
   const [objetivo, establecerObjetivo] = useState('')
+  const [proposito, establecerProposito] = useState<Proposito>('preparacion')
+  const [instrucciones, establecerInstrucciones] = useState('')
   const [error, establecerError] = useState('')
   const [solicitud, establecerSolicitud] = useState<SolicitudPropuesta | null>(null)
   const [ocupado, establecerOcupado] = useState(false)
@@ -43,7 +45,7 @@ export function SolicitarPropuesta() {
     if (seleccionVigente === '' || !contexto) { establecerError('Selecciona un curso autorizado.'); return }
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerIntentado(true)
     try {
-      const resultado = await gestor.current.enviar({ curso_id: contexto.curso_id, seccion_id: contexto.seccion_id, tema, objetivo })
+      const resultado = await gestor.current.enviar({ curso_id: contexto.curso_id, seccion_id: contexto.seccion_id, tema, objetivo, proposito, instrucciones })
       establecerSolicitud(resultado)
     } catch (fallo) {
       establecerError(fallo instanceof Error ? fallo.message : 'No se pudo confirmar la solicitud. Conserva los datos y consulta su estado antes de reintentar.')
@@ -59,7 +61,7 @@ export function SolicitarPropuesta() {
     {error && <p className="error-resumen" role="alert">{error}</p>}
     <form onSubmit={enviar}>
       <fieldset disabled={ocupado}>
-        <legend>Tema y objetivo</legend>
+        <legend>Tema, objetivo y propósito</legend>
         <div className="campo"><label htmlFor="curso-propuesta">Curso y contexto autorizado</label>
           <select id="curso-propuesta" value={seleccionVigente} onChange={(evento) => { establecerSeleccion(evento.target.value); cambio() }} disabled={cargando || !contextos?.contextos.length} required>
             <option value="">Selecciona un curso</option>
@@ -68,6 +70,13 @@ export function SolicitarPropuesta() {
         </div>
         <div className="campo"><label htmlFor="tema-propuesta">Tema</label><textarea id="tema-propuesta" value={tema} onChange={(evento) => { establecerTema(evento.target.value); cambio() }} required maxLength={2000} rows={3} /></div>
         <div className="campo"><label htmlFor="objetivo-propuesta">Objetivo (opcional)</label><textarea id="objetivo-propuesta" value={objetivo} onChange={(evento) => { establecerObjetivo(evento.target.value); cambio() }} maxLength={4000} rows={4} aria-describedby="ayuda-objetivo" /><p id="ayuda-objetivo">Tu texto se conservará tal como lo escribas. Si lo dejas vacío, la IA propondrá un objetivo para que lo revises cuando esté configurada.</p></div>
+        <div className="campo"><label htmlFor="proposito-propuesta">Propósito</label>
+          <select id="proposito-propuesta" value={proposito} onChange={(evento) => { establecerProposito(evento.target.value as Proposito); cambio() }}>
+            <option value="preparacion">Preparación (antes de la clase)</option>
+            <option value="refuerzo">Refuerzo (después de la clase)</option>
+          </select>
+        </div>
+        <div className="campo"><label htmlFor="instrucciones-propuesta">Instrucciones para la IA (opcional)</label><textarea id="instrucciones-propuesta" value={instrucciones} onChange={(evento) => { establecerInstrucciones(evento.target.value); cambio() }} maxLength={4000} rows={3} /></div>
       </fieldset>
       <button type="submit" disabled={ocupado || cargando || !contextos?.contextos.length}>{ocupado ? 'Comprobando solicitud…' : intentado ? 'Consultar estado y reintentar' : contextos?.ia_configurada ? 'Guardar y solicitar propuesta' : 'Guardar solicitud'}</button>
     </form>
