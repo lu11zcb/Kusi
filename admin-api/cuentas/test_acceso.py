@@ -1,6 +1,8 @@
 import json
 from datetime import timedelta
 
+from django.conf import settings
+from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY
 from django.contrib.auth.models import Group
 from django.contrib.sessions.models import Session
 from django.test import Client, TestCase, override_settings
@@ -56,12 +58,12 @@ class AccesoTests(TestCase):
         for datos in ({"correo": "nadie@example.com", "contrasena": "ClaveInicialSegura2026!"}, {"correo": self.usuario.correo, "contrasena": "incorrecta"}, {}):
             respuesta = self.post("acceso:ingresar", datos)
             self.assertEqual(respuesta.status_code, 401)
-            self.assertEqual(respuesta.json()["mensaje"], "No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo.")
+            self.assertEqual(respuesta.json()["mensaje"], "Correo o contraseña incorrectos")
         self.usuario.is_active = False
         self.usuario.save(update_fields=["is_active"])
         respuesta = self.ingreso()
         self.assertEqual(respuesta.status_code, 401)
-        self.assertEqual(respuesta.json()["mensaje"], "No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo.")
+        self.assertEqual(respuesta.json()["mensaje"], "Correo o contraseña incorrectos")
 
     def test_estudiante_se_autentica_para_el_contrato_movil(self):
         estudiante = Usuario.objects.create_user(correo="estudiante@example.com", nombre="Estudiante QA", password="ClaveInicialSegura2026!")
@@ -174,3 +176,38 @@ class AccesoTests(TestCase):
         self.assertEqual(self.cambio().status_code, 200)
         self.assertEqual(validar(sesion_anterior).status_code, 401)
         self.assertEqual(validar(self.client.cookies["sessionid"].value).status_code, 200)
+
+    def sesion_con_identidad_incompatible(self, identificador):
+        cliente = Client()
+        cliente.force_login(self.usuario)
+        almacen = cliente.session
+        almacen[SESSION_KEY] = identificador
+        almacen[BACKEND_SESSION_KEY] = "django.contrib.auth.backends.ModelBackend"
+        almacen[HASH_SESSION_KEY] = self.usuario.get_session_auth_hash()
+        almacen.save()
+        cliente.cookies[settings.SESSION_COOKIE_NAME] = almacen.session_key
+        return cliente, almacen.session_key
+
+    def test_cookie_con_id_heredado_o_malformado_se_revoca_sin_error_500(self):
+        for identificador in ("1", 1, "no-es-uuid", [], {}):
+            with self.subTest(tipo=type(identificador).__name__):
+                cliente, clave = self.sesion_con_identidad_incompatible(identificador)
+                respuesta = cliente.get(reverse("acceso:sesion"))
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertIsNone(respuesta.json()["usuario"])
+                self.assertFalse(Session.objects.filter(session_key=clave).exists())
+                self.assertEqual(cliente.get(reverse("cuentas:contexto_registro")).status_code, 401)
+
+    @override_settings(CLAVE_INTERNA="clave-interna-prueba")
+    def test_introspeccion_revoca_id_incompatible_y_no_expone_detalles(self):
+        interno = Client()
+        for identificador in ("1", 1, "no-es-uuid", [], {}):
+            with self.subTest(tipo=type(identificador).__name__):
+                _, clave = self.sesion_con_identidad_incompatible(identificador)
+                respuesta = interno.post(
+                    reverse("validar_sesion_interna"), json.dumps({"sesion": clave}),
+                    content_type="application/json", HTTP_X_CLAVE_INTERNA="clave-interna-prueba",
+                )
+                self.assertEqual(respuesta.status_code, 401)
+                self.assertEqual(respuesta.json(), {"mensaje": "Sesión inválida."})
+                self.assertFalse(Session.objects.filter(session_key=clave).exists())

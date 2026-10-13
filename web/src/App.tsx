@@ -23,6 +23,19 @@ export default function App() {
     return () => controlador.abort()
   }, [])
   function actualizar(usuario: Cuenta) { establecerCuenta(usuario); establecerRol(null); establecerMensaje('') }
+  async function actualizarAcceso() {
+    try {
+      const sesion = await obtenerSesion()
+      establecerCuenta(sesion.usuario)
+      establecerRol(null)
+      establecerMensaje('')
+    } catch (error) {
+      establecerCuenta(null)
+      establecerRol(null)
+      establecerMensaje('El cambio de tu cuenta ya se guardó. Vuelve a ingresar para comprobar tu acceso actualizado.')
+      throw error
+    }
+  }
   async function cerrarSesion() {
     try { await salir(); establecerCuenta(null); establecerRol(null); establecerMensaje('') }
     catch (error) { establecerMensaje(error instanceof Error ? error.message : 'No se pudo cerrar la sesión.') }
@@ -36,6 +49,6 @@ export default function App() {
   if (!seleccionado) return <main className="acceso"><h1>Elige tu panel</h1><p>Tu cuenta tiene acceso a administración y docencia.</p><div className="acciones"><button onClick={() => establecerRol('administrador')}>Administración</button><button onClick={() => establecerRol('docente')}>Docente</button><button className="secundario" onClick={cerrarSesion}>Cerrar sesión</button></div>{mensaje && <p role="alert">{mensaje}</p>}</main>
   const cambiarRol = roles.length > 1 ? () => establecerRol(null) : undefined
   return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}{seleccionado === 'administrador'
-    ? <PanelAdministracion usuario={cuenta} salir={cerrarSesion} cambiarRol={cambiarRol} />
+    ? <PanelAdministracion usuario={cuenta} salir={cerrarSesion} cambiarRol={cambiarRol} actualizarAcceso={actualizarAcceso} />
     : <PanelDocente usuario={cuenta} salir={cerrarSesion} cambiarRol={cambiarRol} />}</>
 }

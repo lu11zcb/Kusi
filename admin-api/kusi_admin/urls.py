@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 from cuentas.acceso_views import validar_sesion_interna
 from cuentas.secciones_views import crear_seccion
+from cuentas import interno_views, educacion_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +26,11 @@ urlpatterns = [
     path('api/acceso/', include('cuentas.acceso_urls')),
     path('api/interno/sesiones/validar/', validar_sesion_interna, name='validar_sesion_interna'),
     path('api/educacion/secciones/', crear_seccion, name='crear_seccion'),
+    path('api/interno/cuentas/<uuid:usuario_id>/', interno_views.consultar_cuenta_interna, name='consultar_cuenta_interna'),
+    path('api/interno/cursos/<uuid:curso_id>/', interno_views.consultar_curso_interno, name='consultar_curso_interno'),
+    path('api/educacion/vinculos-estudiantes/', educacion_views.listar_vinculos, name='listar_vinculos'),
+    path('api/educacion/vinculos-estudiantes/crear/', educacion_views.vincular_estudiante, name='vincular_estudiante'),
+    path('api/educacion/asignaciones-docentes/', educacion_views.listar_asignaciones, name='listar_asignaciones'),
+    path('api/educacion/asignaciones-docentes/crear/', educacion_views.asignar_docente, name='asignar_docente'),
+    path('api/educacion/mis-asignaciones/', educacion_views.mis_asignaciones_docente, name='mis_asignaciones_docente'),
 ]

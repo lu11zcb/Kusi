@@ -73,7 +73,7 @@ def crear_seccion(request):
         if fallo.code == 400:
             return JsonResponse({"mensaje": "Revisa el grado, nombre y año escolar de la sección."}, status=400)
         if fallo.code in (401, 403):
-            return JsonResponse({"mensaje": "No se pudo autorizar la operación en el servicio educativo."}, status=503)
+            return JsonResponse({"mensaje": "No se pudo autorizar la operación en el servicio educativo."}, status=fallo.code)
         return JsonResponse({"mensaje": "No se pudo confirmar la creación. Comprueba las secciones existentes antes de reintentar."}, status=502)
     except (URLError, TimeoutError, OSError, ValueError, TypeError, KeyError, AttributeError):
         return JsonResponse({"mensaje": "No se pudo confirmar la creación. Comprueba las secciones existentes antes de reintentar."}, status=502)

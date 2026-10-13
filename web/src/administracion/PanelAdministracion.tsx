@@ -4,8 +4,10 @@ import { RegistrarUsuario } from './RegistrarUsuario'
 import { GestionarUsuarios } from './GestionarUsuarios'
 import { CatalogoCursos } from './CatalogoCursos'
 import { CrearSeccion } from './CrearSeccion'
+import { GestionarVinculos } from './GestionarVinculos'
+import { AsignarDocentes } from './AsignarDocentes'
 
-export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void }) {
+export function PanelAdministracion({ usuario, salir, cambiarRol, actualizarAcceso }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void; actualizarAcceso: () => Promise<void> }) {
   const [seccion, establecerSeccion] = useState('registro')
   const [registroBloqueado, establecerRegistroBloqueado] = useState(false)
   return (
@@ -24,15 +26,16 @@ export function PanelAdministracion({ usuario, salir, cambiarRol }: { usuario: U
           {([
             ['registro', 'Registrar usuario'], ['usuarios', 'Usuarios y roles'],
             ['cursos', 'Catálogo de cursos'], ['secciones', 'Crear sección'],
+            ['vinculos', 'Vincular estudiantes'], ['asignaciones', 'Asignar docentes'],
           ] as const).map(([id, etiqueta]) => <button key={id} type="button" className="enlace-navegacion" disabled={registroBloqueado}
             aria-current={seccion === id ? 'page' : undefined} onClick={() => establecerSeccion(id)}>{etiqueta}</button>)}
         </nav>
         <main id="contenido" tabIndex={-1}>
-          {seccion === 'registro' ? <>
+          {seccion === 'vinculos' ? <GestionarVinculos /> : seccion === 'asignaciones' ? <AsignarDocentes /> : seccion === 'registro' ? <>
             <h1>Registrar usuario</h1>
             <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
             <RegistrarUsuario alCambiarBloqueo={establecerRegistroBloqueado} />
-          </> : seccion === 'usuarios' ? <GestionarUsuarios /> : seccion === 'cursos' ? <CatalogoCursos /> : <CrearSeccion />}
+          </> : seccion === 'usuarios' ? <GestionarUsuarios usuarioActualId={usuario.id} actualizarAcceso={actualizarAcceso} /> : seccion === 'cursos' ? <CatalogoCursos /> : <CrearSeccion />}
         </main>
       </div>
     </>

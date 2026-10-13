@@ -1,0 +1,27 @@
+server:
+  port: ${PORT:8080}
+spring:
+  config:
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: ${EDU_DB_URL:jdbc:postgresql://${PG_HOST:127.0.0.1}:${PG_PORT:5432}/${PG_DATABASE:kusi}}
+    username: ${EDU_DB_USER:${PG_USER:postgres}}
+    password: ${EDU_DB_PASSWORD:${PG_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    default-schema: edu
+    schemas: edu
+    create-schemas: true
+    baseline-on-migrate: false
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: edu
+        format_sql: true
+kusi:
+  django-url: ${DJANGO_INTERNAL_URL:http://127.0.0.1:8000}
+  internal-key: ${CLAVE_INTERNA:}

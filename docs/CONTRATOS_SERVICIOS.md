@@ -1,6 +1,6 @@
 # Contratos Django, Spring y clientes
 
-Implementación del 11 de octubre de 2026. Los contratos educativos no acreditan una implementación Spring: Luis conserva la creación de `edu-api` y `movil`.
+Actualizado el 12 de octubre de 2026. Django/web y el servicio Spring de secciones, vínculos y asignaciones están implementados en este repositorio. Luis delegó también la creación de las estructuras; su reserva anterior queda sustituida. El acceso móvil y el backend de propuestas IA aún no están publicados aquí. La revisión aislada no acredita integración completa entre servicios con PostgreSQL; véase [ESTADO_SPRINT1.md](ESTADO_SPRINT1.md).
 
 ## Identidad y sesión · HU11
 
@@ -19,7 +19,7 @@ Todos los POST de navegador exigen CSRF. React obtiene un token actual del GET d
 
 ## Validación interna de sesión
 
-Spring recibe la cookie de sesión del cliente y consulta exclusivamente desde su servidor:
+Para las rutas educativas actuales, Django recibe la cookie del navegador y reenvía su valor a Spring en `X-Sesion-Kusi`, junto con la clave interna. Spring consulta exclusivamente desde su servidor:
 
 `POST /api/interno/sesiones/validar/`
 
@@ -34,15 +34,17 @@ Solo este endpoint de servicio se excluye de CSRF: se autentica mediante clave i
 
 Django calcula el TTL con la fecha de expiración de la fila persistida en PostgreSQL, redondeando hacia abajo y limitándolo a 60 segundos. Una fila vencida o eliminada produce 401; no se utiliza la duración predeterminada de una sesión para ampliar su vigencia. Las pruebas también comprueban los roles actuales y la invalidación de otras sesiones tras cambiar la contraseña.
 
-Spring debe respetar el TTL devuelto, nunca superar 60 segundos ni la expiración de la sesión y volver a validar al vencer. Después debe comprobar el rol para cada operación y la pertenencia del usuario a cada recurso: conocer un UUID no autoriza a consultar o modificar cursos, grupos o actividades ajenos. No escribir en tablas del otro esquema. La caché puede retrasar hasta ese límite la observación de una revocación.
+Spring valida la sesión en cada petición; actualmente no mantiene una caché de autorización. Debe comprobar el rol para cada operación y la pertenencia del usuario a cada recurso: conocer un UUID no autoriza a consultar o modificar recursos ajenos. No escribe en tablas del otro esquema. Una caché futura deberá respetar el TTL devuelto, nunca superar 60 segundos ni la expiración de la sesión y volver a validar al vencer.
 
 ## Configuración local
 
 `DJANGO_SECRET_KEY` debe ser un secreto estable configurado en el entorno del servicio. Sin él se genera una clave efímera para desarrollo: reiniciar el proceso invalida las sesiones. `CLAVE_INTERNA` se configura en los servicios, nunca con prefijo `VITE_` ni en archivos versionados. No se imprime ni se añade un valor real al repositorio.
 
-## Dependencias pendientes
+Copiar `.env.example` de la raíz a `.env` y completar los valores locales. Django y Spring usan `PG_DATABASE`, `PG_USER`, `PG_PASSWORD`, `PG_HOST` y `PG_PORT`; sus esquemas son `admin` y `edu`, respectivamente. Spring usa `DJANGO_INTERNAL_URL` para consultar Django, y Django usa `EDU_API_URL` para consultar Spring. Flyway crea/versiona exclusivamente `edu`; no se ejecuta el script manual de conversión histórica de usuarios durante el arranque. Si `edu` ya contiene tablas sin historial Flyway, se debe revisar una migración para esos datos antes de iniciar; no se borra ni adopta automáticamente.
 
-El lado Django y las pruebas del contrato están implementados. La validación desde Spring y el ingreso desde Kotlin se comprobarán después de que Luis cree y confirme sus estructuras. No se presenta una simulación de estas integraciones como un recorrido real.
+## Estado de Spring y HU07/HU08
+
+Se añadió el módulo `edu-api` con Spring Boot en este paquete. Implementa persistencia educativa para secciones, vínculos estudiante-sección y asignaciones docente-curso-sección-año, validación de sesión con Django y consultas internas de cuentas/cursos. Los adaptadores Django reenvían solicitudes con la clave interna y la sesión; React incorpora formularios administrativos y el panel docente consulta únicamente sus asignaciones. La integración debe ejecutarse y probarse de extremo a extremo en el entorno local antes de considerarse aceptada.
 
 ## Cuentas y catálogo · HU02/HU03/HU04
 
@@ -57,8 +59,10 @@ Todas estas rutas Django exigen administrador activo con contraseña definitiva.
 | `/api/cuentas/cursos/` | GET | `{cursos: [{id: UUID, nombre}]}`. Catálogo propiedad de Django. |
 | `/api/cuentas/cursos/{uuid}/` | PATCH `{nombre}` | Renombra conservando UUID; rechaza nombre repetido. |
 
-## Secciones e IA pendientes
+## Secciones y propuestas IA
 
-El adaptador administrativo de secciones no persiste datos: [HU06_REVISION.md](HU06_REVISION.md) define rutas, permisos, duplicados y configuración pendiente. El cliente docente consume las rutas futuras Spring de contexto, CSRF y solicitudes definidas en [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md). La propiedad y asignación vigente se comprueban en Spring para cada lectura/escritura, no por la opción seleccionada en React. Se autorizan contextos/asignaciones ficticios exclusivamente para pruebas de integración, sin implementar HU08 ni otorgar permisos generales.
+El adaptador administrativo de secciones delega la persistencia en Spring. El servicio implementa secciones, vínculos y asignaciones con restricciones únicas y autorización en servidor. Se comprobaron migraciones/HTTP/persistencia en H2 aislada y el transporte Django mediante simulaciones; la ejecución conjunta con PostgreSQL sigue pendiente. [HU06_REVISION.md](HU06_REVISION.md) conserva el contrato y evidencia anterior.
 
-**Prueba real de IA aplazada por Luis hasta configurar su API key**. Las simulaciones están solo en pruebas. El proveedor/modelo no está elegido y su ausencia no bloquea implementación ni simulación. Las estructuras Spring/Kotlin siguen reservadas a Luis y aún no se han generado: esta es la dependencia pendiente de sus implementaciones. El aviso para Jesús está preparado, sin enviar, en [AVISO_JESUS_DOMINGO.md](AVISO_JESUS_DOMINGO.md).
+El cliente de propuestas espera las rutas Spring de contexto, CSRF y solicitudes definidas en [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md); ese backend todavía no está publicado. HU08 ya permite consultar las asignaciones propias, pero no sustituye el contexto completo ni la persistencia de propuestas IA. No otorgar permisos generales ni presentar datos simulados como producto real.
+
+**Prueba real de IA aplazada por Luis hasta configurar su API key**. Las simulaciones están solo en pruebas. El proveedor/modelo no está elegido y su ausencia no bloquea implementación ni simulación. Spring ya existe; móvil y backend IA siguen pendientes en GitHub. El [aviso del domingo para Jesús](AVISO_JESUS_DOMINGO.md) es histórico: no refleja sus commits HU05/HU15/HU07/HU08 incorporados después. No se enviaron mensajes automáticamente.

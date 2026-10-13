@@ -23,7 +23,7 @@ export function CrearSeccion() {
   return <>
     <h1>Crear sección</h1><p>Organiza un grupo de primero de primaria para un año escolar.</p>
     {error && <p className="error-resumen" role="alert">{error}</p>}
-    {resultado && <p role="status">Sección {resultado.nombre} creada para {resultado.anio_escolar}.</p>}
+    {resultado && <p role="status">Sección {resultado.nombre} creada para {resultado.anio_escolar}. Identificador para vínculos y asignaciones: <code>{resultado.id}</code></p>}
     <form onSubmit={guardar}><fieldset disabled={ocupado}>
       <div className="campo"><label htmlFor="grado-seccion">Grado</label><select id="grado-seccion" value="1" disabled><option value="1">Primero de primaria</option></select></div>
       <div className="campo"><label htmlFor="nombre-seccion">Nombre de la sección</label><input id="nombre-seccion" value={nombre} onChange={(evento) => establecerNombre(evento.target.value)} required maxLength={80} /></div>

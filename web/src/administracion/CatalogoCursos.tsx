@@ -37,7 +37,7 @@ export function CatalogoCursos() {
     {mensaje && <p role="status">{mensaje}</p>}
     {!cursos && !error && <p role="status">Cargando cursos…</p>}
     {cursos?.length === 0 && <p>No hay cursos disponibles. Comprueba las migraciones del catálogo.</p>}
-    <ul className="lista-gestion">{cursos?.map((curso) => <li key={curso.id}><strong>{curso.nombre}</strong><button type="button" className="secundario" disabled={ocupado} onClick={() => {
+    <ul className="lista-gestion">{cursos?.map((curso) => <li key={curso.id}><div><strong>{curso.nombre}</strong><span>Identificador: <code>{curso.id}</code></span></div><button type="button" className="secundario" disabled={ocupado} onClick={() => {
       establecerElegido(curso); establecerNombre(curso.nombre); establecerError(''); establecerMensaje('')
     }}>Editar {curso.nombre}</button></li>)}</ul>
     {elegido && <form onSubmit={guardar}><h2>Editar {elegido.nombre}</h2><fieldset disabled={ocupado}>

@@ -3,12 +3,12 @@ import type { FormEvent } from 'react'
 import { ErrorApi } from '../servicios/django'
 import type { ErroresRegistro, Rol } from '../servicios/django'
 import { CampoFormulario } from '../componentes/CampoFormulario'
-import { asignarRoles, cambiarEstadoUsuario, consultarUsuario, editarUsuario, listarUsuarios } from '../servicios/usuarios'
-import type { DetalleUsuario } from '../servicios/usuarios'
+import { asignarRoles, cambiarEstadoUsuario, consultarUsuario, editarUsuario, listarUsuarios, refrescarUsuarioGuardado } from '../servicios/usuarios'
+import type { DetalleUsuario, UsuarioAdministrado } from '../servicios/usuarios'
 
 const etiquetas: Record<Rol, string> = { administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante' }
 
-export function GestionarUsuarios() {
+export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuarioActualId: string; actualizarAcceso: () => Promise<void> }) {
   const [lista, establecerLista] = useState<Awaited<ReturnType<typeof listarUsuarios>> | null>(null)
   const [buscar, establecerBuscar] = useState('')
   const [filtro, establecerFiltro] = useState('')
@@ -50,13 +50,20 @@ export function GestionarUsuarios() {
     if (!detalle || bloqueo.current) return
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje('')
     try {
-      await asignarRoles(detalle.usuario.id, roles)
-      establecerDetalle(await consultarUsuario(detalle.usuario.id))
-      establecerLista(null)
-      establecerRevision((valor) => valor + 1)
+      const resultado = await asignarRoles(detalle.usuario.id, roles)
       establecerMensaje('Roles guardados. Se aplican al próximo acceso a una función protegida.')
+      await actualizarGuardado(resultado.usuario)
     } catch (fallo) { establecerError((fallo as Error).message) }
     finally { bloqueo.current = false; establecerOcupado(false) }
+  }
+
+  async function actualizarGuardado(usuario: UsuarioAdministrado) {
+    establecerDetalle((anterior) => anterior ? { ...anterior, usuario } : null)
+    establecerLista((anterior) => anterior ? { ...anterior, usuarios: anterior.usuarios.map((item) => item.id === usuario.id ? usuario : item) } : null)
+    const resultado = await refrescarUsuarioGuardado(usuario, usuarioActualId, actualizarAcceso)
+    if (resultado.detalle) establecerDetalle(resultado.detalle)
+    if (resultado.aviso) establecerError(resultado.aviso)
+    if (usuario.id !== usuarioActualId || (usuario.activo && usuario.roles.includes('administrador'))) establecerRevision((valor) => valor + 1)
   }
 
   async function cambiarEstado() {
@@ -69,10 +76,8 @@ export function GestionarUsuarios() {
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje('')
     try {
       const resultado = await cambiarEstadoUsuario(detalle.usuario.id, nuevoEstado)
-      const actualizado = await consultarUsuario(detalle.usuario.id)
-      establecerDetalle(actualizado)
-      establecerLista(null); establecerRevision((valor) => valor + 1)
       establecerMensaje(resultado.mensaje + ' Se conservan los datos y el historial.')
+      await actualizarGuardado(resultado.usuario)
     } catch (fallo) {
       establecerError((fallo as Error).message)
     } finally { bloqueo.current = false; establecerOcupado(false) }
@@ -83,11 +88,10 @@ export function GestionarUsuarios() {
     if (!detalle || bloqueo.current) return
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje(''); establecerErroresCampos({})
     try {
-      await editarUsuario(detalle.usuario.id, datos)
-      const actualizado = await consultarUsuario(detalle.usuario.id)
-      establecerDetalle(actualizado); establecerDatos({ nombre: actualizado.usuario.nombre, correo: actualizado.usuario.correo })
-      establecerLista(null); establecerRevision((valor) => valor + 1)
+      const resultado = await editarUsuario(detalle.usuario.id, datos)
+      establecerDatos({ nombre: resultado.usuario.nombre, correo: resultado.usuario.correo })
       establecerMensaje('Datos actualizados. El identificador y el historial se conservan.')
+      await actualizarGuardado(resultado.usuario)
     } catch (fallo) {
       establecerError((fallo as Error).message)
       if (fallo instanceof ErrorApi) establecerErroresCampos(fallo.errores)
@@ -106,7 +110,7 @@ export function GestionarUsuarios() {
     {lista && <section aria-label="Resultados de usuarios">
       <p>{lista.total} usuarios encontrados.</p>
       <ul className="lista-gestion">{lista.usuarios.map((usuario) => <li key={usuario.id}>
-        <div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span><span>{usuario.roles.map((rol) => etiquetas[rol]).join(', ') || 'Sin rol escolar'}</span><span>Estado: {usuario.activo ? 'Activa' : 'Desactivada'}</span></div>
+        <div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span><span>{usuario.roles.map((rol) => etiquetas[rol]).join(', ') || 'Sin rol escolar'}</span><span>Estado: {usuario.activo ? 'Activa' : 'Desactivada'}</span><span>Identificador: <code>{usuario.id}</code></span></div>
         <button type="button" className="secundario" disabled={ocupado} onClick={() => elegir(usuario.id)}>Gestionar {usuario.nombre}</button>
       </li>)}</ul>
       <div className="acciones"><button type="button" className="secundario" disabled={pagina <= 1 || ocupado} onClick={() => { establecerLista(null); establecerPagina(pagina - 1) }}>Anterior</button>

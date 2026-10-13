@@ -21,3 +21,14 @@ export const editarUsuario = (id: string, datos: { nombre: string; correo: strin
 export const cambiarEstadoUsuario = (id: string, activo: boolean) => enviar<{ mensaje: string; usuario: UsuarioAdministrado }>(
   '/api/cuentas/usuarios/' + encodeURIComponent(id) + '/estado/', { activo },
 )
+
+// Una escritura confirmada sigue guardada aunque falle la consulta posterior.
+export async function refrescarUsuarioGuardado(usuario: UsuarioAdministrado, usuarioActualId: string, actualizarAcceso: () => Promise<void>): Promise<{ detalle: DetalleUsuario | null; aviso: string }> {
+  if (usuario.id === usuarioActualId) {
+    try { await actualizarAcceso() }
+    catch { return { detalle: null, aviso: 'El cambio ya se guardó, pero no se pudo actualizar tu acceso. Recarga la página antes de continuar.' } }
+    if (!usuario.activo || !usuario.roles.includes('administrador')) return { detalle: null, aviso: '' }
+  }
+  try { return { detalle: await consultarUsuario(usuario.id), aviso: '' } }
+  catch { return { detalle: null, aviso: 'El cambio ya se guardó, pero no se pudo actualizar el historial. Vuelve a consultar la cuenta.' } }
+}

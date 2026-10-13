@@ -1,9 +1,12 @@
+from django.contrib.auth import SESSION_KEY
 from django.contrib.auth.models import Group
+from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
@@ -15,6 +18,19 @@ from .permisos import exigir_administrador
 
 def datos_usuario_administracion(usuario):
     return {**datos_usuario(usuario), "activo": usuario.is_active}
+
+
+def revocar_sesiones_usuario(usuario):
+    # Las sesiones son opacas y no tienen una FK al usuario. Se eliminan solo
+    # las de esta cuenta para que reactivarla nunca rehabilite cookies antiguas.
+    identificador = str(usuario.pk)
+    claves = []
+    for sesion in Session.objects.filter(expire_date__gt=timezone.now()).iterator():
+        datos = sesion.get_decoded()
+        if isinstance(datos, dict) and str(datos.get(SESSION_KEY)) == identificador:
+            claves.append(sesion.session_key)
+    if claves:
+        Session.objects.filter(session_key__in=claves).delete()
 
 
 @never_cache
@@ -141,6 +157,8 @@ def cambiar_estado_usuario(request, usuario_id):
                 usuario=usuario, administrador=request.user, tipo="estado",
                 anterior=anterior, actual=actual,
             )
+        if not usuario.is_active:
+            revocar_sesiones_usuario(usuario)
     return JsonResponse({
         "mensaje": "Cuenta activada." if usuario.is_active else "Cuenta desactivada.",
         "usuario": datos_usuario_administracion(usuario),

@@ -66,12 +66,25 @@ class SeccionesContratoTests(TestCase):
 
     @patch("cuentas.secciones_views.build_opener")
     def test_duplicado_y_error_remoto_no_filtran_cuerpo(self, construir):
-        for codigo, esperado in ((409, 409), (400, 400), (401, 503), (403, 503), (500, 502), (302, 502)):
+        for codigo, esperado in ((409, 409), (400, 400), (500, 502), (302, 502)):
             with self.subTest(codigo=codigo):
                 construir.return_value.open.side_effect = HTTPError("http://127.0.0.1:8080", codigo, "QA", {}, BytesIO(b"secreto remoto"))
                 resultado = self.crear()
                 self.assertEqual(resultado.status_code, esperado)
                 self.assertNotIn("secreto remoto", resultado.content.decode())
+
+    @patch("cuentas.secciones_views.build_opener")
+    def test_error_de_autenticacion_spring_conserva_401_y_403_sin_exponer_cuerpo(self, construir):
+        for codigo in (401, 403):
+            with self.subTest(codigo=codigo):
+                construir.return_value.open.side_effect = HTTPError(
+                    "http://127.0.0.1:8080", codigo, "QA", {},
+                    BytesIO(b'{"mensaje": "detalle interno reservado"}'),
+                )
+                resultado = self.crear()
+                self.assertEqual(resultado.status_code, codigo)
+                self.assertEqual(resultado.json(), {"mensaje": "No se pudo autorizar la operación en el servicio educativo."})
+                self.assertIn("no-store", resultado.headers["Cache-Control"])
 
     @patch("cuentas.secciones_views.build_opener")
     def test_timeout_y_respuestas_invalidas_no_confirman_creacion(self, construir):

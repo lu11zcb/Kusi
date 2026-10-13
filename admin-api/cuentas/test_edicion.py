@@ -1,9 +1,11 @@
 import json
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth.models import Group
+from django.contrib.sessions.models import Session
 from django.db import IntegrityError
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from .models import CambioUsuario, Usuario
@@ -118,3 +120,61 @@ class EdicionTests(TestCase):
         token = self.client.get(reverse("acceso:sesion")).json()["csrf_token"]
         respuesta = self.client.post(url, json.dumps({"activo": False}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(respuesta.status_code, 403)
+
+    @override_settings(CLAVE_INTERNA="clave-interna-prueba")
+    def test_reactivar_no_rehabilita_ninguna_cookie_anterior(self):
+        anteriores = [Client(), Client()]
+        for cliente in anteriores:
+            cliente.force_login(self.persona)
+        claves_anteriores = [cliente.cookies[settings.SESSION_COOKIE_NAME].value for cliente in anteriores]
+        clave_admin = self.client.session.session_key
+        hash_original = self.persona.password
+        CambioUsuario.objects.create(
+            usuario=self.persona, administrador=self.admin, tipo="roles",
+            anterior={"roles": []}, actual={"roles": ["docente"]},
+        )
+        url = reverse("cuentas:cambiar_estado_usuario", args=[self.persona.pk])
+        for activo in (False, True):
+            respuesta = self.client.post(url, json.dumps({"activo": activo}), content_type="application/json", HTTP_X_CSRFTOKEN=self.token)
+            self.assertEqual(respuesta.status_code, 200)
+        # No se usa la cookie antigua durante el periodo inactivo: la propia
+        # desactivación debe revocarla, incluso si se reactiva inmediatamente.
+        self.assertFalse(Session.objects.filter(session_key__in=claves_anteriores).exists())
+        for cliente, clave in zip(anteriores, claves_anteriores):
+            self.assertIsNone(cliente.get(reverse("acceso:sesion")).json()["usuario"])
+            self.assertEqual(cliente.get(reverse("mis_asignaciones_docente")).status_code, 401)
+            interna = Client().post(
+                reverse("validar_sesion_interna"), json.dumps({"sesion": clave}),
+                content_type="application/json", HTTP_X_CLAVE_INTERNA="clave-interna-prueba",
+            )
+            self.assertEqual(interna.status_code, 401)
+        self.assertTrue(Session.objects.filter(session_key=clave_admin).exists())
+        self.assertEqual(self.client.get(reverse("acceso:sesion")).json()["usuario"]["id"], str(self.admin.pk))
+        self.persona.refresh_from_db()
+        self.assertTrue(self.persona.is_active)
+        self.assertEqual(self.persona.password, hash_original)
+        self.assertEqual(self.persona.nombre, "Nombre original")
+        self.assertEqual(self.persona.correo, "editar@example.com")
+        self.assertEqual(list(self.persona.groups.values_list("name", flat=True)), ["docente"])
+        self.assertEqual(CambioUsuario.objects.filter(usuario=self.persona).count(), 3)
+        nuevo = Client(enforce_csrf_checks=True)
+        token = nuevo.get(reverse("acceso:sesion")).json()["csrf_token"]
+        ingreso = nuevo.post(
+            reverse("acceso:ingresar"),
+            json.dumps({"correo": self.persona.correo, "contrasena": "ClavePersona2026!"}),
+            content_type="application/json", HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(ingreso.status_code, 200)
+        self.assertNotIn(nuevo.cookies[settings.SESSION_COOKIE_NAME].value, claves_anteriores)
+
+    def test_administrador_puede_desactivarse_y_pierde_su_sesion(self):
+        clave = self.client.session.session_key
+        respuesta = self.client.post(
+            reverse("cuentas:cambiar_estado_usuario", args=[self.admin.pk]),
+            json.dumps({"activo": False}), content_type="application/json", HTTP_X_CSRFTOKEN=self.token,
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertFalse(Session.objects.filter(session_key=clave).exists())
+        self.assertIsNone(self.client.get(reverse("acceso:sesion")).json()["usuario"])
+        cambio = CambioUsuario.objects.get(usuario=self.admin, tipo="estado")
+        self.assertEqual(cambio.administrador_id, self.admin.pk)

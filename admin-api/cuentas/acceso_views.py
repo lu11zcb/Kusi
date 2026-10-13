@@ -18,6 +18,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.debug import sensitive_variables
 
 from .models import Usuario
+from .middleware import validar_identidad_sesion
 
 
 ROLES = ("administrador", "docente", "estudiante")
@@ -66,7 +67,7 @@ def ingresar(request):
     if isinstance(correo, str) and isinstance(contrasena, str):
         usuario = authenticate(request, correo=correo.strip().lower(), password=contrasena)
     if usuario is None or not usuario.is_active:
-        return JsonResponse({"mensaje": "No se pudo iniciar sesión. Verifica el correo y la contraseña e inténtalo de nuevo."}, status=401)
+        return JsonResponse({"mensaje": "Correo o contraseña incorrectos"}, status=401)
     login(request, usuario)
     return JsonResponse({"usuario": datos_usuario(usuario), "csrf_token": get_token(request)})
 
@@ -129,7 +130,14 @@ def validar_sesion_interna(request):
     if not isinstance(sesion_opaca, str) or not sesion_opaca or len(sesion_opaca) > 64:
         return JsonResponse({"mensaje": "Sesión inválida."}, status=401)
     almacen = SessionStore(session_key=sesion_opaca)
-    usuario = get_user(SimpleNamespace(session=almacen))
+    try:
+        validar_identidad_sesion(almacen)
+        usuario = get_user(SimpleNamespace(session=almacen))
+    except (ValidationError, ValueError, TypeError, AttributeError):
+        # Una sesión anterior a la migración de identificadores, o con datos
+        # incompatibles, no debe causar un 500 ni recuperar acceso.
+        almacen.flush()
+        return JsonResponse({"mensaje": "Sesión inválida."}, status=401)
     if not usuario.is_authenticated or not usuario.is_active:
         return JsonResponse({"mensaje": "Sesión inválida."}, status=401)
     if usuario.debe_cambiar_contrasena:

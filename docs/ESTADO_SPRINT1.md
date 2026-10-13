@@ -1,4 +1,44 @@
-# Entrega del bloque del 11 de octubre de 2026
+# Estado del Sprint 1 — revisión del 12 de octubre de 2026
+
+## Resultado actual de la revisión de GitHub
+
+Luis pidió revisar `https://github.com/lu11zcb/kusi/`, corregir fallos y conservar una sola rama. La revisión se hizo en un clon aislado: el checkout `D:/Escritorio/Kusi` tenía cambios sin publicar, incluidos `edu-api` y `movil`, y no se modificó. No debe actualizarse ese checkout descartando sus cambios; primero hay que conciliarlos con `main`.
+
+Se incorporaron los seis commits pendientes de `feature/hu05-hu15-hu07-hu08`, conservando la historia y autoría de Jesús. HU05/HU15 ya tenían commits en `main`; la rama añadía Spring y las interfaces de HU07/HU08. El cierre de esta revisión publica la integración en `main` y retira la referencia de la rama solo tras verificar que su punta está incluida. Los resultados del push y la comprobación de las ramas se entregan después de ejecutarlos; este archivo no los da por realizados anticipadamente.
+
+Correcciones de esta revisión:
+
+- Django conserva una sola configuración activa y carga secretos locales desde el entorno o `.env`; se retiraron credenciales fijas del texto actual. Esto no elimina valores de commits históricos. `.env.example` contiene únicamente nombres y valores de ejemplo sin secretos.
+- Las cuentas desactivadas pierden sus sesiones anteriores; reactivarlas requiere un nuevo ingreso. Las sesiones históricas con identificadores incompatibles se invalidan sin producir errores 500.
+- La interfaz conserva la confirmación de una escritura aunque falle la consulta posterior. Desactivarse o quitarse el rol administrador actualiza el acceso sin mostrar falsamente que el guardado falló. Se muestran los UUID necesarios para los formularios provisionales de vínculos/asignaciones.
+- Los adaptadores validan configuración y respuestas, conservan 401/403 y no confunden caducidad de sesión con indisponibilidad. Spring limita los tiempos de conexión/lectura y devuelve 503 ante fallos del servicio de cuentas.
+- Spring lee relaciones JPA dentro de transacciones y responde 409 cuando una restricción única detecta duplicados concurrentes, sin continuar una transacción fallida.
+- Spring usa PostgreSQL compartido, esquema `edu`, migraciones Flyway y validación de Hibernate. H2 queda para pruebas. Un esquema existente sin historial Flyway requiere revisión previa: no se borra ni se adopta automáticamente.
+- El SQL histórico BIGINT→UUID queda manual, con precondiciones y bloqueo ante relaciones que no puede preservar. No se ejecutó sobre la base del proyecto.
+
+### Alcance comprobado y pendientes
+
+| Bloque | Estado en GitHub tras esta integración |
+|---|---|
+| HU01/HU02/HU03/HU04 | Implementación Django/web y regresiones comprobadas. |
+| HU05/HU15 | Desactivación, conservación de datos e historial; regresiones comprobadas. |
+| HU06/HU07/HU08 | Código Django/web/Spring y persistencia aislada comprobados. Falta recorrido conjunto con PostgreSQL real para acreditar integración completa. |
+| HU11 | Django/web y consumidor interno Spring comprobados por componentes; acceso Kotlin e integración completa pendientes. |
+| HU18/HU16 | Cliente/contratos y pruebas simuladas conservados. Backend persistente de propuestas, adaptador IA y generación real pendientes en este repositorio. |
+
+El diseño final sigue a cargo de Luis; las pantallas son provisionales. No se probó una IA real ni se eligió proveedor/modelo. La clave y esa prueba siguen aplazadas por Luis. Esta revisión técnica no sustituye revisión del compañero, aceptación académica ni pruebas con estudiantes.
+
+### Verificación del 12 de octubre
+
+- Django: **75/75 pruebas aprobadas** sobre PostgreSQL temporal independiente, creada y eliminada por el runner; sin aplicar migraciones ni modificar datos de la base del proyecto. Incluye invalidación de sesiones, identificadores históricos y conservación de 401/403 al consultar Spring.
+- Django `check`: sin problemas. `makemigrations --check --dry-run`: sin cambios, con comprobación PostgreSQL autorizada.
+- Spring: **30/30 pruebas aprobadas**, incluidas 14 pruebas HTTP con persistencia H2/Flyway y Django simulado, 15 casos del cliente interno con servidor HTTP simulado y 1 prueba de normalización. Las pruebas fuerzan la base en memoria para no utilizar credenciales locales. No acreditan PostgreSQL educativo ni el recorrido entre procesos reales.
+- React: **35/35 pruebas aprobadas**, compilación y lint correctos. Las pruebas de propuestas IA siguen identificadas como simuladas. No se ejecutó un nuevo recorrido de navegador en esta revisión.
+- Git: integración sin reescribir historia ni force push. Los commits nuevos de esta revisión usan `lu11zcb <luiscb.once@gmail.com>`; los commits previos de Jesús conservan su autoría. Caches, bases temporales, dependencias y secretos excluidos.
+
+## Informe histórico del 11 de octubre de 2026
+
+Lo que sigue conserva la evidencia de aquella entrega. Sus referencias a estructuras vacías, reserva de creación y tareas de Jesús pendientes fueron sustituidas por las decisiones y avances descritos arriba; no describen el estado actual.
 
 Repositorio de implementación: `D:\Escritorio\Kusi`. Rama de trabajo final: `main`. Remoto existente: `https://github.com/lu11zcb/Kusi.git`. Este informe separa implementación comprobada, dependencias y revisión humana; no declara cerradas las ocho historias ni descuenta puntos académicos.
 
