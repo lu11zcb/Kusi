@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Ingresar } from './acceso/Ingresar'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { CambiarContrasena } from './acceso/CambiarContrasena'
 import { PanelAdministracion } from './administracion/PanelAdministracion'
 import { PanelDocente } from './docente/PanelDocente'
+import { Icono } from './componentes/Icono'
+import { PantallaCuarto } from './componentes/PantallaCuarto'
 import { obtenerSesion, salir } from './servicios/acceso'
 import type { Cuenta } from './servicios/acceso'
 import './App.css'
+
+// El login con Rive se descarga solo cuando hace falta; los paneles no lo cargan.
+const LoginCuy = lazy(() => import('./acceso/LoginCuy').then((modulo) => ({ default: modulo.LoginCuy })))
 
 type RolAdulto = 'administrador' | 'docente'
 export default function App() {
@@ -40,13 +44,18 @@ export default function App() {
     try { await salir(); establecerCuenta(null); establecerRol(null); establecerMensaje('') }
     catch (error) { establecerMensaje(error instanceof Error ? error.message : 'No se pudo cerrar la sesión.') }
   }
-  if (cargando) return <main className="acceso"><p role="status">Comprobando acceso…</p></main>
-  if (!cuenta) return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}<Ingresar alIngresar={actualizar} /></>
+  if (cargando) return <PantallaCuarto><h1>Kusi</h1><p role="status">Comprobando acceso…</p></PantallaCuarto>
+  if (!cuenta) return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}<Suspense fallback={<PantallaCuarto><h1>Kusi</h1><p role="status">Preparando el cuarto de Kusi…</p></PantallaCuarto>}><LoginCuy alIngresar={actualizar} /></Suspense></>
   const roles = cuenta.roles.filter((valor): valor is RolAdulto => valor === 'administrador' || valor === 'docente')
-  if (!roles.length) return <main className="acceso"><h1>Acceso web no disponible</h1><p>Los estudiantes ingresan desde la aplicación móvil. Si necesitas otro acceso, consulta con el administrador.</p><button type="button" onClick={cerrarSesion}>Cerrar sesión</button>{mensaje && <p role="alert">{mensaje}</p>}</main>
+  if (!roles.length) return <PantallaCuarto><h1>¡Hola, {cuenta.nombre}!</h1><p>Los estudiantes juegan desde la aplicación móvil de Kusi. Si necesitas otro acceso, consulta con el administrador.</p><div className="acciones"><button type="button" onClick={cerrarSesion}>Cerrar sesión</button></div>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}</PantallaCuarto>
   if (cuenta.debe_cambiar_contrasena) return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}<CambiarContrasena alCambiar={actualizar} salir={cerrarSesion} /></>
   const seleccionado = rol && roles.includes(rol) ? rol : roles.length === 1 ? roles[0] : null
-  if (!seleccionado) return <main className="acceso"><h1>Elige tu panel</h1><p>Tu cuenta tiene acceso a administración y docencia.</p><div className="acciones"><button onClick={() => establecerRol('administrador')}>Administración</button><button onClick={() => establecerRol('docente')}>Docente</button><button className="secundario" onClick={cerrarSesion}>Cerrar sesión</button></div>{mensaje && <p role="alert">{mensaje}</p>}</main>
+  if (!seleccionado) return <PantallaCuarto><h1>¿A dónde vamos hoy?</h1><p>Tu cuenta tiene acceso a administración y docencia.</p>
+    <div className="elegir-panel">
+      <button type="button" onClick={() => establecerRol('administrador')}><Icono nombre="aula" />Administración</button>
+      <button type="button" onClick={() => establecerRol('docente')}><Icono nombre="varita" />Docente</button>
+    </div>
+    <div className="acciones"><button type="button" className="secundario" onClick={cerrarSesion}>Cerrar sesión</button></div>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}</PantallaCuarto>
   const cambiarRol = roles.length > 1 ? () => establecerRol(null) : undefined
   return <>{mensaje && <p role="alert" className="error-resumen">{mensaje}</p>}{seleccionado === 'administrador'
     ? <PanelAdministracion usuario={cuenta} salir={cerrarSesion} cambiarRol={cambiarRol} actualizarAcceso={actualizarAcceso} />

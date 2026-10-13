@@ -1,38 +1,89 @@
+/* Tema de Kusi: la paleta sale del login del cuy (crema, vino, dorado y terracota).
+   Las fuentes Fredoka (títulos) y Nunito (texto) se cargan en index.html. */
 :root {
-  font-family: system-ui, 'Segoe UI', sans-serif;
-  color: #202d2b;
-  background: #f5f7f6;
+  --crema: #fdf7ee;
+  --crema-2: #fffbf5;
+  --crema-3: #f6ead8;
+  --borde: #ead9c3;
+  --vino: #5a1c15;
+  --vino-2: #7a2a1f;
+  --texto: #4a2b24;
+  --texto-suave: #7d6863;
+  --rojo: #c6441d;
+  --dorado: #f8b73e;
+  --dorado-2: #df851c;
+  --verde: #2f9d62;
+  --cielo: #4c9ed9;
+  --error: #d2402c;
+  --sombra: 0 14px 32px -18px rgba(90, 40, 15, .45);
+  --sombra-boton: 0 5px 0 #b66619;
+  --radio: 24px;
+  --letra: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --letra-titulo: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  /* Compatibilidad con componentes que usan los nombres anteriores. */
+  --color-principal: var(--vino);
+  --color-error: var(--error);
+  font-family: var(--letra);
+  color: var(--texto);
+  background: var(--crema);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   color-scheme: light;
-  --color-principal: #185b4b;
-  --color-error: #9b2925;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-button, input, select, textarea { font: inherit; }
-a { color: var(--color-principal); text-underline-offset: 0.2em; }
-p { line-height: 1.6; max-width: 68ch; }
-h1 { font-size: clamp(1.6rem, 4vw, 2rem); line-height: 1.2; margin: 0 0 1rem; }
-h2 { font-size: 1.35rem; line-height: 1.3; }
-button, .boton {
-  display: inline-block;
-  border: 1px solid var(--color-principal);
-  border-radius: 0.3rem;
-  padding: 0.75rem 1rem;
-  min-height: 44px;
-  background: var(--color-principal);
-  color: white;
-  text-decoration: none;
-  cursor: pointer;
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(248, 183, 62, .16), transparent 32rem),
+    radial-gradient(circle at 92% 90%, rgba(198, 68, 29, .08), transparent 30rem),
+    var(--crema);
 }
-button:hover:not(:disabled), .boton:hover { background: #104436; }
-button:disabled { cursor: wait; opacity: 0.7; }
-.secundario { background: white; color: var(--color-principal); }
-.secundario:hover:not(:disabled) { background: #e6eeeb; }
-:focus-visible { outline: 3px solid #247cba; outline-offset: 3px; }
-::selection { background: #c7e4da; color: #152c24; }
+button, input, select, textarea { font: inherit; }
+a { color: var(--rojo); font-weight: 800; text-underline-offset: 0.2em; }
+p { line-height: 1.6; max-width: 70ch; }
+h1, h2, h3, h4 { font-family: var(--letra-titulo); color: var(--vino); font-weight: 600; }
+h1 { font-size: clamp(1.7rem, 3.6vw, 2.2rem); line-height: 1.15; margin: 0 0 1rem; }
+h2 { font-size: 1.4rem; line-height: 1.25; }
+h3 { font-size: 1.15rem; }
+
+/* Botón principal: dorado con relieve, como "Entrar" del login. */
+button, .boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  padding: 0.7rem 1.25rem;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 900;
+  color: #fff;
+  text-decoration: none;
+  text-shadow: 0 1px 0 rgba(150, 70, 10, .45);
+  background: linear-gradient(180deg, #f9bd47 0%, #efa12d 48%, var(--dorado-2) 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 236, 170, .75), var(--sombra-boton);
+  cursor: pointer;
+  transition: transform .12s, filter .2s, box-shadow .12s;
+}
+button:hover:not(:disabled), .boton:hover { filter: brightness(1.05); }
+button:active:not(:disabled), .boton:active { transform: translateY(3px); box-shadow: inset 0 2px 0 rgba(255, 236, 170, .75), 0 2px 0 #b66619; }
+button:disabled { cursor: wait; opacity: 0.6; }
+
+/* Botón secundario: crema con borde vino. */
+.secundario {
+  color: var(--vino);
+  text-shadow: none;
+  background: var(--crema-2);
+  border: 2px solid var(--borde);
+  box-shadow: 0 3px 0 var(--borde);
+}
+.secundario:hover:not(:disabled) { background: #fff; border-color: var(--dorado); filter: none; }
+.secundario:active:not(:disabled) { box-shadow: 0 1px 0 var(--borde); }
+
+:focus-visible { outline: 3px solid var(--dorado); outline-offset: 3px; }
+::selection { background: #fde2b0; color: var(--vino); }
 .solo-lectores {
   position: absolute;
   width: 1px;
@@ -41,4 +92,8 @@ button:disabled { cursor: wait; opacity: 0.7; }
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

@@ -1,43 +1,43 @@
 import { useState } from 'react'
+import { Tablero } from '../componentes/Tablero'
+import type { OpcionMenu } from '../componentes/Tablero'
 import type { UsuarioSesion } from '../servicios/django'
-import { RegistrarUsuario } from './RegistrarUsuario'
-import { GestionarUsuarios } from './GestionarUsuarios'
+import { AsignarDocentes } from './AsignarDocentes'
 import { CatalogoCursos } from './CatalogoCursos'
 import { CrearSeccion } from './CrearSeccion'
+import { GestionarUsuarios } from './GestionarUsuarios'
 import { GestionarVinculos } from './GestionarVinculos'
-import { AsignarDocentes } from './AsignarDocentes'
+import { InicioAdministracion } from './InicioAdministracion'
+import { RegistrarUsuario } from './RegistrarUsuario'
+
+const opciones: readonly OpcionMenu[] = [
+  { id: 'inicio', etiqueta: 'Inicio', icono: 'inicio' },
+  { id: 'registro', etiqueta: 'Registrar usuario', icono: 'registrar' },
+  { id: 'usuarios', etiqueta: 'Usuarios y roles', icono: 'usuarios' },
+  { id: 'cursos', etiqueta: 'Catálogo de cursos', icono: 'libro' },
+  { id: 'secciones', etiqueta: 'Crear sección', icono: 'aula' },
+  { id: 'vinculos', etiqueta: 'Vincular estudiantes', icono: 'enlace' },
+  { id: 'asignaciones', etiqueta: 'Asignar docentes', icono: 'pizarra' },
+]
 
 export function PanelAdministracion({ usuario, salir, cambiarRol, actualizarAcceso }: { usuario: UsuarioSesion; salir: () => void; cambiarRol?: () => void; actualizarAcceso: () => Promise<void> }) {
-  const [seccion, establecerSeccion] = useState('registro')
+  const [seccion, establecerSeccion] = useState('inicio')
+  // Mientras se muestra una contraseña recién creada no se puede salir de la pantalla.
   const [registroBloqueado, establecerRegistroBloqueado] = useState(false)
-  return (
-    <>
-      <a className="saltar-contenido" href="#contenido">Ir al contenido</a>
-      <header className="cabecera">
-        <strong>Kusi · Administración</strong>
-        <span>{usuario.nombre} · {usuario.correo}</span>
-        <div className="acciones">
-          {cambiarRol && <button type="button" className="secundario" disabled={registroBloqueado} onClick={cambiarRol}>Cambiar de panel</button>}
-          <button type="button" className="secundario" disabled={registroBloqueado} onClick={salir}>Cerrar sesión</button>
-        </div>
-      </header>
-      <div className="panel-administracion">
-        <nav aria-label="Administración">
-          {([
-            ['registro', 'Registrar usuario'], ['usuarios', 'Usuarios y roles'],
-            ['cursos', 'Catálogo de cursos'], ['secciones', 'Crear sección'],
-            ['vinculos', 'Vincular estudiantes'], ['asignaciones', 'Asignar docentes'],
-          ] as const).map(([id, etiqueta]) => <button key={id} type="button" className="enlace-navegacion" disabled={registroBloqueado}
-            aria-current={seccion === id ? 'page' : undefined} onClick={() => establecerSeccion(id)}>{etiqueta}</button>)}
-        </nav>
-        <main id="contenido" tabIndex={-1}>
-          {seccion === 'vinculos' ? <GestionarVinculos /> : seccion === 'asignaciones' ? <AsignarDocentes /> : seccion === 'registro' ? <>
-            <h1>Registrar usuario</h1>
-            <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
-            <RegistrarUsuario alCambiarBloqueo={establecerRegistroBloqueado} />
-          </> : seccion === 'usuarios' ? <GestionarUsuarios usuarioActualId={usuario.id} actualizarAcceso={actualizarAcceso} /> : seccion === 'cursos' ? <CatalogoCursos /> : <CrearSeccion />}
-        </main>
-      </div>
-    </>
-  )
+  const fichas = <span className="ficha">🏫 Administración</span>
+  const promo = <div className="tarjeta-promo"><strong>🔑 Contraseñas</strong><p>Solo tú las generas. El docente se las comunica a sus estudiantes.</p></div>
+  return <Tablero rol="Administrador" nombre={usuario.nombre} opciones={opciones} actual={seccion} alElegir={establecerSeccion}
+    bloqueado={registroBloqueado} fichas={fichas} promo={promo} salir={salir} cambiarRol={cambiarRol}>
+    {seccion === 'inicio' && <InicioAdministracion nombre={usuario.nombre} ir={establecerSeccion} />}
+    {seccion === 'registro' && <div className="tarjeta">
+      <h1>Registrar usuario</h1>
+      <p>Crea una cuenta y entrega su contraseña temporal a la persona registrada.</p>
+      <RegistrarUsuario alCambiarBloqueo={establecerRegistroBloqueado} />
+    </div>}
+    {seccion === 'usuarios' && <div className="tarjeta"><GestionarUsuarios usuarioActualId={usuario.id} actualizarAcceso={actualizarAcceso} /></div>}
+    {seccion === 'cursos' && <div className="tarjeta"><CatalogoCursos /></div>}
+    {seccion === 'secciones' && <div className="tarjeta"><CrearSeccion /></div>}
+    {seccion === 'vinculos' && <div className="tarjeta"><GestionarVinculos /></div>}
+    {seccion === 'asignaciones' && <div className="tarjeta"><AsignarDocentes /></div>}
+  </Tablero>
 }

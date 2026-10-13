@@ -4,12 +4,13 @@ import { ErrorApi } from '../servicios/django'
 import { GestorSolicitud, obtenerContextosPropuestas } from '../servicios/propuestas'
 import type { ContextosPropuestas, Proposito, SolicitudPropuesta } from '../servicios/propuestas'
 
-export function SolicitarPropuesta() {
+// cursoInicial: curso_id + '/' + seccion_id elegido desde "Mis cursos" o el inicio.
+export function SolicitarPropuesta({ cursoInicial = '' }: { cursoInicial?: string }) {
   const [contextos, establecerContextos] = useState<ContextosPropuestas | null>(null)
   const [cargando, establecerCargando] = useState(true)
   const [errorContexto, establecerErrorContexto] = useState('')
   const [recarga, establecerRecarga] = useState(0)
-  const [seleccion, establecerSeleccion] = useState('')
+  const [seleccion, establecerSeleccion] = useState(cursoInicial)
   const [tema, establecerTema] = useState('')
   const [objetivo, establecerObjetivo] = useState('')
   const [proposito, establecerProposito] = useState<Proposito>('preparacion')
@@ -52,7 +53,7 @@ export function SolicitarPropuesta() {
     } finally { bloqueo.current = false; establecerOcupado(false) }
   }
   return <section id="solicitar-propuesta" aria-labelledby="titulo-propuesta">
-    <h2 id="titulo-propuesta">Solicitar propuesta educativa</h2>
+    <h2 id="titulo-propuesta">Crear una propuesta de juego</h2>
     <p>Indica qué quieres trabajar en primero de primaria. La propuesta quedará pendiente de revisión; no se aprobará ni publicará automáticamente.</p>
     {cargando && <p role="status">Cargando tus cursos autorizados…</p>}
     {errorContexto && <div><p role="alert" className="error-resumen">{errorContexto}</p><button type="button" className="secundario" onClick={recargar} disabled={cargando || ocupado}>Volver a cargar cursos</button></div>}

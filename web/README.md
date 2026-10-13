@@ -1,7 +1,7 @@
 # Kusi · Web
 
 Único frontend React con Vite y TypeScript, reutilizado desde `admin-web`.
-El diseño final sigue pendiente y corresponde a Luis. Las pantallas actuales son provisionales y funcionales.
+El diseño sigue el login del cuy hecho por Luis (Rive) y su referencia de panel con estilo de juego.
 
 ## Organización
 
@@ -42,3 +42,10 @@ npm test
 Las pruebas usan Node y TypeScript ya presentes, sin añadir dependencias. Las 15 pruebas originales cubren acceso/registro; las 15 de `tests/propuestas.test.mjs` simulan Spring e IA para comprobar validación, origen del objetivo, CSRF, errores y reintentos seguros. No acreditan persistencia Spring ni generación real. El recorrido visual se comprueba aparte.
 
 Estado por historia y comprobaciones: [ESTADO_SPRINT1.md](../docs/ESTADO_SPRINT1.md). Identidad/sesión: [CONTRATOS_SERVICIOS.md](../docs/CONTRATOS_SERVICIOS.md). Secciones: [HU06_REVISION.md](../docs/HU06_REVISION.md). IA pendiente: [CONTRATO_PROPUESTAS_IA.md](../docs/CONTRATO_PROPUESTAS_IA.md).
+
+## Login con el cuy (Rive) y paneles
+
+- El login (`src/acceso/LoginCuy.tsx`) usa el archivo de Rive **`public/login-cuy.riv`** (artboard y máquina `Login`, ViewModel `Cuy`; contrato en la carpeta `kusi-login-cuarto` del diseño). Copia ese archivo a `web/public/login-cuy.riv`. Si falta o no carga, se muestra la ilustración fija del mismo cuarto y el login funciona igual.
+- El motor de Rive (`rive.wasm`) se sirve desde el propio proyecto, no desde un CDN.
+- Paleta y fuentes salen del diseño del login: crema `#fdf7ee`, vino `#5a1c15`, dorado `#f8b73e`, terracota `#c6441d`; Fredoka para títulos y Nunito para texto (`src/index.css`).
+- Los paneles de administrador y docente comparten `src/componentes/Tablero.tsx` (menú lateral, perfil y barra superior). Las imágenes están en `src/assets/kusi/`.

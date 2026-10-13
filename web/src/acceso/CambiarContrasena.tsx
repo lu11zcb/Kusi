@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { cambiarContrasena } from '../servicios/acceso'
 import type { Cuenta } from '../servicios/acceso'
+import { PantallaCuarto } from '../componentes/PantallaCuarto'
 
 export function CambiarContrasena({ alCambiar, salir }: { alCambiar: (cuenta: Cuenta) => void; salir: () => void }) {
   const [datos, establecerDatos] = useState({ contrasena_actual: '', nueva_contrasena: '', confirmacion: '' })
@@ -19,7 +20,7 @@ export function CambiarContrasena({ alCambiar, salir }: { alCambiar: (cuenta: Cu
     } catch (error) { establecerMensaje(error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.') }
     finally { establecerEnviando(false) }
   }
-  return <main className="acceso">
+  return <PantallaCuarto>
     <h1>Cambia tu contraseña temporal</h1>
     <p>Elige una contraseña personal de al menos ocho caracteres antes de continuar. Evita datos personales y contraseñas habituales.</p>
     <form onSubmit={enviar}>
@@ -36,6 +37,6 @@ export function CambiarContrasena({ alCambiar, salir }: { alCambiar: (cuenta: Cu
       </fieldset>
       <button disabled={enviando}>{enviando ? 'Guardando…' : 'Guardar contraseña'}</button>
     </form>
-    <button className="secundario" type="button" onClick={salir} disabled={enviando}>Cerrar sesión</button>
-  </main>
+    <div className="acciones"><button className="secundario" type="button" onClick={salir} disabled={enviando}>Cerrar sesión</button></div>
+  </PantallaCuarto>
 }
