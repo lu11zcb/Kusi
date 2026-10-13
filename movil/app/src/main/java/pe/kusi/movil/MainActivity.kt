@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
@@ -29,7 +30,8 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccesoPantalla(modelo: AccesoViewModel = viewModel()) {
-    var correo by remember { mutableStateOf("") }
+    var dni by remember { mutableStateOf("") }
+    var recordar by remember { mutableStateOf(true) }
     var contrasena by remember { mutableStateOf("") }
     var actual by remember { mutableStateOf("") }
     var nueva by remember { mutableStateOf("") }
@@ -46,14 +48,18 @@ fun AccesoPantalla(modelo: AccesoViewModel = viewModel()) {
             Text(if (cuenta == null) "Acceso de estudiante" else if (cuenta.temporal) "Cambia tu contraseña temporal" else "Hola, " + cuenta.nombre,
                 style = MaterialTheme.typography.headlineSmall)
             if (cuenta == null) {
-                Text("Ingresa con el correo y la contraseña de tu cuenta.")
-                OutlinedTextField(correo, { correo = it }, label = { Text("Correo") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), enabled = !modelo.ocupado, modifier = Modifier.fillMaxWidth())
+                Text("Ingresa con tu DNI y la contraseña que te dio tu docente.")
+                OutlinedTextField(dni, { dni = it.filter(Char::isDigit).take(8) }, label = { Text("DNI") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), enabled = !modelo.ocupado, modifier = Modifier.fillMaxWidth())
                 Clave(contrasena, { contrasena = it }, "Contraseña", !modelo.ocupado)
-                Button(onClick = { modelo.ingresar(correo, contrasena); contrasena = "" },
-                    enabled = !modelo.ocupado && correo.isNotBlank() && contrasena.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Ingresar") }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = recordar, onCheckedChange = { recordar = it }, enabled = !modelo.ocupado)
+                    Text("Recordar mi sesión en este celular")
+                }
+                Button(onClick = { modelo.ingresar(dni, contrasena, recordar); contrasena = "" },
+                    enabled = !modelo.ocupado && dni.length == 8 && contrasena.isNotEmpty(), modifier = Modifier.fillMaxWidth()) { Text("Ingresar") }
             } else if (cuenta.temporal) {
-                Text("Elige una contraseña nueva para continuar. Puedes pedir ayuda a un adulto.")
+                Text("Elige una contraseña nueva para continuar. Si la olvidas, avisa a tu docente.")
                 Clave(actual, { actual = it }, "Contraseña actual", !modelo.ocupado)
                 Clave(nueva, { nueva = it }, "Nueva contraseña", !modelo.ocupado)
                 Clave(confirmacion, { confirmacion = it }, "Repite la nueva contraseña", !modelo.ocupado)

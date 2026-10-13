@@ -1,14 +1,16 @@
 package pe.kusi.movil
 
+import android.app.Application
 import androidx.compose.runtime.*
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class AccesoViewModel : ViewModel() {
-    private val api = AccesoApi(BuildConfig.DJANGO_URL, BuildConfig.EDU_URL)
+class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
+    // HU13: la sesión se recuerda en el celular hasta cerrar sesión o que caduque.
+    private val api = AccesoApi(BuildConfig.DJANGO_URL, BuildConfig.EDU_URL, AlmacenPreferencias(aplicacion))
     var cuenta by mutableStateOf<Cuenta?>(null); private set
     var ocupado by mutableStateOf(false); private set
     var mensaje by mutableStateOf<String?>(null); private set
@@ -28,8 +30,9 @@ class AccesoViewModel : ViewModel() {
             finally { ocupado = false }
         }
     }
-    fun ingresar(correo: String, contrasena: String) = ejecutar {
-        cuenta = api.ingresar(correo, contrasena); validado = false
+    fun ingresar(dni: String, contrasena: String, recordar: Boolean) = ejecutar {
+        api.recordar = recordar
+        cuenta = api.ingresar(dni, contrasena); validado = false
         if (cuenta?.temporal == false && cuenta?.roles?.contains("estudiante") == true) {
             api.validarEstudiante(); validado = true
         }

@@ -2,6 +2,7 @@
 package pe.kusi.movil
 
 import java.net.CookieManager
+import java.net.HttpCookie
 import java.net.CookiePolicy
 import java.net.HttpURLConnection
 import java.net.URI
@@ -16,10 +17,46 @@ data class Cuenta(
 
 class FalloAcceso(val estado: Int, mensaje: String) : Exception(mensaje)
 
-/** Las cookies se mantienen en memoria durante la sesión. */
-class AccesoApi(private val django: String, private val edu: String) {
+/** HU13: dónde se recuerda la sesión en el celular (null = solo en memoria). */
+interface AlmacenSesion {
+    fun leer(): String?
+    fun guardar(valor: String?)
+}
+
+/** Las cookies viven en memoria y, si el estudiante lo elige, en el almacén (HU13). */
+class AccesoApi(private val django: String, private val edu: String, private val almacen: AlmacenSesion? = null) {
 
     private val cookies = CookieManager(null, CookiePolicy.ACCEPT_ORIGINAL_SERVER)
+
+    /** Si es false, la sesión se olvida al cerrar la app. */
+    var recordar: Boolean = true
+        set(valor) { field = valor; persistir() }
+
+    init {
+        // Recupera la sesión guardada; Django sigue decidiendo si aún es válida.
+        almacen?.leer()?.lines()?.forEach { linea ->
+            val separador = linea.indexOf('=')
+            if (separador > 0) {
+                val cookie = HttpCookie(linea.substring(0, separador), linea.substring(separador + 1))
+                cookie.path = "/"
+                cookie.version = 0
+                cookies.cookieStore.add(URI(django), cookie)
+            }
+        }
+    }
+
+    // Solo se guardan las cookies de Django necesarias para continuar la sesión.
+    private fun persistir() {
+        val destino = almacen ?: return
+        val vigentes = cookies.cookieStore.get(URI(django)).filter { it.name in GUARDADAS && !it.hasExpired() }
+        if (!recordar || vigentes.none { it.name == "sessionid" }) destino.guardar(null)
+        else destino.guardar(vigentes.joinToString("\n") { it.name + "=" + it.value })
+    }
+
+    private fun olvidar() {
+        cookies.cookieStore.removeAll()
+        almacen?.guardar(null)
+    }
 
     private fun solicitar(
         base: String,
@@ -58,6 +95,7 @@ class AccesoApi(private val django: String, private val edu: String) {
 
             val estado = conexion.responseCode
             cookies.put(uri, conexion.headerFields.filterKeys { it != null })
+            persistir()
 
             val flujo = if (estado in 200..299) {
                 conexion.inputStream
@@ -129,15 +167,17 @@ class AccesoApi(private val django: String, private val edu: String) {
         return solicitar(django, ruta, datos, csrf)
     }
 
+    /** Si la sesión guardada caducó, se borra del celular. */
     fun sesion(): Cuenta? =
-        cuenta(solicitar(django, "/api/acceso/sesion/"))
+        cuenta(solicitar(django, "/api/acceso/sesion/")).also { if (it == null) olvidar() }
 
-    fun ingresar(correo: String, contrasena: String): Cuenta =
+    /** HU12: el estudiante ingresa con su DNI y la contraseña que le dio su docente. */
+    fun ingresar(dni: String, contrasena: String): Cuenta =
         cuenta(
             enviar(
                 "/api/acceso/ingreso/",
                 JSONObject()
-                    .put("correo", correo)
+                    .put("dni", dni.trim())
                     .put("contrasena", contrasena)
             )
         ) ?: throw FalloAcceso(401, "No se pudo iniciar sesión.")
@@ -161,8 +201,16 @@ class AccesoApi(private val django: String, private val edu: String) {
         cuenta(solicitar(edu, "/api/edu/acceso/estudiante/"))
             ?: throw FalloAcceso(401, "Debes volver a ingresar.")
 
+    /** Aunque falle la red, el celular olvida la sesión. */
     fun salir() {
-        enviar("/api/acceso/salida/", JSONObject())
-        cookies.cookieStore.removeAll()
+        try {
+            enviar("/api/acceso/salida/", JSONObject())
+        } finally {
+            olvidar()
+        }
+    }
+
+    private companion object {
+        val GUARDADAS = setOf("sessionid", "csrftoken")
     }
 }
