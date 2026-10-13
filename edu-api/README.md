@@ -1,4 +1,4 @@
-# Kusi edu-api (Spring Boot) — HU06, HU07, HU08, HU18 y HU16
+# Kusi edu-api (Spring Boot) — HU06–HU09, HU11 y HU16–HU25
 
 Servicio educativo con persistencia en el esquema `edu` de la misma base PostgreSQL que usa Django (`admin`). Las cuentas/roles y el catálogo de cursos siguen siendo propiedad de Django; este servicio solo guarda secciones, vínculos estudiante-sección y asignaciones docente-curso-sección-año.
 
@@ -50,3 +50,5 @@ Rutas del panel docente, accesibles por el proxy de Vite (`/api/edu` → 8080). 
 - `GET /api/edu/propuestas/solicitudes/{id}/` y `POST .../{id}/reintentar/`.
 
 Sin un bean `GeneradorPropuestas` real la IA queda **no configurada**: la solicitud se guarda `pendiente` y no se inventa contenido. El adaptador del proveedor se añadirá cuando Luis elija proveedor/modelo y configure la clave fuera de Git. `PropuestasSimuladasTest` usa IA y Django simulados.
+
+HU19–HU25 (propósito, revisión y versiones) y `GET /api/edu/acceso/estudiante/` (HU11, app móvil) se describen en `docs/CONTRATO_PROPUESTAS_IA.md`.

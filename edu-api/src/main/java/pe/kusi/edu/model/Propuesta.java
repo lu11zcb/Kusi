@@ -19,18 +19,34 @@ public class Propuesta {
     @Column(nullable=false, length=50000) private String reglas;
     @Column(nullable=false, length=50000) private String retos;
     @Column(nullable=false, length=50000) private String ayudas;
-    @Column(nullable=false, length=80) private String proveedor;
-    @Column(nullable=false, length=120) private String modelo;
+    @Column(length=50000) private String recursos;
+    @Column(length=80) private String proveedor;
+    @Column(length=120) private String modelo;
+    @Column(nullable=false, length=10) private String origen;
+    @Column(name="version_base") private Integer versionBase;
+    @Column(length=4000) private String observaciones;
+    @Column(name="estado_revision", nullable=false, length=12) private String estadoRevision="pendiente";
+    @Column(name="revisada_por") private UUID revisadaPor;
+    @Column(name="revisada_en") private Instant revisadaEn;
     @Column(name="creado_en", nullable=false) private Instant creadoEn=Instant.now();
 
     protected Propuesta() {}
-    public Propuesta(UUID solicitudId, int version, String objetivo, String origenObjetivo, String historia,
-                     String acciones, String reglas, String retos, String ayudas, String proveedor, String modelo) {
-        this.solicitudId=solicitudId; this.version=version; this.objetivo=objetivo; this.origenObjetivo=origenObjetivo; this.historia=historia;
-        this.acciones=acciones; this.reglas=reglas; this.retos=retos; this.ayudas=ayudas; this.proveedor=proveedor; this.modelo=modelo;
+    // origen "ia" lleva proveedor/modelo; origen "docente" (HU23) los deja vacíos.
+    public Propuesta(UUID solicitudId, int version, String origen, Integer versionBase, String observaciones,
+                     String objetivo, String origenObjetivo, String historia, String acciones, String reglas, String retos,
+                     String ayudas, String recursos, String proveedor, String modelo) {
+        this.solicitudId=solicitudId; this.version=version; this.origen=origen; this.versionBase=versionBase; this.observaciones=observaciones;
+        this.objetivo=objetivo; this.origenObjetivo=origenObjetivo; this.historia=historia; this.acciones=acciones; this.reglas=reglas;
+        this.retos=retos; this.ayudas=ayudas; this.recursos=recursos; this.proveedor=proveedor; this.modelo=modelo;
     }
+
+    // HU21/HU24: la revisión queda registrada en la versión exacta, con docente y fecha.
+    public void revisar(String estado, UUID docente) { this.estadoRevision=estado; this.revisadaPor=docente; this.revisadaEn=Instant.now(); }
     public UUID getId(){return id;} public UUID getSolicitudId(){return solicitudId;} public int getVersion(){return version;}
     public String getObjetivo(){return objetivo;} public String getOrigenObjetivo(){return origenObjetivo;} public String getHistoria(){return historia;}
     public String getAcciones(){return acciones;} public String getReglas(){return reglas;} public String getRetos(){return retos;} public String getAyudas(){return ayudas;}
+    public String getRecursos(){return recursos;} public String getOrigen(){return origen;} public Integer getVersionBase(){return versionBase;}
+    public String getObservaciones(){return observaciones;} public String getEstadoRevision(){return estadoRevision;}
+    public UUID getRevisadaPor(){return revisadaPor;} public Instant getRevisadaEn(){return revisadaEn;}
     public String getProveedor(){return proveedor;} public String getModelo(){return modelo;} public Instant getCreadoEn(){return creadoEn;}
 }

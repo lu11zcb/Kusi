@@ -13,11 +13,15 @@ import pe.kusi.edu.repository.*;
 import java.time.Instant;
 import java.util.*;
 
-// HU18/HU16. La entrada y el estado se guardan antes de llamar al proveedor y
-// ninguna transacción queda abierta durante esa llamada HTTP.
+// HU16/HU18 crean la solicitud; HU19-HU25 revisan y versionan sus propuestas.
+// La entrada y el estado se guardan antes de llamar al proveedor y ninguna
+// transacción queda abierta durante esa llamada HTTP.
 @Service
 public class PropuestasService {
     public record Respuesta(SolicitudPropuesta solicitud, Propuesta propuesta, boolean creada) {}
+    public record EdicionDocente(String objetivo, String historia, List<String> acciones, List<String> reglas, List<String> retos, List<String> ayudas, List<String> recursos) {}
+
+    private static final Set<String> PROPOSITOS=Set.of("preparacion", "refuerzo");
 
     private final SolicitudPropuestaRepository solicitudes;
     private final PropuestaRepository propuestas;
@@ -37,7 +41,7 @@ public class PropuestasService {
 
     public boolean iaConfigurada() { return generador.configurado(); }
 
-    // Contextos de las asignaciones vigentes del docente autenticado (HU08 de Jesús).
+    // Contextos de las asignaciones vigentes del docente autenticado (HU08/HU17).
     public List<Map<String,Object>> contextos(UUID docenteId) {
         List<AsignacionDocente> propias=transaccion.execute(estado -> {
             List<AsignacionDocente> lista=asignaciones.findAllByDocenteId(docenteId);
@@ -59,20 +63,27 @@ public class PropuestasService {
         return resultado;
     }
 
-    public Respuesta crear(UUID docenteId, UUID id, UUID cursoId, UUID seccionId, String temaRecibido, String objetivoRecibido) {
+    public Respuesta crear(UUID docenteId, UUID id, UUID cursoId, UUID seccionId, String temaRecibido, String objetivoRecibido,
+                           String propositoRecibido, String instruccionesRecibidas) {
         if (temaRecibido == null || temaRecibido.isBlank() || temaRecibido.trim().length() > 2000)
             throw new IllegalArgumentException("Indica un tema de hasta 2000 caracteres.");
         if (objetivoRecibido != null && objetivoRecibido.length() > 4000)
             throw new IllegalArgumentException("El objetivo debe tener como máximo 4000 caracteres.");
+        // HU19: sin propósito explícito se asume preparación, como antes de esta historia.
+        String proposito=propositoRecibido == null ? "preparacion" : propositoRecibido;
+        if (!PROPOSITOS.contains(proposito)) throw new IllegalArgumentException("Elige preparación o refuerzo.");
+        if (instruccionesRecibidas != null && instruccionesRecibidas.length() > 4000)
+            throw new IllegalArgumentException("Las instrucciones deben tener como máximo 4000 caracteres.");
         String tema=temaRecibido.trim();
-        // El objetivo del docente se conserva exacto; solo espacios equivale a no indicarlo.
+        // Objetivo e instrucciones se conservan exactos; solo espacios equivale a no indicarlos.
         String objetivo=objetivoRecibido == null || objetivoRecibido.isBlank() ? null : objetivoRecibido;
+        String instrucciones=instruccionesRecibidas == null || instruccionesRecibidas.isBlank() ? null : instruccionesRecibidas;
         Contexto contexto=autorizar(docenteId, cursoId, seccionId);
 
         Optional<SolicitudPropuesta> existente=transaccion.execute(estado -> solicitudes.findById(id));
         if (existente.isEmpty()) {
             try {
-                transaccion.executeWithoutResult(estado -> solicitudes.saveAndFlush(new SolicitudPropuesta(id, docenteId, cursoId, seccionId, tema, objetivo)));
+                transaccion.executeWithoutResult(estado -> solicitudes.saveAndFlush(new SolicitudPropuesta(id, docenteId, cursoId, seccionId, tema, objetivo, proposito, instrucciones)));
             } catch (DataIntegrityViolationException carrera) {
                 // Otro envío simultáneo con el mismo UUID ganó la inserción.
                 existente=transaccion.execute(estado -> solicitudes.findById(id));
@@ -80,12 +91,18 @@ public class PropuestasService {
             }
         }
         if (existente.isPresent()) {
-            if (!existente.get().mismaEntrada(docenteId, cursoId, seccionId, tema, objetivo))
+            if (!existente.get().mismaEntrada(docenteId, cursoId, seccionId, tema, objetivo, proposito, instrucciones))
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe una solicitud con ese identificador y datos diferentes.");
             return leer(id, false);
         }
         if (!generador.configurado()) return leer(id, true);
         return generar(id, contexto, true);
+    }
+
+    // HU20: solicitudes propias, la más reciente primero.
+    public List<Respuesta> listar(UUID docenteId) {
+        return transaccion.execute(estado -> solicitudes.findAllByDocenteIdOrderByCreadoEnDesc(docenteId).stream()
+            .map(s -> new Respuesta(s, propuestas.findFirstBySolicitudIdOrderByVersionDesc(s.getId()).orElse(null), false)).toList());
     }
 
     public Respuesta consultar(UUID docenteId, UUID id) {
@@ -94,43 +111,161 @@ public class PropuestasService {
         return respuesta;
     }
 
+    // HU25: todas las versiones, la más reciente primero (versión y fecha crecen juntas).
+    public List<Propuesta> versiones(UUID docenteId, UUID id) {
+        consultar(docenteId, id);
+        return transaccion.execute(estado -> propuestas.findAllBySolicitudIdOrderByVersionDesc(id));
+    }
+
     public Respuesta reintentar(UUID docenteId, UUID id) {
         Respuesta actual=leerPropia(docenteId, id);
         SolicitudPropuesta s=actual.solicitud();
         Contexto contexto=autorizar(docenteId, s.getCursoId(), s.getSeccionId());
         if (s.getEstado().equals("generada") || s.getEstado().equals("generando")) return actual;
+        exigirIa();
+        return generar(id, contexto, false);
+    }
+
+    // HU21: se aprueba la versión exacta que el docente vio, y solo si sigue siendo la actual.
+    public Respuesta aprobar(UUID docenteId, UUID id, int version) { return revisar(docenteId, id, version, "aprobada"); }
+
+    // HU24: una versión rechazada no puede pasar a generar un juego.
+    public Respuesta rechazar(UUID docenteId, UUID id, int version) { return revisar(docenteId, id, version, "rechazada"); }
+
+    private Respuesta revisar(UUID docenteId, UUID id, int version, String decision) {
+        Respuesta actual=leerPropia(docenteId, id);
+        autorizar(docenteId, actual.solicitud().getCursoId(), actual.solicitud().getSeccionId());
+        transaccion.executeWithoutResult(estado -> {
+            SolicitudPropuesta s=solicitudes.bloquear(id).orElseThrow();
+            if (!s.getEstado().equals("generada")) throw new ResponseStatusException(HttpStatus.CONFLICT, "La propuesta todavía no está lista para revisarse.");
+            Propuesta ultima=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).orElseThrow();
+            if (ultima.getVersion() != version) throw new ResponseStatusException(HttpStatus.CONFLICT, "La propuesta cambió. Revisa la versión actual antes de decidir.");
+            if (!ultima.getEstadoRevision().equals("pendiente")) throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta versión ya fue " + ultima.getEstadoRevision() + ".");
+            ultima.revisar(decision, docenteId);
+        });
+        return leer(id, false);
+    }
+
+    // HU24: otra alternativa con la misma solicitud; la rechazada queda en el historial.
+    public Respuesta alternativa(UUID docenteId, UUID id) {
+        Respuesta actual=leerPropia(docenteId, id);
+        Contexto contexto=autorizar(docenteId, actual.solicitud().getCursoId(), actual.solicitud().getSeccionId());
+        if (actual.propuesta() == null || !actual.propuesta().getEstadoRevision().equals("rechazada"))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo puedes pedir otra alternativa después de rechazar la versión actual.");
+        exigirIa();
+        return nuevaVersionIa(id, contexto, actual.propuesta(), "alternativa", null);
+    }
+
+    // HU22: la IA ajusta una versión según las observaciones; la anterior se conserva.
+    public Respuesta observaciones(UUID docenteId, UUID id, int version, String observaciones) {
+        if (observaciones == null || observaciones.isBlank() || observaciones.length() > 4000)
+            throw new IllegalArgumentException("Escribe tus observaciones (hasta 4000 caracteres).");
+        Respuesta actual=leerPropia(docenteId, id);
+        Contexto contexto=autorizar(docenteId, actual.solicitud().getCursoId(), actual.solicitud().getSeccionId());
+        Propuesta base=transaccion.execute(estado -> propuestas.findBySolicitudIdAndVersion(id, version))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró esa versión."));
+        exigirIa();
+        return nuevaVersionIa(id, contexto, base, "observaciones", observaciones);
+    }
+
+    // HU23: el docente guarda una versión editada. Si parte de una aprobada,
+    // la nueva queda pendiente: necesita otra aprobación.
+    public Respuesta modificar(UUID docenteId, UUID id, int version, EdicionDocente edicion) {
+        Respuesta actual=leerPropia(docenteId, id);
+        autorizar(docenteId, actual.solicitud().getCursoId(), actual.solicitud().getSeccionId());
+        Map<String,Object> datos=new HashMap<>();
+        datos.put("objetivo", edicion.objetivo()); datos.put("historia", edicion.historia()); datos.put("acciones", edicion.acciones());
+        datos.put("reglas", edicion.reglas()); datos.put("retos", edicion.retos()); datos.put("ayudas", edicion.ayudas()); datos.put("recursos", edicion.recursos());
+        ValidadorPropuesta.Resultado r;
+        try { r=validador.validar(datos, null); }
+        catch (FalloGeneracion invalida) { throw new IllegalArgumentException("Completa objetivo, historia, acciones, reglas, retos y ayudas (de 1 a 20 elementos cada lista)."); }
+        try {
+            transaccion.executeWithoutResult(estado -> {
+                SolicitudPropuesta s=solicitudes.bloquear(id).orElseThrow();
+                if (!s.getEstado().equals("generada")) throw new ResponseStatusException(HttpStatus.CONFLICT, "Espera a que termine la generación en curso.");
+                Propuesta base=propuestas.findBySolicitudIdAndVersion(id, version)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró esa versión."));
+                int siguiente=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).orElseThrow().getVersion()+1;
+                // El objetivo conserva su origen si no se cambió; si se editó, pasa a ser del docente.
+                String origenObjetivo=r.objetivo().equals(base.getObjetivo()) ? base.getOrigenObjetivo() : "docente";
+                propuestas.saveAndFlush(new Propuesta(id, siguiente, "docente", version, null, r.objetivo(), origenObjetivo, r.historia(),
+                    aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()), null, null));
+            });
+        } catch (DataIntegrityViolationException carrera) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Se guardó otra versión al mismo tiempo. Revisa la versión actual.");
+        }
+        return leer(id, false);
+    }
+
+    // Base para el Sprint 2: solo la versión vigente y aprobada puede generar un juego.
+    public Optional<Propuesta> aprobadaParaJuego(UUID solicitudId) {
+        return transaccion.execute(estado -> propuestas.findFirstBySolicitudIdOrderByVersionDesc(solicitudId)
+            .filter(p -> p.getEstadoRevision().equals("aprobada")));
+    }
+
+    private void exigirIa() {
         if (!generador.configurado())
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "La generación con IA aún no está configurada. Tu solicitud sigue guardada para reintentarla después.");
-        return generar(id, contexto, false);
     }
 
     private Respuesta generar(UUID id, Contexto contexto, boolean creada) {
         Integer tomada=transaccion.execute(estado -> solicitudes.iniciarGeneracion(id, Instant.now()));
         if (tomada == null || tomada == 0) return leer(id, creada);
         SolicitudPropuesta s=transaccion.execute(estado -> solicitudes.findById(id).orElseThrow());
+        EntradaGeneracion entrada=entrada(contexto, s, "nueva", null, null);
         try {
-            Map<String,Object> respuestaIa=generador.generar(new EntradaGeneracion(contexto.cursoNombre(), contexto.grado(), contexto.seccionNombre(), contexto.anio(), s.getTema(), s.getObjetivoDocente()));
-            ValidadorPropuesta.Resultado r=validador.validar(respuestaIa, s.getObjetivoDocente());
-            transaccion.executeWithoutResult(estado -> {
-                int version=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).map(p -> p.getVersion()+1).orElse(1);
-                propuestas.saveAndFlush(new Propuesta(id, version, r.objetivo(), r.origenObjetivo(), r.historia(),
-                    aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), generador.proveedor(), generador.modelo()));
-                solicitudes.terminarGeneracion(id, "generada", null, Instant.now());
-            });
+            ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada), s.getObjetivoDocente());
+            guardarVersionIa(id, null, null, r);
             return leer(id, creada);
         } catch (FalloGeneracion fallo) {
-            marcarFallida(id, fallo.getMessage());
+            terminarConFallo(id, "fallida", fallo.getMessage());
             throw new ResponseStatusException(fallo.isTiempoAgotado() ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
                 fallo.getMessage() + " Tu solicitud quedó guardada; puedes reintentarla.");
         } catch (RuntimeException fallo) {
-            marcarFallida(id, "No se pudo obtener la propuesta de la IA.");
+            terminarConFallo(id, "fallida", "No se pudo obtener la propuesta de la IA.");
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "No se pudo obtener la propuesta de la IA. Tu solicitud quedó guardada; puedes reintentarla.");
         }
     }
 
-    private void marcarFallida(UUID id, String mensaje) {
+    // Si falla, la solicitud vuelve a "generada": las versiones existentes no cambian.
+    private Respuesta nuevaVersionIa(UUID id, Contexto contexto, Propuesta base, String tipo, String observaciones) {
+        Integer tomada=transaccion.execute(estado -> solicitudes.iniciarNuevaVersion(id, Instant.now()));
+        if (tomada == null || tomada == 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya hay una generación en curso para esta solicitud.");
+        SolicitudPropuesta s=transaccion.execute(estado -> solicitudes.findById(id).orElseThrow());
+        // Un objetivo del docente se conserva exacto también en las versiones nuevas.
+        String objetivoFijo=base.getOrigenObjetivo().equals("docente") ? base.getObjetivo() : null;
+        try {
+            ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada(contexto, s, tipo, base, observaciones)), objetivoFijo);
+            guardarVersionIa(id, base.getVersion(), observaciones, r);
+            return leer(id, false);
+        } catch (FalloGeneracion fallo) {
+            terminarConFallo(id, "generada", fallo.getMessage());
+            throw new ResponseStatusException(fallo.isTiempoAgotado() ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
+                fallo.getMessage() + " Las versiones anteriores se conservan; puedes intentarlo de nuevo.");
+        } catch (RuntimeException fallo) {
+            terminarConFallo(id, "generada", "No se pudo obtener la propuesta de la IA.");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "No se pudo obtener la propuesta de la IA. Las versiones anteriores se conservan.");
+        }
+    }
+
+    private EntradaGeneracion entrada(Contexto c, SolicitudPropuesta s, String tipo, Propuesta base, String observaciones) {
+        return new EntradaGeneracion(c.cursoNombre(), c.grado(), c.seccionNombre(), c.anio(), s.getTema(), s.getObjetivoDocente(),
+            s.getProposito(), s.getInstrucciones(), tipo, base == null ? null : contenido(base), observaciones);
+    }
+
+    private void guardarVersionIa(UUID id, Integer versionBase, String observaciones, ValidadorPropuesta.Resultado r) {
+        transaccion.executeWithoutResult(estado -> {
+            int version=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).map(p -> p.getVersion()+1).orElse(1);
+            propuestas.saveAndFlush(new Propuesta(id, version, "ia", versionBase, observaciones, r.objetivo(), r.origenObjetivo(), r.historia(),
+                aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()),
+                generador.proveedor(), generador.modelo()));
+            solicitudes.terminarGeneracion(id, "generada", null, Instant.now());
+        });
+    }
+
+    private void terminarConFallo(UUID id, String estado, String mensaje) {
         String error=mensaje.length() > 300 ? mensaje.substring(0, 300) : mensaje;
-        transaccion.executeWithoutResult(estado -> solicitudes.terminarGeneracion(id, "fallida", error, Instant.now()));
+        transaccion.executeWithoutResult(t -> solicitudes.terminarGeneracion(id, estado, error, Instant.now()));
     }
 
     private record Contexto(String cursoNombre, int grado, String seccionNombre, Integer anio) {}
@@ -158,10 +293,20 @@ public class PropuestasService {
         return respuesta;
     }
 
+    // La propuesta mostrada es siempre la versión más reciente.
     private Respuesta leer(UUID id, boolean creada) {
         return transaccion.execute(estado -> solicitudes.findById(id)
             .map(s -> new Respuesta(s, s.getEstado().equals("generada") ? propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).orElse(null) : null, creada))
             .orElse(null));
+    }
+
+    public Map<String,Object> contenido(Propuesta p) {
+        Map<String,Object> d=new LinkedHashMap<>();
+        d.put("objetivo", p.getObjetivo()); d.put("historia", p.getHistoria());
+        d.put("acciones", lista(p.getAcciones())); d.put("reglas", lista(p.getReglas()));
+        d.put("retos", lista(p.getRetos())); d.put("ayudas", lista(p.getAyudas()));
+        d.put("recursos", p.getRecursos() == null ? null : lista(p.getRecursos()));
+        return d;
     }
 
     public List<String> lista(String guardada) {
