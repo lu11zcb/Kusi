@@ -1,5 +1,6 @@
 # Claves: nunca se suben
 .env
+.qa/
 .env.*
 !.env.example
 .impeccable/review/
