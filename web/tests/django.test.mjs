@@ -15,7 +15,8 @@ const { ErrorApi, obtenerContextoRegistro, registrarUsuario } = await import(
 const usuario = { id: 'b0afffc6-0ecb-423c-9795-e23cb68ec504', nombre: 'Persona de prueba', correo: 'persona@example.com' }
 const datos = { nombre: usuario.nombre, correo: usuario.correo, rol: 'docente' }
 const contexto = { usuario, csrf_token: 'token-de-prueba' }
-const creado = { usuario: { ...usuario, rol: 'docente' }, contrasena_temporal: 'Abcdef2345' }
+// Django devuelve también el DNI (null para adultos, HU12).
+const creado = { usuario: { ...usuario, dni: null, rol: 'docente' }, contrasena_temporal: 'Abcdef2345' }
 const json = (cuerpo, estado = 200) => new Response(JSON.stringify(cuerpo), {
   status: estado, headers: { 'Content-Type': 'application/json' },
 })
@@ -140,4 +141,16 @@ test('recoge solo mensajes válidos de los campos conocidos', async (t) => {
     assert.deepEqual(error.errores, { correo: ['Correo inválido.'] })
     return true
   })
+})
+
+test('HU12: registra un estudiante con DNI y sin correo', async (t) => {
+  const estudiante = { id: 'c0afffc6-0ecb-423c-9795-e23cb68ec505', nombre: 'Niño de prueba', correo: null, dni: '70000001', rol: 'estudiante' }
+  t.mock.method(globalThis, 'fetch', async (ruta, opciones) => {
+    if (ruta.endsWith('contexto/')) return json(contexto)
+    assert.deepEqual(JSON.parse(opciones.body), { nombre: estudiante.nombre, correo: '', dni: '70000001', rol: 'estudiante' })
+    return json({ usuario: estudiante, contrasena_temporal: 'Abcdef2345' }, 201)
+  })
+  const resultado = await registrarUsuario({ nombre: estudiante.nombre, correo: '', dni: '70000001', rol: 'estudiante' })
+  assert.equal(resultado.usuario.dni, '70000001')
+  assert.equal(resultado.usuario.correo, null)
 })

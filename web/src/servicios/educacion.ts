@@ -1,7 +1,7 @@
 import { enviar, solicitar } from './http'
 
 export type SeccionEducativa = { id: string; nombre: string; grado: number; anio_escolar: number }
-export type VinculoEstudiante = { id: string; estudiante_id: string; seccion: SeccionEducativa; anio_escolar: number; creado_en: string; estudiante_nombre?: string | null }
+export type VinculoEstudiante = { id: string; estudiante_id: string; seccion: SeccionEducativa; anio_escolar: number; creado_en: string; estudiante_nombre?: string | null; estudiante_dni?: string | null }
 export type AsignacionDocente = { id: string; docente_id: string; curso_id: string; seccion: SeccionEducativa; anio_escolar: number; creado_en: string }
 export const listarVinculos = () => solicitar<{ vinculos: VinculoEstudiante[] }>('/api/educacion/vinculos-estudiantes/')
 export const crearVinculo = (datos: { estudiante_id: string; seccion_id: string; anio_escolar: number }) => enviar<{ vinculo: VinculoEstudiante; mensaje?: string }>('/api/educacion/vinculos-estudiantes/crear/', datos)

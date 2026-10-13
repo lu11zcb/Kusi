@@ -100,7 +100,7 @@ def registrar_usuario(request):
 
     errores_tipo = {
         campo: [{"message": "Este dato debe ser un texto.", "code": "invalid_type"}]
-        for campo in ("nombre", "correo", "rol")
+        for campo in ("nombre", "correo", "rol", "dni")
         if campo in datos and not isinstance(datos[campo], str)
     }
     if errores_tipo:
@@ -129,8 +129,18 @@ def registrar_usuario(request):
         # Dos solicitudes podrían intentar registrar el mismo correo
         # al mismo tiempo, después de superar la validación inicial.
         correo = formulario.cleaned_data["correo"]
+        dni = formulario.cleaned_data.get("dni")
 
-        if Usuario.objects.filter(correo__iexact=correo).exists():
+        if dni and Usuario.objects.filter(dni=dni).exists():
+            return JsonResponse(
+                {
+                    "mensaje": "Ya existe una cuenta con este DNI.",
+                    "errores": {"dni": [{"message": "Ya existe una cuenta con este DNI.", "code": "unique"}]},
+                },
+                status=409,
+            )
+
+        if correo and Usuario.objects.filter(correo__iexact=correo).exists():
             return JsonResponse(
                 {
                     "mensaje": "Ya existe una cuenta con este correo.",
@@ -153,6 +163,7 @@ def registrar_usuario(request):
                 "id": str(usuario.id),
                 "nombre": usuario.nombre,
                 "correo": usuario.correo,
+                "dni": usuario.dni,
                 "rol": formulario.cleaned_data["rol"],
             },
             "contrasena_temporal": contrasena_temporal,

@@ -26,7 +26,7 @@ ROLES = ("administrador", "docente", "estudiante")
 
 def datos_usuario(usuario):
     return {
-        "id": str(usuario.id), "nombre": usuario.nombre, "correo": usuario.correo,
+        "id": str(usuario.id), "nombre": usuario.nombre, "correo": usuario.correo, "dni": usuario.dni,
         "roles": list(usuario.groups.filter(name__in=ROLES).order_by("name").values_list("name", flat=True)),
         "debe_cambiar_contrasena": usuario.debe_cambiar_contrasena,
     }
@@ -62,9 +62,16 @@ def ingresar(request):
     if error is not None:
         return error
     correo = datos.get("correo")
+    dni = datos.get("dni")
     contrasena = datos.get("contrasena")
     usuario = None
-    if isinstance(correo, str) and isinstance(contrasena, str):
+    # HU12: la app móvil envía el DNI del estudiante; la web, el correo del adulto.
+    if dni is not None:
+        if isinstance(dni, str) and isinstance(contrasena, str):
+            usuario = authenticate(request, dni=dni, password=contrasena)
+        if usuario is None or not usuario.is_active:
+            return JsonResponse({"mensaje": "DNI o contraseña incorrectos"}, status=401)
+    elif isinstance(correo, str) and isinstance(contrasena, str):
         usuario = authenticate(request, correo=correo.strip().lower(), password=contrasena)
     if usuario is None or not usuario.is_active:
         return JsonResponse({"mensaje": "Correo o contraseña incorrectos"}, status=401)

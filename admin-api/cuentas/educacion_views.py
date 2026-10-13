@@ -133,16 +133,23 @@ def mis_asignaciones_docente(request):
     return _transportar(request, "docentes/" + str(usuario.id) + "/recursos", "GET", "asignaciones")
 
 
-@never_cache
-@require_GET
-def mis_estudiantes_docente(request):
-    usuario = request.user
+def _exigir_docente(usuario):
     if not usuario.is_authenticated or not usuario.is_active:
         return JsonResponse({"mensaje": "Debes iniciar sesión."}, status=401)
     if not usuario.groups.filter(name="docente").exists():
         return JsonResponse({"mensaje": "Esta operación requiere el rol docente."}, status=403)
     if usuario.debe_cambiar_contrasena:
         return JsonResponse({"mensaje": "Debes cambiar tu contraseña temporal."}, status=403)
+    return None
+
+
+@never_cache
+@require_GET
+def mis_estudiantes_docente(request):
+    usuario = request.user
+    rechazo = _exigir_docente(usuario)
+    if rechazo is not None:
+        return rechazo
     respuesta = _transportar(request, "docentes/" + str(usuario.id) + "/estudiantes", "GET", "estudiantes")
     if respuesta.status_code != 200:
         return respuesta
@@ -150,11 +157,14 @@ def mis_estudiantes_docente(request):
     datos = json.loads(respuesta.content)
     identificadores = {v.get("estudiante_id") for v in datos["estudiantes"] if isinstance(v, dict)}
     try:
-        nombres = dict(Usuario.objects.filter(pk__in=identificadores).values_list("id", "nombre"))
+        nombres = {clave: (nombre, dni) for clave, nombre, dni in Usuario.objects.filter(pk__in=identificadores).values_list("id", "nombre", "dni")}
     except (ValidationError, ValueError):
         return JsonResponse({"mensaje": "No se pudo completar la operación educativa."}, status=502)
     nombres = {str(clave): valor for clave, valor in nombres.items()}
     for vinculo in datos["estudiantes"]:
         if isinstance(vinculo, dict):
-            vinculo["estudiante_nombre"] = nombres.get(vinculo.get("estudiante_id"))
+            nombre, dni = nombres.get(vinculo.get("estudiante_id"), (None, None))
+            vinculo["estudiante_nombre"] = nombre
+            vinculo["estudiante_dni"] = dni
     return JsonResponse(datos)
+

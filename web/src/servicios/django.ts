@@ -1,8 +1,9 @@
 export type Rol = 'administrador' | 'docente' | 'estudiante'
-export type DatosRegistro = { nombre: string; correo: string; rol: Rol | '' }
+export type DatosRegistro = { nombre: string; correo: string; dni: string; rol: Rol | '' }
 export type CampoRegistro = keyof DatosRegistro
 export type ErroresRegistro = Partial<Record<CampoRegistro, string[]>>
-export type UsuarioSesion = { id: string; nombre: string; correo: string }
+// HU12: un estudiante puede no tener correo; se identifica con su DNI.
+export type UsuarioSesion = { id: string; nombre: string; correo: string | null; dni?: string | null }
 export type ContextoRegistro = { usuario: UsuarioSesion; csrf_token: string }
 export type RegistroCreado = {
   usuario: UsuarioSesion & { rol: Rol }
@@ -27,7 +28,8 @@ function esObjeto(valor: unknown): valor is Record<string, unknown> {
 
 function esUsuario(valor: unknown): valor is UsuarioSesion {
   return esObjeto(valor) && typeof valor.id === 'string'
-    && typeof valor.nombre === 'string' && typeof valor.correo === 'string'
+    && typeof valor.nombre === 'string' && (typeof valor.correo === 'string' || valor.correo === null)
+    && (valor.dni === undefined || valor.dni === null || typeof valor.dni === 'string')
 }
 
 function esRol(valor: unknown): valor is Rol {
@@ -37,7 +39,7 @@ function esRol(valor: unknown): valor is Rol {
 function leerErrores(valor: unknown): ErroresRegistro {
   if (!esObjeto(valor)) return {}
   const errores: ErroresRegistro = {}
-  for (const campo of ['nombre', 'correo', 'rol'] as const) {
+  for (const campo of ['nombre', 'correo', 'dni', 'rol'] as const) {
     const detalles = valor[campo]
     if (Array.isArray(detalles)) {
       errores[campo] = detalles.flatMap((detalle: unknown) =>
@@ -108,6 +110,7 @@ export async function registrarUsuario(datos: DatosRegistro): Promise<RegistroCr
       id: creado.usuario.id,
       nombre: creado.usuario.nombre,
       correo: creado.usuario.correo,
+      dni: creado.usuario.dni ?? null,
       rol: creado.usuario.rol,
     },
     contrasena_temporal: creado.contrasena_temporal,

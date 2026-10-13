@@ -13,6 +13,7 @@ urlpatterns = [
     path("usuarios/<uuid:usuario_id>/roles/", gestion_views.asignar_roles, name="asignar_roles"),
     path("usuarios/<uuid:usuario_id>/datos/", gestion_views.editar_usuario, name="editar_usuario"),
     path("usuarios/<uuid:usuario_id>/estado/", gestion_views.cambiar_estado_usuario, name="cambiar_estado_usuario"),
+    path("usuarios/<uuid:usuario_id>/contrasena-temporal/", gestion_views.generar_contrasena_usuario, name="generar_contrasena_usuario"),
     path("cursos/", cursos_views.listar_cursos, name="listar_cursos"),
     path("cursos/<uuid:curso_id>/", cursos_views.actualizar_curso, name="actualizar_curso"),
 ]

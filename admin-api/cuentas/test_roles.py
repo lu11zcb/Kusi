@@ -11,7 +11,7 @@ class RolesTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = Usuario.objects.create_superuser("admin-roles@example.com", "ClaveSegura2026!", nombre="Admin QA")
-        cls.persona = Usuario.objects.create_user("persona@example.com", "ClavePersona2026!", nombre="Persona QA", debe_cambiar_contrasena=False)
+        cls.persona = Usuario.objects.create_user("persona@example.com", "ClavePersona2026!", nombre="Persona QA", debe_cambiar_contrasena=False, dni="40000002")
         cls.persona.groups.add(Group.objects.create(name="docente"))
 
     def setUp(self):

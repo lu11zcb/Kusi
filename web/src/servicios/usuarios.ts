@@ -14,8 +14,13 @@ export const consultarUsuario = (id: string) => solicitar<DetalleUsuario>('/api/
 export const asignarRoles = (id: string, roles: Rol[]) => enviar<{ usuario: UsuarioAdministrado }>(
   '/api/cuentas/usuarios/' + encodeURIComponent(id) + '/roles/', { roles },
 )
-export const editarUsuario = (id: string, datos: { nombre: string; correo: string }) => enviar<{ usuario: UsuarioAdministrado }>(
+export const editarUsuario = (id: string, datos: { nombre: string; correo: string; dni: string }) => enviar<{ usuario: UsuarioAdministrado }>(
   '/api/cuentas/usuarios/' + encodeURIComponent(id) + '/datos/', datos, 'PATCH',
+)
+
+// HU12: solo el administrador genera contraseñas temporales (se muestran una vez).
+export const generarContrasenaTemporal = (id: string) => enviar<{ usuario: UsuarioAdministrado; contrasena_temporal: string }>(
+  '/api/cuentas/usuarios/' + encodeURIComponent(id) + '/contrasena-temporal/', {},
 )
 
 export const cambiarEstadoUsuario = (id: string, activo: boolean) => enviar<{ mensaje: string; usuario: UsuarioAdministrado }>(

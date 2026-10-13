@@ -76,6 +76,11 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "cuentas.Usuario"
+# Adultos ingresan con correo; estudiantes con DNI (HU12).
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "cuentas.autenticacion.DniBackend",
+]
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

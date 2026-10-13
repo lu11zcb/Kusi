@@ -17,12 +17,13 @@ class GestorUsuarios(BaseUserManager):
 
     # Django utiliza estos nombres de métodos y el parámetro password.
     def create_user(self, correo, password=None, **datos):
-        if not correo or not correo.strip():
+        # HU12: un estudiante puede no tener correo; entonces se identifica por DNI.
+        if (not correo or not correo.strip()) and not datos.get("dni"):
             raise ValueError("El correo es obligatorio.")
 
         # Normalizamos el correo para evitar cuentas distintas
         # por diferencias entre mayúsculas y minúsculas.
-        correo_normalizado = self.normalize_email(correo.strip()).lower()
+        correo_normalizado = self.normalize_email(correo.strip()).lower() if correo and correo.strip() else None
 
         usuario = self.model(correo=correo_normalizado, **datos)
 
@@ -71,7 +72,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     )
 
     nombre = models.CharField(max_length=150)
-    correo = models.EmailField(unique=True)
+    # Obligatorio para administradores y docentes (lo exige el formulario).
+    correo = models.EmailField(unique=True, null=True, blank=True)
+    # HU12: con su DNI el estudiante ingresa a la app móvil.
+    dni = models.CharField(max_length=8, unique=True, null=True, blank=True)
 
     # Estos nombres son los que espera el sistema de acceso de Django.
     is_active = models.BooleanField(default=True)
@@ -98,10 +102,18 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
                 Lower("correo"),
                 name="usuario_correo_sin_mayusculas_unico",
             ),
+            models.CheckConstraint(
+                condition=models.Q(dni__isnull=True) | models.Q(dni__regex=r"^[0-9]{8}$"),
+                name="usuario_dni_ocho_digitos",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(correo__isnull=False) | models.Q(dni__isnull=False),
+                name="usuario_correo_o_dni",
+            ),
         ]
 
     def __str__(self):
-        return self.nombre + " - " + self.correo
+        return self.nombre + " - " + (self.correo or "DNI " + (self.dni or ""))
 
 
 class CambioUsuario(models.Model):

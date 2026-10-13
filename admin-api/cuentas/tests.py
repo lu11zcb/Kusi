@@ -73,7 +73,9 @@ class RegistroUsuariosTests(TestCase):
     def test_acepta_los_tres_roles_sin_conceder_acceso_tecnico(self):
         for rol in ("administrador", "docente", "estudiante"):
             with self.subTest(rol=rol):
-                respuesta = self.registrar({**self.datos, "correo": "registro-" + rol + "@example.com", "rol": rol})
+                # HU12: la cuenta de estudiante se identifica con su DNI.
+                extra = {"dni": "40000001"} if rol == "estudiante" else {}
+                respuesta = self.registrar({**self.datos, "correo": "registro-" + rol + "@example.com", "rol": rol, **extra})
                 self.assertEqual(respuesta.status_code, 201)
                 usuario = Usuario.objects.get(id=respuesta.json()["usuario"]["id"])
                 self.assertTrue(usuario.groups.filter(name=rol).exists())

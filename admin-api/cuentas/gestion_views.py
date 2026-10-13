@@ -14,6 +14,7 @@ from .acceso_views import ROLES, datos_usuario, leer_json
 from .forms import FormularioEdicionUsuario
 from .models import CambioUsuario, Usuario
 from .permisos import exigir_administrador
+from .servicios import generar_contrasena_temporal
 
 
 def datos_usuario_administracion(usuario):
@@ -46,7 +47,7 @@ def listar_usuarios(request):
     except ValueError:
         return JsonResponse({"mensaje": "La página debe ser un entero positivo."}, status=400)
     busqueda = request.GET.get("buscar", "").strip()[:150]
-    consulta = Usuario.objects.filter(Q(nombre__icontains=busqueda) | Q(correo__icontains=busqueda)).order_by("nombre", "id")
+    consulta = Usuario.objects.filter(Q(nombre__icontains=busqueda) | Q(correo__icontains=busqueda) | Q(dni__icontains=busqueda)).order_by("nombre", "id")
     paginador = Paginator(consulta, 25)
     resultado = paginador.get_page(pagina)
     return JsonResponse({
@@ -93,6 +94,11 @@ def asignar_roles(request, usuario_id):
         usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
         anterior = datos_usuario_administracion(usuario)["roles"]
         actual = sorted(roles)
+        # HU12: un estudiante necesita DNI para la app; un adulto, correo para la web.
+        if "estudiante" in actual and not usuario.dni:
+            return JsonResponse({"mensaje": "Registra el DNI de la cuenta antes de asignarle el rol estudiante."}, status=400)
+        if "estudiante" not in actual and not usuario.correo:
+            return JsonResponse({"mensaje": "Registra el correo de la cuenta antes de asignarle un rol de adulto."}, status=400)
         if anterior != actual:
             # Solo modifica roles escolares; nunca grupos técnicos ni privilegios Django.
             usuario.groups.remove(*usuario.groups.filter(name__in=ROLES))
@@ -113,22 +119,25 @@ def editar_usuario(request, usuario_id):
     datos, error = leer_json(request)
     if error is not None:
         return error
-    if set(datos) != {"nombre", "correo"} or any(not isinstance(valor, str) for valor in datos.values()):
-        return JsonResponse({"mensaje": "Envía únicamente nombre y correo como texto."}, status=400)
+    if set(datos) not in ({"nombre", "correo"}, {"nombre", "correo", "dni"}) or any(not isinstance(valor, str) for valor in datos.values()):
+        return JsonResponse({"mensaje": "Envía únicamente nombre, correo y DNI como texto."}, status=400)
     try:
         with transaction.atomic():
             usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
-            formulario = FormularioEdicionUsuario(datos, usuario)
+            formulario = FormularioEdicionUsuario({**datos, "dni": datos.get("dni", usuario.dni or "")}, usuario)
             if not formulario.is_valid():
                 return JsonResponse({"mensaje": "Revisa los datos del usuario.", "errores": formulario.errors.get_json_data()}, status=400)
-            anterior = {"nombre": usuario.nombre, "correo": usuario.correo}
-            actual = formulario.cleaned_data
+            anterior = {"nombre": usuario.nombre, "correo": usuario.correo, "dni": usuario.dni}
+            actual = dict(formulario.cleaned_data)
             if anterior != actual:
                 usuario.nombre = actual["nombre"]
                 usuario.correo = actual["correo"]
-                usuario.save(update_fields=["nombre", "correo"])
+                usuario.dni = actual["dni"]
+                usuario.save(update_fields=["nombre", "correo", "dni"])
                 CambioUsuario.objects.create(usuario=usuario, administrador=request.user, tipo="datos", anterior=anterior, actual=actual)
     except IntegrityError:
+        if datos.get("dni") and Usuario.objects.filter(dni=datos["dni"].strip()).exclude(pk=usuario_id).exists():
+            return JsonResponse({"mensaje": "Ya existe una cuenta con este DNI.", "errores": {"dni": [{"message": "Ya existe una cuenta con este DNI.", "code": "unique"}]}}, status=409)
         if Usuario.objects.filter(correo__iexact=datos["correo"].strip()).exclude(pk=usuario_id).exists():
             return JsonResponse({"mensaje": "Ya existe una cuenta con este correo.", "errores": {"correo": [{"message": "Ya existe una cuenta con este correo.", "code": "unique"}]}}, status=409)
         raise
@@ -163,3 +172,31 @@ def cambiar_estado_usuario(request, usuario_id):
         "mensaje": "Cuenta activada." if usuario.is_active else "Cuenta desactivada.",
         "usuario": datos_usuario_administracion(usuario),
     })
+
+
+@never_cache
+@require_POST
+def generar_contrasena_usuario(request, usuario_id):
+    """HU12: solo el administrador genera contraseñas. Si un estudiante olvida la
+    suya, el administrador crea una temporal y el docente se la comunica."""
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    if usuario_id == request.user.pk:
+        return JsonResponse({"mensaje": "Para tu propia cuenta usa «Cambiar contraseña»."}, status=400)
+    with transaction.atomic():
+        usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
+        if not usuario.is_active:
+            return JsonResponse({"mensaje": "Activa la cuenta antes de generar una contraseña."}, status=409)
+        contrasena_temporal = generar_contrasena_temporal()
+        usuario.set_password(contrasena_temporal)
+        usuario.debe_cambiar_contrasena = True
+        usuario.save(update_fields=["password", "debe_cambiar_contrasena"])
+        # El historial registra quién y cuándo, nunca la contraseña.
+        CambioUsuario.objects.create(
+            usuario=usuario, administrador=request.user, tipo="contrasena_temporal",
+            anterior={}, actual={"debe_cambiar_contrasena": True},
+        )
+    # La contraseña anterior deja de servir también en sesiones abiertas.
+    revocar_sesiones_usuario(usuario)
+    return JsonResponse({"usuario": datos_usuario_administracion(usuario), "contrasena_temporal": contrasena_temporal})

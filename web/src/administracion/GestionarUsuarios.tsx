@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { ErrorApi } from '../servicios/django'
 import type { ErroresRegistro, Rol } from '../servicios/django'
 import { CampoFormulario } from '../componentes/CampoFormulario'
-import { asignarRoles, cambiarEstadoUsuario, consultarUsuario, editarUsuario, listarUsuarios, refrescarUsuarioGuardado } from '../servicios/usuarios'
+import { asignarRoles, cambiarEstadoUsuario, consultarUsuario, editarUsuario, generarContrasenaTemporal, listarUsuarios, refrescarUsuarioGuardado } from '../servicios/usuarios'
 import type { DetalleUsuario, UsuarioAdministrado } from '../servicios/usuarios'
 
 const etiquetas: Record<Rol, string> = { administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante' }
@@ -15,11 +15,13 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
   const [pagina, establecerPagina] = useState(1)
   const [detalle, establecerDetalle] = useState<DetalleUsuario | null>(null)
   const [roles, establecerRoles] = useState<Rol[]>([])
-  const [datos, establecerDatos] = useState({ nombre: '', correo: '' })
+  const [datos, establecerDatos] = useState({ nombre: '', correo: '', dni: '' })
   const [erroresCampos, establecerErroresCampos] = useState<ErroresRegistro>({})
   const [error, establecerError] = useState('')
   const [mensaje, establecerMensaje] = useState('')
   const [ocupado, establecerOcupado] = useState(false)
+  // HU12: la contraseña generada se muestra una sola vez.
+  const [contrasenaNueva, establecerContrasenaNueva] = useState('')
   const [revision, establecerRevision] = useState(0)
   const bloqueo = useRef(false)
   const titulo = useRef<HTMLHeadingElement>(null)
@@ -36,11 +38,11 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
     if (bloqueo.current) return
     bloqueo.current = true
     establecerOcupado(true)
-    establecerError(''); establecerMensaje(''); establecerDetalle(null)
+    establecerError(''); establecerMensaje(''); establecerDetalle(null); establecerContrasenaNueva('')
     try {
       const datos = await consultarUsuario(id)
       establecerDetalle(datos); establecerRoles(datos.usuario.roles)
-      establecerDatos({ nombre: datos.usuario.nombre, correo: datos.usuario.correo }); establecerErroresCampos({})
+      establecerDatos({ nombre: datos.usuario.nombre, correo: datos.usuario.correo ?? '', dni: datos.usuario.dni ?? '' }); establecerErroresCampos({})
     } catch (fallo) { establecerError((fallo as Error).message) }
     finally { bloqueo.current = false; establecerOcupado(false) }
   }
@@ -83,13 +85,26 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
     } finally { bloqueo.current = false; establecerOcupado(false) }
   }
 
+  async function generarContrasena() {
+    if (!detalle || bloqueo.current) return
+    if (!window.confirm('¿Generar una contraseña temporal nueva para ' + detalle.usuario.nombre + '? La anterior dejará de servir y se cerrarán sus sesiones.')) return
+    bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje(''); establecerContrasenaNueva('')
+    try {
+      const resultado = await generarContrasenaTemporal(detalle.usuario.id)
+      establecerContrasenaNueva(resultado.contrasena_temporal)
+      await actualizarGuardado(resultado.usuario)
+    } catch (fallo) {
+      establecerError((fallo as Error).message)
+    } finally { bloqueo.current = false; establecerOcupado(false) }
+  }
+
   async function guardarDatos(evento: FormEvent) {
     evento.preventDefault()
     if (!detalle || bloqueo.current) return
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje(''); establecerErroresCampos({})
     try {
       const resultado = await editarUsuario(detalle.usuario.id, datos)
-      establecerDatos({ nombre: resultado.usuario.nombre, correo: resultado.usuario.correo })
+      establecerDatos({ nombre: resultado.usuario.nombre, correo: resultado.usuario.correo ?? '', dni: resultado.usuario.dni ?? '' })
       establecerMensaje('Datos actualizados. El identificador y el historial se conservan.')
       await actualizarGuardado(resultado.usuario)
     } catch (fallo) {
@@ -101,7 +116,7 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
   return <>
     <h1>Usuarios y roles</h1>
     <form role="search" onSubmit={(evento) => { evento.preventDefault(); establecerLista(null); establecerError(''); establecerFiltro(buscar); establecerPagina(1); establecerRevision((valor) => valor + 1) }}>
-      <div className="campo"><label htmlFor="buscar-usuarios">Buscar por nombre o correo</label><input id="buscar-usuarios" value={buscar} onChange={(evento) => establecerBuscar(evento.target.value)} maxLength={150} /></div>
+      <div className="campo"><label htmlFor="buscar-usuarios">Buscar por nombre, correo o DNI</label><input id="buscar-usuarios" value={buscar} onChange={(evento) => establecerBuscar(evento.target.value)} maxLength={150} /></div>
       <button type="submit" disabled={ocupado}>Buscar usuarios</button>
     </form>
     {error && <p role="alert" className="error-resumen">{error} <a href="/">Volver al acceso</a></p>}
@@ -110,7 +125,7 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
     {lista && <section aria-label="Resultados de usuarios">
       <p>{lista.total} usuarios encontrados.</p>
       <ul className="lista-gestion">{lista.usuarios.map((usuario) => <li key={usuario.id}>
-        <div><strong>{usuario.nombre}</strong><span>{usuario.correo}</span><span>{usuario.roles.map((rol) => etiquetas[rol]).join(', ') || 'Sin rol escolar'}</span><span>Estado: {usuario.activo ? 'Activa' : 'Desactivada'}</span><span>Identificador: <code>{usuario.id}</code></span></div>
+        <div><strong>{usuario.nombre}</strong><span>{usuario.correo ?? 'Sin correo'}</span>{usuario.dni && <span>DNI {usuario.dni}</span>}<span>{usuario.roles.map((rol) => etiquetas[rol]).join(', ') || 'Sin rol escolar'}</span><span>Estado: {usuario.activo ? 'Activa' : 'Desactivada'}</span><span>Identificador: <code>{usuario.id}</code></span></div>
         <button type="button" className="secundario" disabled={ocupado} onClick={() => elegir(usuario.id)}>Gestionar {usuario.nombre}</button>
       </li>)}</ul>
       <div className="acciones"><button type="button" className="secundario" disabled={pagina <= 1 || ocupado} onClick={() => { establecerLista(null); establecerPagina(pagina - 1) }}>Anterior</button>
@@ -119,12 +134,19 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
     </section>}
     {detalle && <section aria-labelledby="usuario-elegido">
       <h2 id="usuario-elegido" ref={titulo} tabIndex={-1}>{detalle.usuario.nombre}</h2>
-      <p>{detalle.usuario.correo}</p>
+      <p>{detalle.usuario.correo ?? 'Sin correo'}{detalle.usuario.dni ? ' · DNI ' + detalle.usuario.dni : ''}</p>
       <p>Estado de la cuenta: <strong>{detalle.usuario.activo ? 'Activa' : 'Desactivada'}</strong></p>
       <button type="button" className="secundario" disabled={ocupado} onClick={cambiarEstado}>{detalle.usuario.activo ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
+      {detalle.usuario.id !== usuarioActualId && detalle.usuario.activo && <button type="button" className="secundario" disabled={ocupado} onClick={generarContrasena}>Generar contraseña temporal</button>}
+      {contrasenaNueva && <div className="confirmacion" role="status">
+        <dl><dt>Contraseña temporal</dt><dd><code className="contrasena">{contrasenaNueva}</code></dd></dl>
+        <p>Entrégala ahora: no podrás volver a verla. {detalle.usuario.dni ? 'El estudiante ingresa a la app con su DNI y esta contraseña; ' : 'La persona '}deberá cambiarla al ingresar.</p>
+        <button type="button" onClick={() => establecerContrasenaNueva('')}>Ya la entregué</button>
+      </div>}
       <form onSubmit={guardarDatos}><h2>Datos de la cuenta</h2><fieldset disabled={ocupado}>
-        {(['nombre', 'correo'] as const).map((campo) => <CampoFormulario key={campo} id={'editar-' + campo} etiqueta={campo === 'nombre' ? 'Nombre completo' : 'Correo de la cuenta'} errores={erroresCampos[campo]}>
-          <input id={'editar-' + campo} type={campo === 'correo' ? 'email' : 'text'} value={datos[campo]} required maxLength={campo === 'nombre' ? 150 : 254}
+        {(['nombre', 'correo', 'dni'] as const).map((campo) => <CampoFormulario key={campo} id={'editar-' + campo} etiqueta={campo === 'nombre' ? 'Nombre completo' : campo === 'correo' ? 'Correo de la cuenta' : 'DNI (estudiantes)'} errores={erroresCampos[campo]}>
+          <input id={'editar-' + campo} type={campo === 'correo' ? 'email' : 'text'} value={datos[campo]} required={campo === 'nombre'} maxLength={campo === 'nombre' ? 150 : campo === 'dni' ? 8 : 254}
+            inputMode={campo === 'dni' ? 'numeric' : undefined}
             aria-invalid={!!erroresCampos[campo]?.length} aria-describedby={erroresCampos[campo]?.length ? 'editar-' + campo + '-error' : undefined}
             onChange={(evento) => establecerDatos({ ...datos, [campo]: evento.target.value })} />
         </CampoFormulario>)}
@@ -141,7 +163,7 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso }: { usuar
       </form>
       <h2>Historial reciente</h2>
       {detalle.historial.length === 0 ? <p>Esta cuenta todavía no tiene cambios registrados.</p> : <ol className="historial">{detalle.historial.map((cambio) => <li key={cambio.id}>
-        <strong>{cambio.tipo === 'roles' ? 'Cambio de roles' : cambio.tipo === 'estado' ? 'Cambio de estado' : 'Cambio de datos'}</strong> · {new Date(cambio.fecha).toLocaleString('es-PE')} · {cambio.administrador}
+        <strong>{cambio.tipo === 'roles' ? 'Cambio de roles' : cambio.tipo === 'estado' ? 'Cambio de estado' : cambio.tipo === 'contrasena_temporal' ? 'Contraseña temporal generada' : 'Cambio de datos'}</strong> · {new Date(cambio.fecha).toLocaleString('es-PE')} · {cambio.administrador}
         <p>Antes: {Object.entries(cambio.anterior).map(([campo, valor]) => campo + ': ' + String(valor)).join(' · ')}</p>
         <p>Después: {Object.entries(cambio.actual).map(([campo, valor]) => campo + ': ' + String(valor)).join(' · ')}</p>
       </li>)}</ol>}

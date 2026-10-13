@@ -5,7 +5,7 @@ import { CampoFormulario } from '../componentes/CampoFormulario'
 import { ErrorApi, registrarUsuario } from '../servicios/django'
 import type { DatosRegistro, ErroresRegistro, RegistroCreado, Rol } from '../servicios/django'
 
-const datosVacios: DatosRegistro = { nombre: '', correo: '', rol: '' }
+const datosVacios: DatosRegistro = { nombre: '', correo: '', dni: '', rol: '' }
 const nombresRol: Record<Rol, string> = {
   administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante',
 }
@@ -75,11 +75,13 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
         <h2 id="titulo-confirmacion">Usuario registrado</h2>
         <dl>
           <dt>Nombre</dt><dd>{resultado.usuario.nombre}</dd>
-          <dt>Correo</dt><dd>{resultado.usuario.correo}</dd>
+          {resultado.usuario.correo && <><dt>Correo</dt><dd>{resultado.usuario.correo}</dd></>}
+          {resultado.usuario.dni && <><dt>DNI</dt><dd>{resultado.usuario.dni}</dd></>}
           <dt>Rol</dt><dd>{nombresRol[resultado.usuario.rol]}</dd>
           <dt>Contraseña temporal</dt><dd><code className="contrasena">{resultado.contrasena_temporal}</code></dd>
         </dl>
         <p>Entrégala ahora. Al cerrar esta confirmación, no podrás volver a consultarla. La cuenta deberá cambiarla al ingresar.</p>
+        {resultado.usuario.rol === 'estudiante' && <p>El estudiante ingresa a la app con su DNI y esta contraseña; entrégasela a su docente para que se la comunique. Si la olvida, genera otra desde «Usuarios y roles».</p>}
         <button type="button" onClick={() => { establecerResultado(null); alCambiarBloqueo?.(false) }}>Cerrar y registrar otra cuenta</button>
       </section>
     )
@@ -87,7 +89,7 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
 
   return (
     <form onSubmit={enviar} noValidate aria-busy={enviando}>
-      <p>Todos los campos son obligatorios.</p>
+      <p>Nombre y rol son obligatorios. Los estudiantes necesitan DNI; los administradores y docentes, correo.</p>
       {mensaje && <p className="error-resumen" role="alert" tabIndex={-1} ref={resumenError}>{mensaje}</p>}
       {estadoError === 401 && <p><a href="/">Volver a iniciar sesión</a></p>}
       <fieldset disabled={enviando}>
@@ -97,8 +99,13 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
             value={datos.nombre} onChange={(evento) => establecerDatos({ ...datos, nombre: evento.target.value })}
             aria-invalid={Boolean(errores.nombre?.length)} aria-describedby={errores.nombre?.length ? 'nombre-error' : undefined} />
         </CampoFormulario>
-        <CampoFormulario id="correo" etiqueta="Correo" errores={errores.correo}>
-          <input id="correo" name="correo" type="email" inputMode="email" autoComplete="off" autoCapitalize="none" spellCheck={false} required maxLength={254}
+        <CampoFormulario id="dni" etiqueta={datos.rol === 'estudiante' ? 'DNI' : 'DNI (solo estudiantes)'} errores={errores.dni}>
+          <input id="dni" name="dni" inputMode="numeric" autoComplete="off" maxLength={8} pattern="[0-9]{8}" required={datos.rol === 'estudiante'}
+            value={datos.dni} onChange={(evento) => establecerDatos({ ...datos, dni: evento.target.value.replace(/\D/g, '') })}
+            aria-invalid={Boolean(errores.dni?.length)} aria-describedby={errores.dni?.length ? 'dni-error' : undefined} />
+        </CampoFormulario>
+        <CampoFormulario id="correo" etiqueta={datos.rol === 'estudiante' ? 'Correo (opcional para estudiantes)' : 'Correo'} errores={errores.correo}>
+          <input id="correo" name="correo" type="email" inputMode="email" autoComplete="off" autoCapitalize="none" spellCheck={false} required={datos.rol !== 'estudiante'} maxLength={254}
             value={datos.correo} onChange={(evento) => establecerDatos({ ...datos, correo: evento.target.value })}
             aria-invalid={Boolean(errores.correo?.length)} aria-describedby={errores.correo?.length ? 'correo-error' : undefined} />
         </CampoFormulario>
