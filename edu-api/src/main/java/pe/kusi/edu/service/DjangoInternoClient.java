@@ -2,6 +2,8 @@ package pe.kusi.edu.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -16,11 +18,15 @@ public class DjangoInternoClient {
     @Value("${kusi.django-url}") private String djangoUrl;
     @Value("${kusi.internal-key:}") private String internalKey;
 
-    public DjangoInternoClient() {
+    public DjangoInternoClient() { this.http=new RestTemplate(fabrica()); }
+
+    // SimpleClientHttpRequestFactory envía el cuerpo con Transfer-Encoding: chunked,
+    // que el servidor de Django rechaza con 400. El buffer fija Content-Length.
+    static ClientHttpRequestFactory fabrica() {
         SimpleClientHttpRequestFactory factory=new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(2000);
         factory.setReadTimeout(3000);
-        this.http=new RestTemplate(factory);
+        return new BufferingClientHttpRequestFactory(factory);
     }
 
     // Permite probar el contrato con un servidor HTTP simulado, sin red.
