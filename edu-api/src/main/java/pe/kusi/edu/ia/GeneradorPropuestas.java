@@ -1,7 +1,7 @@
 package pe.kusi.edu.ia;
 
 // Separa transporte del proveedor y validación del resultado (ValidadorPropuesta).
-// La prueba real de IA está aplazada por Luis: no hay proveedor ni modelo elegidos.
+// Proveedor real: GeneradorGroq (se activa con GROQ_API_KEY en el .env local).
 public interface GeneradorPropuestas {
     boolean configurado();
     String proveedor();
