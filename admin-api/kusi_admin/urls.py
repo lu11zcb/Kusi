@@ -33,4 +33,6 @@ urlpatterns = [
     path('api/educacion/asignaciones-docentes/', educacion_views.listar_asignaciones, name='listar_asignaciones'),
     path('api/educacion/asignaciones-docentes/crear/', educacion_views.asignar_docente, name='asignar_docente'),
     path('api/educacion/mis-asignaciones/', educacion_views.mis_asignaciones_docente, name='mis_asignaciones_docente'),
+    path('api/educacion/mis-estudiantes/', educacion_views.mis_estudiantes_docente, name='mis_estudiantes_docente'),
+    path('api/educacion/mis-estudiantes/', educacion_views.mis_estudiantes_docente, name='mis_estudiantes_docente'),
 ]

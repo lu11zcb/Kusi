@@ -8,3 +8,4 @@ export const crearVinculo = (datos: { estudiante_id: string; seccion_id: string;
 export const listarAsignaciones = () => solicitar<{ asignaciones: AsignacionDocente[] }>('/api/educacion/asignaciones-docentes/')
 export const crearAsignacion = (datos: { docente_id: string; curso_id: string; seccion_id: string; anio_escolar: number }) => enviar<{ asignacion: AsignacionDocente; mensaje?: string }>('/api/educacion/asignaciones-docentes/crear/', datos)
 export const misAsignacionesDocente = () => solicitar<{ asignaciones: AsignacionDocente[] }>('/api/educacion/mis-asignaciones/')
+export const misEstudiantesDocente = () => solicitar<{ estudiantes: VinculoEstudiante[] }>('/api/educacion/mis-estudiantes/')

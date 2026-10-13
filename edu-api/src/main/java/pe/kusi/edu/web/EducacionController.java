@@ -86,6 +86,34 @@ public class EducacionController {
         return Map.of("asignaciones", asignaciones.findAllByDocenteId(docenteId).stream().map(this::asignacionDto).toList());
     }
 
+    @GetMapping("/docentes/{docenteId}/estudiantes/") @Transactional(readOnly=true)
+    public Map<String,Object> estudiantesDocente(
+        @RequestHeader(value="X-Clave-Interna", required=false) String clave,
+        @RequestHeader(value="X-Sesion-Kusi", required=false) String sesion,
+        @PathVariable UUID docenteId) {
+
+        if (claveInterna == null || claveInterna.isBlank() || clave == null ||
+            !java.security.MessageDigest.isEqual(
+                claveInterna.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                clave.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+            throw new SecurityException("Servicio no autorizado.");
+        }
+
+        Map<String,Object> usuario = django.validarSesion(sesion);
+        Object rolesValue = usuario.get("roles");
+
+        if (!(rolesValue instanceof List<?> roles) ||
+            !roles.contains("docente") ||
+            !Objects.equals(String.valueOf(usuario.get("id")), docenteId.toString())) {
+            throw new SecurityException("Solo puedes consultar estudiantes de tus secciones asignadas.");
+        }
+
+        return Map.of("estudiantes",
+            vinculos.findEstudiantesDeSeccionesAsignadas(docenteId)
+                .stream().map(this::vinculoDto).toList());
+    }
+
+
     private Map<String,Object> seccionDto(Seccion s){return Map.of("id",s.getId(),"nombre",s.getNombre(),"grado",s.getGrado(),"anio_escolar",s.getAnioEscolar());}
     private Map<String,Object> vinculoDto(VinculoEstudiante v){return Map.of("id",v.getId(),"estudiante_id",v.getEstudianteId(),"seccion",seccionDto(v.getSeccion()),"anio_escolar",v.getAnioEscolar(),"creado_en",v.getCreadoEn());}
     private Map<String,Object> asignacionDto(AsignacionDocente a){return Map.of("id",a.getId(),"docente_id",a.getDocenteId(),"curso_id",a.getCursoId(),"seccion",seccionDto(a.getSeccion()),"anio_escolar",a.getAnioEscolar(),"creado_en",a.getCreadoEn());}
