@@ -66,3 +66,10 @@ El adaptador administrativo de secciones delega la persistencia en Spring. El se
 El cliente de propuestas espera las rutas Spring de contexto, CSRF y solicitudes definidas en [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md); ese backend todavía no está publicado. HU08 ya permite consultar las asignaciones propias, pero no sustituye el contexto completo ni la persistencia de propuestas IA. No otorgar permisos generales ni presentar datos simulados como producto real.
 
 **Prueba real de IA aplazada por Luis hasta configurar su API key**. Las simulaciones están solo en pruebas. El proveedor/modelo no está elegido y su ausencia no bloquea implementación ni simulación. Spring ya existe; móvil y backend IA siguen pendientes en GitHub. El [aviso del domingo para Jesús](AVISO_JESUS_DOMINGO.md) es histórico: no refleja sus commits HU05/HU15/HU07/HU08 incorporados después. No se enviaron mensajes automáticamente.
+
+## HU12/HU13 · Ingreso del estudiante con DNI (13/10)
+
+- `POST /api/acceso/ingreso/` acepta `{dni, contrasena}` además de `{correo, contrasena}`. El DNI (8 dígitos) solo autentica cuentas con rol estudiante; el fallo responde 401 «DNI o contraseña incorrectos».
+- Registro y edición: `dni` obligatorio para estudiantes; `correo` obligatorio para administradores y docentes (opcional para estudiantes). Las respuestas de cuenta incluyen `dni`.
+- `POST /api/cuentas/usuarios/{uuid}/contrasena-temporal/` (solo administrador, CSRF Django; no para su propia cuenta): genera una contraseña temporal de 10 caracteres. Devuelve `{usuario, contrasena_temporal}` una vez (`no-store`), cierra las sesiones de la cuenta y registra el cambio sin la contraseña. El docente no genera contraseñas.
+- App móvil: recuerda `sessionid`/`csrftoken` en preferencias privadas si el estudiante marca «Recordar mi sesión en este celular».

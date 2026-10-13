@@ -1,16 +1,17 @@
-# Estado del Sprint 1 — actualización del 13 de octubre de 2026
+# Estado del Sprint 1 — actualización del 13 de octubre de 2026 (cierre)
 
 ## Estado por historia (23 HU / 33 puntos)
 
 | HU | Responsable | Estado | Evidencia / pendiente |
 |---|---|---|---|
-| HU01, HU02, HU03, HU04 | Luis | Implementadas y comprobadas | Django/web. Revisión de Jesús pendiente. |
-| HU05, HU15, HU07, HU08 | Jesús | Implementadas y comprobadas | El 13/10 se corrigió el proxy de Vite: `/api/edu` capturaba `/api/educacion/` y las pantallas de vínculos/asignaciones respondían 404 en el navegador. |
+| HU01, HU02, HU03, HU04 | Luis | Implementadas y comprobadas | Django/web. HU01/HU04 aceptan DNI para estudiantes (HU12). |
+| HU05, HU15, HU07, HU08 | Jesús | Implementadas y comprobadas | Proxy de Vite ajustado a `/api/edu/` para que `/api/educacion/` llegue a Django. |
 | HU06 | Luis | Implementada y comprobada | Spring + PostgreSQL real (Flyway V1–V3 aplicado en PostgreSQL 16). |
-| HU09 | Jesús | Implementada; corregida el 13/10 | Se quitaron vista/ruta/decorador duplicados (rompían una prueba Django) y el doble render; Django añade el nombre del estudiante. Recorrido real Django→Spring comprobado. |
-| HU17 | Jesús | Implementada; lint corregido el 13/10 | Solo cursos asignados; la selección se descarta si deja de estar asignada. |
-| HU11 | Luis | Web/Django/Spring comprobados; app móvil sin compilar aquí | Se agregó `GET /api/edu/acceso/estudiante/` (lo usa `movil`). La app Kotlin no se compiló en esta revisión (sin Android SDK). |
-| HU12, HU13 | Jesús | **Pendientes** | No hay commits. `AccesoApi.kt` guarda cookies solo en memoria. |
+| HU09 | Jesús | Implementada y comprobada | Django añade nombre y DNI del estudiante. Recorrido real Django→Spring comprobado. |
+| HU17 | Jesús | Implementada y comprobada | Solo cursos asignados; la selección se descarta si deja de estar asignada. |
+| HU11 | Luis | Implementada y comprobada | `GET /api/edu/acceso/estudiante/` para la app. Lógica de acceso de la app (`AccesoApi.kt`) compilada y probada en JVM, incluida su integración real con Django y Spring. La app Android completa debe compilarse en Android Studio. |
+| HU12 | Jesús | Implementada y comprobada | Redefinida por Luis: el administrador registra al estudiante con su **DNI** (correo opcional para estudiantes); el estudiante ingresa a la app con DNI y contraseña; solo el **administrador** crea y genera contraseñas: al registrar la cuenta y, si el estudiante la olvida, con «Generar contraseña temporal» en «Usuarios y roles» (se muestra una vez, cierra sesiones anteriores, queda en el historial sin la contraseña). El docente se la comunica al estudiante, que debe cambiarla al ingresar. |
+| HU13 | Jesús | Implementada; probada en JVM | La app recuerda la sesión en el celular (preferencias privadas, `allowBackup=false`), con casilla «Recordar mi sesión en este celular»; se olvida al cerrar sesión o si caduca. `AlmacenPreferencias.kt` (Android) no se compiló aquí. |
 | HU18, HU16 | Luis | Implementadas; **prueba real de IA pendiente** | Persistencia, estados, reintentos y permisos comprobados; IA simulada. |
 | HU19 | Luis | Implementada y comprobada | Propósito (preparación/refuerzo) e instrucciones guardados y enviados a la IA. |
 | HU20 | Luis | Implementada y comprobada | «Mis propuestas»: objetivo, historia, acciones, reglas, retos, ayudas y recursos; lo que falta aparece como «Pendiente». |
@@ -25,7 +26,9 @@
 - Django **76/76** (PostgreSQL temporal). Spring **49/49**: incluye 18 pruebas de propuestas **simuladas** (IA y Django dobles) y una prueba de transporte HTTP real. Web: lint, build y **38/38**.
 - **Recorrido real entre procesos** (Django + Spring + PostgreSQL 16, datos ficticios): 14/14 comprobaciones. Encontró y corrigió que Spring enviaba a Django el cuerpo con `Transfer-Encoding: chunked` y Django respondía 400: ninguna llamada Spring→Django funcionaba fuera de las pruebas simuladas.
 - Navegador (Chromium, Vite): ingreso docente, estudiantes de mis secciones, propósito, aprobar, modificar e historial, sin errores de consola. La propuesta usada se insertó como **SIMULADA** porque no hay IA configurada.
-- Pendientes reales: prueba con IA real (API key de Luis), HU12/HU13, compilar y probar `movil`, revisión cruzada y diseño final.
+- HU12/HU13: Django **86/86**; web **39/39**; `AccesoApi.kt` 4/4 en JVM y `AccesoRealTest` 2/2 contra Django + Spring + PostgreSQL reales; el estudiante ingresó con su DNI y la contraseña temporal real.
+- Revisión cruzada: realizada según Luis (13/10).
+- Pendientes: prueba con IA real (API key de Luis), compilar la app en Android Studio y diseño final. Cuentas de estudiante creadas antes de HU12 necesitan que el administrador registre su DNI.
 
 ## Revisión anterior (12 de octubre)
 
