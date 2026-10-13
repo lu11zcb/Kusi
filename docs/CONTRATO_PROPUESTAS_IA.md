@@ -1,4 +1,6 @@
-# HU18 / HU16 · Cliente preparado, implementación Spring pendiente
+# HU18 / HU16 · Cliente y backend Spring implementados; prueba real de IA pendiente
+
+**Actualización 13 de octubre de 2026.** El backend Spring de este contrato ya está implementado en `edu-api`: migración `V2__solicitudes_propuestas.sql` (tablas `solicitudes_propuesta` y `propuestas` en `edu`), `PropuestasController` (`/api/edu/...`), `PropuestasService`, CSRF propio `CsrfEducativo` (cookie `kusi_edu_csrf` SameSite=Strict + cabecera `X-XSRF-TOKEN`), `ValidadorPropuesta` y la interfaz `GeneradorPropuestas`. Sin proveedor configurado se usa `GeneradorNoConfigurado`: la solicitud queda `pendiente`, sin contenido ficticio, y `/reintentar/` responde 503. Pruebas: `PropuestasSimuladasTest`, 9 casos **SIMULADOS** (Django e IA dobles de prueba; persistencia H2/Flyway) que cubren CSRF, pendiente sin IA, idempotencia/409, entradas inválidas, rol y recurso ajeno, objetivo docente exacto, objetivo sugerido por IA, respuesta incompleta → fallida → reintento, timeout 504, propiedad y asignación retirada. Falta: adaptador real del proveedor (Luis elige proveedor/modelo y configura la clave), prueba real de IA y recorrido conjunto con PostgreSQL. Lo que sigue conserva el contrato original; sus frases sobre «Spring pendiente» quedan superadas por esta nota.
 
 Fecha: 11 de octubre de 2026. Spring es propietario de solicitudes y propuestas en `edu`. Este documento no acredita generación real ni implementa HU19–HU25. Las carpetas `edu-api` y `movil` siguen reservadas a Luis.
 

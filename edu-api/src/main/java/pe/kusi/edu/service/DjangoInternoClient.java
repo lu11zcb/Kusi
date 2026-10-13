@@ -86,6 +86,21 @@ public class DjangoInternoClient {
         }
     }
 
+    // Devuelve el nombre actual del catálogo Django; el UUID del curso no cambia al renombrarlo.
+    public String nombreCurso(UUID id) {
+        HttpHeaders headers=cabeceras();
+        try {
+            ResponseEntity<Map> respuesta=http.exchange(djangoUrl+"/api/interno/cursos/"+id+"/",HttpMethod.GET,new HttpEntity<>(headers),Map.class);
+            if (respuesta.getBody()==null || !(respuesta.getBody().get("curso") instanceof Map<?,?> curso) || !(curso.get("nombre") instanceof String nombre) || nombre.isBlank())
+                throw new IllegalStateException("El servicio de cuentas devolvió una respuesta no válida.");
+            return nombre;
+        } catch (RestClientResponseException ex) {
+            throw falloHttp(ex,"El curso indicado no existe en el catálogo.",true);
+        } catch (RestClientException ex) {
+            throw new IllegalStateException("El servicio de cuentas no está disponible. Inténtalo de nuevo.");
+        }
+    }
+
     public void validarCurso(UUID id) {
         HttpHeaders headers=cabeceras();
         try {

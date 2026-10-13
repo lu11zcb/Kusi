@@ -1,4 +1,4 @@
-# Kusi edu-api (Spring Boot) — HU06, HU07 y HU08
+# Kusi edu-api (Spring Boot) — HU06, HU07, HU08, HU18 y HU16
 
 Servicio educativo con persistencia en el esquema `edu` de la misma base PostgreSQL que usa Django (`admin`). Las cuentas/roles y el catálogo de cursos siguen siendo propiedad de Django; este servicio solo guarda secciones, vínculos estudiante-sección y asignaciones docente-curso-sección-año.
 
@@ -40,3 +40,13 @@ Todas las rutas internas requieren `X-Clave-Interna` y `X-Sesion-Kusi`. Spring v
 
 ## Nota de estado
 El servicio y los adaptadores deben probarse juntos con Django y PostgreSQL antes de declarar HU07/HU08 aceptadas. `mvn test` incluye normalización y regresiones HTTP con persistencia H2 aislada: carga de secciones relacionadas sin Open Session in View, duplicados detectados por la restricción de base y permisos de recursos docentes. Las respuestas Django se simulan solo en estas pruebas; no sustituyen una comprobación real entre servicios ni validan PostgreSQL por sí solas.
+
+## HU18/HU16: solicitudes de propuestas
+Rutas del panel docente, accesibles por el proxy de Vite (`/api/edu` → 8080). Spring lee la cookie `sessionid` de Django y la valida con `/api/interno/sesiones/validar/`; exige rol docente y asignación vigente al curso/sección.
+
+- `GET /api/edu/acceso/csrf/` — `{csrf_token}` y cookie `kusi_edu_csrf`; toda escritura en `/api/edu/` exige `X-XSRF-TOKEN` igual a esa cookie.
+- `GET /api/edu/contexto/propuestas/` — `{contextos, ia_configurada}` del docente autenticado.
+- `POST /api/edu/propuestas/solicitudes/` — `{id_solicitud, curso_id, seccion_id, tema, objetivo}`; 201 nueva, 200 si ya existía igual, 409 si el UUID tiene otro contenido.
+- `GET /api/edu/propuestas/solicitudes/{id}/` y `POST .../{id}/reintentar/`.
+
+Sin un bean `GeneradorPropuestas` real la IA queda **no configurada**: la solicitud se guarda `pendiente` y no se inventa contenido. El adaptador del proveedor se añadirá cuando Luis elija proveedor/modelo y configure la clave fuera de Git. `PropuestasSimuladasTest` usa IA y Django simulados.

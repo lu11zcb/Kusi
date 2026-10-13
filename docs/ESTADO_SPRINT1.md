@@ -1,5 +1,7 @@
 # Estado del Sprint 1 — revisión del 12 de octubre de 2026
 
+**Actualización 13/10:** se completó el backend Spring de HU18/HU16 (ver [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md)). Spring: **39/39 pruebas aprobadas** (30 anteriores + 9 nuevas de propuestas, todas con Django e IA simulados y H2/Flyway). Siguen pendientes: acceso Kotlin del estudiante (HU11, `movil` no está publicada en GitHub), adaptador y prueba real de IA, recorrido conjunto con PostgreSQL real y revisión del compañero.
+
 ## Resultado actual de la revisión de GitHub
 
 Luis pidió revisar `https://github.com/lu11zcb/kusi/`, corregir fallos y conservar una sola rama. La revisión se hizo en un clon aislado: el checkout `D:/Escritorio/Kusi` tenía cambios sin publicar, incluidos `edu-api` y `movil`, y no se modificó. No debe actualizarse ese checkout descartando sus cambios; primero hay que conciliarlos con `main`.
@@ -24,7 +26,7 @@ Correcciones de esta revisión:
 | HU05/HU15 | Desactivación, conservación de datos e historial; regresiones comprobadas. |
 | HU06/HU07/HU08 | Código Django/web/Spring y persistencia aislada comprobados. Falta recorrido conjunto con PostgreSQL real para acreditar integración completa. |
 | HU11 | Django/web y consumidor interno Spring comprobados por componentes; acceso Kotlin e integración completa pendientes. |
-| HU18/HU16 | Cliente/contratos y pruebas simuladas conservados. Backend persistente de propuestas, adaptador IA y generación real pendientes en este repositorio. |
+| HU18/HU16 | Cliente React y backend Spring persistente implementados (13/10): solicitudes y propuestas en `edu`, estados pendiente/generando/generada/fallida, idempotencia, reintento explícito, permisos por asignación, CSRF Spring y validación del resultado. 9 pruebas Spring **simuladas** aprobadas. Adaptador del proveedor real y prueba real de IA pendientes (aplazados por Luis). |
 
 El diseño final sigue a cargo de Luis; las pantallas son provisionales. No se probó una IA real ni se eligió proveedor/modelo. La clave y esa prueba siguen aplazadas por Luis. Esta revisión técnica no sustituye revisión del compañero, aceptación académica ni pruebas con estudiantes.
 

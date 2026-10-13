@@ -9,6 +9,8 @@ public class ApiExceptionHandler {
  @ExceptionHandler(IllegalArgumentException.class) public ResponseEntity<Map<String,String>> solicitud(IllegalArgumentException ex){return ResponseEntity.badRequest().body(Map.of("mensaje",ex.getMessage()));}
  @ExceptionHandler(IllegalStateException.class) public ResponseEntity<Map<String,String>> configuracion(IllegalStateException ex){return ResponseEntity.status(503).body(Map.of("mensaje",ex.getMessage()));}
  @ExceptionHandler(MethodArgumentNotValidException.class) public ResponseEntity<Map<String,String>> validacion(MethodArgumentNotValidException ex){return ResponseEntity.badRequest().body(Map.of("mensaje","Revisa los campos enviados e inténtalo de nuevo."));}
+ @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class) public ResponseEntity<Map<String,String>> ilegible(Exception ex){return ResponseEntity.badRequest().body(Map.of("mensaje","Revisa los campos enviados e inténtalo de nuevo."));}
+ @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class) public ResponseEntity<Map<String,String>> ruta(Exception ex){return ResponseEntity.status(404).body(Map.of("mensaje","No se encontró el recurso solicitado."));}
  // Se resuelve después de que el interceptor transaccional haya revertido la escritura.
  @ExceptionHandler(DataIntegrityViolationException.class)
  public ResponseEntity<Map<String,String>> duplicado(DataIntegrityViolationException ex) {
