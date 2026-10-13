@@ -94,6 +94,30 @@ class PropuestasSimuladasTest {
     }
 
     @Test
+    void simulado_hu11_acceso_movil_solo_para_estudiantes() throws Exception {
+        when(django.validarSesion("ses-estudiante")).thenReturn(Map.of("id","77777777-7777-7777-7777-777777777777","nombre","Estudiante ficticio","roles",List.of("estudiante")));
+        leer("/api/edu/acceso/estudiante/","ses-estudiante").andExpect(status().isOk())
+            .andExpect(jsonPath("$.usuario.nombre").value("Estudiante ficticio"))
+            .andExpect(jsonPath("$.usuario.debe_cambiar_contrasena").value(false));
+        leer("/api/edu/acceso/estudiante/","ses-docente").andExpect(status().isForbidden());
+        leer("/api/edu/acceso/estudiante/","ses-caducada").andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void simulado_hu09_docente_ve_solo_estudiantes_de_sus_secciones() throws Exception {
+        Seccion otra=secciones.saveAndFlush(new Seccion("1ro B",1,2026));
+        UUID propio=UUID.randomUUID(), ajeno=UUID.randomUUID();
+        vinculos.saveAndFlush(new pe.kusi.edu.model.VinculoEstudiante(propio,seccion,2026,ADMIN));
+        vinculos.saveAndFlush(new pe.kusi.edu.model.VinculoEstudiante(ajeno,otra,2026,ADMIN));
+        mvc.perform(get("/interno/docentes/"+DOCENTE+"/estudiantes/").header("X-Clave-Interna","clave-solo-para-pruebas-aisladas").header("X-Sesion-Kusi","ses-docente"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.estudiantes.length()").value(1))
+            .andExpect(jsonPath("$.estudiantes[0].estudiante_id").value(propio.toString()));
+        // Pedir los estudiantes de otro docente con la propia sesión se rechaza.
+        mvc.perform(get("/interno/docentes/"+OTRO_DOCENTE+"/estudiantes/").header("X-Clave-Interna","clave-solo-para-pruebas-aisladas").header("X-Sesion-Kusi","ses-docente"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
     void simulado_csrf_obligatorio_y_token_emitido_por_spring() throws Exception {
         mvc.perform(post("/api/edu/propuestas/solicitudes/").cookie(new Cookie("sessionid","ses-docente"))
             .contentType("application/json").content(json.writeValueAsBytes(entrada(UUID.randomUUID(),"Sumas",null))))

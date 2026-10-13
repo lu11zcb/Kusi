@@ -27,6 +27,17 @@ public class PropuestasController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(Map.of("csrf_token", CsrfEducativo.tokenPara(request, response)));
     }
 
+    // HU11 (app móvil): confirma que la sesión Django corresponde a un estudiante con contraseña definitiva.
+    @GetMapping("/acceso/estudiante/")
+    public ResponseEntity<Map<String,Object>> estudiante(@CookieValue(value="sessionid", required=false) String sesion) {
+        Map<String,Object> usuario=django.validarSesion(sesion);
+        if (!(usuario.get("roles") instanceof List<?> roles) || !roles.contains("estudiante")) throw new SecurityException("Esta app es para estudiantes.");
+        Map<String,Object> datos=new LinkedHashMap<>();
+        datos.put("id", usuario.get("id")); datos.put("nombre", usuario.get("nombre")); datos.put("roles", roles);
+        datos.put("debe_cambiar_contrasena", false);
+        return sinCache(200, Map.of("usuario", datos));
+    }
+
     @GetMapping("/contexto/propuestas/")
     public ResponseEntity<Map<String,Object>> contexto(@CookieValue(value="sessionid", required=false) String sesion) {
         UUID docente=docente(sesion);
