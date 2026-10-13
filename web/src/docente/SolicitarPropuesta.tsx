@@ -32,6 +32,14 @@ export function SolicitarPropuesta() {
     })
     return () => controlador.abort()
   }, [recarga])
+  // Clear the selection if the teacher's assignments change.
+  useEffect(() => {
+    if (!contextos) return
+    const autorizada = contextos.contextos.some((valor) =>
+      valor.curso_id + '/' + (valor.seccion_id ?? '') === seleccion,
+    )
+    if (seleccion && !autorizada) establecerSeleccion('')
+  }, [contextos, seleccion])
   function recargar() { establecerCargando(true); establecerErrorContexto(''); establecerRecarga((valor) => valor + 1) }
   function cambio() { establecerSolicitud(null); establecerIntentado(false); establecerError('') }
   async function enviar(evento: FormEvent) {
