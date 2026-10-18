@@ -13,7 +13,7 @@ import java.util.Map;
 public class GeneradorNoConfigurado {
     @Bean @Conditional(GeneradorGroq.ClavePresente.class)
     public GeneradorPropuestas generadorGroq(@Value("${GROQ_API_KEY}") String clave,
-                                             @Value("${GROQ_MODELO:llama-3.3-70b-versatile}") String modelo,
+                                             @Value("${GROQ_MODELO:openai/gpt-oss-120b}") String modelo,
                                              @Value("${GROQ_URL:https://api.groq.com/openai/v1/chat/completions}") String url,
                                              ObjectMapper json) {
         return new GeneradorGroq(clave.trim(), modelo, url, json);

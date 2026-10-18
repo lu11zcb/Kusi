@@ -49,6 +49,6 @@ Rutas del panel docente, accesibles por el proxy de Vite (`/api/edu` → 8080). 
 - `POST /api/edu/propuestas/solicitudes/` — `{id_solicitud, curso_id, seccion_id, tema, objetivo}`; 201 nueva, 200 si ya existía igual, 409 si el UUID tiene otro contenido.
 - `GET /api/edu/propuestas/solicitudes/{id}/` y `POST .../{id}/reintentar/`.
 
-El proveedor de IA es **Groq** (`GeneradorGroq`). Se activa al poner `GROQ_API_KEY` en el `.env` local (la clave se crea en https://console.groq.com/keys y nunca se sube); `GROQ_MODELO` es opcional (por defecto `llama-3.3-70b-versatile`). Sin clave la IA queda **no configurada**: la solicitud se guarda `pendiente` y no se inventa contenido. `GeneradorGroqTest` prueba el adaptador con un Groq simulado. `PropuestasSimuladasTest` usa IA y Django simulados.
+El proveedor de IA es **Groq** (`GeneradorGroq`). Se activa al poner `GROQ_API_KEY` en el `.env` local (la clave se crea en https://console.groq.com/keys y nunca se sube); `GROQ_MODELO` es opcional (por defecto `openai/gpt-oss-120b`). Sin clave la IA queda **no configurada**: la solicitud se guarda `pendiente` y no se inventa contenido. `GeneradorGroqTest` prueba el adaptador con un Groq simulado. `PropuestasSimuladasTest` usa IA y Django simulados.
 
 HU19–HU25 (propósito, revisión y versiones) y `GET /api/edu/acceso/estudiante/` (HU11, app móvil) se describen en `docs/CONTRATO_PROPUESTAS_IA.md`.

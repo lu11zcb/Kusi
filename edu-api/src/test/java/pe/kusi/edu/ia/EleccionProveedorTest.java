@@ -19,7 +19,7 @@ class EleccionProveedorTest {
         contexto.withPropertyValues("GROQ_API_KEY=gsk_prueba").run(c -> {
             GeneradorPropuestas generador = c.getBean(GeneradorPropuestas.class);
             assertEquals("groq", generador.proveedor());
-            assertEquals("llama-3.3-70b-versatile", generador.modelo());
+            assertEquals("openai/gpt-oss-120b", generador.modelo());
         });
     }
 }
