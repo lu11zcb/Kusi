@@ -146,7 +146,7 @@ export function InicioDocente({ nombre, contextos, ir }: Propiedades) {
 
         <div className="tarjeta tarjeta-premio">
           <span className="emoji" aria-hidden="true">🎁</span>
-          <strong>¡Pronto, tus juegos 3D!</strong>
+          <strong>¡Pronto, tus juegos!</strong>
           <p>Cada propuesta aprobada se convertirá en un juego para tus estudiantes.</p>
           <div className="barra-progreso" aria-hidden="true"><span style={{ width: (total ? Math.round(proporcion * 100) : 0) + '%' }} /></div>
         </div>
