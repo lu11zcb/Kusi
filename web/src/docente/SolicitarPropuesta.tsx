@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { RevisionPropuesta } from './RevisionPropuesta'
 import { ErrorApi } from '../servicios/django'
 import { GestorSolicitud, obtenerContextosPropuestas } from '../servicios/propuestas'
 import type { ContextosPropuestas, Proposito, SolicitudPropuesta } from '../servicios/propuestas'
@@ -18,6 +19,7 @@ export function SolicitarPropuesta({ cursoInicial = '' }: { cursoInicial?: strin
   const [error, establecerError] = useState('')
   const [solicitud, establecerSolicitud] = useState<SolicitudPropuesta | null>(null)
   const [ocupado, establecerOcupado] = useState(false)
+  const [revisando, establecerRevisando] = useState(false)
   const [intentado, establecerIntentado] = useState(false)
   const gestor = useRef<GestorSolicitud>(new GestorSolicitud())
   const bloqueo = useRef(false)
@@ -41,7 +43,7 @@ export function SolicitarPropuesta({ cursoInicial = '' }: { cursoInicial?: strin
   function cambio() { establecerSolicitud(null); establecerIntentado(false); establecerError('') }
   async function enviar(evento: FormEvent) {
     evento.preventDefault()
-    if (bloqueo.current) return
+    if (bloqueo.current || revisando) return
     const contexto = contextos?.contextos.find((valor) => valor.curso_id + '/' + (valor.seccion_id ?? '') === seleccionVigente)
     if (seleccionVigente === '' || !contexto) { establecerError('Selecciona un curso autorizado.'); return }
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerIntentado(true)
@@ -61,7 +63,7 @@ export function SolicitarPropuesta({ cursoInicial = '' }: { cursoInicial?: strin
     {contextos && !contextos.ia_configurada && <p role="status">La IA está pendiente de configuración. Puedes guardar la solicitud; no se generará contenido hasta habilitarla.</p>}
     {error && <p className="error-resumen" role="alert">{error}</p>}
     <form onSubmit={enviar}>
-      <fieldset disabled={ocupado}>
+      <fieldset disabled={ocupado || revisando}>
         <legend>Tema, objetivo y propósito</legend>
         <div className="campo"><label htmlFor="curso-propuesta">Curso y contexto autorizado</label>
           <select id="curso-propuesta" value={seleccionVigente} onChange={(evento) => { establecerSeleccion(evento.target.value); cambio() }} disabled={cargando || !contextos?.contextos.length} required>
@@ -79,14 +81,13 @@ export function SolicitarPropuesta({ cursoInicial = '' }: { cursoInicial?: strin
         </div>
         <div className="campo"><label htmlFor="instrucciones-propuesta">Instrucciones para la IA (opcional)</label><textarea id="instrucciones-propuesta" value={instrucciones} onChange={(evento) => { establecerInstrucciones(evento.target.value); cambio() }} maxLength={4000} rows={3} /></div>
       </fieldset>
-      <button type="submit" disabled={ocupado || cargando || !contextos?.contextos.length}>{ocupado ? 'Comprobando solicitud…' : intentado ? 'Consultar estado y reintentar' : contextos?.ia_configurada ? 'Guardar y solicitar propuesta' : 'Guardar solicitud'}</button>
+      <button type="submit" disabled={ocupado || revisando || cargando || !contextos?.contextos.length}>{ocupado ? 'Comprobando solicitud…' : intentado ? 'Consultar estado y reintentar' : contextos?.ia_configurada ? 'Guardar y solicitar propuesta' : 'Guardar solicitud'}</button>
     </form>
     <p>Los datos permanecen en este panel ante un fallo. Salir o cambiar de panel borra lo que aún no se haya guardado. Si una solicitud ya se guardó, cambiar sus datos creará otra sin sustituirla.</p>
-    {solicitud && <div className="confirmacion" role="status">
+    {solicitud && !solicitud.propuesta && <div className="confirmacion" role="status">
       <h3>{solicitud.estado === 'generada' ? 'Propuesta generada, pendiente de revisión' : 'Solicitud guardada'}</h3>
-      <p>Identificador: {solicitud.id_solicitud}</p>
       <p>{solicitud.estado === 'pendiente' ? 'Pendiente de generación. Si la IA no está configurada, tu solicitud se conserva para reintentar después.' : solicitud.estado === 'generando' ? 'La generación sigue en curso. Consulta su estado antes de enviar otra solicitud.' : solicitud.estado === 'fallida' ? 'No se pudo generar la propuesta. La solicitud y tus datos se conservan; puedes reintentar.' : 'No se ha aprobado, publicado ni generado ningún juego.'}</p>
-      {solicitud.propuesta && <><h4>{solicitud.propuesta.origen_objetivo === 'docente' ? 'Objetivo aportado por ti' : 'Objetivo sugerido por IA, pendiente de revisión'}</h4><p className="texto-conservado">{solicitud.propuesta.objetivo}</p></>}
     </div>}
+    {solicitud?.propuesta && <RevisionPropuesta key={solicitud.id_solicitud} solicitud={solicitud} alCambiar={establecerSolicitud} alOcupar={establecerRevisando} />}
   </section>
 }
