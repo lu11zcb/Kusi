@@ -3,14 +3,20 @@ import { test, expect } from '@playwright/test'
 // Lee el estado del juego (window.kusi lo expone para las pruebas).
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 
-// Hace clic de verdad sobre el lienzo, en el centro de lo que el juego llama `nombre`.
+// Hace clic de verdad sobre el lienzo, en el centro de la parte que se ve de lo que el juego llama `nombre`.
 async function tocar(pagina, nombre) {
   const punto = await (await pagina.waitForFunction((n) => window.kusi.ubicar(n), nombre)).jsonValue()
   await pagina.mouse.click(punto.x, punto.y)
 }
 
-// Abre el juego rápido, toca «¡Vamos!» y toca el puesto de pan: el cuy camina solo hasta su frente.
-async function llegarAlPuestoDePan(pagina) {
+// Espera a que el cuy termine de caminar y se quede quieto.
+const quieto = (pagina) => pagina.waitForFunction(() => {
+  const ahora = window.kusi.estado()
+  return !ahora.caminando && ahora.velocidad === 0
+})
+
+// Abre el juego rápido y toca «¡Vamos!».
+async function empezar(pagina) {
   await pagina.goto('/?rapido=1')
   await pagina.waitForFunction(() => window.kusi?.listo)
 
@@ -18,7 +24,11 @@ async function llegarAlPuestoDePan(pagina) {
   expect((await estado(pagina)).puedeMoverse).toBe(false)
   await tocar(pagina, 'vamos')
   await expect.poll(async () => (await estado(pagina)).puedeMoverse).toBe(true)
+}
 
+// Toca el puesto de pan: el cuy camina solo hasta su frente. Ahí toca «Hablar».
+async function llegarAlPuestoDePan(pagina) {
+  await empezar(pagina)
   await tocar(pagina, 'puesto:p1')
   await pagina.waitForFunction(() => {
     const ahora = window.kusi.estado()
@@ -86,4 +96,26 @@ test('si no alcanza, el vendedor avisa y no se pierde plata', async ({ page: pag
   expect(final.plata).toBe(15)
   expect(final.cartera).toEqual([10, 5])
   expect(final.cartel).toContain('harina 0/1')
+})
+
+test('el cuy camina hacia el centro de la pileta y no entra al agua', async ({ page: pagina }) => {
+  await empezar(pagina)
+  const { pileta } = await estado(pagina)
+  // Qué tan lejos del centro de la pileta está el cuy: menos de 1 sería dentro del agua
+  const lejania = ({ cuyX, cuyY }) => ((cuyX - pileta.x) / pileta.radioX) ** 2 + ((cuyY - pileta.y) / pileta.radioY) ** 2
+
+  // Toca el centro de la pileta: el cuy camina hasta el borde y se queda ahí
+  await tocar(pagina, 'pileta')
+  await expect.poll(async () => (await estado(pagina)).caminando).toBe(true)
+  await quieto(pagina)
+  const enElBorde = lejania(await estado(pagina))
+  expect(enElBorde).toBeGreaterThan(1)
+  expect(enElBorde).toBeLessThan(2)
+
+  // Empujándolo hacia el agua con la flecha, tampoco entra
+  await pagina.keyboard.down('ArrowUp')
+  await pagina.waitForTimeout(800)
+  await pagina.keyboard.up('ArrowUp')
+  await quieto(pagina)
+  expect(lejania(await estado(pagina))).toBeGreaterThan(1)
 })

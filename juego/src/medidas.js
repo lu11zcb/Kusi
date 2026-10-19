@@ -4,33 +4,12 @@
 export const ANCHO = 1280
 export const ALTO = 720
 
-// La plaza se ve desde arriba, un poco inclinada. Mide 2 pantallas de ancho por 1,5 de alto
-// y la cámara sigue al cuy.
-export const ANCHO_PLAZA = 2560
-export const ALTO_PLAZA = 1080
+// La plaza (su tamaño, lo que no se pisa, dónde van Kusi y los puestos) está en src/datos/plaza.json,
+// en px del dibujo fondo-plaza.png. La cámara sigue al cuy.
 
-// Dónde pueden pisar las patitas del cuy: debajo de las casas de arriba, entre las jardineras
-// de los lados y antes del muro de abajo.
-export const ZONA_CAMINABLE = { izquierda: 100, derecha: 2460, arriba: 300, abajo: 1010 }
-
-// Pileta del centro de la plaza (el cuy la rodea).
-export const PILETA = { x: 1280, y: 650, radioX: 170, radioY: 80 }
-
-// Kusi espera abajo al centro, en la entrada; el cuy del niño empieza a su lado.
-export const KUSI = { x: 1280, y: 985 }
-export const CUY_INICIO = { x: 1160, y: 990 }
-
-// Lugar de cada puesto, en el orden del paquete: x del centro e y del piso, donde se apoya el mostrador.
-// Los dos primeros quedan cerca de la entrada; los tres siguientes, contra las casas.
-export const LUGARES_PUESTOS = [
-  { x: 780, y: 860 },
-  { x: 1780, y: 860 },
-  { x: 520, y: 470 },
-  { x: 1280, y: 420 },
-  { x: 2040, y: 470 },
-  { x: 2260, y: 860 },
-  { x: 300, y: 860 },
-]
+// Puestos, del tamaño de la pantalla aprobada.
+export const ANCHO_PUESTO = 360
+export const ALTO_PUESTO = 320
 export const FRENTE_PUESTO = 70 // el cuy se para esta distancia delante del mostrador para hablar
 
 // Patitas del cuy: lo que ocupa en el piso para no atravesar los puestos.
@@ -46,11 +25,12 @@ export const DISTANCIA_FRENADO = 70 // px antes de llegar a donde se tocó, empi
 export const DISTANCIA_PARA_HABLAR = 110 // px desde el lugar para hablar frente al puesto
 
 // Orden de dibujo (lo que tiene más profundidad se ve encima).
-// Lo que está parado en la plaza usa su y como profundidad (de 0 a 1080): lo que está más abajo
-// tapa a lo que está más arriba. Por eso todo lo demás va por encima de 1080.
+// Lo que está parado en la plaza usa su y como profundidad (de 0 a 1152): lo que está más abajo
+// tapa a lo que está más arriba. Por eso todo lo demás va por encima.
 export const PROFUNDIDAD = {
   fondo: 0,
   marca: 1,
+  depurar: 1500,
   globoHablar: 2000,
   controles: 3000,
   globoKusi: 4000,

@@ -1,6 +1,7 @@
 // Figuras simples de los personajes: Kusi, el cuy del niño y los vendedores.
-// La plaza se ve desde arriba: los cuyes se ven de frente (mirando hacia abajo) o de espaldas
-// (mirando hacia los puestos); los vendedores miran al frente, detrás del mostrador.
+// La plaza se ve desde arriba: los cuyes se ven de frente (mirando hacia abajo), de espaldas
+// (mirando hacia los puestos) o, el del niño, de lado (mirando a la derecha); los vendedores miran
+// al frente, detrás del mostrador.
 
 import {
   pincel, elipse, circulo, rectangulo, poligono, trazado, linea, dentroDe,
@@ -73,6 +74,40 @@ function cuyDeEspaldas(lienzo, { pelaje, oreja, manchasCuerpo, manchasCabeza, ro
   cabezaDeCuy(lienzo, pelaje, (c) => manchasCabeza?.(c))
   elipse(lienzo, 25, 30, 11, 8, oreja, { giro: -0.6 })
   elipse(lienzo, 85, 30, 11, 8, oreja, { giro: 0.6 })
+
+  sombrero?.(lienzo)
+}
+
+// Cuy de lado, mirando a la derecha (120 x 100). Para caminar a la izquierda, el juego lo voltea.
+function cuyDeLado(lienzo, { pelaje, oreja, manchas, sombrero }) {
+  pincel(lienzo, 3)
+
+  // Patitas
+  elipse(lienzo, 40, 93, 9, 5, ROSADO)
+  elipse(lienzo, 84, 93, 9, 5, ROSADO)
+
+  // Cuerpo redondo con la panza blanca
+  const cuerpo = (c) => c.ellipse(56, 62, 50, 33, 0, 0, Math.PI * 2)
+  trazado(lienzo, cuerpo, pelaje)
+  dentroDe(lienzo, cuerpo, (c) => {
+    elipse(c, 84, 82, 32, 18, BLANCO, { borde: false })
+    manchas?.(c)
+  })
+  trazado(lienzo, cuerpo, null)
+
+  // Cabeza con la franja blanca de la cara
+  const cabeza = (c) => c.ellipse(88, 50, 27, 25, 0, 0, Math.PI * 2)
+  trazado(lienzo, cabeza, pelaje)
+  dentroDe(lienzo, cabeza, (c) => elipse(c, 105, 58, 13, 22, BLANCO, { borde: false }))
+  trazado(lienzo, cabeza, null)
+
+  // Oreja, ojo, cachete, nariz y boca
+  elipse(lienzo, 75, 29, 10, 7, oreja, { giro: -0.4 })
+  elipse(lienzo, 75, 30, 5, 3.5, ROSADO, { borde: false, giro: -0.4 })
+  ojo(lienzo, 97, 44, 4.8)
+  mejilla(lienzo, 103, 60)
+  elipse(lienzo, 113, 53, 4, 3, '#e57f86')
+  sonrisa(lienzo, 108, 63, 7)
 
   sombrero?.(lienzo)
 }
@@ -151,6 +186,27 @@ export function dibujarCuyNinoFrente(lienzo) {
 
 export function dibujarCuyNinoEspaldas(lienzo) {
   cuyDeEspaldas(lienzo, { ...CUY_NINO, manchasCuerpo: mancha(90, 74, 18, 16), manchasCabeza: mancha(80, 40, 14, 12) })
+}
+
+// De lado (120 x 112), mirando a la derecha.
+export function dibujarCuyNinoLado(lienzo) {
+  lienzo.translate(0, 12)
+  cuyDeLado(lienzo, {
+    pelaje: CUY_NINO.pelaje,
+    oreja: CUY_NINO.oreja,
+    manchas: (c) => {
+      elipse(c, 30, 50, 22, 17, '#a8642f', { borde: false })
+      elipse(c, 64, 36, 12, 9, '#a8642f', { borde: false })
+    },
+    sombrero: (c) => {
+      // Chullo de lado: gorro tejido con una orejera y el pompón
+      trazado(c, (p) => p.ellipse(86, 30, 21, 17, 0, Math.PI, Math.PI * 2), '#d8433a')
+      linea(c, [[67, 26], [72, 21], [77, 26], [82, 21], [87, 26], [92, 21], [97, 26], [102, 21]], 2.5, BLANCO)
+      poligono(c, [[66, 30], [80, 30], [74, 46]], '#d8433a')
+      linea(c, [[74, 46], [74, 54]], 2.5)
+      circulo(c, 86, 11, 6.5, '#f4cf3c')
+    },
+  })
 }
 
 // ---------- Vendedores (150 x 150, mirando al frente) ----------

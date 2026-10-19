@@ -6,6 +6,8 @@ import { fijarEnPantalla } from './piezas.js'
 
 const Y = 50
 const ALTO = 76
+// Borde de abajo del cartel: en la pantalla, lo que queda más arriba está tapado por él.
+export const BORDE_CARTEL = Y + ALTO / 2
 const MARGEN = 16
 const ESPACIO = 12
 const RELLENO = 18

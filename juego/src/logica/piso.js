@@ -1,6 +1,7 @@
 // El piso de la plaza: por dónde puede caminar el cuy y cómo llegar a un punto sin atravesar
-// los puestos, la pileta ni a Kusi. Cada cosa se guarda ya agrandada con el tamaño de las
-// patitas del cuy, así que basta con revisar un solo punto: el de sus patitas.
+// los puestos, la pileta, las casas ni a Kusi. Las cajas y elipses se guardan ya agrandadas con el
+// tamaño de las patitas del cuy, así que basta con revisar un solo punto: el de sus patitas.
+// Los polígonos (casas, iglesia, techos) no se agrandan: se revisan el centro y los bordes de las patitas.
 
 const CELDA = 30 // px; para buscar caminos la plaza se divide en celdas de este tamaño
 const PASO_REVISION = 8 // px entre los puntos que se revisan en una línea recta
@@ -14,6 +15,7 @@ export class Piso {
     this.patitas = patitas
     this.cajas = []
     this.elipses = []
+    this.poligonos = []
     this.columnas = Math.floor((zona.derecha - zona.izquierda) / CELDA)
     this.filas = Math.floor((zona.abajo - zona.arriba) / CELDA)
     this.celdasLibres = null // se calculan la primera vez que se busca un camino
@@ -30,6 +32,19 @@ export class Piso {
     this.elipses.push({ x, y, radioX: radioX + this.patitas.ancho / 2, radioY: radioY + this.patitas.alto / 2 })
   }
 
+  // Un polígono que el cuy no puede pisar: puntos [x, y] en orden.
+  agregarPoligono(puntos) {
+    this.poligonos.push(puntos)
+  }
+
+  // Una forma del archivo de la plaza (src/datos/plaza.json): caja, elipse o polígono.
+  agregarForma(forma) {
+    if (forma.forma === 'caja') this.agregarCaja(forma.x, forma.y, forma.x + forma.ancho, forma.y + forma.alto)
+    else if (forma.forma === 'elipse') this.agregarElipse(forma.x, forma.y, forma.radioX, forma.radioY)
+    else if (forma.forma === 'poligono') this.agregarPoligono(forma.puntos)
+    else console.warn('[plaza] Forma desconocida', forma)
+  }
+
   libre(x, y) {
     const { zona } = this
     if (x < zona.izquierda || x > zona.derecha || y < zona.arriba || y > zona.abajo) return false
@@ -38,6 +53,14 @@ export class Piso {
     }
     for (const elipse of this.elipses) {
       if (((x - elipse.x) / elipse.radioX) ** 2 + ((y - elipse.y) / elipse.radioY) ** 2 < 1) return false
+    }
+    if (this.poligonos.length) {
+      const medioAncho = this.patitas.ancho / 2
+      const medioAlto = this.patitas.alto / 2
+      const puntos = [[x, y], [x - medioAncho, y], [x + medioAncho, y], [x, y - medioAlto], [x, y + medioAlto]]
+      for (const poligono of this.poligonos) {
+        if (puntos.some(([px, py]) => dentroDelPoligono(px, py, poligono))) return false
+      }
     }
     return true
   }
@@ -193,4 +216,15 @@ export class Piso {
     }
     return resultado
   }
+}
+
+// ¿El punto está dentro del polígono? Cuenta cuántas veces una línea hacia la derecha cruza sus bordes.
+function dentroDelPoligono(x, y, puntos) {
+  let dentro = false
+  for (let i = 0, j = puntos.length - 1; i < puntos.length; j = i++) {
+    const [xi, yi] = puntos[i]
+    const [xj, yj] = puntos[j]
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) dentro = !dentro
+  }
+  return dentro
 }

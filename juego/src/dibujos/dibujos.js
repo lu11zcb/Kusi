@@ -2,11 +2,12 @@
 // Si el archivo no está, se dibuja una figura simple por código y se guarda como textura
 // con la misma clave. Cuando lleguen los dibujos, basta con copiarlos a esa carpeta.
 
-import { ANCHO_PLAZA, ALTO_PLAZA } from '../medidas.js'
+import plaza from '../datos/plaza.json'
 import { tipoDePuesto } from '../logica/nombres.js'
 import { DENOMINACIONES } from '../logica/compras.js'
 import {
-  dibujarKusiFrente, dibujarKusiEspaldas, dibujarCuyNinoFrente, dibujarCuyNinoEspaldas, dibujarVendedor,
+  dibujarKusiFrente, dibujarKusiEspaldas, dibujarCuyNinoFrente, dibujarCuyNinoEspaldas, dibujarCuyNinoLado,
+  dibujarVendedor,
 } from './personajes.js'
 import {
   dibujarProducto, dibujarIcono, dibujarBillete, dibujarMoneda, dibujarCartera, dibujarChoclito,
@@ -35,6 +36,7 @@ export function clavesDelPaquete(paquete) {
     ['kusi-espaldas', 'kusi-espaldas'],
     ['cuy-nino-frente', 'cuy-nino-frente'],
     ['cuy-nino-espaldas', 'cuy-nino-espaldas'],
+    ['cuy-nino', 'cuy-nino'],
     ['cartera', 'cartera'],
     ['choclito', 'choclito'],
     ['fondo-plaza', 'fondo-plaza'],
@@ -90,6 +92,8 @@ function elegirFigura(clave, tipo) {
       return { ancho: 110, alto: 120, dibujar: dibujarCuyNinoFrente }
     case 'cuy-nino-espaldas':
       return { ancho: 110, alto: 120, dibujar: dibujarCuyNinoEspaldas }
+    case 'cuy-nino':
+      return { ancho: 120, alto: 112, dibujar: dibujarCuyNinoLado }
     case 'vendedor':
       return { ancho: 150, alto: 150, dibujar: (lienzo) => dibujarVendedor(lienzo, clave) }
     case 'producto':
@@ -109,7 +113,7 @@ function elegirFigura(clave, tipo) {
     case 'choclito':
       return { ancho: 56, alto: 56, dibujar: (lienzo) => dibujarChoclito(lienzo, 56) }
     case 'fondo-plaza':
-      return { ancho: ANCHO_PLAZA, alto: ALTO_PLAZA, dibujar: dibujarPlaza }
+      return { ancho: plaza.ancho, alto: plaza.alto, dibujar: dibujarPlaza }
     default:
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarProducto(lienzo, clave) }
   }

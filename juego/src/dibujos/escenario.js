@@ -1,6 +1,6 @@
 // Figuras simples del escenario: los puestos y el fondo de la plaza.
 
-import { PILETA } from '../medidas.js'
+import plaza from '../datos/plaza.json'
 import { pincel, elipse, circulo, rectangulo, poligono, trazado, linea, dentroDe, colorDesdeClave } from './pinceles.js'
 
 // ---------- Puesto (360 x 320) ----------
@@ -60,26 +60,38 @@ export function dibujarPuesto(lienzo, tipo) {
   rectangulo(lienzo, 0, ALTURA_MOSTRADOR, 360, 20, 6, '#a8642f')
 }
 
-// ---------- Fondo: la plaza vista desde arriba (2560 x 1080) ----------
-// Arriba las casas, a los lados jardineras, abajo un muro bajito con la entrada al centro y,
-// en medio, la pileta. La pileta sale de medidas.js para que el dibujo coincida con lo que el cuy
-// no puede pisar.
-
-const PIE_CASAS = 250 // donde las casas tocan la vereda
-const ANCHO_VEREDA = 40
-const ARRIBA_MURO = 1036
-const ENTRADA = { izquierda: 1130, derecha: 1430 } // hueco del muro de abajo
-const ANCHO_JARDINERA = 76
+// ---------- Fondo: la plaza vista desde arriba ----------
+// Figura simple armada con src/datos/plaza.json: el piso de piedras y, encima, un dibujo sencillo
+// de cada cosa que no se pisa, según su tipo. Así la figura siempre coincide con los datos.
 
 export function dibujarPlaza(lienzo, ancho, alto) {
   pisoDePiedras(lienzo, ancho, alto)
-  caminoALaPileta(lienzo, alto)
-  casas(lienzo, ancho)
-  banderines(lienzo, ancho)
-  jardinera(lienzo, 0)
-  jardinera(lienzo, ancho - ANCHO_JARDINERA)
-  muro(lienzo, ancho, alto)
-  pileta(lienzo)
+  // Primero lo que está más arriba, para que lo de más abajo lo tape
+  const formas = [...plaza.noSePisa].sort((a, b) => caja(a).abajo - caja(b).abajo)
+  for (const forma of formas) DIBUJOS[forma.tipo]?.(lienzo, forma)
+}
+
+// Caja que encierra una forma: { izquierda, arriba, derecha, abajo }.
+function caja(forma) {
+  if (forma.forma === 'elipse') {
+    return { izquierda: forma.x - forma.radioX, arriba: forma.y - forma.radioY, derecha: forma.x + forma.radioX, abajo: forma.y + forma.radioY }
+  }
+  if (forma.forma === 'poligono') {
+    const xs = forma.puntos.map(([x]) => x)
+    const ys = forma.puntos.map(([, y]) => y)
+    return { izquierda: Math.min(...xs), arriba: Math.min(...ys), derecha: Math.max(...xs), abajo: Math.max(...ys) }
+  }
+  return { izquierda: forma.x, arriba: forma.y, derecha: forma.x + forma.ancho, abajo: forma.y + forma.alto }
+}
+
+// El camino de la forma, para rellenarla o dibujar dentro de ella.
+function contorno(forma) {
+  return (c) => {
+    if (forma.forma === 'elipse') c.ellipse(forma.x, forma.y, forma.radioX, forma.radioY, 0, 0, Math.PI * 2)
+    else if (forma.forma === 'poligono') forma.puntos.forEach(([x, y], i) => (i === 0 ? c.moveTo(x, y) : c.lineTo(x, y)))
+    else c.rect(forma.x, forma.y, forma.ancho, forma.alto)
+    c.closePath()
+  }
 }
 
 function pisoDePiedras(lienzo, ancho, alto) {
@@ -89,7 +101,7 @@ function pisoDePiedras(lienzo, ancho, alto) {
   pincel(lienzo, 2, '#a8936f')
   const tonos = ['#cdbb9c', '#bfae90', '#d9cbb0', '#c4b296']
   const anchoPiedra = 64
-  for (let fila = 0, y = PIE_CASAS + ANCHO_VEREDA + 18; y < alto + 16; fila++, y += 32) {
+  for (let fila = 0, y = 16; y < alto + 16; fila++, y += 32) {
     const corrimiento = fila % 2 ? anchoPiedra / 2 : 0
     for (let columna = 0, x = corrimiento; x < ancho + anchoPiedra; columna++, x += anchoPiedra) {
       const tono = tonos[(fila * 3 + columna * 5) % tonos.length]
@@ -98,154 +110,94 @@ function pisoDePiedras(lienzo, ancho, alto) {
   }
 }
 
-// Camino de losas claras desde la entrada hasta la pileta, y un anillo alrededor de ella.
-function caminoALaPileta(lienzo, alto) {
-  const { x, y, radioX, radioY } = PILETA
-  pincel(lienzo, 3, '#b9a07a')
-  rectangulo(lienzo, x - 110, y, 220, alto - y + 10, 0, '#eadfc6')
-  elipse(lienzo, x, y + 8, radioX + 90, radioY + 52, '#eadfc6')
-  // Juntas de las losas
-  for (let fila = y + radioY + 70; fila < alto; fila += 44) linea(lienzo, [[x - 108, fila], [x + 108, fila]], 2, '#cdbb9c')
-  linea(lienzo, [[x, y + radioY + 60], [x, alto]], 2, '#cdbb9c')
-}
-
-// ---------- Casas de arriba, con el techo visto desde arriba ----------
-
-const CASAS = [
-  { ancho: 240, pared: '#fbf3e4', techo: 96, flores: true },
-  { ancho: 200, pared: '#f2d39b', techo: 116 },
-  { ancho: 260, pared: '#f6efe6', techo: 84, flores: true },
-  { ancho: 190, pared: '#e9c2a6', techo: 108 },
-  { ancho: 230, pared: '#f4dcb0', techo: 92, flores: true },
-  { ancho: 210, pared: '#fbf3e4', techo: 104 },
-]
-
-function ventana(lienzo, x, y, flores) {
-  rectangulo(lienzo, x, y, 30, 38, 4, '#f6e3b4')
-  linea(lienzo, [[x + 15, y], [x + 15, y + 38]], 2, '#7a4b2f')
-  rectangulo(lienzo, x - 10, y, 10, 38, 2, '#5f8f3a')
-  rectangulo(lienzo, x + 30, y, 10, 38, 2, '#5f8f3a')
-  if (flores) {
-    rectangulo(lienzo, x - 6, y + 38, 42, 10, 2, '#9a6a3f')
-    for (const [dx, color] of [[2, '#d8433a'], [15, '#f4cf3c'], [28, '#e46aa8']]) circulo(lienzo, x + dx, y + 36, 5, color)
+// Pared con techo de tejas arriba y, abajo, ventanas y una puerta.
+function edificio(pared) {
+  return (lienzo, forma) => {
+    const { izquierda, arriba, derecha, abajo } = caja(forma)
+    pincel(lienzo, 3, '#8a5a40')
+    trazado(lienzo, contorno(forma), pared)
+    dentroDe(lienzo, contorno(forma), (c) => {
+      const finTecho = arriba + (abajo - arriba) * 0.45
+      c.fillStyle = '#c0573a'
+      c.fillRect(izquierda, arriba, derecha - izquierda, finTecho - arriba)
+      for (let y = arriba + 18; y < finTecho; y += 18) linea(c, [[izquierda, y], [derecha, y]], 2, '#9a3f28')
+      for (let x = izquierda + 60; x < derecha - 40; x += 140) {
+        rectangulo(c, x, abajo - 110, 34, 42, 4, '#f6e3b4')
+        rectangulo(c, x + 60, abajo - 70, 40, 70, 6, '#8a5a2b')
+      }
+    })
+    trazado(lienzo, contorno(forma), null)
   }
 }
 
-function casa(lienzo, x, { ancho, pared, techo, flores }) {
-  // Pared con la puerta de arco al medio y una ventana a cada lado
-  rectangulo(lienzo, x, techo - 6, ancho, PIE_CASAS - techo + 6, 0, pared)
-  const centro = x + ancho / 2
-  trazado(lienzo, (c) => {
-    c.moveTo(centro - 24, PIE_CASAS)
-    c.lineTo(centro - 24, PIE_CASAS - 58)
-    c.arc(centro, PIE_CASAS - 58, 24, Math.PI, 0)
-    c.lineTo(centro + 24, PIE_CASAS)
-  }, '#8a5a2b')
-  ventana(lienzo, x + 34, PIE_CASAS - 100, flores)
-  ventana(lienzo, x + ancho - 64, PIE_CASAS - 100, flores)
-
-  // Techo de tejas: filas que bajan hasta el alero
-  rectangulo(lienzo, x, -10, ancho, techo + 10, 0, '#c0573a')
-  for (let fila = 0, y = 16; y < techo - 6; fila++, y += 18) {
-    linea(lienzo, [[x + 3, y], [x + ancho - 3, y]], 2, '#9a3f28')
-    for (let t = x + (fila % 2 ? 22 : 11); t < x + ancho - 6; t += 22) linea(lienzo, [[t, y - 16], [t, y]], 2, '#a8462d')
-  }
-  rectangulo(lienzo, x, techo - 8, ancho, 10, 3, '#9a3f28')
+function techo(lienzo, forma) {
+  const { izquierda, arriba, derecha, abajo } = caja(forma)
+  pincel(lienzo, 3, '#8a5a40')
+  trazado(lienzo, contorno(forma), '#c0573a')
+  dentroDe(lienzo, contorno(forma), (c) => {
+    for (let y = arriba + 14; y < abajo; y += 22) linea(c, [[izquierda, y], [derecha, y]], 2, '#9a3f28')
+  })
+  trazado(lienzo, contorno(forma), null)
 }
 
-function casas(lienzo, ancho) {
-  pincel(lienzo, 2.5, '#8a5a40')
-  for (let x = 0, i = 0; x < ancho; i++) {
-    const datos = CASAS[i % CASAS.length]
-    casa(lienzo, x, datos)
-    x += datos.ancho
-  }
-  // Vereda delante de las casas
-  lienzo.fillStyle = '#c9b28a'
-  lienzo.fillRect(0, PIE_CASAS, ancho, ANCHO_VEREDA)
-  linea(lienzo, [[0, PIE_CASAS], [ancho, PIE_CASAS]], 3, '#8a5a40')
-  linea(lienzo, [[0, PIE_CASAS + ANCHO_VEREDA], [ancho, PIE_CASAS + ANCHO_VEREDA]], 3, '#8a7350')
+function muro(lienzo, forma) {
+  pincel(lienzo, 3, '#8a5a40')
+  trazado(lienzo, contorno(forma), '#d79b63')
+  const { izquierda, arriba, derecha } = caja(forma)
+  rectangulo(lienzo, izquierda, arriba - 6, derecha - izquierda, 14, 4, '#b97a45')
 }
 
-// Banderines de fiesta colgados de casa en casa.
-function banderines(lienzo, ancho) {
-  const tramo = 320
-  const curva = (px) => 150 + 40 * Math.sin((Math.PI * (px % tramo)) / tramo)
-  linea(lienzo, Array.from({ length: Math.ceil(ancho / 10) + 1 }, (_, i) => [i * 10, curva(i * 10)]), 2, '#6b4a2a')
-  const colores = ['#d8433a', '#f4cf3c', '#5aa04a', '#e46aa8', '#f3a12b', '#7b3f8c']
-  pincel(lienzo, 2.5, '#8a5a40')
-  for (let px = 20, i = 0; px < ancho; px += 40, i++) {
-    const y = curva(px)
-    poligono(lienzo, [[px - 12, y], [px + 12, y], [px, y + 28]], colores[i % colores.length])
-  }
-}
-
-// ---------- Bordes de la plaza ----------
-
-// Jardinera alargada a un lado de la plaza, con arbustos floridos.
-function jardinera(lienzo, izquierda) {
-  const arriba = PIE_CASAS + ANCHO_VEREDA
+function pileta(lienzo, forma) {
+  if (forma.forma !== 'elipse') return // la columna del chorro va dentro del dibujo de la pileta
+  const { x, y, radioX, radioY } = forma
   pincel(lienzo, 3)
-  rectangulo(lienzo, izquierda, arriba, ANCHO_JARDINERA, ARRIBA_MURO - arriba, 6, '#b97a45')
-  rectangulo(lienzo, izquierda + 10, arriba + 10, ANCHO_JARDINERA - 20, ARRIBA_MURO - arriba - 20, 6, '#8fbf5a')
-  const x = izquierda + ANCHO_JARDINERA / 2
-  const colores = ['#d8433a', '#f4cf3c', '#e46aa8']
-  for (let y = arriba + 70, i = 0; y < ARRIBA_MURO - 40; y += 120, i++) {
-    circulo(lienzo, x, y, 26, '#6fa84a')
-    circulo(lienzo, x - 9, y - 7, 5, colores[i % 3], { borde: false })
-    circulo(lienzo, x + 10, y + 4, 5, colores[(i + 1) % 3], { borde: false })
-  }
-}
-
-// Muro bajito de adobe con la entrada al medio, donde espera Kusi.
-function muro(lienzo, ancho, alto) {
-  pincel(lienzo, 3)
-  for (const [desde, hasta] of [[0, ENTRADA.izquierda], [ENTRADA.derecha, ancho]]) {
-    rectangulo(lienzo, desde, ARRIBA_MURO, hasta - desde, alto - ARRIBA_MURO + 10, 0, '#d79b63')
-    for (let x = desde + 40; x < hasta; x += 80) linea(lienzo, [[x, ARRIBA_MURO + 14], [x, ARRIBA_MURO + 30]], 2, '#a8642f')
-    linea(lienzo, [[desde, ARRIBA_MURO + 30], [hasta, ARRIBA_MURO + 30]], 2, '#a8642f')
-    rectangulo(lienzo, desde, ARRIBA_MURO - 8, hasta - desde, 16, 4, '#b97a45')
-  }
-  // Pilares a los lados de la entrada, con una plantita encima
-  for (const x of [ENTRADA.izquierda, ENTRADA.derecha]) {
-    rectangulo(lienzo, x - 24, ARRIBA_MURO - 36, 48, alto - ARRIBA_MURO + 46, 6, '#c98b4f')
-    circulo(lienzo, x, ARRIBA_MURO - 42, 18, '#6fa84a')
-    circulo(lienzo, x - 5, ARRIBA_MURO - 46, 4, '#f4cf3c', { borde: false })
-  }
-}
-
-// ---------- Pileta del centro ----------
-
-function pileta(lienzo) {
-  const { x, y, radioX, radioY } = PILETA
-  const alto = 16 // lo que se ve del costado de piedra
-  pincel(lienzo, 3)
-
-  // Sombra, costado y borde de piedra
-  elipse(lienzo, x + 10, y + alto + 10, radioX + 4, radioY + 4, 'rgba(75, 33, 27, 0.16)', { borde: false })
-  elipse(lienzo, x, y + alto, radioX, radioY, '#a99c8a')
-  rectangulo(lienzo, x - radioX, y, radioX * 2, alto, 0, '#a99c8a', { borde: false })
-  linea(lienzo, [[x - radioX, y], [x - radioX, y + alto]])
-  linea(lienzo, [[x + radioX, y], [x + radioX, y + alto]])
+  elipse(lienzo, x, y + 16, radioX, radioY, '#a99c8a')
+  rectangulo(lienzo, x - radioX, y, radioX * 2, 16, 0, '#a99c8a', { borde: false })
   elipse(lienzo, x, y, radioX, radioY, '#d8cfc0')
+  elipse(lienzo, x, y - 2, radioX - 30, radioY - 22, '#7cc8e8')
+  // Columna del centro con su platito y el chorrito
+  rectangulo(lienzo, x - 14, y - 90, 28, 96, 6, '#d8cfc0')
+  elipse(lienzo, x, y - 90, 50, 18, '#e6ded1')
+  elipse(lienzo, x, y - 92, 36, 10, '#7cc8e8', { borde: false })
+  linea(lienzo, [[x, y - 100], [x, y - 130]], 5, '#bfe7f5')
+}
 
-  // Agua con ondas
-  elipse(lienzo, x, y - 2, radioX - 22, radioY - 14, '#7cc8e8')
-  lienzo.save()
-  pincel(lienzo, 2.5, '#d4f0fa')
-  for (const [dx, dy, radio] of [[-80, 10, 24], [70, -14, 20], [40, 26, 16]]) {
-    lienzo.beginPath()
-    lienzo.ellipse(x + dx, y + dy, radio, radio * 0.45, 0, Math.PI * 1.1, Math.PI * 1.9)
-    lienzo.stroke()
-  }
-  lienzo.restore()
+function banca(lienzo, forma) {
+  const { izquierda, arriba, derecha, abajo } = caja(forma)
+  pincel(lienzo, 3)
+  rectangulo(lienzo, izquierda + 6, arriba + 16, 8, abajo - arriba - 16, 2, '#6b4a2a')
+  rectangulo(lienzo, derecha - 14, arriba + 16, 8, abajo - arriba - 16, 2, '#6b4a2a')
+  rectangulo(lienzo, izquierda, arriba, derecha - izquierda, 22, 4, '#a8642f')
+}
 
-  // Columna del centro con su platito y el chorrito de agua
-  elipse(lienzo, x, y + 6, 26, 11, '#cfc5b5')
-  rectangulo(lienzo, x - 13, y - 40, 26, 46, 6, '#d8cfc0')
-  elipse(lienzo, x, y - 42, 32, 12, '#e6ded1')
-  elipse(lienzo, x, y - 44, 22, 7, '#7cc8e8', { borde: false })
-  linea(lienzo, [[x - 22, y - 34], [x - 30, y - 22]], 3, '#bfe7f5')
-  linea(lienzo, [[x + 22, y - 34], [x + 30, y - 22]], 3, '#bfe7f5')
-  linea(lienzo, [[x, y - 48], [x, y - 64]], 4, '#bfe7f5')
+function maceta(lienzo, forma) {
+  const { izquierda, arriba, derecha, abajo } = caja(forma)
+  const centro = (izquierda + derecha) / 2
+  const radio = (derecha - izquierda) / 2
+  pincel(lienzo, 3)
+  circulo(lienzo, centro, arriba - radio * 0.3, radio * 0.9, '#6fa84a')
+  circulo(lienzo, centro - radio * 0.3, arriba - radio * 0.5, 5, '#e46aa8', { borde: false })
+  circulo(lienzo, centro + radio * 0.3, arriba - radio * 0.2, 5, '#f4cf3c', { borde: false })
+  poligono(lienzo, [[izquierda, arriba], [derecha, arriba], [derecha - 8, abajo], [izquierda + 8, abajo]], '#c96f3f')
+}
+
+function farol(lienzo, forma) {
+  const { izquierda, derecha, abajo } = caja(forma)
+  const x = (izquierda + derecha) / 2
+  pincel(lienzo, 3)
+  elipse(lienzo, x, abajo - 4, 16, 6, '#3a3446')
+  rectangulo(lienzo, x - 5, abajo - 170, 10, 166, 3, '#3a3446')
+  rectangulo(lienzo, x - 16, abajo - 205, 32, 38, 6, '#ffe28a')
+  poligono(lienzo, [[x - 22, abajo - 205], [x + 22, abajo - 205], [x, abajo - 222]], '#3a3446')
+}
+
+const DIBUJOS = {
+  casas: edificio('#f6efe6'),
+  iglesia: edificio('#efe3cc'),
+  techo,
+  muro,
+  pileta,
+  banca,
+  maceta,
+  farol,
 }
