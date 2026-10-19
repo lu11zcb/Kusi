@@ -4,49 +4,58 @@
 export const ANCHO = 1280
 export const ALTO = 720
 
-// Línea donde pisan Kusi y el cuy (el pasillo, delante de los puestos).
-export const PISO_PERSONAJES = 590
-// Los puestos se apoyan un poco más atrás, sobre el piso de piedras.
-export const PISO_PUESTOS = 540
-// Dónde empieza el piso de piedras.
-export const INICIO_PISO = 500
+// La plaza se ve desde arriba, un poco inclinada. Mide 2 pantallas de ancho por 1,5 de alto
+// y la cámara sigue al cuy.
+export const ANCHO_PLAZA = 2560
+export const ALTO_PLAZA = 1080
 
-// Posición de Kusi y del cuy al empezar.
-export const KUSI_X = 170
-export const CUY_INICIO_X = 360
+// Dónde pueden pisar las patitas del cuy: debajo de las casas de arriba, entre las jardineras
+// de los lados y antes del muro de abajo.
+export const ZONA_CAMINABLE = { izquierda: 100, derecha: 2460, arriba: 300, abajo: 1010 }
 
-// Espacio para Kusi al principio del mundo y distancia entre puestos.
-export const PRIMER_PUESTO_X = 760
-export const SEPARACION_PUESTOS = 600
+// Pileta del centro de la plaza (el cuy la rodea).
+export const PILETA = { x: 1280, y: 650, radioX: 170, radioY: 80 }
+
+// Kusi espera abajo al centro, en la entrada; el cuy del niño empieza a su lado.
+export const KUSI = { x: 1280, y: 985 }
+export const CUY_INICIO = { x: 1160, y: 990 }
+
+// Lugar de cada puesto, en el orden del paquete: x del centro e y del piso, donde se apoya el mostrador.
+// Los dos primeros quedan cerca de la entrada; los tres siguientes, contra las casas.
+export const LUGARES_PUESTOS = [
+  { x: 780, y: 860 },
+  { x: 1780, y: 860 },
+  { x: 520, y: 470 },
+  { x: 1280, y: 420 },
+  { x: 2040, y: 470 },
+  { x: 2260, y: 860 },
+  { x: 300, y: 860 },
+]
+export const FRENTE_PUESTO = 70 // el cuy se para esta distancia delante del mostrador para hablar
+
+// Patitas del cuy: lo que ocupa en el piso para no atravesar los puestos.
+export const PATITAS_CUY = { ancho: 68, alto: 32 }
+
+// La cámara mira un poco por delante del cuy: así el cartel no tapa los puestos que tiene enfrente.
+export const ADELANTO_CAMARA = 150
 
 // Movimiento del cuy.
 export const VELOCIDAD_MAXIMA = 260 // px por segundo
 export const ZONA_MUERTA = 10 // px del joystick que no cuentan
-export const ALTURA_SALTO = 80 // px
-export const DURACION_SALTO = 500 // ms, subida y bajada
-export const DISTANCIA_PARA_HABLAR = 120 // px en horizontal desde el centro del puesto
-export const MARGEN_BORDE = 60 // el cuy no se acerca más que esto a los bordes del mundo
-
-// Capas de fondo: cuánto se mueven respecto de la cámara.
-export const VELOCIDAD_CERROS = 0.2
-export const VELOCIDAD_CASAS = 0.5
-export const VELOCIDAD_PISO = 1
+export const DISTANCIA_FRENADO = 70 // px antes de llegar a donde se tocó, empieza a frenar
+export const DISTANCIA_PARA_HABLAR = 110 // px desde el lugar para hablar frente al puesto
 
 // Orden de dibujo (lo que tiene más profundidad se ve encima).
+// Lo que está parado en la plaza usa su y como profundidad (de 0 a 1080): lo que está más abajo
+// tapa a lo que está más arriba. Por eso todo lo demás va por encima de 1080.
 export const PROFUNDIDAD = {
-  cerros: 0,
-  casas: 1,
-  piso: 2,
-  vendedor: 10,
-  puesto: 11,
-  producto: 12,
-  letrero: 12,
-  personajes: 20,
-  globoHablar: 30,
-  controles: 100,
-  globoKusi: 200,
-  ventana: 1000,
-  cartel: 1100,
+  fondo: 0,
+  marca: 1,
+  globoHablar: 2000,
+  controles: 3000,
+  globoKusi: 4000,
+  ventana: 5000,
+  cartel: 6000,
 }
 
 // Colores cálidos de Kusi (los mismos tonos del panel web).

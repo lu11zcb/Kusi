@@ -9,7 +9,7 @@ async function tocar(pagina, nombre) {
   await pagina.mouse.click(punto.x, punto.y)
 }
 
-// Abre el juego rápido, toca «¡Vamos!» y camina con la flecha derecha hasta quedar frente al puesto de pan.
+// Abre el juego rápido, toca «¡Vamos!» y toca el puesto de pan: el cuy camina solo hasta su frente.
 async function llegarAlPuestoDePan(pagina) {
   await pagina.goto('/?rapido=1')
   await pagina.waitForFunction(() => window.kusi?.listo)
@@ -19,15 +19,17 @@ async function llegarAlPuestoDePan(pagina) {
   await tocar(pagina, 'vamos')
   await expect.poll(async () => (await estado(pagina)).puedeMoverse).toBe(true)
 
-  const pan = (await estado(pagina)).puestos.find((puesto) => puesto.id === 'p1')
-  await pagina.keyboard.down('ArrowRight')
-  // Suelta la flecha un poco antes: el cuy frena suave y se detiene frente al puesto
-  await pagina.waitForFunction((x) => window.kusi.estado().cuyX >= x, pan.x - 260)
-  await pagina.keyboard.up('ArrowRight')
-  await pagina.waitForFunction(() => window.kusi.estado().velocidad === 0)
+  await tocar(pagina, 'puesto:p1')
+  await pagina.waitForFunction(() => {
+    const ahora = window.kusi.estado()
+    return ahora.puestoCercano === 'p1' && !ahora.caminando && ahora.velocidad === 0
+  })
 
+  // Quedó frente al puesto, mirándolo
   const frente = await estado(pagina)
-  expect(Math.abs(frente.cuyX - pan.x)).toBeLessThan(120)
+  const pan = frente.puestos.find((puesto) => puesto.id === 'p1')
+  expect(Math.hypot(frente.cuyX - pan.frente.x, frente.cuyY - pan.frente.y)).toBeLessThan(10)
+  expect(frente.mirando).toBe('espaldas')
   expect(frente.puestoCercano).toBe('p1')
 
   await tocar(pagina, 'hablar')
@@ -65,10 +67,10 @@ test('compra la harina con la moneda de 5 y recibe 2 de vuelto', async ({ page: 
   expect(consola.some((linea) => linea.startsWith('[Kusi]') && linea.includes('"tipo":"compra"'))).toBe(true)
 
   // «Listo» cierra la ventana y el cuy sigue frente al puesto
-  const antes = final.cuyX
   await tocar(pagina, 'listo')
   await expect.poll(async () => (await estado(pagina)).ventanaAbierta).toBe(false)
-  expect((await estado(pagina)).cuyX).toBe(antes)
+  const despues = await estado(pagina)
+  expect([despues.cuyX, despues.cuyY]).toEqual([final.cuyX, final.cuyY])
 })
 
 test('si no alcanza, el vendedor avisa y no se pierde plata', async ({ page: pagina }) => {

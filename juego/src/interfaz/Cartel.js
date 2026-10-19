@@ -13,7 +13,7 @@ const RELLENO = 18
 export class Cartel {
   constructor(escena) {
     this.escena = escena
-    this.lista = this.crearPildora('kusi', 56, 62)
+    this.lista = this.crearPildora('kusi-frente', 56, 62)
     this.plata = this.crearPildora('cartera', 50, 50)
     this.choclitos = this.crearPildora('choclito', 46, 46)
   }

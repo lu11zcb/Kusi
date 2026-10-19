@@ -2,13 +2,16 @@
 // Si el archivo no está, se dibuja una figura simple por código y se guarda como textura
 // con la misma clave. Cuando lleguen los dibujos, basta con copiarlos a esa carpeta.
 
+import { ANCHO_PLAZA, ALTO_PLAZA } from '../medidas.js'
 import { tipoDePuesto } from '../logica/nombres.js'
 import { DENOMINACIONES } from '../logica/compras.js'
-import { dibujarKusi, dibujarCuyNino, dibujarVendedor } from './personajes.js'
+import {
+  dibujarKusiFrente, dibujarKusiEspaldas, dibujarCuyNinoFrente, dibujarCuyNinoEspaldas, dibujarVendedor,
+} from './personajes.js'
 import {
   dibujarProducto, dibujarIcono, dibujarBillete, dibujarMoneda, dibujarCartera, dibujarChoclito,
 } from './productos.js'
-import { dibujarPuesto, dibujarCerros, dibujarCasas, dibujarPiso } from './escenario.js'
+import { dibujarPuesto, dibujarPlaza } from './escenario.js'
 
 // Clave del dibujo de cada billete o moneda: 10 → "billete-10", 5 → "moneda-5".
 export function claveDinero(valor) {
@@ -28,13 +31,13 @@ function tamanoMoneda(valor) {
 // Todas las claves que usa este paquete, cada una con su tipo (para saber qué figura dibujar).
 export function clavesDelPaquete(paquete) {
   const claves = new Map([
-    ['kusi', 'kusi'],
-    ['cuy-nino', 'cuy-nino'],
+    ['kusi-frente', 'kusi-frente'],
+    ['kusi-espaldas', 'kusi-espaldas'],
+    ['cuy-nino-frente', 'cuy-nino-frente'],
+    ['cuy-nino-espaldas', 'cuy-nino-espaldas'],
     ['cartera', 'cartera'],
     ['choclito', 'choclito'],
-    ['fondo-cerros', 'fondo-cerros'],
-    ['fondo-casas', 'fondo-casas'],
-    ['fondo-piso', 'fondo-piso'],
+    ['fondo-plaza', 'fondo-plaza'],
   ])
   for (const puesto of paquete.puestos) {
     claves.set(puesto.recurso, 'puesto')
@@ -79,10 +82,14 @@ function crearFiguraSimple(escena, clave, tipo) {
 // Qué figura y de qué tamaño, según el tipo de cosa.
 function elegirFigura(clave, tipo) {
   switch (tipo) {
-    case 'kusi':
-      return { ancho: 130, alto: 140, dibujar: dibujarKusi }
-    case 'cuy-nino':
-      return { ancho: 120, alto: 112, dibujar: dibujarCuyNino }
+    case 'kusi-frente':
+      return { ancho: 124, alto: 140, dibujar: dibujarKusiFrente }
+    case 'kusi-espaldas':
+      return { ancho: 124, alto: 140, dibujar: dibujarKusiEspaldas }
+    case 'cuy-nino-frente':
+      return { ancho: 110, alto: 120, dibujar: dibujarCuyNinoFrente }
+    case 'cuy-nino-espaldas':
+      return { ancho: 110, alto: 120, dibujar: dibujarCuyNinoEspaldas }
     case 'vendedor':
       return { ancho: 150, alto: 150, dibujar: (lienzo) => dibujarVendedor(lienzo, clave) }
     case 'producto':
@@ -101,12 +108,8 @@ function elegirFigura(clave, tipo) {
       return { ancho: 72, alto: 72, dibujar: dibujarCartera }
     case 'choclito':
       return { ancho: 56, alto: 56, dibujar: (lienzo) => dibujarChoclito(lienzo, 56) }
-    case 'fondo-cerros':
-      return { ancho: 1280, alto: 500, dibujar: dibujarCerros }
-    case 'fondo-casas':
-      return { ancho: 1200, alto: 330, dibujar: dibujarCasas }
-    case 'fondo-piso':
-      return { ancho: 512, alto: 220, dibujar: dibujarPiso }
+    case 'fondo-plaza':
+      return { ancho: ANCHO_PLAZA, alto: ALTO_PLAZA, dibujar: dibujarPlaza }
     default:
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarProducto(lienzo, clave) }
   }

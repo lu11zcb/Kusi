@@ -23,7 +23,7 @@ async function empezar() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    // Varios dedos a la vez: uno en el joystick y otro en «Saltar»
+    // Varios dedos a la vez: si otro dedo toca la pantalla, el joystick no se suelta
     input: {
       activePointers: 3,
     },

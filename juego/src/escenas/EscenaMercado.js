@@ -1,24 +1,29 @@
-// El mercado de Kusi: mundo de lado, puestos en fila, el cuy que camina y salta, y las compras.
+// El mercado de Kusi: una plaza vista desde arriba con los puestos alrededor de la pileta.
+// El cuy camina en todas las direcciones (tocando el piso o un puesto, con el joystick o con las flechas)
+// y compra en los puestos.
 
 import * as Phaser from 'phaser'
 import {
-  ANCHO, ALTO, COLOR, PROFUNDIDAD, estiloTexto,
-  PISO_PERSONAJES, PISO_PUESTOS, INICIO_PISO, KUSI_X, CUY_INICIO_X,
-  PRIMER_PUESTO_X, SEPARACION_PUESTOS, VELOCIDAD_MAXIMA, ALTURA_SALTO, DURACION_SALTO,
-  DISTANCIA_PARA_HABLAR, MARGEN_BORDE, VELOCIDAD_CERROS, VELOCIDAD_CASAS, VELOCIDAD_PISO,
-  NUMERO,
+  COLOR, NUMERO, PROFUNDIDAD, estiloTexto, ANCHO, ALTO,
+  ANCHO_PLAZA, ALTO_PLAZA, ZONA_CAMINABLE, PILETA, KUSI, CUY_INICIO, LUGARES_PUESTOS, FRENTE_PUESTO,
+  PATITAS_CUY, ADELANTO_CAMARA, VELOCIDAD_MAXIMA, DISTANCIA_FRENADO, DISTANCIA_PARA_HABLAR,
 } from '../medidas.js'
 import { ajustarATamano, claveIcono } from '../dibujos/dibujos.js'
 import { ALTURA_MOSTRADOR } from '../dibujos/escenario.js'
 import { palabraDelLetrero, textoSoles } from '../logica/nombres.js'
 import { crearEstado, progresoLista, textoCartel, sumar } from '../logica/compras.js'
 import { avisos } from '../logica/avisos.js'
+import { Piso } from '../logica/piso.js'
 import { Joystick } from '../interfaz/Joystick.js'
 import { Cartel } from '../interfaz/Cartel.js'
 import { VentanaPuesto } from '../interfaz/VentanaPuesto.js'
 import { crearBoton, dibujarGlobo, fijarEnPantalla } from '../interfaz/piezas.js'
 
 const ALTO_PUESTO = 320
+const ALTO_LETRERO = 84 // lo que sobresale el letrero por encima del toldo
+const TAMANO_KUSI = { ancho: 124, alto: 140 }
+const TAMANO_CUY = { ancho: 110, alto: 120 }
+const FUERZA_MINIMA = 0.15 // al frenar llegando a un punto, nunca va más lento que esto (de la velocidad máxima)
 
 export class EscenaMercado extends Phaser.Scene {
   constructor() {
@@ -30,9 +35,10 @@ export class EscenaMercado extends Phaser.Scene {
     this.estado = crearEstado(paquete)
     // Con ?rapido=1 en la dirección, el cuy camina 4 veces más rápido (para las pruebas automáticas)
     this.multiplicador = new URLSearchParams(window.location.search).get('rapido') === '1' ? 4 : 1
-    this.velocidad = 0 // px por segundo; negativa = hacia la izquierda
-    this.salto = { altura: 0 } // el tween del salto cambia esta altura
-    this.saltando = false
+    this.velocidad = { x: 0, y: 0 } // px por segundo
+    this.camino = null // { puntos, puesto } mientras camina solo hacia donde se tocó
+    this.mirando = 'frente' // el cuy: 'frente' o 'espaldas'
+    this.kusiMirando = 'frente'
     this.puedeMoverse = false // recién se mueve después de «¡Vamos!»
     this.ventana = null
     this.puestoCercano = null
@@ -41,9 +47,11 @@ export class EscenaMercado extends Phaser.Scene {
   }
 
   create() {
-    // El mundo: espacio para Kusi al principio, los puestos cada 600 px y un poco de espacio al final
-    const cantidad = this.paquete.puestos.length
-    this.anchoMundo = PRIMER_PUESTO_X + (cantidad - 1) * SEPARACION_PUESTOS + SEPARACION_PUESTOS
+    // Lo que el cuy no puede pisar: la pileta y Kusi, hasta el muro para que no se le ponga delante
+    // (los puestos se agregan al crearlos)
+    this.piso = new Piso(ZONA_CAMINABLE, PATITAS_CUY)
+    this.piso.agregarElipse(PILETA.x, PILETA.y + 8, PILETA.radioX, PILETA.radioY + 8)
+    this.piso.agregarCaja(KUSI.x - 44, KUSI.y - 26, KUSI.x + 44, ZONA_CAMINABLE.abajo)
 
     this.crearFondo()
     this.crearPuestos()
@@ -52,14 +60,20 @@ export class EscenaMercado extends Phaser.Scene {
     this.cartel = new Cartel(this)
     this.actualizarCartel(false)
 
-    // La cámara sigue al cuy con suavidad y no sale del mundo
+    // La cámara sigue al cuy con suavidad, mirando un poco por delante, y no sale de la plaza
     const camara = this.cameras.main
-    camara.setBounds(0, 0, this.anchoMundo, ALTO)
-    camara.startFollow(this.cuy, false, 0.08, 0.08)
+    camara.setBounds(0, 0, ANCHO_PLAZA, ALTO_PLAZA)
+    camara.startFollow(this.cuy, false, 0.08, 0.08, 0, ADELANTO_CAMARA)
 
-    // En la computadora: flechas para caminar y barra espaciadora para saltar
+    // En la computadora: las flechas caminan en 8 direcciones
     this.teclas = this.input.keyboard.createCursorKeys()
-    this.input.keyboard.on('keydown-SPACE', () => this.saltar())
+
+    // Tocar el piso: el cuy camina solo hasta ahí. Si el toque cayó sobre algo que se puede tocar
+    // (un puesto, un botón, el joystick), eso manda.
+    this.input.on('pointerdown', (puntero, tocados) => {
+      if (tocados.length || !this.puedeMoverse) return
+      this.caminarHacia({ x: puntero.worldX, y: puntero.worldY })
+    })
 
     this.exponerParaPruebas()
     this.mostrarHistoria()
@@ -68,55 +82,55 @@ export class EscenaMercado extends Phaser.Scene {
   update(tiempo, delta) {
     const segundos = Math.min(delta, 50) / 1000
     this.moverCuy(segundos, tiempo)
+    this.voltearKusi()
+    this.transparentarPuestos(segundos)
     this.revisarPuestoCercano()
   }
 
-  // ---------- Fondo en tres capas ----------
+  // ---------- Plaza ----------
 
+  // Un solo dibujo para todo el piso. Si el PNG tiene otra proporción, cubre la plaza sin deformarse.
   crearFondo() {
-    this.crearCapa('fondo-cerros', VELOCIDAD_CERROS, 0, 500, PROFUNDIDAD.cerros)
-    this.crearCapa('fondo-casas', VELOCIDAD_CASAS, 190, 330, PROFUNDIDAD.casas)
-    this.crearCapa('fondo-piso', VELOCIDAD_PISO, INICIO_PISO, ALTO - INICIO_PISO, PROFUNDIDAD.piso)
-  }
-
-  // Repite un dibujo de lado a lado. Una capa que se mueve más lento que la cámara (factor < 1)
-  // necesita menos ancho: solo lo que alcanza a verse mientras la cámara recorre el mundo.
-  crearCapa(clave, factor, arriba, alto, profundidad) {
-    const imagen = this.textures.get(clave).getSourceImage()
-    const escala = alto / imagen.height
-    const anchoPieza = imagen.width * escala
-    const anchoNecesario = (this.anchoMundo - ANCHO) * factor + ANCHO
-    // Las piezas se enciman 1 px para que no aparezcan rayitas entre ellas
-    for (let x = 0; x < anchoNecesario; x += anchoPieza - 1) {
-      this.add.image(x, arriba, clave).setOrigin(0, 0).setScale(escala).setScrollFactor(factor, 0).setDepth(profundidad)
-    }
+    const fondo = this.add.image(0, 0, 'fondo-plaza').setOrigin(0, 0).setDepth(PROFUNDIDAD.fondo)
+    fondo.setScale(Math.max(ANCHO_PLAZA / fondo.width, ALTO_PLAZA / fondo.height))
   }
 
   // ---------- Puestos ----------
 
   crearPuestos() {
-    this.puestos = this.paquete.puestos.map((datos, i) => {
-      const x = PRIMER_PUESTO_X + i * SEPARACION_PUESTOS
-      const arriba = PISO_PUESTOS - ALTO_PUESTO
+    const { puestos } = this.paquete
+    if (puestos.length > LUGARES_PUESTOS.length) {
+      console.warn(`[mercado] La plaza tiene lugar para ${LUGARES_PUESTOS.length} puestos y el paquete trae ${puestos.length}`)
+    }
+    this.puestos = puestos.slice(0, LUGARES_PUESTOS.length).map((datos, i) => {
+      const { x, y: piso } = LUGARES_PUESTOS[i]
+      const arriba = piso - ALTO_PUESTO
       const mostrador = arriba + ALTURA_MOSTRADOR
 
       // El vendedor va detrás del puesto: se ve por el hueco entre el toldo y el mostrador,
-      // con la cara por encima de los productos
-      ajustarATamano(this.add.image(x, mostrador + 4, datos.vendedor.recurso).setOrigin(0.5, 1), 150, 150)
-        .setDepth(PROFUNDIDAD.vendedor)
-      ajustarATamano(this.add.image(x, PISO_PUESTOS, datos.recurso).setOrigin(0.5, 1), 360, ALTO_PUESTO)
-        .setDepth(PROFUNDIDAD.puesto)
-
-      // Sus productos, en fila sobre el mostrador
+      // con la cara por encima de los productos, que van en fila sobre el mostrador.
+      // Todo el puesto es un grupo con la profundidad de su piso.
+      const vendedor = ajustarATamano(this.add.image(x, mostrador + 4, datos.vendedor.recurso).setOrigin(0.5, 1), 150, 150)
+      const dibujo = ajustarATamano(this.add.image(x, piso, datos.recurso).setOrigin(0.5, 1), 360, ALTO_PUESTO)
       const cantidad = datos.productos.length
-      datos.productos.forEach((producto, j) => {
-        ajustarATamano(this.add.image(x + (j - (cantidad - 1) / 2) * 62, mostrador + 6, producto.recurso).setOrigin(0.5, 1), 52, 52)
-          .setDepth(PROFUNDIDAD.producto)
-      })
+      const productos = datos.productos.map((producto, j) =>
+        ajustarATamano(this.add.image(x + (j - (cantidad - 1) / 2) * 62, mostrador + 6, producto.recurso).setOrigin(0.5, 1), 52, 52))
+      const letrero = this.crearLetrero(x, arriba, datos.recurso)
+      const grupo = this.add.container(0, 0, [vendedor, dibujo, ...productos, ...letrero]).setDepth(piso)
 
-      this.crearLetrero(x, arriba, datos.recurso)
-      const globo = this.crearGloboHablar(x, arriba + 30)
-      const puesto = { datos, x, globo }
+      // El cuy no atraviesa el mostrador, pero puede pasar por detrás de los puestos de abajo
+      this.piso.agregarCaja(x - 175, piso - 150, x + 175, piso + 5)
+
+      // Tocar el puesto o su letrero lleva al cuy hasta el frente del puesto
+      const zona = this.add.zone(x, (arriba - ALTO_LETRERO + piso) / 2, 360, ALTO_PUESTO + ALTO_LETRERO)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(piso)
+
+      const globo = this.crearGloboHablar(x, arriba + 50)
+      const puesto = { datos, x, piso, arriba, grupo, zona, globo, frente: { x, y: piso + FRENTE_PUESTO } }
+      zona.on('pointerdown', () => {
+        if (this.puedeMoverse) this.caminarHacia(puesto.frente, puesto)
+      })
       globo.zona.on('pointerup', () => this.abrirVentana(puesto))
       return puesto
     })
@@ -134,14 +148,15 @@ export class EscenaMercado extends Phaser.Scene {
     const icono = ajustarATamano(this.add.image(x - 78, y, claveIcono(clavePuesto)), 50, 50)
     const palabra = this.add.text(x + 24, y, palabraDelLetrero(clavePuesto), estiloTexto(32)).setOrigin(0.5)
     if (palabra.width > 150) palabra.setScale(150 / palabra.width)
-    for (const parte of [patas, tabla, icono, palabra]) parte.setDepth(PROFUNDIDAD.letrero)
+    return [patas, tabla, icono, palabra]
   }
 
-  // Globo «Hablar» sobre el vendedor; solo se ve cuando el cuy está frente al puesto.
+  // Globo «Hablar» sobre el vendedor; solo se ve (y se puede tocar) cuando el cuy está frente al puesto.
   crearGloboHablar(x, y) {
     const dibujo = dibujarGlobo(this.add.graphics(), 184, 78, { cola: 'abajo' })
     const texto = this.add.text(0, -1, 'Hablar', estiloTexto(34)).setOrigin(0.5)
     const zona = this.add.rectangle(0, 0, 184, 78).setInteractive({ useHandCursor: true })
+    zona.disableInteractive()
     const globo = this.add.container(x, y, [dibujo, texto, zona]).setDepth(PROFUNDIDAD.globoHablar).setVisible(false)
     globo.zona = zona
     // Sube y baja despacito para llamar la atención
@@ -149,77 +164,31 @@ export class EscenaMercado extends Phaser.Scene {
     return globo
   }
 
-  // ---------- Kusi y el cuy ----------
-
-  crearPersonajes() {
-    this.add.ellipse(KUSI_X, PISO_PERSONAJES, 100, 16, 0x000000, 0.16).setDepth(PROFUNDIDAD.personajes)
-    this.kusi = ajustarATamano(this.add.image(KUSI_X, PISO_PERSONAJES + 2, 'kusi').setOrigin(0.5, 1), 130, 140)
-      .setDepth(PROFUNDIDAD.personajes)
-    // Kusi respira: se estira apenitas hacia arriba
-    this.tweens.add({ targets: this.kusi, scaleY: this.kusi.scaleY * 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
-
-    // El cuy del niño: un contenedor con su sombra y su dibujo (el dibujo sube al saltar)
-    this.sombraCuy = this.add.ellipse(0, 0, 86, 16, 0x000000, 0.18)
-    this.dibujoCuy = ajustarATamano(this.add.image(0, 0, 'cuy-nino').setOrigin(0.5, 1), 120, 112)
-    this.cuy = this.add.container(CUY_INICIO_X, PISO_PERSONAJES, [this.sombraCuy, this.dibujoCuy])
-      .setDepth(PROFUNDIDAD.personajes + 1)
-  }
-
-  moverCuy(segundos, tiempo) {
-    // Hacia dónde quiere ir: joystick o flechas (las flechas van a toda velocidad)
-    let objetivo = 0
-    if (this.puedeMoverse) {
-      objetivo = this.joystick.valor
-      if (this.teclas.left.isDown) objetivo = -1
-      else if (this.teclas.right.isDown) objetivo = 1
+  // Si el cuy pasa por detrás de un puesto, el puesto se vuelve medio transparente para no perderlo de vista.
+  transparentarPuestos(segundos) {
+    const ajuste = 1 - Math.exp(-10 * segundos)
+    for (const puesto of this.puestos) {
+      const detras = this.cuy.y < puesto.piso
+        && this.cuy.y > puesto.arriba - ALTO_LETRERO
+        && Math.abs(this.cuy.x - puesto.x) < 200
+      const alfa = detras ? 0.5 : 1
+      puesto.grupo.alpha += (alfa - puesto.grupo.alpha) * ajuste
     }
-    objetivo *= VELOCIDAD_MAXIMA * this.multiplicador
-
-    // La velocidad se acerca al objetivo de a poco: arranca y frena suave, nunca de golpe
-    const suavidad = objetivo === 0 ? 6 : 9
-    this.velocidad += (objetivo - this.velocidad) * (1 - Math.exp(-suavidad * segundos))
-    if (objetivo === 0 && Math.abs(this.velocidad) < 3) this.velocidad = 0
-
-    // El cuy no sale de los bordes del mundo
-    const minimo = MARGEN_BORDE
-    const maximo = this.anchoMundo - MARGEN_BORDE
-    this.cuy.x = Phaser.Math.Clamp(this.cuy.x + this.velocidad * segundos, minimo, maximo)
-    if ((this.cuy.x === minimo && this.velocidad < 0) || (this.cuy.x === maximo && this.velocidad > 0)) this.velocidad = 0
-
-    // Mira hacia donde camina (el dibujo mira a la derecha)
-    if (this.velocidad > 8) this.dibujoCuy.setFlipX(false)
-    else if (this.velocidad < -8) this.dibujoCuy.setFlipX(true)
-
-    // Pasitos: rebota un poco mientras camina; encima se suma la altura del salto
-    const rapidez = Math.min(1, Math.abs(this.velocidad) / VELOCIDAD_MAXIMA)
-    const rebote = this.saltando ? 0 : Math.abs(Math.sin(tiempo / 85)) * 6 * rapidez
-    this.dibujoCuy.y = -this.salto.altura - rebote
-    this.sombraCuy.setScale(1 - this.salto.altura / 200)
   }
 
-  // Sube 80 px y baja en medio segundo. En el aire no puede volver a saltar.
-  saltar() {
-    if (!this.puedeMoverse || this.saltando) return
-    this.saltando = true
-    this.tweens.add({
-      targets: this.salto,
-      altura: ALTURA_SALTO,
-      duration: DURACION_SALTO / 2,
-      ease: 'Quad.easeOut',
-      yoyo: true,
-      onComplete: () => {
-        this.salto.altura = 0
-        this.saltando = false
-      },
-    })
-  }
-
-  // Si el cuy está frente a un puesto (a menos de 120 px de su centro), aparece «Hablar».
+  // Si el cuy está parado frente a un puesto, aparece «Hablar».
   revisarPuestoCercano() {
-    const puedeHablar = this.puedeMoverse && !this.ventana
-    const cercano = puedeHablar
-      ? this.puestos.find((puesto) => Math.abs(this.cuy.x - puesto.x) < DISTANCIA_PARA_HABLAR) ?? null
-      : null
+    let cercano = null
+    if (this.puedeMoverse && !this.ventana) {
+      let menor = DISTANCIA_PARA_HABLAR
+      for (const puesto of this.puestos) {
+        const distancia = Math.hypot(this.cuy.x - puesto.frente.x, this.cuy.y - puesto.frente.y)
+        if (distancia < menor) {
+          menor = distancia
+          cercano = puesto
+        }
+      }
+    }
     if (cercano === this.puestoCercano) return
     if (this.puestoCercano) this.esconderGlobo(this.puestoCercano.globo)
     if (cercano) this.mostrarGlobo(cercano.globo)
@@ -229,38 +198,150 @@ export class EscenaMercado extends Phaser.Scene {
   mostrarGlobo(globo) {
     this.tweens.killTweensOf(globo)
     globo.setVisible(true).setAlpha(1).setScale(0.6)
+    globo.zona.setInteractive()
     this.tweens.add({ targets: globo, scale: 1, duration: 220, ease: 'Back.easeOut' })
   }
 
   esconderGlobo(globo) {
     this.tweens.killTweensOf(globo)
+    globo.zona.disableInteractive()
     this.tweens.add({ targets: globo, scale: 0.6, alpha: 0, duration: 120, onComplete: () => globo.setVisible(false) })
+  }
+
+  // ---------- Kusi y el cuy ----------
+
+  crearPersonajes() {
+    // Kusi espera en la entrada y respira: se estira apenitas hacia arriba
+    this.dibujoKusi = ajustarATamano(this.add.image(0, 2, 'kusi-frente').setOrigin(0.5, 1), TAMANO_KUSI.ancho, TAMANO_KUSI.alto)
+    this.kusi = this.add.container(KUSI.x, KUSI.y, [this.add.ellipse(0, 0, 96, 18, 0x000000, 0.16), this.dibujoKusi])
+      .setDepth(KUSI.y)
+    this.tweens.add({ targets: this.kusi, scaleY: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
+
+    // El cuy del niño: un contenedor con su sombra y su dibujo (el dibujo rebota al caminar)
+    this.sombraCuy = this.add.ellipse(0, 0, 80, 16, 0x000000, 0.18)
+    this.dibujoCuy = ajustarATamano(this.add.image(0, 0, 'cuy-nino-frente').setOrigin(0.5, 1), TAMANO_CUY.ancho, TAMANO_CUY.alto)
+    this.cuy = this.add.container(CUY_INICIO.x, CUY_INICIO.y, [this.sombraCuy, this.dibujoCuy]).setDepth(CUY_INICIO.y)
+
+    // Marca en el piso donde se tocó; se ve mientras el cuy camina hacia ahí
+    this.marca = this.add.ellipse(0, 0, 60, 26, 0xffffff, 0.25)
+      .setStrokeStyle(4, 0xffffff, 0.9)
+      .setDepth(PROFUNDIDAD.marca)
+      .setVisible(false)
+    this.tweens.add({ targets: this.marca, scale: 0.75, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
+  }
+
+  // Flechas (en 8 direcciones, siempre a toda velocidad) o, si no se usan, el joystick.
+  direccionDeControles() {
+    const x = (this.teclas.right.isDown ? 1 : 0) - (this.teclas.left.isDown ? 1 : 0)
+    const y = (this.teclas.down.isDown ? 1 : 0) - (this.teclas.up.isDown ? 1 : 0)
+    if (!x && !y) return this.joystick.valor
+    const largo = Math.hypot(x, y)
+    return { x: x / largo, y: y / largo }
+  }
+
+  moverCuy(segundos, tiempo) {
+    const rapidezMaxima = VELOCIDAD_MAXIMA * this.multiplicador
+
+    // Hacia dónde quiere ir: flechas o joystick. Si no los usa, sigue el camino que eligió tocando.
+    let deseo = this.puedeMoverse ? this.direccionDeControles() : { x: 0, y: 0 }
+    if ((deseo.x || deseo.y) && this.camino) this.terminarCamino()
+    const punto = this.camino?.puntos[0]
+    if (punto) {
+      const distancia = Math.hypot(punto.x - this.cuy.x, punto.y - this.cuy.y) || 1
+      // Frena al acercarse al último punto
+      const ultimo = this.camino.puntos.length === 1
+      const fuerza = ultimo ? Phaser.Math.Clamp(distancia / DISTANCIA_FRENADO, FUERZA_MINIMA, 1) : 1
+      deseo = { x: ((punto.x - this.cuy.x) / distancia) * fuerza, y: ((punto.y - this.cuy.y) / distancia) * fuerza }
+    }
+
+    // La velocidad se acerca a la deseada de a poco: arranca y frena suave, nunca de golpe
+    const quieto = !deseo.x && !deseo.y
+    const ajuste = 1 - Math.exp(-(quieto ? 6 : 9) * segundos)
+    this.velocidad.x += (deseo.x * rapidezMaxima - this.velocidad.x) * ajuste
+    this.velocidad.y += (deseo.y * rapidezMaxima - this.velocidad.y) * ajuste
+    if (quieto && Math.hypot(this.velocidad.x, this.velocidad.y) < 3) this.velocidad = { x: 0, y: 0 }
+
+    let dx = this.velocidad.x * segundos
+    let dy = this.velocidad.y * segundos
+    // Siguiendo un camino no se pasa del punto: si este paso lo alcanza, llega justo y sigue con el próximo
+    if (punto && Math.hypot(dx, dy) >= Math.hypot(punto.x - this.cuy.x, punto.y - this.cuy.y)) {
+      dx = punto.x - this.cuy.x
+      dy = punto.y - this.cuy.y
+      this.camino.puntos.shift()
+    }
+
+    // Avanza sin atravesar nada; si choca de un lado, pierde esa parte de la velocidad
+    const antes = { x: this.cuy.x, y: this.cuy.y }
+    const paso = this.piso.mover(antes.x, antes.y, dx, dy)
+    if (paso.x === antes.x) this.velocidad.x = 0
+    if (paso.y === antes.y) this.velocidad.y = 0
+    this.cuy.setPosition(paso.x, paso.y).setDepth(paso.y)
+
+    if (this.camino) {
+      // Si quedó trabado contra algo un ratito, deja de intentar
+      const trabado = (dx || dy) && paso.x === antes.x && paso.y === antes.y
+      this.camino.trabado = trabado ? (this.camino.trabado ?? 0) + segundos : 0
+      if (!this.camino.puntos.length) this.llegar()
+      else if (this.camino.trabado > 0.3) this.terminarCamino()
+    }
+
+    // Mira hacia donde camina: de frente si baja, de espaldas si sube; de lado se queda como estaba
+    const rapidez = Math.hypot(this.velocidad.x, this.velocidad.y)
+    if (Math.abs(this.velocidad.y) > 20 && Math.abs(this.velocidad.y) > rapidez * 0.35) {
+      this.mirar(this.velocidad.y > 0 ? 'frente' : 'espaldas')
+    }
+
+    // Pasitos: rebota un poco mientras camina y se inclina hacia el lado al que va
+    const empuje = Math.min(1, rapidez / rapidezMaxima)
+    this.dibujoCuy.y = -Math.abs(Math.sin(tiempo / 85)) * 6 * empuje
+    this.dibujoCuy.rotation = Phaser.Math.Clamp(this.velocidad.x / rapidezMaxima, -1, 1) * 0.1
+  }
+
+  // El cuy camina solo hasta `destino`, rodeando los puestos y la pileta.
+  // Si va hacia un puesto, al llegar se queda mirándolo.
+  caminarHacia(destino, puesto = null) {
+    const puntos = this.piso.camino(this.cuy, destino)
+    if (!puntos) return
+    this.camino = { puntos, puesto }
+    const meta = puntos[puntos.length - 1]
+    this.marca.setPosition(meta.x, meta.y).setVisible(true)
+  }
+
+  llegar() {
+    const { puesto } = this.camino
+    this.terminarCamino()
+    this.velocidad = { x: 0, y: 0 }
+    if (puesto) this.mirar('espaldas')
+  }
+
+  terminarCamino() {
+    this.camino = null
+    this.marca.setVisible(false)
+  }
+
+  // Cambia el dibujo del cuy: 'frente' o 'espaldas'.
+  mirar(lado) {
+    if (lado === this.mirando) return
+    this.mirando = lado
+    ajustarATamano(this.dibujoCuy.setTexture(`cuy-nino-${lado}`), TAMANO_CUY.ancho, TAMANO_CUY.alto)
+  }
+
+  // Kusi mira hacia el cuy: de espaldas si el cuy está más arriba (hacia los puestos), de frente si no.
+  // Entre las dos líneas no cambia, para que no parpadee cuando el cuy camina a su lado.
+  voltearKusi() {
+    let lado = this.kusiMirando
+    if (this.cuy.y < KUSI.y - 40) lado = 'espaldas'
+    else if (this.cuy.y > KUSI.y - 10) lado = 'frente'
+    if (lado === this.kusiMirando) return
+    this.kusiMirando = lado
+    ajustarATamano(this.dibujoKusi.setTexture(`kusi-${lado}`), TAMANO_KUSI.ancho, TAMANO_KUSI.alto)
   }
 
   // ---------- Controles en pantalla ----------
 
   crearControles() {
-    // Joystick abajo a la izquierda
-    this.joystick = new Joystick(this, 172, 646)
-
-    // Botón «Saltar» abajo a la derecha (136 px). Salta apenas se toca, sin esperar a soltar.
-    const sombra = this.add.circle(0, 6, 68, NUMERO.terracota)
-    const circulo = this.add.circle(0, 0, 68, NUMERO.naranja).setStrokeStyle(5, NUMERO.tinta)
-    const texto = this.add.text(0, 0, 'Saltar', estiloTexto(34)).setOrigin(0.5)
-    const boton = this.add.container(1160, 638, [sombra, circulo, texto]).setDepth(PROFUNDIDAD.controles)
-    const hundir = (hundido) => {
-      circulo.y = hundido ? 4 : 0
-      texto.y = hundido ? 4 : 0
-    }
-    circulo.setInteractive({ useHandCursor: true })
-    circulo.on('pointerdown', () => {
-      hundir(true)
-      this.saltar()
-    })
-    circulo.on('pointerup', () => hundir(false))
-    circulo.on('pointerout', () => hundir(false))
-    fijarEnPantalla(boton)
-    this.botonSaltar = circulo
+    // Joystick redondo abajo a la izquierda
+    this.joystick = new Joystick(this, 150, 566)
   }
 
   // ---------- Globos de Kusi ----------
@@ -268,14 +349,15 @@ export class EscenaMercado extends Phaser.Scene {
   // Al empezar, Kusi cuenta la historia del paquete. Recién con «¡Vamos!» el niño se puede mover.
   mostrarHistoria() {
     this.joystick.desactivar()
-    const dibujo = dibujarGlobo(this.add.graphics(), 700, 290, { cola: 'izquierda', colaY: 96 })
+    const dibujo = dibujarGlobo(this.add.graphics(), 700, 290, { cola: 'abajo' })
     const texto = this.add
       .text(0, -46, this.paquete.historia, estiloTexto(32, COLOR.tinta, { wordWrap: { width: 620 } }))
       .setOrigin(0.5)
     const vamos = crearBoton(this, 0, 84, { ancho: 240, alto: 92, texto: '¡Vamos!', tamano: 38, alTocar: () => this.empezar() })
-    this.globoHistoria = this.add.container(660, 330, [dibujo, texto, vamos]).setDepth(PROFUNDIDAD.globoKusi)
+    // Encima de Kusi, con la colita apuntando a su cabeza
+    const y = KUSI.y - TAMANO_KUSI.alto - 10 - 290 / 2 - 28
+    this.globoHistoria = this.add.container(KUSI.x, y, [dibujo, texto, vamos]).setDepth(PROFUNDIDAD.globoKusi)
     this.globoHistoria.vamos = vamos
-    fijarEnPantalla(this.globoHistoria)
   }
 
   empezar() {
@@ -288,7 +370,7 @@ export class EscenaMercado extends Phaser.Scene {
 
   // Globo de Kusi fijo en la pantalla (Kusi puede haber quedado lejos). Se cierra al tocarlo o solo.
   decirKusi(contenido) {
-    const cara = ajustarATamano(this.add.image(84, 196, 'kusi'), 104, 112)
+    const cara = ajustarATamano(this.add.image(84, 196, 'kusi-frente'), 104, 112)
     const dibujo = dibujarGlobo(this.add.graphics(), 480, 96, { cola: 'izquierda', colaY: 8 })
     const texto = this.add.text(0, 0, contenido, estiloTexto(32)).setOrigin(0.5)
     const globo = this.add.container(410, 186, [dibujo, texto])
@@ -312,7 +394,8 @@ export class EscenaMercado extends Phaser.Scene {
   abrirVentana(puesto) {
     if (this.ventana || !this.puedeMoverse) return
     this.puedeMoverse = false
-    this.velocidad = 0
+    this.velocidad = { x: 0, y: 0 }
+    this.terminarCamino()
     this.joystick.desactivar()
     this.ventana = new VentanaPuesto(this, {
       puesto: puesto.datos,
@@ -365,21 +448,24 @@ export class EscenaMercado extends Phaser.Scene {
       cartel: this.cartel.textoLista,
       textoPlata: this.cartel.textoPlata,
       cuyX: Math.round(this.cuy.x),
-      velocidad: Math.round(this.velocidad),
-      saltando: this.saltando,
+      cuyY: Math.round(this.cuy.y),
+      velocidad: Math.round(Math.hypot(this.velocidad.x, this.velocidad.y)),
+      caminando: Boolean(this.camino),
+      mirando: this.mirando,
+      kusiMirando: this.kusiMirando,
       puedeMoverse: this.puedeMoverse,
       puestoCercano: this.puestoCercano?.datos.id ?? null,
       ventanaAbierta: Boolean(this.ventana),
       ventanaOcupada: this.ventana?.ocupada ?? false,
       ultimoVuelto: this.ultimoVuelto,
-      puestos: this.puestos.map((puesto) => ({ id: puesto.datos.id, x: puesto.x })),
+      puestos: this.puestos.map((puesto) => ({ id: puesto.datos.id, x: puesto.x, y: puesto.piso, frente: { ...puesto.frente } })),
     }
   }
 
   buscarObjetivo(nombre) {
     if (nombre === 'vamos') return this.globoHistoria?.vamos.fondo ?? null
     if (nombre === 'hablar') return this.puestoCercano?.globo.zona ?? null
-    if (nombre === 'saltar') return this.botonSaltar
+    if (nombre.startsWith('puesto:')) return this.puestos.find((puesto) => puesto.datos.id === nombre.slice(7))?.zona ?? null
     return this.ventana?.objetivo(nombre) ?? null
   }
 

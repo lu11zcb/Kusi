@@ -1,5 +1,6 @@
 // Figuras simples de los personajes: Kusi, el cuy del niño y los vendedores.
-// Los cuyes se ven de lado y miran a la derecha; los vendedores miran al frente, detrás del mostrador.
+// La plaza se ve desde arriba: los cuyes se ven de frente (mirando hacia abajo) o de espaldas
+// (mirando hacia los puestos); los vendedores miran al frente, detrás del mostrador.
 
 import {
   pincel, elipse, circulo, rectangulo, poligono, trazado, linea, dentroDe,
@@ -9,97 +10,147 @@ import {
 const ROSADO = '#f4a7a3'
 const BLANCO = '#fffaf2'
 
-// ---------- Cuyes (120 x 100, mirando a la derecha) ----------
+// ---------- Cuyes (110 x 120, de frente o de espaldas) ----------
 
-// Dibuja un cuy de lado. Los "extras" se pintan en su momento:
-// manchas sobre el cuerpo, ropa entre cuerpo y cabeza, y sombrero sobre la cabeza.
-function cuyDeLado(lienzo, { pelaje, oreja, manchas, ropa, sombrero }) {
+// Cuerpo redondo; adentro se pintan la panza (solo de frente) y las manchas.
+function cuerpoDeCuy(lienzo, pelaje, pintarAdentro) {
+  const cuerpo = (c) => c.ellipse(55, 84, 42, 32, 0, 0, Math.PI * 2)
+  trazado(lienzo, cuerpo, pelaje)
+  dentroDe(lienzo, cuerpo, pintarAdentro)
+  trazado(lienzo, cuerpo, null)
+}
+
+function cabezaDeCuy(lienzo, pelaje, pintarAdentro) {
+  const cabeza = (c) => c.ellipse(55, 50, 34, 29, 0, 0, Math.PI * 2)
+  trazado(lienzo, cabeza, pelaje)
+  dentroDe(lienzo, cabeza, pintarAdentro)
+  trazado(lienzo, cabeza, null)
+}
+
+// Cuy de frente. Los "extras" se pintan en su momento: manchas dentro del cuerpo y de la cabeza,
+// ropa entre cuerpo y cabeza, y sombrero encima de todo.
+function cuyDeFrente(lienzo, { pelaje, oreja, manchasCuerpo, manchasCabeza, ropa, sombrero }) {
   pincel(lienzo, 3)
 
-  // Patitas
-  elipse(lienzo, 40, 93, 9, 5, ROSADO)
-  elipse(lienzo, 84, 93, 9, 5, ROSADO)
+  // Orejas a los lados de la cabeza y patitas de atrás
+  elipse(lienzo, 22, 36, 11, 8, oreja, { giro: -0.5 })
+  elipse(lienzo, 88, 36, 11, 8, oreja, { giro: 0.5 })
+  elipse(lienzo, 36, 114, 11, 5, ROSADO)
+  elipse(lienzo, 74, 114, 11, 5, ROSADO)
 
-  // Cuerpo redondo con la panza blanca
-  const cuerpo = (c) => c.ellipse(56, 62, 50, 33, 0, 0, Math.PI * 2)
-  trazado(lienzo, cuerpo, pelaje)
-  dentroDe(lienzo, cuerpo, (c) => {
-    elipse(c, 84, 82, 32, 18, BLANCO, { borde: false })
-    manchas?.(c)
+  // Cuerpo con la panza blanca y las manitos adelante
+  cuerpoDeCuy(lienzo, pelaje, (c) => {
+    elipse(c, 55, 100, 24, 22, BLANCO, { borde: false })
+    manchasCuerpo?.(c)
   })
-  trazado(lienzo, cuerpo, null)
-
   ropa?.(lienzo)
+  elipse(lienzo, 40, 104, 8, 6, ROSADO)
+  elipse(lienzo, 70, 104, 8, 6, ROSADO)
 
-  // Cabeza con la franja blanca de la cara
-  const cabeza = (c) => c.ellipse(88, 50, 27, 25, 0, 0, Math.PI * 2)
-  trazado(lienzo, cabeza, pelaje)
-  dentroDe(lienzo, cabeza, (c) => elipse(c, 105, 58, 13, 22, BLANCO, { borde: false }))
-  trazado(lienzo, cabeza, null)
-
-  // Oreja, ojo, cachete, nariz y boca
-  elipse(lienzo, 75, 29, 10, 7, oreja, { giro: -0.4 })
-  elipse(lienzo, 75, 30, 5, 3.5, ROSADO, { borde: false, giro: -0.4 })
-  ojo(lienzo, 97, 44, 4.8)
-  mejilla(lienzo, 103, 60)
-  elipse(lienzo, 113, 53, 4, 3, '#e57f86')
-  sonrisa(lienzo, 108, 63, 7)
+  // Cabeza con la franja blanca al medio, ojos, cachetes, nariz y boca
+  cabezaDeCuy(lienzo, pelaje, (c) => {
+    elipse(c, 55, 66, 13, 24, BLANCO, { borde: false })
+    manchasCabeza?.(c)
+  })
+  ojo(lienzo, 41, 49, 4.8)
+  ojo(lienzo, 69, 49, 4.8)
+  mejilla(lienzo, 32, 61)
+  mejilla(lienzo, 78, 61)
+  elipse(lienzo, 55, 60, 4.5, 3.2, '#e57f86')
+  sonrisa(lienzo, 55, 70, 8)
 
   sombrero?.(lienzo)
 }
 
-// Kusi: cuy naranja con poncho de colores y sombrero con pluma (como en la pantalla de inicio).
-export function dibujarKusi(lienzo) {
-  lienzo.translate(4, 38)
-  cuyDeLado(lienzo, {
-    pelaje: '#e58a3a',
-    oreja: '#b9612a',
-    ropa: (c) => {
-      // Poncho sobre los hombros, con franjas
-      const poncho = (p) => {
-        p.moveTo(50, 36)
-        p.quadraticCurveTo(82, 26, 98, 64)
-        p.lineTo(78, 90)
-        p.quadraticCurveTo(56, 82, 38, 64)
-        p.closePath()
-      }
-      trazado(c, poncho, '#c2412f')
-      dentroDe(c, poncho, (p) => {
-        linea(p, [[36, 58], [60, 66], [96, 58]], 7, '#7b3f8c')
-        linea(p, [[36, 72], [50, 66], [62, 76], [76, 68], [90, 78], [100, 70]], 3, '#f4cf3c')
-      })
-      trazado(c, poncho, null)
-    },
-    sombrero: (c) => {
-      // Pluma, copa y ala del sombrero
-      elipse(c, 62, 8, 18, 5.5, '#f3ead8', { giro: -0.5 })
-      linea(c, [[48, 17], [76, -1]], 2, '#b9a888')
-      trazado(c, (p) => p.ellipse(86, 25, 21, 18, 0, Math.PI, Math.PI * 2), '#d6b07a')
-      linea(c, [[66, 21], [106, 21]], 5, '#9a6a3f')
-      elipse(c, 86, 26, 32, 7.5, '#d6b07a')
-    },
-  })
+// Cuy de espaldas: todo pelo, con las orejas asomando arriba de la cabeza.
+function cuyDeEspaldas(lienzo, { pelaje, oreja, manchasCuerpo, manchasCabeza, ropa, sombrero }) {
+  pincel(lienzo, 3)
+
+  elipse(lienzo, 38, 115, 10, 4.5, ROSADO)
+  elipse(lienzo, 72, 115, 10, 4.5, ROSADO)
+  cuerpoDeCuy(lienzo, pelaje, (c) => manchasCuerpo?.(c))
+  ropa?.(lienzo)
+  cabezaDeCuy(lienzo, pelaje, (c) => manchasCabeza?.(c))
+  elipse(lienzo, 25, 30, 11, 8, oreja, { giro: -0.6 })
+  elipse(lienzo, 85, 30, 11, 8, oreja, { giro: 0.6 })
+
+  sombrero?.(lienzo)
 }
 
-// El cuy del niño: color caramelo con manchas y un chullo rojo con pompón.
-export function dibujarCuyNino(lienzo) {
-  lienzo.translate(0, 12)
-  cuyDeLado(lienzo, {
-    pelaje: '#e2b27a',
-    oreja: '#a8642f',
-    manchas: (c) => {
-      elipse(c, 30, 50, 22, 17, '#a8642f', { borde: false })
-      elipse(c, 64, 36, 12, 9, '#a8642f', { borde: false })
-    },
-    sombrero: (c) => {
-      // Chullo: gorro tejido con orejeras y pompón
-      trazado(c, (p) => p.ellipse(86, 30, 21, 17, 0, Math.PI, Math.PI * 2), '#d8433a')
-      linea(c, [[67, 26], [72, 21], [77, 26], [82, 21], [87, 26], [92, 21], [97, 26], [102, 21]], 2.5, BLANCO)
-      poligono(c, [[66, 30], [80, 30], [74, 46]], '#d8433a')
-      linea(c, [[74, 46], [74, 54]], 2.5)
-      circulo(c, 86, 11, 6.5, '#f4cf3c')
-    },
-  })
+// ---------- Kusi (124 x 140): cuy naranja con poncho de colores y sombrero con pluma ----------
+
+const KUSI = { pelaje: '#e58a3a', oreja: '#b9612a' }
+
+// Poncho sobre los hombros, con franjas. De espaldas termina en punta.
+function ponchoDeKusi(conPunta) {
+  return (c) => {
+    const poncho = (p) => {
+      p.moveTo(22, 70)
+      p.quadraticCurveTo(55, 60, 88, 70)
+      p.lineTo(98, 98)
+      if (conPunta) {
+        p.lineTo(55, 116)
+        p.lineTo(12, 98)
+      } else {
+        p.quadraticCurveTo(55, 112, 12, 98)
+      }
+      p.closePath()
+    }
+    trazado(c, poncho, '#c2412f')
+    dentroDe(c, poncho, (p) => {
+      linea(p, [[10, 88], [55, 96], [100, 88]], 7, '#7b3f8c')
+      linea(p, [[10, 100], [24, 94], [38, 102], [55, 94], [72, 102], [86, 94], [100, 100]], 3, '#f4cf3c')
+    })
+    trazado(c, poncho, null)
+  }
+}
+
+// Sombrero de ala con una pluma en la cinta (de frente a la derecha, de espaldas a la izquierda).
+function sombreroDeKusi(xPluma) {
+  return (c) => {
+    elipse(c, xPluma, 4, 18, 5.5, '#f3ead8', { giro: xPluma > 55 ? -1 : 1 })
+    trazado(c, (p) => p.ellipse(55, 24, 27, 24, 0, Math.PI, Math.PI * 2), '#d6b07a')
+    linea(c, [[29, 19], [81, 19]], 5, '#9a6a3f')
+    elipse(c, 55, 26, 44, 9, '#d6b07a')
+  }
+}
+
+export function dibujarKusiFrente(lienzo) {
+  lienzo.translate(7, 18)
+  cuyDeFrente(lienzo, { ...KUSI, ropa: ponchoDeKusi(false), sombrero: sombreroDeKusi(84) })
+}
+
+export function dibujarKusiEspaldas(lienzo) {
+  lienzo.translate(7, 18)
+  cuyDeEspaldas(lienzo, { ...KUSI, ropa: ponchoDeKusi(true), sombrero: sombreroDeKusi(26) })
+}
+
+// ---------- El cuy del niño (110 x 120): color caramelo con manchas y un chullo rojo con pompón ----------
+
+// Las manchas están en el lado derecho del cuy: de frente se ven a la izquierda y de espaldas, a la derecha.
+const mancha = (x, y, radioX, radioY) => (c) => elipse(c, x, y, radioX, radioY, '#a8642f', { borde: false })
+
+const CUY_NINO = {
+  pelaje: '#e2b27a',
+  oreja: '#a8642f',
+  sombrero: (c) => {
+    // Chullo: gorro tejido con orejeras y pompón
+    trazado(c, (p) => p.ellipse(55, 32, 33, 25, 0, Math.PI, Math.PI * 2), '#d8433a')
+    linea(c, [[26, 29], [32, 23], [38, 29], [44, 23], [50, 29], [56, 23], [62, 29], [68, 23], [74, 29], [80, 23], [85, 29]], 2.5, BLANCO)
+    poligono(c, [[22, 32], [36, 32], [27, 50]], '#d8433a')
+    poligono(c, [[74, 32], [88, 32], [83, 50]], '#d8433a')
+    linea(c, [[27, 50], [27, 58]], 2.5)
+    linea(c, [[83, 50], [83, 58]], 2.5)
+    circulo(c, 55, 8, 7, '#f4cf3c')
+  },
+}
+
+export function dibujarCuyNinoFrente(lienzo) {
+  cuyDeFrente(lienzo, { ...CUY_NINO, manchasCuerpo: mancha(20, 74, 18, 16), manchasCabeza: mancha(30, 40, 14, 12) })
+}
+
+export function dibujarCuyNinoEspaldas(lienzo) {
+  cuyDeEspaldas(lienzo, { ...CUY_NINO, manchasCuerpo: mancha(90, 74, 18, 16), manchasCabeza: mancha(80, 40, 14, 12) })
 }
 
 // ---------- Vendedores (150 x 150, mirando al frente) ----------
