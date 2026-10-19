@@ -29,6 +29,15 @@ public class EducacionController {
         return django.validarAdministrador(sesion);
     }
 
+    @GetMapping("/secciones/") @Transactional(readOnly=true)
+    public Map<String,Object> listarSecciones(@RequestHeader(value="X-Clave-Interna", required=false) String clave,
+        @RequestHeader(value="X-Sesion-Kusi", required=false) String sesion) {
+        autorizar(clave, sesion);
+        return Map.of("secciones", secciones.findAll().stream()
+            .sorted(Comparator.comparingInt(Seccion::getAnioEscolar).reversed().thenComparing(Seccion::getNombre))
+            .map(this::seccionDto).toList());
+    }
+
     @PostMapping("/secciones/")
     public ResponseEntity<?> crearSeccion(@RequestHeader(value="X-Clave-Interna", required=false) String clave,
         @RequestHeader(value="X-Sesion-Kusi", required=false) String sesion, @Valid @RequestBody CrearSeccion body) {

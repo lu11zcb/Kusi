@@ -35,6 +35,31 @@ class EducacionContratoTests(TestCase):
         return respuesta
 
     @patch("cuentas.educacion_views.build_opener")
+    def test_admin_lista_secciones_existentes_con_su_sesion(self, construir):
+        cliente, _ = self.cliente_autenticado(self.admin)
+        datos = {"secciones": [{"id": "00000000-0000-4000-8000-000000000001", "nombre": "A", "grado": 1, "anio_escolar": 2026}]}
+        self.configurar_respuesta(construir, datos)
+        respuesta = cliente.get(reverse("listar_secciones"))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.json(), datos)
+        peticion = construir.return_value.open.call_args.args[0]
+        self.assertEqual(peticion.full_url, "http://127.0.0.1:8080/interno/secciones/")
+        self.assertEqual(peticion.get_header("X-sesion-kusi"), cliente.session.session_key)
+        self.assertIn("no-store", respuesta.headers["Cache-Control"])
+
+    @patch("cuentas.educacion_views.build_opener")
+    def test_listar_secciones_rechaza_otros_roles_y_errores_remotos(self, construir):
+        for usuario, estado in ((None, 401), (self.docente, 403), (self.estudiante, 403)):
+            cliente, _ = self.cliente_autenticado(usuario)
+            self.assertEqual(cliente.get(reverse("listar_secciones")).status_code, estado)
+        construir.assert_not_called()
+        admin, _ = self.cliente_autenticado(self.admin)
+        self.configurar_respuesta(construir, {"secciones": {}})
+        self.assertEqual(admin.get(reverse("listar_secciones")).status_code, 502)
+        construir.return_value.open.side_effect = URLError("QA")
+        self.assertEqual(admin.get(reverse("listar_secciones")).status_code, 502)
+
+    @patch("cuentas.educacion_views.build_opener")
     def test_admin_envia_sesion_y_clave_para_crear_vinculos_y_asignaciones(self, construir):
         cliente, token = self.cliente_autenticado(self.admin)
         for ruta, recurso, clave_resultado, datos in (

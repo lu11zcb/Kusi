@@ -82,6 +82,24 @@ class EducacionPersistenciaTest {
     }
 
     @Test
+    void listaSeccionesAunqueTodaviaNoTenganAsignaciones() throws Exception {
+        Seccion seccion = seccion();
+        consultar("/interno/secciones/")
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.secciones.length()").value(1))
+            .andExpect(jsonPath("$.secciones[0].id").value(seccion.getId().toString()))
+            .andExpect(jsonPath("$.secciones[0].nombre").value("1ro A"))
+            .andExpect(jsonPath("$.secciones[0].anio_escolar").value(2026));
+    }
+
+    @Test
+    void listadoSeccionesExigeClaveYSesionAdministradora() throws Exception {
+        mvc.perform(get("/interno/secciones/")).andExpect(status().isForbidden());
+        doThrow(new SecurityException("Solo administradores")).when(django).validarAdministrador(SESION);
+        consultar("/interno/secciones/").andExpect(status().isForbidden());
+    }
+
+    @Test
     void listadoVinculosCargaSeccionFueraDeLaTransaccionDePreparacion() throws Exception {
         Seccion seccion=seccion();
         vinculos.saveAndFlush(new VinculoEstudiante(ESTUDIANTE,seccion,2026,ADMIN));

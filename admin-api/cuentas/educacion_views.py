@@ -104,6 +104,12 @@ def vincular_estudiante(request):
 
 @never_cache
 @require_GET
+def listar_secciones(request):
+    return _solicitar(request, "secciones", "GET", "secciones")
+
+
+@never_cache
+@require_GET
 def listar_vinculos(request):
     return _solicitar(request, "vinculos-estudiantes", "GET", "vinculos")
 

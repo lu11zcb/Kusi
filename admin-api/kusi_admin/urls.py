@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/acceso/', include('cuentas.acceso_urls')),
     path('api/interno/sesiones/validar/', validar_sesion_interna, name='validar_sesion_interna'),
     path('api/educacion/secciones/', crear_seccion, name='crear_seccion'),
+    path('api/educacion/secciones/listado/', educacion_views.listar_secciones, name='listar_secciones'),
     path('api/interno/cuentas/<uuid:usuario_id>/', interno_views.consultar_cuenta_interna, name='consultar_cuenta_interna'),
     path('api/interno/cursos/<uuid:curso_id>/', interno_views.consultar_curso_interno, name='consultar_curso_interno'),
     path('api/educacion/vinculos-estudiantes/', educacion_views.listar_vinculos, name='listar_vinculos'),

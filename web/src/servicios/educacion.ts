@@ -1,6 +1,7 @@
 import { enviar, solicitar } from './http'
 
 export type SeccionEducativa = { id: string; nombre: string; grado: number; anio_escolar: number }
+export const listarSecciones = () => solicitar<{ secciones: SeccionEducativa[] }>('/api/educacion/secciones/listado/')
 export type VinculoEstudiante = { id: string; estudiante_id: string; seccion: SeccionEducativa; anio_escolar: number; creado_en: string; estudiante_nombre?: string | null; estudiante_dni?: string | null }
 export type AsignacionDocente = { id: string; docente_id: string; curso_id: string; seccion: SeccionEducativa; anio_escolar: number; creado_en: string }
 export const listarVinculos = () => solicitar<{ vinculos: VinculoEstudiante[] }>('/api/educacion/vinculos-estudiantes/')
