@@ -68,6 +68,7 @@ public class PropuestasController {
     public ResponseEntity<Map<String, Object>> contexto(
             @CookieValue(value = "sessionid", required = false) String sesion) {
         UUID docente = docente(sesion);
+
         return sinCache(200, Map.of(
                 "contextos", servicio.contextos(docente),
                 "ia_configurada", servicio.iaConfigurada()));
@@ -95,7 +96,8 @@ public class PropuestasController {
         return sinCache(200, Map.of(
                 "solicitudes",
                 servicio.listar(docente(sesion)).stream()
-                        .map(this::dto).toList()));
+                        .map(this::dto)
+                        .toList()));
     }
 
     // HU25: historial de versiones.
@@ -119,7 +121,8 @@ public class PropuestasController {
             @PathVariable UUID id,
             @PathVariable int version) {
         return sinCache(200, Map.of(
-                "solicitud", dto(servicio.aprobar(docente(sesion), id, version))));
+                "solicitud",
+                dto(servicio.aprobar(docente(sesion), id, version))));
     }
 
     @PostMapping("/propuestas/solicitudes/{id}/versiones/{version}/rechazar/")
@@ -128,7 +131,8 @@ public class PropuestasController {
             @PathVariable UUID id,
             @PathVariable int version) {
         return sinCache(200, Map.of(
-                "solicitud", dto(servicio.rechazar(docente(sesion), id, version))));
+                "solicitud",
+                dto(servicio.rechazar(docente(sesion), id, version))));
     }
 
     @PostMapping("/propuestas/solicitudes/{id}/alternativa/")
@@ -136,7 +140,8 @@ public class PropuestasController {
             @CookieValue(value = "sessionid", required = false) String sesion,
             @PathVariable UUID id) {
         return sinCache(201, Map.of(
-                "solicitud", dto(servicio.alternativa(docente(sesion), id))));
+                "solicitud",
+                dto(servicio.alternativa(docente(sesion), id))));
     }
 
     @PostMapping("/propuestas/solicitudes/{id}/versiones/{version}/observaciones/")
@@ -146,7 +151,8 @@ public class PropuestasController {
             @PathVariable int version,
             @RequestBody Observaciones body) {
         return sinCache(201, Map.of(
-                "solicitud", dto(servicio.observaciones(
+                "solicitud",
+                dto(servicio.observaciones(
                         docente(sesion), id, version, body.observaciones()))));
     }
 
@@ -156,14 +162,21 @@ public class PropuestasController {
             @PathVariable UUID id,
             @PathVariable int version,
             @RequestBody Edicion body) {
-        return sinCache(201, Map.of(
-                "solicitud",
-                dto(servicio.modificar(
-                        docente(sesion), id, version,
-                        new PropuestasService.EdicionDocente(
-                                body.objetivo(), body.historia(), body.acciones(),
-                                body.reglas(), body.retos(), body.ayudas(),
-                                body.recursos())))));
+
+        PropuestasService.EdicionDocente edicion =
+                new PropuestasService.EdicionDocente(
+                        body.objetivo(),
+                        body.historia(),
+                        body.acciones(),
+                        body.reglas(),
+                        body.retos(),
+                        body.ayudas(),
+                        body.recursos());
+
+        PropuestasService.Respuesta respuesta = servicio.modificar(
+                docente(sesion), id, version, edicion);
+
+        return sinCache(201, Map.of("solicitud", dto(respuesta)));
     }
 
     // HU27: iniciar una generación desde la última propuesta aprobada.
@@ -173,6 +186,7 @@ public class PropuestasController {
             @PathVariable UUID id,
             @PathVariable int version) {
         UUID docenteId = docente(sesion);
+
         Generacion generacion =
                 generacionesService.iniciar(docenteId, id, version);
 
@@ -186,8 +200,23 @@ public class PropuestasController {
             @CookieValue(value = "sessionid", required = false) String sesion,
             @PathVariable UUID id) {
         UUID docenteId = docente(sesion);
+
         Generacion generacion =
                 generacionesService.consultar(docenteId, id);
+
+        return sinCache(200,
+                Map.of("generacion", dtoGeneracion(generacion, true)));
+    }
+
+    // HU29: procesar una generación pendiente con el paquete de prueba.
+    @PostMapping("/generaciones/{id}/procesar/")
+    public ResponseEntity<Map<String, Object>> procesarGeneracion(
+            @CookieValue(value = "sessionid", required = false) String sesion,
+            @PathVariable UUID id) {
+        UUID docenteId = docente(sesion);
+
+        Generacion generacion =
+                generacionesService.procesarPaquetePrueba(docenteId, id);
 
         return sinCache(200,
                 Map.of("generacion", dtoGeneracion(generacion, true)));
@@ -247,7 +276,8 @@ public class PropuestasController {
             @CookieValue(value = "sessionid", required = false) String sesion,
             @PathVariable UUID id) {
         return sinCache(200, Map.of(
-                "solicitud", dto(servicio.consultar(docente(sesion), id))));
+                "solicitud",
+                dto(servicio.consultar(docente(sesion), id))));
     }
 
     @PostMapping("/propuestas/solicitudes/{id}/reintentar/")
@@ -255,7 +285,8 @@ public class PropuestasController {
             @CookieValue(value = "sessionid", required = false) String sesion,
             @PathVariable UUID id) {
         return sinCache(200, Map.of(
-                "solicitud", dto(servicio.reintentar(docente(sesion), id))));
+                "solicitud",
+                dto(servicio.reintentar(docente(sesion), id))));
     }
 
     private UUID docente(String sesion) {
@@ -332,4 +363,3 @@ public class PropuestasController {
             List<String> ayudas,
             List<String> recursos) {}
 }
-
