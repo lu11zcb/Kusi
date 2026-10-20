@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import avatar from '../assets/kusi/cuy-avatar.webp'
 import { Icono } from './Icono'
 import type { NombreIcono } from './Icono'
 import { iniciales } from './apariencia'
 
-export type OpcionMenu = { id: string; etiqueta: string; icono: NombreIcono }
+export type OpcionMenu = { id: string; etiqueta: string; icono: NombreIcono; iconoVisual?: ReactNode }
 
 type Propiedades = {
   rol: string
@@ -18,12 +18,16 @@ type Propiedades = {
   promo?: ReactNode
   salir: () => void
   cambiarRol?: () => void
+  etiquetaMenu?: string
+  menuPlegable?: boolean
   children: ReactNode
 }
 
 // Estructura común de los paneles administrador y docente: menú lateral con el
 // cuy, barra superior con la fecha y el contenido de la sección elegida.
-export function Tablero({ rol, nombre, opciones, actual, alElegir, bloqueado, fichas, promo, salir, cambiarRol, children }: Propiedades) {
+export function Tablero({ rol, nombre, opciones, actual, alElegir, bloqueado, fichas, promo, salir, cambiarRol, menuPlegable = false, etiquetaMenu = 'Menú del docente', children }: Propiedades) {
+  const [menuAbierto, establecerMenuAbierto] = useState(false)
+  const menuId = useId()
   const contenido = useRef<HTMLElement>(null)
   // Al cambiar de sección el foco va al contenido, para lectores de pantalla y teclado.
   const primeraVez = useRef(true)
@@ -39,10 +43,11 @@ export function Tablero({ rol, nombre, opciones, actual, alElegir, bloqueado, fi
         <img src={avatar} alt="" />
         <div><strong>Kusi</strong><small>Aprende · Juega · Crea</small></div>
       </div>
-      <nav className="menu" aria-label={'Panel ' + rol}>
+      {menuPlegable && <button type="button" className="doc-alternar-menu secundario" aria-expanded={menuAbierto} aria-controls={menuId} onClick={() => establecerMenuAbierto(!menuAbierto)}>{menuAbierto ? 'Cerrar menú' : etiquetaMenu}<Icono nombre="estudiantes" /></button>}
+      <nav id={menuId} className={'menu' + (menuPlegable ? ' doc-menu-plegable' : '') + (menuAbierto ? ' doc-menu-abierto' : '')} aria-label={'Panel ' + rol} onKeyDown={(evento) => { if (menuPlegable && evento.key === 'Escape') { establecerMenuAbierto(false); evento.currentTarget.parentElement?.querySelector<HTMLButtonElement>('.doc-alternar-menu')?.focus() } }}>
         {opciones.map((opcion) => <button key={opcion.id} type="button" disabled={bloqueado}
-          aria-current={actual === opcion.id ? 'page' : undefined} onClick={() => alElegir(opcion.id)}>
-          <span className="icono-menu"><Icono nombre={opcion.icono} /></span>{opcion.etiqueta}
+          aria-current={actual === opcion.id ? 'page' : undefined} onClick={() => { alElegir(opcion.id); establecerMenuAbierto(false) }}>
+          <span className="icono-menu">{opcion.iconoVisual ?? <Icono nombre={opcion.icono} />}</span>{opcion.etiqueta}
         </button>)}
       </nav>
       <div className="lateral-pie">

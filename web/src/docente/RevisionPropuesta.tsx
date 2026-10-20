@@ -1,132 +1,109 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import {
-  aprobarVersion, consultarSolicitud, enviarObservaciones, listarVersiones,
-  modificarVersion, pedirAlternativa, rechazarVersion,
-} from '../servicios/propuestas'
+import { aprobarVersion, consultarSolicitud, enviarObservaciones, listarVersiones, modificarVersion, pedirAlternativa, rechazarVersion } from '../servicios/propuestas'
 import type { Propuesta, SolicitudPropuesta } from '../servicios/propuestas'
+import { EtiquetaPropuesta, MensajeDocente } from './ElementosDocente'
+import { IconoDocente } from './IconoDocente'
+import type { IconoDocenteNombre } from './IconoDocente'
 
 const nombreRevision = { pendiente: 'Pendiente de revisión', aprobada: 'Aprobada', rechazada: 'Rechazada' }
 const listaATexto = (valores: string[] | null | undefined) => (valores ?? []).join('\n')
 const textoALista = (valor: string) => valor.split('\n').map((linea) => linea.trim()).filter(Boolean)
 const mensaje = (fallo: unknown) => fallo instanceof Error ? fallo.message : 'No se pudo completar la operación.'
+const campos = [
+  { campo: 'objetivo', etiqueta: 'Qué aprenderán', icono: 'check' },
+  { campo: 'historia', etiqueta: 'De qué trata', icono: 'cursos' },
+  { campo: 'acciones', etiqueta: 'Qué hará el niño', icono: 'personas' },
+  { campo: 'reglas', etiqueta: 'Reglas del juego', icono: 'info' },
+  { campo: 'retos', etiqueta: 'Retos para practicar', icono: 'matematica' },
+  { campo: 'ayudas', etiqueta: 'Si necesita ayuda', icono: 'comunicacion' },
+  { campo: 'recursos', etiqueta: 'Qué aparece en el juego', icono: 'arte' },
+] as const
 
-function Parte({ titulo, valor }: { titulo: string; valor: string | string[] | null | undefined }) {
-  // HU20: lo que falte se identifica como pendiente.
+function Parte({ titulo, valor, icono }: { titulo: string; valor: string | string[] | null | undefined; icono: IconoDocenteNombre }) {
   const vacio = valor === null || valor === undefined || valor.length === 0
-  return <><dt>{titulo}</dt><dd className="texto-conservado">{vacio ? <em>Pendiente</em> : Array.isArray(valor) ? <ul>{valor.map((item, i) => <li key={i}>{item}</li>)}</ul> : valor}</dd></>
+  return <div className="doc-parte"><dt><IconoDocente nombre={icono} />{titulo}</dt><dd className="texto-conservado">{vacio ? <em>Pendiente</em> : Array.isArray(valor) ? <ul>{valor.map((item, i) => <li key={i}>{item}</li>)}</ul> : valor}</dd></div>
 }
+type Propiedades = { solicitud: SolicitudPropuesta; alCambiar: (solicitud: SolicitudPropuesta) => void; alOcupar?: (ocupado: boolean) => void }
+type Edicion = { version: number; campos: Record<string, string> }
 
-type Propiedades = {
-  solicitud: SolicitudPropuesta
-  alCambiar: (solicitud: SolicitudPropuesta) => void
-  alOcupar?: (ocupado: boolean) => void
-}
-
-// La creación y el listado comparten contenido, edición y revisión de versiones.
 export function RevisionPropuesta({ solicitud: actual, alCambiar, alOcupar }: Propiedades) {
   const id = useId()
   const titulo = useRef<HTMLHeadingElement>(null)
+  const tituloEdicion = useRef<HTMLHeadingElement>(null)
   useEffect(() => { titulo.current?.focus() }, [])
   const bloqueo = useRef(false)
   const [versiones, establecerVersiones] = useState<Propuesta[] | null>(null)
+  const [cargandoVersiones, establecerCargandoVersiones] = useState(false)
   const [observaciones, establecerObservaciones] = useState('')
-  const [edicion, establecerEdicion] = useState<Record<string, string> | null>(null)
+  const [edicion, establecerEdicion] = useState<Edicion | null>(null)
   const [error, establecerError] = useState('')
   const [aviso, establecerAviso] = useState('')
   const [ocupado, establecerOcupado] = useState(false)
 
   async function ejecutar(accion: () => Promise<SolicitudPropuesta>, exito: string) {
     if (bloqueo.current) return
-    bloqueo.current = true; alOcupar?.(true)
-    establecerOcupado(true); establecerError(''); establecerAviso('')
+    bloqueo.current = true; alOcupar?.(true); establecerOcupado(true); establecerError(''); establecerAviso('')
     try {
       const resultado = await accion()
-      alCambiar(resultado); establecerVersiones(null); establecerEdicion(null); establecerObservaciones('')
-      establecerAviso(exito)
+      alCambiar(resultado); establecerVersiones(null); establecerEdicion(null); establecerObservaciones(''); establecerAviso(exito)
+      requestAnimationFrame(() => titulo.current?.focus())
     } catch (fallo) {
       establecerError(mensaje(fallo))
-      // Si otra pestaña cambió la propuesta, se muestra la versión vigente.
-      if (actual) await consultarSolicitud(actual.id_solicitud).then(alCambiar).catch(() => undefined)
+      // Se consulta la versión vigente sin sustituir el borrador de edición.
+      // La escritura conserva su versión base para no sobrescribir cambios ajenos.
+      await consultarSolicitud(actual.id_solicitud).then(alCambiar).catch(() => undefined)
     } finally { bloqueo.current = false; establecerOcupado(false); alOcupar?.(false) }
   }
-
   function editar(propuesta: Propuesta) {
-    establecerEdicion({
-      objetivo: propuesta.objetivo, historia: propuesta.historia, acciones: listaATexto(propuesta.acciones), reglas: listaATexto(propuesta.reglas),
-      retos: listaATexto(propuesta.retos), ayudas: listaATexto(propuesta.ayudas), recursos: listaATexto(propuesta.recursos),
-    })
+    establecerEdicion({ version: propuesta.version ?? 0, campos: Object.fromEntries(campos.map(({ campo }) => [campo, Array.isArray(propuesta[campo]) || propuesta[campo] == null ? listaATexto(propuesta[campo] as string[] | null) : propuesta[campo] as string])) })
+    requestAnimationFrame(() => tituloEdicion.current?.focus())
   }
-
-  function guardarEdicion(evento: FormEvent, solicitud: SolicitudPropuesta, propuesta: Propuesta) {
+  function guardarEdicion(evento: FormEvent) {
     evento.preventDefault()
-    if (!edicion || !propuesta.version) return
-    const recursos = textoALista(edicion.recursos)
-    void ejecutar(() => modificarVersion(solicitud.id_solicitud, propuesta.version as number, {
-      objetivo: edicion.objetivo, historia: edicion.historia, acciones: textoALista(edicion.acciones), reglas: textoALista(edicion.reglas),
-      retos: textoALista(edicion.retos), ayudas: textoALista(edicion.ayudas), recursos: recursos.length ? recursos : null,
+    if (!edicion?.version) return
+    const datos = edicion.campos
+    const recursos = textoALista(datos.recursos)
+    void ejecutar(() => modificarVersion(actual.id_solicitud, edicion.version, {
+      objetivo: datos.objetivo, historia: datos.historia, acciones: textoALista(datos.acciones), reglas: textoALista(datos.reglas), retos: textoALista(datos.retos), ayudas: textoALista(datos.ayudas), recursos: recursos.length ? recursos : null,
     }), 'Se guardó una versión nueva. Necesita tu aprobación.')
   }
-
+  async function cargarVersiones() {
+    if (cargandoVersiones) return
+    establecerCargandoVersiones(true); establecerError('')
+    try { establecerVersiones(await listarVersiones(actual.id_solicitud)) }
+    catch (fallo) { establecerError(mensaje(fallo)) }
+    finally { establecerCargandoVersiones(false) }
+  }
   const propuesta = actual.propuesta
   const version = propuesta?.version ?? 0
-  return (
-    <div className="confirmacion">
-      {error && <p role="alert" className="error-resumen">{error}</p>}
-      {aviso && <p role="status">{aviso}</p>}
-      <h3 ref={titulo} tabIndex={-1}>{actual.tema}</h3>
-      <p>Propósito: {actual.proposito === 'refuerzo' ? 'refuerzo' : 'preparación'}{actual.instrucciones ? '' : ' · sin instrucciones adicionales'}</p>
-      {actual.instrucciones && <p className="texto-conservado">Instrucciones: {actual.instrucciones}</p>}
-      {!propuesta && <p>La propuesta aún no se ha generado (estado: {actual.estado}).</p>}
-      {propuesta && <>
-        <p>Versión {propuesta.version} · {propuesta.origen === 'docente' ? 'modificada por ti' : 'generada por IA'} · {nombreRevision[propuesta.estado_revision ?? 'pendiente']}
-          {propuesta.apta_para_juego ? ' · lista para generar el juego' : ''}</p>
-        <dl>
-          <Parte titulo={propuesta.origen_objetivo === 'docente' ? 'Objetivo (tuyo)' : 'Objetivo sugerido por IA'} valor={propuesta.objetivo} />
-          <Parte titulo="Historia" valor={propuesta.historia} />
-          <Parte titulo="Acciones" valor={propuesta.acciones} />
-          <Parte titulo="Reglas" valor={propuesta.reglas} />
-          <Parte titulo="Retos" valor={propuesta.retos} />
-          <Parte titulo="Ayudas" valor={propuesta.ayudas} />
-          <Parte titulo="Recursos" valor={propuesta.recursos} />
-        </dl>
-        <div className="acciones">
-          {propuesta.estado_revision === 'pendiente' && <>
-            <button type="button" disabled={ocupado} onClick={() => void ejecutar(() => aprobarVersion(actual.id_solicitud, version), 'Versión ' + version + ' aprobada.')}>Aprobar versión {version}</button>
-            <button type="button" className="secundario" disabled={ocupado} onClick={() => void ejecutar(() => rechazarVersion(actual.id_solicitud, version), 'Versión ' + version + ' rechazada. No generará un juego.')}>Rechazar</button>
-          </>}
-          {propuesta.estado_revision === 'rechazada' && <button type="button" disabled={ocupado} onClick={() => void ejecutar(() => pedirAlternativa(actual.id_solicitud), 'Se generó otra alternativa.')}>Pedir otra alternativa</button>}
-          <button type="button" className="secundario" disabled={ocupado} onClick={() => editar(propuesta)}>Modificar</button>
-          <button type="button" className="secundario" disabled={ocupado} onClick={() => listarVersiones(actual.id_solicitud).then(establecerVersiones).catch((fallo) => establecerError(mensaje(fallo)))}>Ver versiones anteriores</button>
+  return <article className="doc-revision" aria-label="Revisar propuesta educativa">
+    {error && <MensajeDocente titulo="No se pudo completar el cambio" error><p>{error}</p>{edicion && edicion.version !== version && <p>Existe una versión más reciente. Tu texto sigue en el formulario; compáralo antes de volver a editar la versión vigente.</p>}</MensajeDocente>}
+    {aviso && <div className="doc-confirmacion" role="status"><IconoDocente nombre="check" /><span>{aviso}</span></div>}
+    <header className="doc-revision-cabecera"><div><h2 ref={titulo} tabIndex={-1}>{actual.tema}</h2><p>{actual.proposito === 'refuerzo' ? 'Refuerzo · Después de la clase' : 'Preparación · Antes de la clase'}{propuesta && ' · Versión ' + version}</p></div><EtiquetaPropuesta solicitud={actual} /></header>
+    {!propuesta ? <MensajeDocente titulo="Esta solicitud aún no tiene una propuesta"><p>Estado: {actual.estado === 'generando' ? 'la IA está preparando el contenido' : actual.estado === 'fallida' ? 'necesita un reintento' : 'pendiente de generación'}. Conserva los datos de la solicitud para consultar o reintentar su creación.</p></MensajeDocente> : <div className="doc-revision-distribucion">
+      <div className="doc-revision-lectura">
+        <div className="doc-origen"><IconoDocente nombre={propuesta.origen === 'docente' ? 'editar' : 'cursos'} /><span>{propuesta.origen === 'docente' ? 'Versión modificada por ti' : 'Propuesta generada por IA'}<small>{propuesta.origen_objetivo === 'docente' ? 'El objetivo conserva tu texto original.' : 'El objetivo fue sugerido por IA; revísalo con tu clase en mente.'}</small></span></div>
+        {edicion ? <form className="doc-editor" onSubmit={guardarEdicion}>
+          <h3 ref={tituloEdicion} tabIndex={-1}>Modificar la propuesta</h3><p>Editas la versión {edicion.version}. Cada lista lleva un elemento por línea; guardar creará una versión nueva.</p>
+          {campos.map(({ campo, etiqueta }) => <div className="campo" key={campo}><label htmlFor={id + '-editar-' + campo}>{etiqueta}{campo === 'recursos' ? ' (opcional)' : ''}</label><textarea id={id + '-editar-' + campo} disabled={ocupado} value={edicion.campos[campo]} rows={campo === 'historia' ? 5 : 3} maxLength={campo === 'historia' ? 10000 : campo === 'objetivo' ? 4000 : undefined} required={campo !== 'recursos'} onChange={(e) => establecerEdicion({ ...edicion, campos: { ...edicion.campos, [campo]: e.target.value } })} /></div>)}
+          <div className="acciones"><button type="submit" disabled={ocupado}>Guardar versión nueva</button><button type="button" className="secundario" disabled={ocupado} onClick={() => { establecerEdicion(null); requestAnimationFrame(() => titulo.current?.focus()) }}>Cancelar edición</button></div>
+        </form> : <dl className="doc-contenido-propuesta">{campos.map(({ campo, etiqueta, icono }) => <Parte key={campo} titulo={etiqueta} icono={icono} valor={propuesta[campo]} />)}</dl>}
+        {actual.instrucciones && <details className="doc-instrucciones"><summary>Tus indicaciones para la IA</summary><p className="texto-conservado">{actual.instrucciones}</p></details>}
+        {versiones && <section className="doc-versiones" aria-label="Historial de versiones"><h3>Versiones anteriores</h3><p>La más reciente aparece primero. Estas versiones se consultan sin cambiar la vigente.</p><ol reversed>{versiones.map((v) => <li key={v.id}><details><summary><strong>Versión {v.version}</strong><span>{nombreRevision[v.estado_revision ?? 'pendiente']}</span></summary><p>{v.origen === 'docente' ? 'Modificada por el docente' : 'Generada por IA'}{v.creado_en ? ' · ' + new Date(v.creado_en).toLocaleString('es-PE') : ''}{v.version_base ? ' · Ajusta la versión ' + v.version_base : ''}</p>{v.observaciones && <p className="texto-conservado">Observaciones: {v.observaciones}</p>}<dl>{campos.map(({ campo, etiqueta, icono }) => <Parte key={campo} titulo={etiqueta} icono={icono} valor={v[campo]} />)}</dl></details></li>)}</ol></section>}
+      </div>
+      <aside className="doc-decisiones" aria-label="Decisiones sobre la propuesta">
+        <h3>¿Lista para tu clase?</h3><p>Revisa el objetivo, las reglas y las ayudas antes de decidir.</p>
+        <div className="doc-acciones-revision">
+          {propuesta.estado_revision === 'pendiente' && <><button type="button" disabled={ocupado || !!edicion} onClick={() => void ejecutar(() => aprobarVersion(actual.id_solicitud, version), 'Versión ' + version + ' aprobada.')}><IconoDocente nombre="check" />Aprobar versión {version}</button><button type="button" className="secundario" disabled={ocupado || !!edicion} onClick={() => void ejecutar(() => rechazarVersion(actual.id_solicitud, version), 'Versión ' + version + ' rechazada. No generará un juego.')}>Rechazar</button></>}
+          {propuesta.estado_revision === 'rechazada' && <button type="button" disabled={ocupado || !!edicion} onClick={() => void ejecutar(() => pedirAlternativa(actual.id_solicitud), 'Se generó otra alternativa.')}>Pedir otra alternativa</button>}
+          <button type="button" className="secundario" disabled={ocupado || !!edicion} onClick={() => editar(propuesta)}><IconoDocente nombre="editar" />Modificar</button>
+          <button type="button" className="secundario" disabled={ocupado || cargandoVersiones} onClick={() => void cargarVersiones()}><IconoDocente nombre="reloj" />{cargandoVersiones ? 'Cargando versiones…' : 'Ver versiones anteriores'}</button>
         </div>
-
-        <form onSubmit={(evento) => { evento.preventDefault(); void ejecutar(() => enviarObservaciones(actual.id_solicitud, version, observaciones), 'La IA generó una versión ajustada.') }}>
-          <div className="campo"><label htmlFor={id + '-observaciones'}>Observaciones para la IA sobre la versión {version}</label>
-            <textarea id={id + '-observaciones'} disabled={ocupado} value={observaciones} onChange={(evento) => establecerObservaciones(evento.target.value)} maxLength={4000} rows={3} required /></div>
-          <button type="submit" disabled={ocupado}>Enviar observaciones</button>
-        </form>
-
-        {edicion && <form onSubmit={(evento) => guardarEdicion(evento, actual, propuesta)}>
-          <p>Escribe un elemento por línea en las listas. Se guardará como una versión nueva.</p>
-          {(['objetivo', 'historia', 'acciones', 'reglas', 'retos', 'ayudas', 'recursos'] as const).map((campo) => <div className="campo" key={campo}>
-            <label htmlFor={id + '-editar-' + campo}>{campo[0].toUpperCase() + campo.slice(1)}{campo === 'recursos' ? ' (opcional)' : ''}</label>
-            <textarea id={id + '-editar-' + campo} disabled={ocupado} value={edicion[campo]} rows={campo === 'historia' ? 6 : 3}
-              onChange={(evento) => establecerEdicion({ ...edicion, [campo]: evento.target.value })} />
-          </div>)}
-          <button type="submit" disabled={ocupado}>Guardar versión nueva</button>
-          <button type="button" className="secundario" disabled={ocupado} onClick={() => establecerEdicion(null)}>Cancelar</button>
-        </form>}
-
-        {versiones && <div>
-          <h4>Versiones (la más reciente primero)</h4>
-          <ol reversed>
-            {versiones.map((v) => <li key={v.id}>
-              Versión {v.version} · {v.origen === 'docente' ? 'modificada por el docente' : 'generada por IA'} · {v.creado_en ? new Date(v.creado_en).toLocaleString() : ''} · {nombreRevision[v.estado_revision ?? 'pendiente']}
-              {v.version_base ? ' · ajusta la versión ' + v.version_base : ''}{v.observaciones ? ' · observaciones: ' + v.observaciones : ''}
-            </li>)}
-          </ol>
-        </div>}
-      </>}
-    </div>
-  )
+        {ocupado && <p role="status">Guardando el cambio… Espera a que termine.</p>}
+        <details className="doc-pedir-ajustes"><summary><IconoDocente nombre="comunicacion" />Pedir ajustes a la IA</summary><form onSubmit={(e) => { e.preventDefault(); void ejecutar(() => enviarObservaciones(actual.id_solicitud, version, observaciones), 'La IA generó una versión ajustada.') }}><div className="campo"><label htmlFor={id + '-observaciones'}>Observaciones para la IA sobre la versión {version}</label><textarea id={id + '-observaciones'} disabled={ocupado || !!edicion} value={observaciones} onChange={(e) => establecerObservaciones(e.target.value)} maxLength={4000} rows={4} required placeholder="Cuéntale qué debe cambiar y por qué" /></div><button type="submit" disabled={ocupado || !!edicion}>Enviar observaciones</button></form></details>
+        <p className="doc-decisiones-nota"><IconoDocente nombre="info" />{propuesta.apta_para_juego ? 'La idea está aprobada para la siguiente etapa. El juego aún debe generarse y comprobarse.' : 'Aprobar esta propuesta valida la idea. No publica ni asigna un juego a tus estudiantes.'}</p>
+      </aside>
+    </div>}
+  </article>
 }
