@@ -1,5 +1,9 @@
 # Estado del Sprint 1 — actualización del 13 de octubre de 2026 (cierre)
 
+## Actualización del avance del 20 de octubre de 2026
+
+Esta nota prevalece sobre los pendientes históricos inferiores: Android ya compila y tiene diseño nativo; administrador y docente están rediseñados e integrados. Las correcciones HU16/HU20/HU08/HU07 ya estaban implementadas. La verificación actual, la prueba del adaptador de IA real y sus límites se registran en [AVANCE_20_OCTUBRE.md](AVANCE_20_OCTUBRE.md) y [VERIFICACION_20_OCTUBRE.md](VERIFICACION_20_OCTUBRE.md). Los registros del 13 se conservan como evidencia de aquella fecha. No se declara cerrado Sprint 2 por estas correcciones.
+
 ## Estado por historia (23 HU / 33 puntos)
 
 | HU | Responsable | Estado | Evidencia / pendiente |
