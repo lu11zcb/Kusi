@@ -18,6 +18,10 @@ class GeneradorGroqTest {
         "Practicar sumas", null, "nueva", null, null);
 
     private GeneradorGroq groq(int estado, String cuerpo, AtomicReference<String> recibido) throws Exception {
+        return groq(estado, cuerpo, recibido, "modelo-prueba");
+    }
+
+    private GeneradorGroq groq(int estado, String cuerpo, AtomicReference<String> recibido, String modelo) throws Exception {
         servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         servidor.createContext("/chat", intercambio -> {
             recibido.set(intercambio.getRequestHeaders().getFirst("Authorization") + "\n"
@@ -28,7 +32,7 @@ class GeneradorGroqTest {
             intercambio.close();
         });
         servidor.start();
-        return new GeneradorGroq("clave-de-prueba", "modelo-prueba", "http://127.0.0.1:" + servidor.getAddress().getPort() + "/chat", json);
+        return new GeneradorGroq("clave-de-prueba", modelo, "http://127.0.0.1:" + servidor.getAddress().getPort() + "/chat", json);
     }
 
     @AfterEach void apagar() { if (servidor != null) servidor.stop(0); }
@@ -42,6 +46,35 @@ class GeneradorGroqTest {
         assertTrue(recibido.get().startsWith("Bearer clave-de-prueba"));
         assertTrue(recibido.get().contains("Sumas hasta 20"));
         assertTrue(recibido.get().contains("modelo-prueba"));
+        assertEquals("json_object", json.readTree(recibido.get().split("\n", 2)[1]).path("response_format").path("type").asText());
+    }
+
+    @Test void pideHistoriaComoTextoYListasConElModeloConfigurado() throws Exception {
+        Map<String,Object> propuesta = new java.util.LinkedHashMap<>();
+        propuesta.put("objetivo", "Los niños aprenderán a sumar hasta diez.");
+        propuesta.put("historia", "Kusi va al mercado. Cuenta los productos.");
+        for (String campo : java.util.List.of("acciones", "reglas", "retos", "ayudas", "recursos"))
+            propuesta.put(campo, java.util.List.of("Contar productos", "Comparar cantidades"));
+        String cuerpo = json.writeValueAsString(Map.of("choices", java.util.List.of(Map.of("message", Map.of("content", json.writeValueAsString(propuesta))))));
+        AtomicReference<String> recibido = new AtomicReference<>();
+        Map<String,Object> respuesta = groq(200, cuerpo, recibido, "openai/gpt-oss-120b").generar(entrada);
+        var formato = json.readTree(recibido.get().split("\n", 2)[1]).path("response_format");
+        assertEquals("json_schema", formato.path("type").asText());
+        assertTrue(formato.path("json_schema").path("strict").asBoolean());
+        var esquema = formato.path("json_schema").path("schema");
+        assertFalse(esquema.path("additionalProperties").asBoolean());
+        assertEquals(7, esquema.path("required").size());
+        assertEquals("string", esquema.path("properties").path("historia").path("type").asText());
+        assertEquals("array", esquema.path("properties").path("acciones").path("type").asText());
+        assertEquals("string", esquema.path("properties").path("acciones").path("items").path("type").asText());
+        assertEquals("Kusi va al mercado. Cuenta los productos.", new ValidadorPropuesta().validar(respuesta, null).historia());
+    }
+
+    @Test void conservaElRechazoLocalDeUnaHistoriaConTipoIncorrecto() throws Exception {
+        String propuesta = json.writeValueAsString(Map.of("objetivo", "Sumar", "historia", java.util.List.of("Una frase", "Otra frase")));
+        String cuerpo = json.writeValueAsString(Map.of("choices", java.util.List.of(Map.of("message", Map.of("content", propuesta)))));
+        Map<String,Object> respuesta = groq(200, cuerpo, new AtomicReference<>(), "openai/gpt-oss-120b").generar(entrada);
+        assertThrows(FalloGeneracion.class, () -> new ValidadorPropuesta().validar(respuesta, null));
     }
 
     @Test void avisaSiLaClaveNoEsValida() throws Exception {

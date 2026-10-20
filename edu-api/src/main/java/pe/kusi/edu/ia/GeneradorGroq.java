@@ -38,7 +38,7 @@ public class GeneradorGroq implements GeneradorPropuestas {
             cuerpo=json.writeValueAsString(Map.of(
                 "model", modelo,
                 "temperature", 0.7,
-                "response_format", Map.of("type", "json_object"),
+                "response_format", formatoRespuesta(),
                 "messages", List.of(
                     Map.of("role", "system", "content", INSTRUCCIONES),
                     Map.of("role", "user", "content", pedido(entrada)))));
@@ -60,6 +60,23 @@ public class GeneradorGroq implements GeneradorPropuestas {
             if (!contenido.isTextual()) throw new FalloGeneracion("La IA devolvió una propuesta incompleta o no válida.", false);
             return json.readValue(contenido.asText(), new TypeReference<Map<String,Object>>() {});
         } catch (IOException e) { throw new FalloGeneracion("La IA devolvió una propuesta incompleta o no válida.", false); }
+    }
+
+    private Map<String,Object> formatoRespuesta() {
+        // Groq admite esquema estricto en GPT-OSS. Otros modelos conservan JSON Object.
+        // Se exige el tipo correcto antes de recibir el texto; el validador local sigue siendo obligatorio.
+        if (!Set.of("openai/gpt-oss-120b", "openai/gpt-oss-20b").contains(modelo))
+            return Map.of("type", "json_object");
+        Map<String,Object> texto = Map.of("type", "string");
+        Map<String,Object> lista = Map.of("type", "array", "items", texto);
+        Map<String,Object> propiedades = new LinkedHashMap<>();
+        propiedades.put("objetivo", texto); propiedades.put("historia", texto);
+        for (String campo : List.of("acciones", "reglas", "retos", "ayudas", "recursos")) propiedades.put(campo, lista);
+        return Map.of("type", "json_schema", "json_schema", Map.of(
+            "name", "propuesta_kusi", "strict", true,
+            "schema", Map.of("type", "object", "properties", propiedades,
+                "required", List.of("objetivo", "historia", "acciones", "reglas", "retos", "ayudas", "recursos"),
+                "additionalProperties", false)));
     }
 
     private String pedido(EntradaGeneracion e) throws IOException {
@@ -92,7 +109,7 @@ public class GeneradorGroq implements GeneradorPropuestas {
 
         Responde solo con un objeto JSON con estas claves:
         - "objetivo": una sola oración que empieza con «Los niños aprenderán a».
-        - "historia": 2 o 3 oraciones cortas: qué juego es y qué pasa en él.
+        - "historia": un único texto (string, nunca una lista), con 2 o 3 oraciones cortas: qué juego es y qué pasa en él.
         - "acciones": lo que hace el niño.
         - "reglas": cómo funciona el juego.
         - "retos": los desafíos o favores del juego.
