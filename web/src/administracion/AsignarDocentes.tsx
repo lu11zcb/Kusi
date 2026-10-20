@@ -8,8 +8,8 @@ import type { Curso } from '../servicios/cursos'
 import type { UsuarioAdministrado } from '../servicios/usuarios'
 import { listarUsuariosEducativos, nombreSeccion, opcionesCuentas } from '../servicios/opcionesEducativas'
 
-export function AsignarDocentes() {
-  const [docente, setDocente] = useState('')
+export function AsignarDocentes({ docenteInicial = '', alCambiarBloqueo, bloqueadoExterno = false }: { docenteInicial?: string; alCambiarBloqueo?: (bloqueado: boolean) => void; bloqueadoExterno?: boolean }) {
+  const [docente, setDocente] = useState(docenteInicial)
   const [curso, setCurso] = useState('')
   const [seccion, setSeccion] = useState('')
   const [usuarios, setUsuarios] = useState<UsuarioAdministrado[]>([])
@@ -21,6 +21,7 @@ export function AsignarDocentes() {
   const [mensaje, setMensaje] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [cargando, setCargando] = useState(true)
+  useEffect(() => { alCambiarBloqueo?.(ocupado); return () => alCambiarBloqueo?.(false) }, [ocupado, alCambiarBloqueo])
   const revision = useRef(0)
   const bloqueo = useRef(false)
   const cargar = useCallback(() => {
@@ -35,29 +36,29 @@ export function AsignarDocentes() {
   useEffect(() => { void cargar(); return () => { revision.current += 1 } }, [cargar])
   function recargar() { setCargando(true); setErrorCarga(''); void cargar() }
 
-  const docentes = opcionesCuentas(usuarios, 'docente')
+  const docentes = opcionesCuentas(usuarios, 'docente').filter((cuenta) => !docenteInicial || cuenta.id === docenteInicial)
   const elegida = secciones.find((grupo) => grupo.id === seccion)
   const seleccionValida = docentes.some((usuario) => usuario.id === docente) && cursos.some((materia) => materia.id === curso) && !!elegida
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    if (bloqueo.current || cargando || errorCarga) return
+    if (bloqueo.current || bloqueadoExterno || cargando || errorCarga) return
     setError(''); setMensaje('')
     if (!seleccionValida || !elegida) { setError('Selecciona un docente, un curso y una sección de las listas.'); return }
     bloqueo.current = true; setOcupado(true)
     try {
       const { asignacion } = await crearAsignacion({ docente_id: docente, curso_id: curso, seccion_id: seccion, anio_escolar: elegida.anio_escolar })
       setAsignaciones((anteriores) => [...anteriores.filter((item) => item.id !== asignacion.id), asignacion])
-      setMensaje('Docente asignado correctamente.'); setDocente('')
+      setMensaje('Docente asignado correctamente.'); setDocente(docenteInicial)
     } catch (fallo) { setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar la asignación.') }
     finally { bloqueo.current = false; setOcupado(false) }
   }
-  return <section><h1>Asignar docentes a cursos</h1><p>Busca por nombre y elige el docente, el curso y la sección. El año escolar corresponde a la sección elegida.</p>
+  return <section className="admin-relacion"><h1>{docenteInicial ? 'Cursos y secciones' : 'Asignar docentes a cursos'}</h1><p>{docenteInicial ? 'Elige qué curso enseñará y en qué sección.' : 'Elige al docente, su curso y su sección.'}</p>
     {cargando && <p role="status">Cargando docentes, cursos y secciones…</p>}
     {errorCarga && <p role="alert" className="error-resumen">{errorCarga}</p>}
-    <button type="button" className="secundario" onClick={recargar} disabled={ocupado || cargando}>Volver a cargar listas</button>
-    <form onSubmit={guardar}><fieldset disabled={ocupado || cargando || !!errorCarga}>
+    <button type="button" className="secundario" onClick={recargar} disabled={ocupado || bloqueadoExterno || cargando}>Volver a cargar listas</button>
+    <form onSubmit={guardar}><fieldset disabled={ocupado || bloqueadoExterno || cargando || !!errorCarga}>
       <legend>Datos de la asignación</legend>
-      <ListaBuscable id="asig-docente" etiqueta="Docente" opciones={docentes} valor={docente} alCambiar={setDocente} vacio="No hay docentes activos. Registra una cuenta docente para continuar." />
+      {!docenteInicial && <ListaBuscable id="asig-docente" etiqueta="Docente" opciones={docentes} valor={docente} alCambiar={setDocente} vacio="No hay docentes activos. Registra una cuenta docente para continuar." />}
       <ListaBuscable id="asig-curso" etiqueta="Curso" opciones={cursos} valor={curso} alCambiar={setCurso} vacio="No hay cursos disponibles. Revisa el catálogo de cursos." />
       <ListaBuscable id="asig-seccion" etiqueta="Sección" opciones={secciones.map((grupo) => ({ id: grupo.id, nombre: nombreSeccion(grupo) }))} valor={seccion} alCambiar={setSeccion} vacio="No hay secciones. Crea una sección para continuar." />
       {elegida && <p>Año escolar: <strong>{elegida.anio_escolar}</strong></p>}

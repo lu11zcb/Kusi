@@ -1,0 +1,100 @@
+.panel-administracion .doc-icono { width:24px; height:24px; flex:none }
+.panel-administracion .tablero-lateral { background:#fffaf1 }
+.panel-administracion .doc-alternar-menu { display:none }
+.panel-administracion .tablero-cuerpo { padding-top:1.5rem }
+.panel-administracion .admin-superficie { background:#fffcf7; border:1px solid #e8d9c5; border-radius:28px; padding:clamp(1.1rem,2.7vw,2.4rem); box-shadow:0 10px 26px -20px #66351e44; animation:admin-aparecer .22s ease-out }
+.panel-administracion .admin-encabezado { display:flex; justify-content:space-between; align-items:center; gap:1.5rem; margin-bottom:1.8rem }
+.panel-administracion .admin-encabezado h1 { margin:.45rem 0 .65rem; font-size:clamp(1.9rem,3vw,2.5rem) }
+.panel-administracion .admin-encabezado p { margin:0; color:#79645c; max-width:58ch }
+.panel-administracion .admin-antetitulo { color:#956139; font-weight:900; font-size:.75rem; letter-spacing:.12em }
+.panel-administracion .admin-ilustracion-icono { display:grid; place-items:center; width:86px; height:86px; border-radius:26px; color:#9a5816; background:#fff0cc; transform:rotate(6deg); flex:none }
+.panel-administracion .admin-ilustracion-icono svg { width:48px; height:48px }
+.panel-administracion .admin-superficie button { text-shadow:none; color:#5a2912; box-shadow:0 3px 0 #c08435; min-height:46px; transition:transform .15s,background .15s,box-shadow .15s }
+.panel-administracion .admin-superficie button:active:not(:disabled) { transform:translateY(2px); box-shadow:0 1px 0 #c08435 }
+.panel-administracion .admin-superficie button.secundario { color:#603c2c; background:#fffaf3; border:1px solid #e2ccb0; box-shadow:none }
+.panel-administracion .admin-superficie button.secundario:hover:not(:disabled) { background:#fff0d9 }
+.panel-administracion .admin-superficie button:disabled { cursor:default }
+.panel-administracion .admin-volver { margin-bottom:1.3rem; padding:.5rem .9rem }
+.panel-administracion .admin-superficie form { max-width:none }
+.panel-administracion .admin-roles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:0 0 1.8rem }
+.panel-administracion .admin-superficie .admin-rol { display:flex; flex-direction:column; align-items:flex-start; gap:.6rem; padding:1.2rem; border:2px solid #eadcc8; border-radius:20px; text-align:left; min-height:170px; white-space:normal }
+.panel-administracion .admin-rol svg { width:40px; height:40px; color:#b96729 }
+.panel-administracion .admin-rol strong { font-size:1.15rem; font-family:var(--letra-titulo) }
+.panel-administracion .admin-rol small { color:#79645c; font-size:.85rem; line-height:1.4; font-weight:700 }
+.panel-administracion .admin-superficie .admin-rol.elegido { border-color:#eca72e; background:#fff2ce; box-shadow:0 0 0 3px #f5be431c }
+.panel-administracion .admin-indicacion { padding:1.5rem; background:#f7efe3; border-radius:16px; color:#79645c }
+.panel-administracion .admin-superficie form>fieldset { max-width:46rem }
+.panel-administracion .campo label { font-size:.9rem }
+.panel-administracion input,.panel-administracion select { background:white; border-width:1px; border-color:#dccab2; border-radius:12px; font-weight:600 }
+.panel-administracion .admin-filtros { display:flex; align-items:flex-end; flex-wrap:wrap; gap:1rem; padding:1.15rem; background:#f7f0e6; border-radius:18px }
+.panel-administracion .admin-filtros .campo { margin:0; flex:1; min-width:180px }
+.panel-administracion .admin-filtros .admin-buscar { flex:2; min-width:min(100%,260px) }
+.panel-administracion .admin-buscar>div { position:relative }
+.panel-administracion .admin-buscar svg { position:absolute; top:13px; left:14px; color:#9c8170; pointer-events:none }
+.panel-administracion .admin-buscar input { padding-left:48px }
+.panel-administracion .admin-recuento { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem; padding:1.6rem .2rem 1rem; color:#79645c; font-size:.9rem }
+.panel-administracion .admin-recuento strong { color:var(--vino); font-size:1rem }
+.panel-administracion .admin-personas { list-style:none; margin:0; padding:0; border:1px solid #eadcc9; border-radius:20px; overflow:hidden }
+.panel-administracion .admin-personas li { display:flex; align-items:center; gap:1rem; padding:1.1rem 1.25rem; background:white; border-bottom:1px solid #f0e5d7 }
+.panel-administracion .admin-personas li:last-child { border-bottom:0 }
+.panel-administracion .admin-personas li:hover { background:#fffaf1 }
+.panel-administracion .admin-avatar { width:48px; height:48px; display:grid; place-items:center; border-radius:16px; background:#efe4fb; color:#77519a; font-weight:900; flex:none }
+.panel-administracion .admin-avatar.docente { background:#e1f2e7; color:#3e7854 }
+.panel-administracion .admin-avatar.grande { width:80px; height:80px; font-size:1.8rem; border-radius:24px }
+.panel-administracion .admin-persona-nombre { flex:1; min-width:0 }
+.panel-administracion .admin-persona-nombre strong { display:block; color:var(--vino); overflow-wrap:anywhere }
+.panel-administracion .admin-persona-nombre span { display:block; font-size:.88rem; color:#79645c; overflow-wrap:anywhere }
+.panel-administracion .admin-estado,.panel-administracion .admin-etiqueta { display:inline-flex; align-items:center; border-radius:99px; padding:.35rem .7rem; font-weight:900; background:#f1e9e1; color:#766458; font-size:.8rem }
+.panel-administracion .admin-estado.activo { background:#e4f4e8; color:#2d7147 }
+.panel-administracion .admin-estado.activo::before { content:''; width:6px; height:6px; margin-right:7px; border-radius:50%; background:#3d9a62 }
+.panel-administracion .admin-etiqueta { color:#765322; background:#fff0cd }
+.panel-administracion .admin-vacio { display:grid; justify-items:center; padding:2.5rem 1.5rem; text-align:center; border:1px dashed #dcccb8; border-radius:20px; background:#fffaf2 }
+.panel-administracion .admin-vacio>svg { width:54px; height:54px; color:#b68e68 }
+.panel-administracion .admin-vacio h2 { margin:1rem 0 .3rem }
+.panel-administracion .admin-vacio p { color:#79645c; margin:.3rem 0 }
+.panel-administracion .admin-ficha-cabecera { display:flex; align-items:center; gap:1.3rem; border-bottom:1px solid #eadfce; padding:.4rem 0 1.6rem; margin-bottom:1.6rem }
+.panel-administracion .admin-ficha-cabecera h1 { margin:.4rem 0 }
+.panel-administracion .admin-ficha-cabecera p { margin:.3rem 0; color:#79645c }
+.panel-administracion .admin-ficha-cabecera .acciones { margin:.6rem 0 0 }
+.panel-administracion .admin-ficha-columnas { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr); gap:1.8rem; align-items:start }
+.panel-administracion .admin-datos { padding:1.3rem; background:#f8f1e7; border-radius:22px; min-width:0 }
+.panel-administracion .admin-datos h2 { margin-top:0 }
+.panel-administracion details { border-top:1px solid #e6d6c0; padding:1rem 0 }
+.panel-administracion summary { cursor:pointer; font-weight:900; color:#6b4230; min-height:28px }
+.panel-administracion .admin-datos form { margin-top:.9rem }
+.panel-administracion .admin-historial { margin-top:1.5rem }
+.panel-administracion .admin-relacion h1 { font-size:1.45rem }
+.panel-administracion .admin-relacion form { padding:1.1rem; background:white; border:1px solid #eadcc9; border-radius:18px }
+.panel-administracion .admin-relacion legend { font-size:.9rem; color:#957251 }
+.panel-administracion .admin-relacion .lista-buscable { margin-bottom:1rem }
+.panel-administracion .admin-relacion .lista-gestion li { background:white; border-width:1px; border-radius:14px }
+.panel-administracion .admin-exito { display:flex; gap:.7rem; align-items:center; padding:1rem; border-radius:15px; background:#e4f4e8; color:#2d7147!important }
+.panel-administracion .admin-cursos { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); list-style:none; margin:0; padding:0; gap:1.1rem }
+.panel-administracion .admin-curso { padding:1.35rem; border:1px solid var(--curso-borde); background:var(--curso-fondo); border-radius:22px; display:flex; flex-direction:column; align-items:flex-start; gap:.9rem }
+.panel-administracion .admin-curso>svg { width:48px; height:48px; color:var(--curso-tinta) }
+.panel-administracion .admin-curso h2 { font-size:1.3rem; margin:0; color:var(--curso-tinta); flex:1 }
+.panel-administracion .admin-curso>span { font-size:.8rem; color:#79645c }
+.panel-administracion .admin-curso button { margin-top:.5rem }
+.panel-administracion [data-tono=cielo] { --curso-fondo:#e9f4ff; --curso-borde:#b9dafa; --curso-tinta:#316791 }
+.panel-administracion [data-tono=terracota] { --curso-fondo:#fff0e9; --curso-borde:#f2c7b2; --curso-tinta:#a74c2e }
+.panel-administracion [data-tono=dorado] { --curso-fondo:#fff5d9; --curso-borde:#ecd794; --curso-tinta:#8c681b }
+.panel-administracion [data-tono=verde] { --curso-fondo:#e9f7ec; --curso-borde:#bde2c3; --curso-tinta:#367949 }
+.panel-administracion [data-tono=rosa] { --curso-fondo:#ffedf4; --curso-borde:#f4bed3; --curso-tinta:#a7426c }
+.panel-administracion [data-tono=morado] { --curso-fondo:#f4edff; --curso-borde:#d9c4f1; --curso-tinta:#7a529e }
+.panel-administracion [data-tono=vino] { --curso-fondo:#f8ecee; --curso-borde:#e7c3c7; --curso-tinta:#954c5c }
+.panel-administracion .admin-editor { margin-top:1.7rem; background:#fff4da; padding:1.4rem; border-radius:18px; max-width:46rem }
+.panel-administracion .admin-secciones { display:grid; grid-template-columns:minmax(280px,.9fr) minmax(0,1.1fr); gap:2rem; align-items:start }
+.panel-administracion .admin-secciones form { margin:0; background:#f7f0e6; padding:1.5rem; border-radius:20px }
+.panel-administracion .admin-grupos { list-style:none; padding:0; margin:0; display:grid; gap:.8rem }
+.panel-administracion .admin-grupos li { display:flex; align-items:center; gap:1rem; border:1px solid #e5d6bf; padding:1rem; border-radius:18px; background:white }
+.panel-administracion .admin-grupos strong { display:block; font-family:var(--letra-titulo); font-size:1.3rem; color:var(--vino) }
+.panel-administracion .admin-grupos span { display:block; color:#79645c; font-size:.85rem }
+.panel-administracion .admin-grupos svg { width:40px; height:40px; color:#54976f }
+.panel-administracion .admin-pie { display:flex; justify-content:space-between; color:#9b8170; font-size:.8rem; padding:1.5rem .2rem 0 }
+@keyframes admin-aparecer { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+@media(min-width:1100px) { .panel-administracion .doc-alternar-menu { display:none } }
+@media(max-width:860px) { .panel-administracion .tablero-lateral { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px } .panel-administracion .doc-alternar-menu { display:inline-flex; font-size:.8rem; padding:.6rem .8rem; box-shadow:none } .panel-administracion .doc-menu-plegable { display:none; grid-column:1/-1; overflow:visible } .panel-administracion .doc-menu-abierto { display:grid; grid-template-columns:1fr 1fr } .panel-administracion .menu button { width:100%; font-size:.9rem } .panel-administracion .lateral-pie { grid-column:1/-1 } .panel-administracion .tarjeta-promo { display:none } }
+@media(max-width:1100px) { .panel-administracion .admin-ficha-columnas { grid-template-columns:1fr } .panel-administracion .admin-cursos { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+@media(max-width:650px) { .panel-administracion .admin-encabezado { align-items:flex-start; flex-direction:column } .panel-administracion .admin-ilustracion-icono { display:none } .panel-administracion .admin-roles { grid-template-columns:1fr; gap:.7rem } .panel-administracion .admin-superficie .admin-rol { min-height:90px; display:grid; grid-template-columns:44px 1fr; gap:.25rem .8rem; padding:1rem } .panel-administracion .admin-rol svg { grid-row:span 2 } .panel-administracion .admin-personas li { flex-wrap:wrap; padding:1rem; gap:.7rem } .panel-administracion .admin-personas .admin-estado { margin-left:60px } .panel-administracion .admin-personas li>button { margin-left:auto } .panel-administracion .admin-filtros { padding:.9rem } .panel-administracion .admin-cursos,.panel-administracion .admin-secciones { grid-template-columns:1fr } .panel-administracion .admin-ficha-cabecera { align-items:flex-start } .panel-administracion .admin-avatar.grande { width:54px;height:54px;font-size:1.2rem } }
+@media(prefers-reduced-motion:reduce) { .panel-administracion *, .panel-administracion *::before { animation:none!important; transition:none!important; transform:none!important } }
+@media(max-width:650px) { .panel-administracion .marca small { display:none } .panel-administracion .admin-personas li { display:grid; grid-template-columns:48px minmax(0,1fr) } .panel-administracion .admin-persona-nombre { grid-column:2 } .panel-administracion .admin-personas .admin-estado { grid-column:2; justify-self:start; margin-left:0 } .panel-administracion .admin-personas li>button { grid-column:2; justify-self:stretch; margin-left:0 } }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import type { FormEvent } from 'react'
+import { IconoDocente as IconoGestion } from '../docente/IconoDocente'
 import { CampoFormulario } from '../componentes/CampoFormulario'
 import { ErrorApi, registrarUsuario } from '../servicios/django'
 import type { DatosRegistro, ErroresRegistro, RegistroCreado, Rol } from '../servicios/django'
@@ -10,8 +11,8 @@ const nombresRol: Record<Rol, string> = {
   administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante',
 }
 
-export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (bloqueado: boolean) => void }) {
-  const [datos, establecerDatos] = useState<DatosRegistro>(datosVacios)
+export function RegistrarUsuario({ alCambiarBloqueo, rolInicial }: { alCambiarBloqueo?: (bloqueado: boolean) => void; rolInicial?: Rol }) {
+  const [datos, establecerDatos] = useState<DatosRegistro>({ ...datosVacios, rol: rolInicial ?? '' })
   const [errores, establecerErrores] = useState<ErroresRegistro>({})
   const [mensaje, establecerMensaje] = useState('')
   const [estadoError, establecerEstadoError] = useState<number | null>(null)
@@ -25,7 +26,7 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
   useEffect(() => {
     if (resultado) confirmacion.current?.focus()
     else nombre.current?.focus()
-  }, [resultado])
+  }, [resultado, datos.rol])
 
   useEffect(() => {
     if (mensaje) resumenError.current?.focus()
@@ -42,6 +43,7 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     if (bloqueoEnvio.current) return
+    if (!datos.rol) { establecerMensaje('Elige primero estudiante, docente o administrador.'); return }
     bloqueoEnvio.current = true
     alCambiarBloqueo?.(true)
     let creado = false
@@ -52,7 +54,7 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
     try {
       establecerResultado(await registrarUsuario(datos))
       creado = true
-      establecerDatos(datosVacios)
+      establecerDatos({ ...datosVacios, rol: datos.rol })
     } catch (error: unknown) {
       if (error instanceof ErrorApi) {
         establecerMensaje(error.message)
@@ -81,7 +83,7 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
           <dt>Contraseña temporal</dt><dd><code className="contrasena">{resultado.contrasena_temporal}</code></dd>
         </dl>
         <p>Entrégala ahora. Al cerrar esta confirmación, no podrás volver a consultarla. La cuenta deberá cambiarla al ingresar.</p>
-        {resultado.usuario.rol === 'estudiante' && <p>El estudiante ingresa a la app con su DNI y esta contraseña; entrégasela a su docente para que se la comunique. Si la olvida, genera otra desde «Usuarios y roles».</p>}
+        {resultado.usuario.rol === 'estudiante' && <p>El estudiante ingresa a la app con su DNI y esta contraseña; entrégasela a su docente para que se la comunique. Si la olvida, genera otra desde su ficha en «Estudiantes».</p>}
         <button type="button" onClick={() => { establecerResultado(null); alCambiarBloqueo?.(false) }}>Cerrar y registrar otra cuenta</button>
       </section>
     )
@@ -89,38 +91,29 @@ export function RegistrarUsuario({ alCambiarBloqueo }: { alCambiarBloqueo?: (blo
 
   return (
     <form onSubmit={enviar} noValidate aria-busy={enviando}>
-      <p>Nombre y rol son obligatorios. Los estudiantes necesitan DNI; los administradores y docentes, correo.</p>
+      <div className="admin-roles" role="group" aria-label="Tipo de cuenta">{(['estudiante', 'docente', 'administrador'] as Rol[]).map((rol) => <button key={rol} type="button" className={'admin-rol secundario ' + (datos.rol === rol ? 'elegido' : '')} aria-pressed={datos.rol === rol} disabled={enviando} onClick={() => { establecerDatos({ ...datos, rol, dni: rol === 'estudiante' ? datos.dni : '' }); establecerErrores({}); establecerMensaje('') }}><IconoGestion nombre={rol === 'estudiante' ? 'estudiante' : rol === 'docente' ? 'docente' : 'personas'} /><strong>{nombresRol[rol]}</strong><small>{rol === 'estudiante' ? 'Aprende y juega en la app' : rol === 'docente' ? 'Prepara experiencias educativas' : 'Organiza personas y aulas'}</small></button>)}</div>
+      {!datos.rol && <p className="admin-indicacion">Elige un tipo de cuenta para ver los datos que necesita.</p>}
       {mensaje && <p className="error-resumen" role="alert" tabIndex={-1} ref={resumenError}>{mensaje}</p>}
       {estadoError === 401 && <p><a href="/">Volver a iniciar sesión</a></p>}
-      <fieldset disabled={enviando}>
+      {datos.rol && <fieldset disabled={enviando}>
         <legend className="solo-lectores">Datos de la cuenta</legend>
         <CampoFormulario id="nombre" etiqueta="Nombre" errores={errores.nombre}>
           <input ref={nombre} id="nombre" name="nombre" autoComplete="off" required maxLength={150}
             value={datos.nombre} onChange={(evento) => establecerDatos({ ...datos, nombre: evento.target.value })}
             aria-invalid={Boolean(errores.nombre?.length)} aria-describedby={errores.nombre?.length ? 'nombre-error' : undefined} />
         </CampoFormulario>
-        <CampoFormulario id="dni" etiqueta={datos.rol === 'estudiante' ? 'DNI' : 'DNI (solo estudiantes)'} errores={errores.dni}>
+        {datos.rol === 'estudiante' && <CampoFormulario id="dni" etiqueta="DNI del estudiante" errores={errores.dni}>
           <input id="dni" name="dni" inputMode="numeric" autoComplete="off" maxLength={8} pattern="[0-9]{8}" required={datos.rol === 'estudiante'}
             value={datos.dni} onChange={(evento) => establecerDatos({ ...datos, dni: evento.target.value.replace(/\D/g, '') })}
             aria-invalid={Boolean(errores.dni?.length)} aria-describedby={errores.dni?.length ? 'dni-error' : undefined} />
-        </CampoFormulario>
+        </CampoFormulario>}
         <CampoFormulario id="correo" etiqueta={datos.rol === 'estudiante' ? 'Correo (opcional para estudiantes)' : 'Correo'} errores={errores.correo}>
           <input id="correo" name="correo" type="email" inputMode="email" autoComplete="off" autoCapitalize="none" spellCheck={false} required={datos.rol !== 'estudiante'} maxLength={254}
             value={datos.correo} onChange={(evento) => establecerDatos({ ...datos, correo: evento.target.value })}
             aria-invalid={Boolean(errores.correo?.length)} aria-describedby={errores.correo?.length ? 'correo-error' : undefined} />
         </CampoFormulario>
-        <CampoFormulario id="rol" etiqueta="Rol" errores={errores.rol}>
-          <select id="rol" name="rol" required value={datos.rol}
-            onChange={(evento) => establecerDatos({ ...datos, rol: evento.target.value as DatosRegistro['rol'] })}
-            aria-invalid={Boolean(errores.rol?.length)} aria-describedby={errores.rol?.length ? 'rol-error' : undefined}>
-            <option value="">Selecciona un rol</option>
-            <option value="administrador">Administrador</option>
-            <option value="docente">Docente</option>
-            <option value="estudiante">Estudiante</option>
-          </select>
-        </CampoFormulario>
-      </fieldset>
-      <button type="submit" disabled={enviando}>{enviando ? 'Registrando…' : 'Registrar usuario'}</button>
+      </fieldset>}
+      <button type="submit" disabled={enviando || !datos.rol}><IconoGestion nombre="mas" />{enviando ? 'Registrando…' : 'Registrar usuario'}</button>
     </form>
   )
 }

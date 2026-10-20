@@ -11,11 +11,11 @@ type Conteos = { usuarios: number | null; cursos: number | null; vinculos: numbe
 
 const accesos: readonly { id: string; titulo: string; detalle: string; icono: NombreIcono; color: string }[] = [
   { id: 'registro', titulo: 'Registrar usuario', detalle: 'Docentes y estudiantes', icono: 'registrar', color: 'c-dorado' },
-  { id: 'usuarios', titulo: 'Usuarios y roles', detalle: 'Datos, roles y contraseñas', icono: 'usuarios', color: 'c-rojo' },
+  { id: 'estudiantes', titulo: 'Estudiantes', detalle: 'Cuentas y secciones', icono: 'usuarios', color: 'c-rojo' },
   { id: 'cursos', titulo: 'Catálogo de cursos', detalle: 'Nombres de los cursos', icono: 'libro', color: 'c-cielo' },
   { id: 'secciones', titulo: 'Crear sección', detalle: 'Primero de primaria', icono: 'aula', color: 'c-verde' },
-  { id: 'vinculos', titulo: 'Vincular estudiantes', detalle: 'Estudiante → sección', icono: 'enlace', color: 'c-morado' },
-  { id: 'asignaciones', titulo: 'Asignar docentes', detalle: 'Docente → curso y sección', icono: 'pizarra', color: 'c-rosa' },
+  { id: 'docentes', titulo: 'Docentes', detalle: 'Cuentas y cursos asignados', icono: 'enlace', color: 'c-morado' },
+  { id: 'administradores', titulo: 'Administradores', detalle: 'Datos, roles y acceso', icono: 'pizarra', color: 'c-rosa' },
 ]
 
 export function InicioAdministracion({ nombre, ir }: { nombre: string; ir: (seccion: string) => void }) {

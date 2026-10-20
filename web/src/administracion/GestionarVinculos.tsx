@@ -6,8 +6,8 @@ import type { SeccionEducativa, VinculoEstudiante } from '../servicios/educacion
 import type { UsuarioAdministrado } from '../servicios/usuarios'
 import { listarUsuariosEducativos, nombreSeccion, opcionesCuentas } from '../servicios/opcionesEducativas'
 
-export function GestionarVinculos() {
-  const [estudiante, setEstudiante] = useState('')
+export function GestionarVinculos({ estudianteInicial = '', alCambiarBloqueo, bloqueadoExterno = false }: { estudianteInicial?: string; alCambiarBloqueo?: (bloqueado: boolean) => void; bloqueadoExterno?: boolean }) {
+  const [estudiante, setEstudiante] = useState(estudianteInicial)
   const [seccion, setSeccion] = useState('')
   const [usuarios, setUsuarios] = useState<UsuarioAdministrado[]>([])
   const [secciones, setSecciones] = useState<SeccionEducativa[]>([])
@@ -17,6 +17,7 @@ export function GestionarVinculos() {
   const [mensaje, setMensaje] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [cargando, setCargando] = useState(true)
+  useEffect(() => { alCambiarBloqueo?.(ocupado); return () => alCambiarBloqueo?.(false) }, [ocupado, alCambiarBloqueo])
   const revision = useRef(0)
   const bloqueo = useRef(false)
   const cargar = useCallback(() => {
@@ -31,29 +32,29 @@ export function GestionarVinculos() {
   useEffect(() => { void cargar(); return () => { revision.current += 1 } }, [cargar])
   function recargar() { setCargando(true); setErrorCarga(''); void cargar() }
 
-  const estudiantes = opcionesCuentas(usuarios, 'estudiante')
+  const estudiantes = opcionesCuentas(usuarios, 'estudiante').filter((cuenta) => !estudianteInicial || cuenta.id === estudianteInicial)
   const elegida = secciones.find((grupo) => grupo.id === seccion)
   const seleccionValida = estudiantes.some((usuario) => usuario.id === estudiante) && !!elegida
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    if (bloqueo.current || cargando || errorCarga) return
+    if (bloqueo.current || bloqueadoExterno || cargando || errorCarga) return
     setError(''); setMensaje('')
     if (!seleccionValida || !elegida) { setError('Selecciona un estudiante y una sección de las listas.'); return }
     bloqueo.current = true; setOcupado(true)
     try {
       const { vinculo } = await crearVinculo({ estudiante_id: estudiante, seccion_id: seccion, anio_escolar: elegida.anio_escolar })
       setVinculos((anteriores) => [...anteriores.filter((item) => item.id !== vinculo.id), vinculo])
-      setMensaje('Estudiante vinculado correctamente.'); setEstudiante('')
+      setMensaje('Estudiante vinculado correctamente.'); setEstudiante(estudianteInicial)
     } catch (fallo) { setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el vínculo.') }
     finally { bloqueo.current = false; setOcupado(false) }
   }
-  return <section><h1>Vincular estudiantes a secciones</h1><p>Busca por nombre y elige el estudiante y su sección. El año escolar corresponde a la sección elegida.</p>
+  return <section className="admin-relacion"><h1>{estudianteInicial ? 'Su sección' : 'Vincular estudiantes a secciones'}</h1><p>{estudianteInicial ? 'Elige la sección que le corresponde a este estudiante.' : 'Busca al estudiante y elige su sección.'}</p>
     {cargando && <p role="status">Cargando estudiantes y secciones…</p>}
     {errorCarga && <p role="alert" className="error-resumen">{errorCarga}</p>}
-    <button type="button" className="secundario" onClick={recargar} disabled={ocupado || cargando}>Volver a cargar listas</button>
-    <form onSubmit={guardar}><fieldset disabled={ocupado || cargando || !!errorCarga}>
+    <button type="button" className="secundario" onClick={recargar} disabled={ocupado || bloqueadoExterno || cargando}>Volver a cargar listas</button>
+    <form onSubmit={guardar}><fieldset disabled={ocupado || bloqueadoExterno || cargando || !!errorCarga}>
       <legend>Datos del vínculo</legend>
-      <ListaBuscable id="vinculo-estudiante" etiqueta="Estudiante" opciones={estudiantes} valor={estudiante} alCambiar={setEstudiante} vacio="No hay estudiantes activos. Registra una cuenta estudiante para continuar." />
+      {!estudianteInicial && <ListaBuscable id="vinculo-estudiante" etiqueta="Estudiante" opciones={estudiantes} valor={estudiante} alCambiar={setEstudiante} vacio="No hay estudiantes activos. Registra una cuenta estudiante para continuar." />}
       <ListaBuscable id="vinculo-seccion" etiqueta="Sección" opciones={secciones.map((grupo) => ({ id: grupo.id, nombre: nombreSeccion(grupo) }))} valor={seccion} alCambiar={setSeccion} vacio="No hay secciones. Crea una sección para continuar." />
       {elegida && <p>Año escolar: <strong>{elegida.anio_escolar}</strong></p>}
       <button type="submit" disabled={!seleccionValida}>{ocupado ? 'Guardando…' : 'Vincular estudiante'}</button>
