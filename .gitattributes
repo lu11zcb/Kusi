@@ -1,0 +1,5 @@
+# Mantener bytes de recursos con hashes de procedencia, también al clonar en Windows.
+movil/app/src/main/res/drawable/ic_*.xml -text whitespace=trailing-space,space-before-tab,cr-at-eol
+movil/recursos/iconos-rellenos/*.svg -text
+# Copias literales de licencias externas; conservan el espacio del original.
+movil/app/src/main/assets/licencias/*-*.txt -text -whitespace

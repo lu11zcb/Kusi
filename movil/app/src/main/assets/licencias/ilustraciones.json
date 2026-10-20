@@ -1,0 +1,85 @@
+{
+  "antecedentes": {
+    "kusi_guia": {
+      "origen": "exec-03be91e8-dcf2-444c-ac1d-df8d6ee7e4d0.png (ImageGen; copia local de apoyo visual)",
+      "herramienta": "ImageGen integrado",
+      "referencia": "juego/public/dibujos/kusi-frente.png",
+      "prompt": "Create a new production-ready transparent character cutout for Kusi, a Peruvian educational Android app for children aged 6–7. Reference image 1 establishes the exact guinea-pig guide: preserve its warm caramel and cream fur markings, large kind dark eyes, pink nose and paws, woven straw hat with the little white feather, and bright red Andean geometric poncho. Draw a fresh welcoming pose with one paw raised in a small friendly wave, lively happy face, gentle dimensional painted 2D storybook rendering consistent with the reference. One guinea pig only, full body completely visible including hat feather and feet, unclipped with a comfortable transparent margin. Clear simple silhouette that reads well at 160 dp. Native transparent background, no floor, no scenery, no halo, no lettering, no UI, no extra objects. This is an original Kusi character asset; do not introduce any third-party mascot or brand. Output intended as the app's welcoming guide, not a mockup.",
+      "transformacion": "Reducción proporcional con alpha conservado"
+    },
+    "cuy_amigo": {
+      "origen": "juego/public/dibujos/cuy-nino-frente.png",
+      "transformacion": "Copia sin cambios de contenido"
+    },
+    "paisaje_kusi": {
+      "origen": "web/src/assets/kusi/paisaje-andes.webp",
+      "transformacion": "Copia sin cambios de contenido"
+    },
+    "fuentes": {
+      "origen": "https://github.com/google/fonts",
+      "licencia": "OFL-1.1"
+    },
+    "plaza_aventura": {
+      "origen": "juego/public/dibujos/fondo-plaza.png",
+      "transformacion": "Reducción proporcional, sin cambios de contenido"
+    }
+  },
+  "actualizacion": [
+    {
+      "recurso": "kusi_bienvenida_v2.png",
+      "autor_actualizacion": "lui11zcb",
+      "herramienta": "ImageGen integrado",
+      "fecha": "2026-10-20",
+      "referencia_personaje": "kusi_guia.png",
+      "prompt": "bienvenida",
+      "original": "kusi_bienvenida_original.png",
+      "dimensiones": [
+        900,
+        1125
+      ],
+      "sha256": "9a95771aaf094fb0072b3ab30df839c3f92747ef2f28b751d9d5825d7e5b039e"
+    },
+    {
+      "recurso": "kusi_feria_v2.png",
+      "autor_actualizacion": "lui11zcb",
+      "herramienta": "ImageGen integrado",
+      "fecha": "2026-10-20",
+      "referencia_personaje": "kusi_guia.png",
+      "prompt": "feria",
+      "original": "kusi_feria_original.png",
+      "dimensiones": [
+        1200,
+        675
+      ],
+      "sha256": "34bda189b623a14358254847949ab5230ffe8769cb0962128639ab3e0e3395da"
+    },
+    {
+      "recurso": "kusi_palabras_v2.png",
+      "autor_actualizacion": "lui11zcb",
+      "herramienta": "ImageGen integrado",
+      "fecha": "2026-10-20",
+      "referencia_personaje": "kusi_guia.png",
+      "prompt": "palabras",
+      "original": "kusi_palabras_original.png",
+      "dimensiones": [
+        1200,
+        675
+      ],
+      "sha256": "6031c132029a93ccd1dd349e0d32f1449fc0af5ba56b50c7873099ad04154ce3"
+    },
+    {
+      "recurso": "kusi_celebracion_v2.png",
+      "autor_actualizacion": "lui11zcb",
+      "herramienta": "ImageGen integrado",
+      "fecha": "2026-10-20",
+      "referencia_personaje": "kusi_guia.png",
+      "prompt": "celebracion",
+      "original": "kusi_celebracion_original.png",
+      "dimensiones": [
+        1000,
+        750
+      ],
+      "sha256": "517c1a3836cd9532b9d512fc0f7a0c812a732a0f227a45535dbab4525dd1e952"
+    }
+  ]
+}

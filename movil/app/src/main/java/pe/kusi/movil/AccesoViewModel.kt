@@ -15,7 +15,18 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
     var ocupado by mutableStateOf(false); private set
     var mensaje by mutableStateOf<String?>(null); private set
     var validado by mutableStateOf(false); private set
-    init { ejecutar { cuenta = api.sesion(); validado = false } }
+    var iniciando by mutableStateOf(true); private set
+    // Solo en memoria mientras se activa la cuenta: nunca preferencias o SavedState.
+    private var claveTemporal = ""
+    val claveTemporalDisponible get() = claveTemporal.isNotEmpty()
+    init { ejecutar {
+        try {
+            cuenta = api.sesion(); validado = false
+            if (cuenta?.temporal == false && cuenta?.roles?.contains("estudiante") == true) {
+                api.validarEstudiante(); validado = true
+            }
+        } finally { iniciando = false }
+    } }
     private fun ejecutar(tarea: () -> Unit) {
         if (ocupado) return
         ocupado = true; mensaje = null
@@ -23,7 +34,7 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
             try { withContext(Dispatchers.IO) { tarea() } }
             catch (fallo: FalloAcceso) {
                 mensaje = fallo.message
-                if (fallo.estado == 401) { cuenta = null; validado = false }
+                if (fallo.estado == 401) { cuenta = null; validado = false; claveTemporal = "" }
                 if (fallo.estado == 403) validado = false
             }
             catch (_: Exception) { mensaje = "No se pudo completar la operación. Vuelve a intentarlo." }
@@ -31,14 +42,17 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
         }
     }
     fun ingresar(dni: String, contrasena: String, recordar: Boolean) = ejecutar {
+        claveTemporal = ""
         api.recordar = recordar
         cuenta = api.ingresar(dni, contrasena); validado = false
+        if (cuenta?.temporal == true) claveTemporal = contrasena
         if (cuenta?.temporal == false && cuenta?.roles?.contains("estudiante") == true) {
             api.validarEstudiante(); validado = true
         }
     }
     fun cambiar(actual: String, nueva: String, confirmacion: String) = ejecutar {
-        cuenta = api.cambiar(actual, nueva, confirmacion); validado = false
+        cuenta = api.cambiar(actual.ifEmpty { claveTemporal }, nueva, confirmacion); validado = false
+        claveTemporal = ""
         if (cuenta?.roles?.contains("estudiante") == true) { api.validarEstudiante(); validado = true }
     }
     fun comprobar() = ejecutar {
@@ -46,5 +60,7 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
         if (cuenta == null) throw FalloAcceso(401, "La sesión caducó. Vuelve a ingresar.")
         api.validarEstudiante(); validado = true
     }
-    fun salir() = ejecutar { api.salir(); cuenta = null; validado = false }
+    // El celular también deja de mostrar la cuenta si la salida falla por red.
+    fun salir() = ejecutar { try { api.salir() } finally { cuenta = null; validado = false; claveTemporal = "" } }
+    override fun onCleared() { claveTemporal = ""; super.onCleared() }
 }
