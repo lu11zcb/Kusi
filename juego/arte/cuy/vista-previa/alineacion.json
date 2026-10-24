@@ -1,0 +1,67 @@
+{
+  "hoja": "juego\\public\\dibujos\\cuy-nino-caminar-v1.png",
+  "medicion": "Alfa >= 32; centro horizontal de la cabeza en el 42 % superior de la silueta; última fila visible de los pies",
+  "tolerancia_px": 2,
+  "correcta": true,
+  "variacion_px": {
+    "centro_cabeza_x": 0.0,
+    "cima_cabeza_y": 0,
+    "linea_pies_y": 0
+  },
+  "cuadros": [
+    {
+      "cuadro": 0,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        53,
+        11,
+        210,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 51,
+        "superior": 9,
+        "derecho": 44,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 1,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        42,
+        11,
+        214,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 40,
+        "superior": 9,
+        "derecho": 39,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 2,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        43,
+        11,
+        198,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 41,
+        "superior": 9,
+        "derecho": 56,
+        "inferior": 9
+      }
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "entrada": "juego\\arte\\cuy\\origen\\cuy-caminar-3-cuadros.png",
+  "salida": "juego\\public\\dibujos\\cuy-nino-caminar-v1.png",
+  "fotograma": {
+    "ancho": 256,
+    "alto": 256
+  },
+  "cuadricula": {
+    "columnas": 3,
+    "filas": 1
+  },
+  "escala_uniforme": 0.34970238095238093,
+  "anclaje_objetivo": {
+    "x": 128.0,
+    "y": 243.95089285714286
+  },
+  "margen_solicitado": 8,
+  "limpieza_original": [
+    {
+      "archivo": "juego\\arte\\cuy\\origen\\cuy-caminar-3-cuadros.png",
+      "islas_eliminadas": 360,
+      "pixeles_eliminados": 876
+    }
+  ],
+  "cuadros": [
+    {
+      "cuadro": 0,
+      "anclas_original": {
+        "centro_cabeza_x": 215.5,
+        "cima_cabeza_y": 25,
+        "linea_pies_y": 691,
+        "caja_silueta": [
+          2,
+          25,
+          450,
+          692
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 127.5,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 244,
+        "caja_silueta": [
+          53,
+          11,
+          210,
+          245
+        ]
+      },
+      "caja_alfa_salida": [
+        51,
+        9,
+        212,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 1,
+        "pixeles_eliminados": 2
+      }
+    },
+    {
+      "cuadro": 1,
+      "anclas_original": {
+        "centro_cabeza_x": 248.5,
+        "cima_cabeza_y": 25,
+        "linea_pies_y": 691,
+        "caja_silueta": [
+          3,
+          25,
+          495,
+          692
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 127.5,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 244,
+        "caja_silueta": [
+          42,
+          11,
+          214,
+          245
+        ]
+      },
+      "caja_alfa_salida": [
+        40,
+        9,
+        217,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 3,
+        "pixeles_eliminados": 9
+      }
+    },
+    {
+      "cuadro": 2,
+      "anclas_original": {
+        "centro_cabeza_x": 244.5,
+        "cima_cabeza_y": 25,
+        "linea_pies_y": 691,
+        "caja_silueta": [
+          2,
+          25,
+          443,
+          692
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 127.5,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 244,
+        "caja_silueta": [
+          43,
+          11,
+          198,
+          245
+        ]
+      },
+      "caja_alfa_salida": [
+        41,
+        9,
+        200,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 0,
+        "pixeles_eliminados": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "formato": "kusi-sprite/1",
+  "imagen": "cuy-nino-caminar-v1.png",
+  "fotograma": {
+    "ancho": 256,
+    "alto": 256
+  },
+  "cuadricula": {
+    "columnas": 3,
+    "filas": 1
+  },
+  "anclaje": {
+    "x": 128,
+    "y": 244
+  },
+  "escala": 0.5,
+  "velocidadReferencia": 260,
+  "animaciones": {
+    "frente": {
+      "reposo": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          0,
+          1,
+          2,
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      }
+    },
+    "espaldas": {
+      "reposo": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          0,
+          1,
+          2,
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      }
+    },
+    "derecha": {
+      "reposo": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          0,
+          1,
+          2,
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      }
+    },
+    "izquierda": {
+      "reposo": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          0,
+          1,
+          2,
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      }
+    }
+  }
+}

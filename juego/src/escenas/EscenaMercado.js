@@ -10,6 +10,7 @@ import {
 } from '../medidas.js'
 import plaza from '../datos/plaza.json'
 import { ajustarATamano, claveIcono } from '../dibujos/dibujos.js'
+import { CuyAnimado } from '../dibujos/cuyAnimado.js'
 import { ALTURA_MOSTRADOR } from '../dibujos/escenario.js'
 import { palabraDelLetrero, textoSoles } from '../logica/nombres.js'
 import { crearEstado, progresoLista, textoCartel, sumar } from '../logica/compras.js'
@@ -21,7 +22,6 @@ import { VentanaPuesto } from '../interfaz/VentanaPuesto.js'
 import { crearBoton, dibujarGlobo, fijarEnPantalla } from '../interfaz/piezas.js'
 
 const TAMANO_KUSI = { ancho: 124, alto: 140 }
-const TAMANO_CUY = { ancho: 110, alto: 120 }
 const FUERZA_MINIMA = 0.15 // al frenar llegando a un punto, nunca va más lento que esto (de la velocidad máxima)
 const DOMINA = 1.5 // una dirección domina cuando es una vez y media la otra: recién ahí el cuy cambia de vista
 const KUSI = plaza.kusi
@@ -45,8 +45,9 @@ export class EscenaMercado extends Phaser.Scene {
     super('mercado')
   }
 
-  init({ paquete }) {
+  init({ paquete, cuyAnimado }) {
     this.paquete = paquete
+    this.datosCuyAnimado = cuyAnimado
     this.estado = crearEstado(paquete)
     const parametros = new URLSearchParams(window.location.search)
     // Con ?rapido=1 el cuy camina 4 veces más rápido (para las pruebas automáticas)
@@ -55,7 +56,7 @@ export class EscenaMercado extends Phaser.Scene {
     this.depurar = parametros.get('depurar') === '1'
     this.velocidad = { x: 0, y: 0 } // px por segundo
     this.camino = null // { puntos, puesto } mientras camina solo hacia donde se tocó
-    this.mirando = 'frente' // el cuy: 'frente', 'espaldas' o 'lado'
+    this.mirando = 'frente' // frente, espaldas, derecha o izquierda
     this.kusiMirando = 'frente'
     this.puedeMoverse = false // recién se mueve después de «¡Vamos!»
     this.ventana = null
@@ -244,10 +245,10 @@ export class EscenaMercado extends Phaser.Scene {
       .setDepth(KUSI.y)
     this.tweens.add({ targets: this.kusi, scaleY: 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
 
-    // El cuy del niño: un contenedor con su sombra y su dibujo (el dibujo rebota al caminar)
+    // El apoyo de los pies coincide con la posición física; la sombra queda separada.
     const { x, y } = plaza.cuyInicio
     this.sombraCuy = this.add.ellipse(0, 0, 80, 16, 0x000000, 0.18)
-    this.dibujoCuy = ajustarATamano(this.add.image(0, 0, 'cuy-nino-frente').setOrigin(0.5, 1), TAMANO_CUY.ancho, TAMANO_CUY.alto)
+    this.dibujoCuy = new CuyAnimado(this, this.datosCuyAnimado)
     this.cuy = this.add.container(x, y, [this.sombraCuy, this.dibujoCuy]).setDepth(y)
 
     // Marca en el piso donde se tocó; se ve mientras el cuy camina hacia ahí
@@ -320,14 +321,12 @@ export class EscenaMercado extends Phaser.Scene {
     const deLado = Math.abs(this.velocidad.x)
     const vertical = Math.abs(this.velocidad.y)
     if (rapidez > 20) {
-      if (deLado > vertical * DOMINA) this.mirar('lado', this.velocidad.x < 0)
+      if (deLado > vertical * DOMINA) this.mirar(this.velocidad.x < 0 ? 'izquierda' : 'derecha')
       else if (vertical > deLado * DOMINA) this.mirar(this.velocidad.y > 0 ? 'frente' : 'espaldas')
     }
 
-    // Pasitos: rebota un poco mientras camina y se inclina hacia el lado al que va
-    const empuje = Math.min(1, rapidez / rapidezMaxima)
-    this.dibujoCuy.y = -Math.abs(Math.sin(tiempo / 85)) * 6 * empuje
-    this.dibujoCuy.rotation = Phaser.Math.Clamp(this.velocidad.x / rapidezMaxima, -1, 1) * 0.1
+    const distancia = Math.hypot(paso.x - antes.x, paso.y - antes.y)
+    this.dibujoCuy.animarMovimiento(this.mirando, distancia, segundos, tiempo)
   }
 
   // El cuy camina solo hasta `destino`, rodeando los puestos y la pileta.
@@ -352,15 +351,10 @@ export class EscenaMercado extends Phaser.Scene {
     this.marca.setVisible(false)
   }
 
-  // Cambia el dibujo del cuy: 'frente', 'espaldas' o 'lado'. De lado mira a la derecha;
-  // `aLaIzquierda` lo voltea.
-  mirar(vista, aLaIzquierda = false) {
-    if (vista !== this.mirando) {
-      this.mirando = vista
-      const clave = vista === 'lado' ? 'cuy-nino' : `cuy-nino-${vista}`
-      ajustarATamano(this.dibujoCuy.setTexture(clave), TAMANO_CUY.ancho, TAMANO_CUY.alto)
-    }
-    this.dibujoCuy.setFlipX(vista === 'lado' && aLaIzquierda)
+  // La red de seguridad usa los mismos cuadros frontales en cada dirección;
+  // CuyAnimado voltea el dibujo al mirar a la izquierda, sin mover el anclaje.
+  mirar(vista) {
+    this.mirando = vista
   }
 
   // Kusi mira hacia el cuy: de espaldas si el cuy está más arriba (hacia los puestos), de frente si no.
@@ -552,6 +546,15 @@ export class EscenaMercado extends Phaser.Scene {
       velocidad: Math.round(Math.hypot(this.velocidad.x, this.velocidad.y)),
       caminando: Boolean(this.camino),
       mirando: this.mirando,
+      animacionCuy: {
+        recurso: this.dibujoCuy.texture.key,
+        clave: this.dibujoCuy.anims.currentAnim?.key,
+        estado: this.dibujoCuy.estadoMovimiento,
+        fotograma: this.dibujoCuy.frame.name,
+        anclaje: { x: this.dibujoCuy.displayOriginX, y: this.dibujoCuy.displayOriginY },
+        escala: this.dibujoCuy.scaleX,
+        flipX: this.dibujoCuy.flipX,
+      },
       kusiMirando: this.kusiMirando,
       puedeMoverse: this.puedeMoverse,
       puestoCercano: this.puestoCercano?.datos.id ?? null,

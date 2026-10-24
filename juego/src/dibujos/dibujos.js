@@ -6,7 +6,7 @@ import plaza from '../datos/plaza.json'
 import { tipoDePuesto } from '../logica/nombres.js'
 import { DENOMINACIONES } from '../logica/compras.js'
 import {
-  dibujarKusiFrente, dibujarKusiEspaldas, dibujarCuyNinoFrente, dibujarCuyNinoEspaldas, dibujarCuyNinoLado,
+  dibujarKusiFrente, dibujarKusiEspaldas,
   dibujarVendedor,
 } from './personajes.js'
 import {
@@ -34,9 +34,6 @@ export function clavesDelPaquete(paquete) {
   const claves = new Map([
     ['kusi-frente', 'kusi-frente'],
     ['kusi-espaldas', 'kusi-espaldas'],
-    ['cuy-nino-frente', 'cuy-nino-frente'],
-    ['cuy-nino-espaldas', 'cuy-nino-espaldas'],
-    ['cuy-nino', 'cuy-nino'],
     ['cartera', 'cartera'],
     ['choclito', 'choclito'],
     ['fondo-plaza', 'fondo-plaza'],
@@ -88,12 +85,6 @@ function elegirFigura(clave, tipo) {
       return { ancho: 124, alto: 140, dibujar: dibujarKusiFrente }
     case 'kusi-espaldas':
       return { ancho: 124, alto: 140, dibujar: dibujarKusiEspaldas }
-    case 'cuy-nino-frente':
-      return { ancho: 110, alto: 120, dibujar: dibujarCuyNinoFrente }
-    case 'cuy-nino-espaldas':
-      return { ancho: 110, alto: 120, dibujar: dibujarCuyNinoEspaldas }
-    case 'cuy-nino':
-      return { ancho: 120, alto: 112, dibujar: dibujarCuyNinoLado }
     case 'vendedor':
       return { ancho: 150, alto: 150, dibujar: (lienzo) => dibujarVendedor(lienzo, clave) }
     case 'producto':
