@@ -351,8 +351,8 @@ export class EscenaMercado extends Phaser.Scene {
     this.marca.setVisible(false)
   }
 
-  // La red de seguridad usa los mismos cuadros frontales en cada dirección;
-  // CuyAnimado voltea el dibujo al mirar a la izquierda, sin mover el anclaje.
+  // La red de seguridad usa los mismos cuadros frontales sin voltear en cada
+  // dirección. La vista caminar_lado se incorporará cuando esté disponible.
   mirar(vista) {
     this.mirando = vista
   }

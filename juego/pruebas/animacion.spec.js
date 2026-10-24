@@ -80,7 +80,7 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
   expect(configuracion.intervalos).toEqual([125, 125])
 })
 
-test('la hoja de tres cuadros conserva el anclaje y voltea solo a la izquierda', async ({ page: pagina }) => {
+test('la vista frontal conserva el anclaje y la mancha sin voltearse en ninguna dirección', async ({ page: pagina }) => {
   const datos = await leerManifiesto()
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
@@ -98,14 +98,15 @@ test('la hoja de tres cuadros conserva el anclaje y voltea solo a la izquierda',
   await pagina.keyboard.up('ArrowUp')
   await pagina.waitForFunction(() => window.kusi.estado().velocidad === 0)
 
-  // Pasos cortos en la zona despejada ejercitan las vistas sin cambiar la física.
+  // Las cuatro direcciones usan la vista frontal mientras no exista caminar_lado.
+  // La mancha debe conservar su lado al caminar y también al volver a quieto.
   const direcciones = [
-    ['ArrowUp', 'espaldas', false],
-    ['ArrowRight', 'derecha', false],
-    ['ArrowDown', 'frente', false],
-    ['ArrowLeft', 'izquierda', true],
+    ['ArrowUp', 'espaldas'],
+    ['ArrowRight', 'derecha'],
+    ['ArrowDown', 'frente'],
+    ['ArrowLeft', 'izquierda'],
   ]
-  for (const [tecla, direccion, volteado] of direcciones) {
+  for (const [tecla, direccion] of direcciones) {
     const antes = await estado(pagina)
     await pagina.keyboard.down(tecla)
     await pagina.waitForFunction((vista) => {
@@ -118,14 +119,17 @@ test('la hoja de tres cuadros conserva el anclaje y voltea solo a la izquierda',
     const durante = await estado(pagina)
     await pagina.keyboard.up(tecla)
     expect([0, 1, 2]).toContain(durante.animacionCuy.fotograma)
-    expect(durante.animacionCuy.flipX).toBe(volteado)
+    expect(durante.animacionCuy.flipX).toBe(false)
     expect(durante.animacionCuy.anclaje).toEqual(datos.anclaje)
     expect(Math.hypot(durante.cuyX - antes.cuyX, durante.cuyY - antes.cuyY)).toBeGreaterThan(0)
     await pagina.waitForFunction(() => {
       const actual = window.kusi.estado()
       return actual.velocidad === 0 && actual.animacionCuy.estado === 'reposo'
     })
-    expect((await estado(pagina)).animacionCuy.fotograma).toBe(1)
+    const quieto = (await estado(pagina)).animacionCuy
+    expect(quieto.fotograma).toBe(1)
+    expect(quieto.clave).toBe('cuy-nino-animado-v1:' + direccion + ':quieto')
+    expect(quieto.flipX).toBe(false)
   }
   expect(errores).toEqual([])
 })

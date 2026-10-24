@@ -37,8 +37,8 @@ def crear_vista_previa(manifiesto, salida, direccion="frente", estado="caminar")
         cuadro = hoja_con_fondo.crop(
             (izquierda, arriba, izquierda + ancho, arriba + alto)
         )
-        if direccion == "izquierda":
-            cuadro = cuadro.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+        # Los cuadros actuales son frontales y conservan la mancha en su lado
+        # original, también al previsualizar el movimiento hacia la izquierda.
         cuadros.append(cuadro)
 
     # GIF guarda centésimas de segundo: alternar 120/130 ms representa 8 fps

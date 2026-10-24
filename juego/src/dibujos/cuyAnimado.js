@@ -67,9 +67,10 @@ export class CuyAnimado extends Phaser.GameObjects.Sprite {
     const caminando = distancia > 0.01
     this.estadoMovimiento = caminando ? 'caminar' : 'reposo'
     const estado = caminando ? 'caminar' : estadoQuieto(this.datosSprite.animaciones[direccion])
-    // La izquierda reutiliza los mismos tres dibujos mediante el volteo de
-    // Phaser. El anclaje central permanece fijo al cambiar de dirección.
-    this.setFlipX(direccion === 'izquierda')
+    // Los cuadros actuales son frontales: se conserva su orientación para que
+    // la mancha marrón no cambie de lado. El volteo se reservará para la vista
+    // caminar_lado cuando exista; la vista frontal siempre queda sin voltear.
+    this.setFlipX(false)
     this.play(claveAnimacion(direccion, estado), true)
     // La cadencia del manifiesto se mide en tiempo real: incluso al frenar,
     // caminar reproduce ocho cuadros por segundo; al bloquearse pasa a quieto.
