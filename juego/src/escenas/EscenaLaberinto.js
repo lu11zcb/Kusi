@@ -24,6 +24,7 @@ import { Polvito } from '../efectos/Polvito.js'
 import { PopFruta } from '../efectos/PopFruta.js'
 import { FrutasVivas } from '../efectos/FrutasVivas.js'
 import { CapturaLaberinto } from '../efectos/CapturaLaberinto.js'
+import { PuertaViva } from '../efectos/PuertaViva.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -300,6 +301,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       { casilla: this.casilla, activo: this.vida })
     // Al ser atrapado, los zorros se detienen junto con todo lo demás.
     this.captura = new CapturaLaberinto(this, { ancho: ANCHO, congelables: this.dibujosZorros, activo: this.vida })
+    this.puertaViva = new PuertaViva(this, this.puerta, { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
   }
 
@@ -390,6 +392,8 @@ export class EscenaLaberinto extends Phaser.Scene {
         if (this.regla.completada) {
           this.puerta.setTexture('puerta-abierta')
           this.sonidos.reproducir('puerta')
+          // Con vida la puerta además rebota y suelta confeti.
+          this.puertaViva.abrir()
         }
       } else {
         // Solo rebota la fruta. El cuy conserva su posición, velocidad y giro
@@ -586,6 +590,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         polvito: this.polvito.estado(),
         pop: this.popFruta.estado(),
         frutasVivas: this.frutasVivas.estado(),
+        puerta: this.puertaViva.estado(),
         captura: {
           ...this.captura.estado(),
           camara: {
