@@ -1,6 +1,6 @@
-"""Arma hojas PNG sin redibujar el cuy ni cambiar la escala entre fotogramas.
+"""Arma hojas PNG sin redibujar personajes ni cambiar la escala entre cuadros.
 
-La entrada puede ser una tira horizontal o una carpeta de PNG de Blender. Las
+La entrada puede ser una tira horizontal o una carpeta de cuadros PNG finales. Las
 columnas transparentes separan los cuadros de una tira; los PNG de una carpeta
 se ordenan por su nombre, considerando los números como números (2 antes de 10).
 """
@@ -79,7 +79,7 @@ def limpiar_islas(imagen, fraccion_minima=0.01):
 def medir_anclas(imagen):
     """Mide cabeza y suelo desde el alfa, excluyendo los brazos del centro x.
 
-    La cabeza del cuy ocupa el 42 % superior de su silueta. Esa banda termina
+    La cabeza se mide en el 42 % superior de la silueta. Esa banda termina
     antes de los hombros y del pañuelo, de modo que extender un brazo no cambia
     el centro horizontal. La línea de apoyo es la última fila con alfa >= 32;
     así un halo de remuestreo casi invisible no se confunde con un pie.
@@ -193,7 +193,7 @@ def armar_hoja(entrada, salida, celda, margen=8):
         )
         celda_final = ampliada.resize(celda, Image.Resampling.LANCZOS).convert("RGBA")
         # El filtro puede crear islas de alfa 1 separadas del borde. Se quitan
-        # después de reducir, manteniendo todos los bordes conectados al cuy.
+        # después de reducir, manteniendo los bordes conectados al personaje.
         celda_final, limpieza_final = limpiar_islas(celda_final, 1)
         hoja.paste(celda_final, (indice * ancho, 0))
         detalle.append({
@@ -231,7 +231,7 @@ def interpretar_celda(texto):
 
 def main():
     argumentos = argparse.ArgumentParser(description=__doc__)
-    argumentos.add_argument("entrada", type=Path, help="Tira PNG o carpeta de cuadros PNG de Blender")
+    argumentos.add_argument("entrada", type=Path, help="Tira PNG o carpeta de cuadros PNG finales")
     argumentos.add_argument("--celda", type=interpretar_celda, default=(256, 256))
     argumentos.add_argument("--salida", type=Path, required=True, help="Nombre del PNG de salida")
     argumentos.add_argument("--margen", type=int, default=8)

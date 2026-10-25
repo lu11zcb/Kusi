@@ -3,6 +3,7 @@
 
 import { ANCHO, ALTO, COLOR, NUMERO, PROFUNDIDAD, estiloTexto } from '../medidas.js'
 import { ajustarATamano, claveDinero } from '../dibujos/dibujos.js'
+import { ZorroAnimado } from '../dibujos/zorroAnimado.js'
 import { nombreVisible, textoSoles } from '../logica/nombres.js'
 import { pagar, sumar } from '../logica/compras.js'
 import { crearBoton, dibujarGlobo, fijarEnPantalla } from './piezas.js'
@@ -62,11 +63,15 @@ export class VentanaPuesto {
     const { escena, puesto } = this
     // Marco cuadrado: el vendedor se apoya en el borde de abajo, como asomado en una ventanita
     const marco = escena.add.rectangle(RETRATO.x, RETRATO.y, 150, 150, NUMERO.arena).setRounded(24).setStrokeStyle(4, NUMERO.tinta)
-    const retrato = ajustarATamano(
-      escena.add.image(RETRATO.x, RETRATO.y + 73, puesto.vendedor.recurso).setOrigin(0.5, 1),
-      140,
-      140,
-    )
+    // El retrato del zorro toma el mismo cuadro quieto que el vendedor del mapa;
+    // el marco ajusta su tamaño sin introducir una segunda imagen del personaje.
+    const retrato = puesto.vendedor.recurso === 'zorro'
+      ? ajustarATamano(new ZorroAnimado(escena, escena.datosZorroAnimado).setPosition(RETRATO.x, RETRATO.y + 73), 140, 140)
+      : ajustarATamano(
+        escena.add.image(RETRATO.x, RETRATO.y + 73, puesto.vendedor.recurso).setOrigin(0.5, 1),
+        140,
+        140,
+      )
     this.globo = dibujarGlobo(escena.add.graphics({ x: 560, y: RETRATO.y }), 600, 104, { cola: 'izquierda', colaY: 10 })
     this.dicho = escena.add
       .text(560, RETRATO.y, puesto.vendedor.frase, estiloTexto(34, COLOR.tinta, { wordWrap: { width: 560 } }))

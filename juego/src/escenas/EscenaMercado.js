@@ -11,6 +11,7 @@ import {
 import plaza from '../datos/plaza.json'
 import { ajustarATamano, claveIcono } from '../dibujos/dibujos.js'
 import { CuyAnimado } from '../dibujos/cuyAnimado.js'
+import { ZorroAnimado } from '../dibujos/zorroAnimado.js'
 import { ALTURA_MOSTRADOR } from '../dibujos/escenario.js'
 import { palabraDelLetrero, textoSoles } from '../logica/nombres.js'
 import { crearEstado, progresoLista, textoCartel, sumar } from '../logica/compras.js'
@@ -45,9 +46,10 @@ export class EscenaMercado extends Phaser.Scene {
     super('mercado')
   }
 
-  init({ paquete, cuyAnimado }) {
+  init({ paquete, cuyAnimado, zorroAnimado }) {
     this.paquete = paquete
     this.datosCuyAnimado = cuyAnimado
+    this.datosZorroAnimado = zorroAnimado
     this.estado = crearEstado(paquete)
     const parametros = new URLSearchParams(window.location.search)
     // Con ?rapido=1 el cuy camina 4 veces más rápido (para las pruebas automáticas)
@@ -142,7 +144,12 @@ export class EscenaMercado extends Phaser.Scene {
       // El vendedor va detrás del puesto: se ve por el hueco entre el toldo y el mostrador,
       // con la cara por encima de los productos, que van en fila sobre el mostrador. El letrero
       // va en el frente del mostrador. Todo el puesto es un grupo con la profundidad de su piso.
-      const vendedor = ajustarATamano(this.add.image(x, mostrador + 4, datos.vendedor.recurso).setOrigin(0.5, 1), 150, 150)
+      // El zorro usa su escala del manifiesto (aproximadamente 1,3 veces la
+      // altura visible del cuy) y apoya los pies en la misma línea del puesto.
+      // El vendedor espera quieto: caminar queda disponible en su mismo sistema.
+      const vendedor = datos.vendedor.recurso === 'zorro'
+        ? new ZorroAnimado(this, this.datosZorroAnimado).setPosition(x, mostrador + 4)
+        : ajustarATamano(this.add.image(x, mostrador + 4, datos.vendedor.recurso).setOrigin(0.5, 1), 150, 150)
       const dibujo = ajustarATamano(this.add.image(x, piso, datos.recurso).setOrigin(0.5, 1), ANCHO_PUESTO, ALTO_PUESTO)
       const cantidad = datos.productos.length
       const productos = datos.productos.map((producto, j) =>
@@ -159,7 +166,7 @@ export class EscenaMercado extends Phaser.Scene {
         .setDepth(piso)
 
       const globo = this.crearGloboHablar(x, arriba + 50)
-      const puesto = { datos, x, piso, arriba, grupo, zona, globo, frente: { x, y: piso + FRENTE_PUESTO } }
+      const puesto = { datos, x, piso, arriba, grupo, vendedor, zona, globo, frente: { x, y: piso + FRENTE_PUESTO } }
       zona.on('pointerdown', () => {
         if (this.puedeMoverse) this.caminarHacia(puesto.frente, puesto)
       })
@@ -351,8 +358,8 @@ export class EscenaMercado extends Phaser.Scene {
     this.marca.setVisible(false)
   }
 
-  // La red de seguridad usa los mismos cuadros frontales sin voltear en cada
-  // dirección. La vista caminar_lado se incorporará cuando esté disponible.
+  // El sprite elige el ciclo lateral para los costados cuando está disponible;
+  // las direcciones verticales mantienen el caminar frontal sin voltearlo.
   mirar(vista) {
     this.mirando = vista
   }
@@ -562,6 +569,13 @@ export class EscenaMercado extends Phaser.Scene {
       ventanaOcupada: this.ventana?.ocupada ?? false,
       ultimoVuelto: this.ultimoVuelto,
       puestos: this.puestos.map((puesto) => ({ id: puesto.datos.id, x: puesto.x, y: puesto.piso, frente: { ...puesto.frente } })),
+      animacionZorro: this.puestos.filter((puesto) => puesto.datos.vendedor.recurso === 'zorro').map((puesto) => ({
+        recurso: puesto.vendedor.texture.key,
+        clave: puesto.vendedor.anims.currentAnim?.key,
+        fotograma: puesto.vendedor.frame.name,
+        escala: puesto.vendedor.scaleX,
+        flipX: puesto.vendedor.flipX,
+      })),
       pileta: { x: PILETA.x, y: PILETA.y, radioX: PILETA.radioX, radioY: PILETA.radioY },
     }
   }

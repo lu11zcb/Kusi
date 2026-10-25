@@ -60,12 +60,14 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
     // La escena entrega distintas distancias al acelerar y frenar. En ambos
     // casos los mismos 125 ms deben llegar al reloj de animación de Phaser.
     const intervalos = []
-    const cuy = {
+    const cuy = Object.assign(Object.create(CuyAnimado.prototype), {
       datosSprite: datos,
+      clavePersonaje: 'cuy-nino-animado-v1',
+      relojManual: true,
       setFlipX: () => {},
       play: () => {},
       anims: { update: (tiempo, intervalo) => intervalos.push(intervalo) },
-    }
+    })
     CuyAnimado.prototype.animarMovimiento.call(cuy, 'frente', 1, 0.125, 1000)
     CuyAnimado.prototype.animarMovimiento.call(cuy, 'frente', 32.5, 0.125, 1125)
     return {

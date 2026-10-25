@@ -11,9 +11,13 @@ import {
 import { generarPaquetePrueba } from '../datos/generarPaquetePrueba.js'
 import { validarPaquete } from '../datos/validarPaquete.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
+import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
 import {
   ARCHIVO_MANIFIESTO_CUY, CLAVE_MANIFIESTO_CUY, pedirHojaCuy, registrarAnimacionesCuy,
 } from '../dibujos/cuyAnimado.js'
+import {
+  ARCHIVO_MANIFIESTO_ZORRO, CLAVE_MANIFIESTO_ZORRO, pedirHojaZorro, registrarAnimacionesZorro,
+} from '../dibujos/zorroAnimado.js'
 
 // Paquete de ejemplo utilizado mientras se integra el generador real.
 const ARCHIVO_DEL_PAQUETE = 'paquete-ejemplo.json'
@@ -37,6 +41,7 @@ export class EscenaCarga extends Phaser.Scene {
 
     this.load.json('paquete', ARCHIVO_DEL_PAQUETE)
     this.load.json(CLAVE_MANIFIESTO_CUY, ARCHIVO_MANIFIESTO_CUY)
+    this.load.json(CLAVE_MANIFIESTO_ZORRO, ARCHIVO_MANIFIESTO_ZORRO)
   }
 
   async create() {
@@ -55,11 +60,13 @@ export class EscenaCarga extends Phaser.Scene {
 
       // El jugador animado es obligatorio: un fallo de carga debe quedar visible.
       const cuyAnimado = validarSpriteCuy(this.cache.json.get(CLAVE_MANIFIESTO_CUY))
+      const zorroAnimado = validarSpritePersonaje(this.cache.json.get(CLAVE_MANIFIESTO_ZORRO), 'zorro')
 
       // Carga los dibujos necesarios para los puestos y productos.
       const claves = clavesDelPaquete(paquete)
       pedirDibujos(this, claves)
       pedirHojaCuy(this, cuyAnimado)
+      pedirHojaZorro(this, zorroAnimado)
 
       this.load.once('complete', () => {
         try {
@@ -73,7 +80,8 @@ export class EscenaCarga extends Phaser.Scene {
 
           // Abre el mercado usando el paquete preparado.
           registrarAnimacionesCuy(this, cuyAnimado)
-          this.scene.start('mercado', { paquete, cuyAnimado })
+          registrarAnimacionesZorro(this, zorroAnimado)
+          this.scene.start('mercado', { paquete, cuyAnimado, zorroAnimado })
         } catch (error) {
           this.mostrarError(error)
         }

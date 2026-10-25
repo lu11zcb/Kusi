@@ -9,7 +9,7 @@ from PIL import Image
 
 
 def crear_vista_previa(manifiesto, salida, direccion="frente", estado="caminar"):
-    """Lee cuadros y cadencia del mismo JSON que consume cuyAnimado.js."""
+    """Lee cuadros y cadencia del mismo JSON que consume personajeAnimado.js."""
     datos = json.loads(manifiesto.read_text(encoding="utf-8"))
     animacion = datos["animaciones"][direccion][estado]
     ancho = datos["fotograma"]["ancho"]
@@ -37,8 +37,10 @@ def crear_vista_previa(manifiesto, salida, direccion="frente", estado="caminar")
         cuadro = hoja_con_fondo.crop(
             (izquierda, arriba, izquierda + ancho, arriba + alto)
         )
-        # Los cuadros actuales son frontales y conservan la mancha en su lado
-        # original, también al previsualizar el movimiento hacia la izquierda.
+        # Las vistas frontales conservan la mancha en su lado original. Solo
+        # una vista lateral marcada en el JSON puede mirar hacia la izquierda.
+        if direccion in ("izquierda", "derecha") and animacion.get("voltear", False):
+            cuadro = cuadro.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         cuadros.append(cuadro)
 
     # GIF guarda centésimas de segundo: alternar 120/130 ms representa 8 fps
@@ -49,12 +51,16 @@ def crear_vista_previa(manifiesto, salida, direccion="frente", estado="caminar")
     if min(duraciones) < 10:
         raise ValueError("La cadencia es demasiado alta para una vista previa GIF")
     salida.parent.mkdir(parents=True, exist_ok=True)
+    # El GIF también respeta si la secuencia es cíclica. Para una reproducción
+    # única se omite la extensión de bucle; loop=0 significa repetir siempre.
+    repeticion = animacion.get("repetir", -1)
+    opciones_bucle = {"loop": 0 if repeticion == -1 else repeticion} if repeticion != 0 else {}
     cuadros[0].save(
         salida,
         save_all=True,
         append_images=cuadros[1:],
         duration=duraciones,
-        loop=0,
+        **opciones_bucle,
         disposal=2,
         optimize=False,
     )
