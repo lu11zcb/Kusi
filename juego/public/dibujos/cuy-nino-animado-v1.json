@@ -1,13 +1,13 @@
 {
   "formato": "kusi-sprite/1",
-  "imagen": "cuy-nino-cuadros-v2.png",
+  "imagen": "cuy-nino-cuadros-v3.png",
   "fotograma": {
     "ancho": 256,
     "alto": 256
   },
   "cuadricula": {
     "columnas": 3,
-    "filas": 3
+    "filas": 4
   },
   "anclaje": {
     "x": 128,
@@ -53,6 +53,17 @@
         "repetir": 0,
         "siguiente": "quieto",
         "voltear": false
+      },
+      "feliz": {
+        "fotogramas": [
+          9,
+          10,
+          11
+        ],
+        "fps": 8,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
       }
     },
     "espaldas": {
@@ -89,6 +100,17 @@
           8
         ],
         "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
+      },
+      "feliz": {
+        "fotogramas": [
+          9,
+          10,
+          11
+        ],
+        "fps": 8,
         "repetir": 0,
         "siguiente": "quieto",
         "voltear": false
@@ -144,6 +166,17 @@
         "repetir": 0,
         "siguiente": "quieto",
         "voltear": false
+      },
+      "feliz": {
+        "fotogramas": [
+          9,
+          10,
+          11
+        ],
+        "fps": 8,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
       }
     },
     "izquierda": {
@@ -193,6 +226,17 @@
           8
         ],
         "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
+      },
+      "feliz": {
+        "fotogramas": [
+          9,
+          10,
+          11
+        ],
+        "fps": 8,
         "repetir": 0,
         "siguiente": "quieto",
         "voltear": false

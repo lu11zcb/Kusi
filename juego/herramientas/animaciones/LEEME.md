@@ -97,7 +97,7 @@ juego/.venv/Scripts/python -m unittest discover -s juego/herramientas/animacione
 
 ```powershell
 juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-asustado-3-cuadros.png --celda 256x256 --hoja-base juego/public/dibujos/cuy-nino-cuadros-v1.png --salida juego/public/dibujos/cuy-nino-cuadros-v2.png --reporte juego/arte/cuy/vista-previa/armado-asustado.json
-juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v2.png --celda 256x256 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-asustado.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v2.png --celda 256x256 --cuadros 6,7,8 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-asustado.json
 juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py juego/public/dibujos/cuy-nino-animado-v1.json juego/arte/cuy/vista-previa/asustado.gif --estado asustado
 ```
 
@@ -111,3 +111,37 @@ En estos tres cuadros las cabezas miden `127,5; 128; 128 px` en x y
 `12; 11; 11 px` en su cima; los pies quedan en `243; 244; 243 px`. La hoja
 completa de nueve cuadros varía 0,5 px, 2 px y 1 px respectivamente, también
 dentro de la tolerancia de 2 px.
+
+## Feliz del cuy: salto respecto al piso original
+
+```powershell
+juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-feliz-3-cuadros.png --celda 256x256 --conservar-alturas --fraccion-cabeza 0.3 --hoja-base juego/public/dibujos/cuy-nino-cuadros-v2.png --salida juego/public/dibujos/cuy-nino-cuadros-v3.png --reporte juego/arte/cuy/vista-previa/armado-feliz.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v3.png --celda 256x256 --cuadros 9,10,11 --cuadros-pies 9,11 --altura-variable --fraccion-cabeza 0.3 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-feliz.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py juego/public/dibujos/cuy-nino-animado-v1.json juego/arte/cuy/vista-previa/feliz.gif --estado feliz
+```
+
+La cuarta fila conserva el eje y de la tira respecto al piso original en
+`y=861`: se usa una misma referencia vertical y una escala uniforme que deja
+entrar la trayectoria completa. No se bajan los pies del cuadro central para
+alinearlos con los apoyos. La cabeza se centra en la banda superior del 30 %,
+porque en esta pose los brazos levantados invaden la banda habitual del 42 %.
+
+Los cuadros locales `0,1,2` son `9,10,11` del atlas final de 768 × 1024 px:
+8 fps, una vez y regreso a quieto. Phaser reproduce 375 ms; el GIF redondea a
+centésimas (`120,130,130 ms`, 380 ms en total), sin bucle. La vista frontal no
+se voltea aunque la expresión empiece mirando a la izquierda.
+
+La verificación mide x en los tres cuadros (`128,128,128 px`, variación 0 px)
+y los pies únicamente en los apoyos 0 y 2 (`244,244 px`, variación 0 px).
+Los pies del cuadro 1 quedan en `225 px`: conserva 19 px de elevación. La
+cima pasa por `39,11,31 px`; sus 28 px de variación se informan como movimiento
+del salto, sin exigir altura constante ni modificar el dibujo para corregirla.
+
+Para verificar un solo ciclo se usa `--cuadros`. `--cuadros-pies` restringe los
+apoyos y `--altura-variable` excluye únicamente la cima de las referencias que
+deben cumplir 2 px. El informe enumera esas referencias y mantiene todas las
+medidas. Sin esas opciones, el verificador conserva la comprobación completa.
+
+```powershell
+juego/.venv/Scripts/python -m unittest discover -s juego/herramientas/animaciones -p "test_*.py" -v
+```

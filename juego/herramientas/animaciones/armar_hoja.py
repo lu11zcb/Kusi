@@ -77,20 +77,22 @@ def limpiar_islas(imagen, fraccion_minima=0.01):
     return limpia, {"islas_eliminadas": islas_eliminadas, "pixeles_eliminados": eliminados}
 
 
-def medir_anclas(imagen):
+def medir_anclas(imagen, fraccion_cabeza=0.42):
     """Mide cabeza y suelo desde el alfa, excluyendo los brazos del centro x.
 
-    La cabeza se mide en el 42 % superior de la silueta. Esa banda termina
-    antes de los hombros y del pañuelo, de modo que extender un brazo no cambia
-    el centro horizontal. La línea de apoyo es la última fila con alfa >= 32;
+    Por defecto se mide el 42 % superior de la silueta. En poses con las manos
+    levantadas se puede pedir una banda menor para medir la cabeza sin incluir
+    los brazos. La línea de apoyo es la última fila con alfa >= 32;
     así un halo de remuestreo casi invisible no se confunde con un pie.
     """
+    if not 0 < fraccion_cabeza <= 1:
+        raise ValueError("La fracción de cabeza debe estar entre 0 (excluido) y 1")
     alfa = imagen.getchannel("A").point(lambda valor: 255 if valor >= UMBRAL_ANCLA else 0)
     caja = alfa.getbbox()
     if caja is None:
         raise ValueError("El cuadro no tiene una silueta medible")
     izquierda, arriba, derecha, abajo = caja
-    limite_cabeza = arriba + max(1, round((abajo - arriba) * 0.42))
+    limite_cabeza = arriba + max(1, round((abajo - arriba) * fraccion_cabeza))
     caja_cabeza = alfa.crop((0, 0, imagen.width, limite_cabeza)).getbbox()
     return {
         "centro_cabeza_x": (caja_cabeza[0] + caja_cabeza[2] - 1) / 2,
@@ -143,7 +145,7 @@ def leer_cuadros(entrada):
     return separar_columnas(limpia), informe
 
 
-def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None):
+def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None, conservar_alturas=False, fraccion_cabeza=0.42):
     """Alinea cuadros nuevos y, si se indica, los añade a una hoja existente.
 
     La referencia es el informe de otro armado, no una estimación del tamaño
@@ -162,8 +164,13 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
     if hoja_base is not None and hoja_base.resolve() == salida.resolve():
         raise ValueError("La salida no puede sobrescribir la hoja base")
     cuadros, limpieza = leer_cuadros(entrada)
-    anclas = [medir_anclas(cuadro) for cuadro in cuadros]
+    anclas = [medir_anclas(cuadro, fraccion_cabeza) for cuadro in cuadros]
     cajas = [cuadro.getchannel("A").getbbox() for cuadro in cuadros]
+    # La tira se separa solamente en x: sus coordenadas y siguen referidas al
+    # mismo piso del dibujo. En un salto se transforma ese piso común, en vez de
+    # bajar cada pose hasta que sus pies vuelvan artificialmente al suelo.
+    piso_original = max(ancla["linea_pies_y"] for ancla in anclas)
+    referencias_y = [piso_original if conservar_alturas else ancla["linea_pies_y"] for ancla in anclas]
     ancho, alto = celda
     if margen < 0 or min(celda) <= 2 * margen + 4:
         raise ValueError("La celda no deja espacio para el margen solicitado")
@@ -172,8 +179,8 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
     # del centro del rectángulo. Hay UNA escala calculada con todos los cuadros.
     izquierda = max(ancla["centro_cabeza_x"] - caja[0] for ancla, caja in zip(anclas, cajas))
     derecha = max(caja[2] - 1 - ancla["centro_cabeza_x"] for ancla, caja in zip(anclas, cajas))
-    arriba = max(ancla["linea_pies_y"] - caja[1] for ancla, caja in zip(anclas, cajas))
-    abajo = max(caja[3] - 1 - ancla["linea_pies_y"] for ancla, caja in zip(anclas, cajas))
+    arriba = max(referencia_y - caja[1] for referencia_y, caja in zip(referencias_y, cajas))
+    abajo = max(caja[3] - 1 - referencia_y for referencia_y, caja in zip(referencias_y, cajas))
     # Dos píxeles reservados para el antialias de Lanczos mantienen el margen
     # visible alrededor de la hoja, incluso tras reducir el original grande.
     reserva = margen + 2
@@ -195,12 +202,12 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
         # Una escala fija nunca se reduce silenciosamente para hacerla caber.
         # Se comprueban los cuatro bordes antes de remuestrear; si el dibujo no
         # cabe hay que revisar la entrada, en vez de recortar cabeza o patas.
-        for ancla, caja in zip(anclas, cajas):
+        for ancla, caja, referencia_y in zip(anclas, cajas, referencias_y):
             extremos = (
                 centro_destino + (caja[0] - ancla["centro_cabeza_x"]) * escala,
-                pies_destino + (caja[1] - ancla["linea_pies_y"]) * escala,
+                pies_destino + (caja[1] - referencia_y) * escala,
                 centro_destino + (caja[2] - 1 - ancla["centro_cabeza_x"]) * escala,
-                pies_destino + (caja[3] - 1 - ancla["linea_pies_y"]) * escala,
+                pies_destino + (caja[3] - 1 - referencia_y) * escala,
             )
             if extremos[0] < reserva or extremos[1] < reserva or extremos[2] > ancho - 1 - reserva or extremos[3] > alto - 1 - margen:
                 raise ValueError("La escala de referencia no cabe con el margen solicitado; no se ha reducido ni recortado")
@@ -221,7 +228,7 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
         # índices existentes permanecen iguales y la nueva secuencia va debajo.
         hoja.paste(base, (0, 0))
     detalle = []
-    for indice, (cuadro, ancla) in enumerate(zip(cuadros, anclas)):
+    for indice, (cuadro, ancla, referencia_y) in enumerate(zip(cuadros, anclas, referencias_y)):
         # El remuestreo usa la misma transformación isotrópica en TODOS los
         # cuadros. No se redondea el ancho y el alto por separado ni se estira
         # cada pose para llenar su celda. RGBa evita bordes blancos en el alfa.
@@ -229,7 +236,7 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
         escala_grande = escala * sobremuestreo
         transformacion = (
             1 / escala_grande, 0, ancla["centro_cabeza_x"] - centro_destino / escala,
-            0, 1 / escala_grande, ancla["linea_pies_y"] - pies_destino / escala,
+            0, 1 / escala_grande, referencia_y - pies_destino / escala,
         )
         ampliada = cuadro.convert("RGBa").transform(
             (ancho * sobremuestreo, alto * sobremuestreo),
@@ -245,7 +252,8 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
         detalle.append({
             "cuadro": filas_base * len(cuadros) + indice,
             "anclas_original": ancla,
-            "anclas_salida": medir_anclas(celda_final),
+            "referencia_y_original": referencia_y,
+            "anclas_salida": medir_anclas(celda_final, fraccion_cabeza),
             "caja_alfa_salida": list(celda_final.getchannel("A").getbbox()),
             "limpieza_remuestreo": limpieza_final,
         })
@@ -260,6 +268,9 @@ def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None
         "anclaje_objetivo": {"x": centro_destino, "y": pies_destino},
         "referencia": str(referencia) if referencia is not None else None,
         "hoja_base": str(hoja_base) if hoja_base is not None else None,
+        "conservar_alturas": conservar_alturas,
+        "fraccion_cabeza": fraccion_cabeza,
+        "piso_original_y": piso_original if conservar_alturas else None,
         "margen_solicitado": margen,
         "limpieza_original": limpieza,
         "cuadros": detalle,
@@ -285,10 +296,12 @@ def main():
     argumentos.add_argument("--margen", type=int, default=8)
     argumentos.add_argument("--referencia", type=Path, help="Informe de armado cuya escala y apoyo se conservan exactamente")
     argumentos.add_argument("--hoja-base", type=Path, help="PNG al que se añade una fila sin modificar los cuadros existentes")
+    argumentos.add_argument("--conservar-alturas", action="store_true", help="Conserva la altura respecto al piso original para saltos, sin alinear cada pie")
+    argumentos.add_argument("--fraccion-cabeza", type=float, default=0.42, help="Fracción superior usada para medir la cabeza; 0.3 excluye las manos de feliz")
     argumentos.add_argument("--reporte", type=Path, help="Informe opcional de limpieza, escala y anclas")
     opciones = argumentos.parse_args()
     try:
-        informe = armar_hoja(opciones.entrada, opciones.salida, opciones.celda, opciones.margen, opciones.referencia, opciones.hoja_base)
+        informe = armar_hoja(opciones.entrada, opciones.salida, opciones.celda, opciones.margen, opciones.referencia, opciones.hoja_base, opciones.conservar_alturas, opciones.fraccion_cabeza)
         if opciones.reporte:
             opciones.reporte.parent.mkdir(parents=True, exist_ok=True)
             opciones.reporte.write_text(json.dumps(informe, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
