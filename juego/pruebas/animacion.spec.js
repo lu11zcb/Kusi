@@ -23,7 +23,7 @@ async function empezar(pagina) {
 test('el manifiesto define frente, espalda y lateral con su apoyo central', async () => {
   const datos = validarSpriteCuy(await leerManifiesto())
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 5 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 6 })
   for (const direccion of DIRECCIONES_CUY) {
     const lateral = direccion === 'derecha' || direccion === 'izquierda'
     const espaldas = direccion === 'espaldas'
@@ -64,7 +64,7 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
     const datos = await (await fetch('/dibujos/cuy-nino-animado-v1.json')).json()
     const animaciones = []
     const textura = {
-      getSourceImage: () => ({ width: 768, height: 1280 }),
+      getSourceImage: () => ({ width: 768, height: 1536 }),
       setFilter: () => {},
     }
     registrarAnimacionesCuy({

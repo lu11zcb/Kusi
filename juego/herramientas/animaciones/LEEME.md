@@ -201,3 +201,56 @@ El GIF `juego/arte/cuy/vista-previa/caminar-espalda.gif` usa el pasto real
 Las pruebas `test_espalda.py` reconstruyen la quinta fila desde la fuente v2,
 comprueban igualdad exacta de escala y píxeles anteriores, verifican los 2 px
 y comprueban el GIF, su secuencia y la protección contra reflejos.
+
+## Parpadeo del cuy
+
+La fuente `juego/arte/cuy/origen/cuy-parpadeo-3-cuadros.png` trae tres cuadros
+frontales: ojos abiertos, entornados y cerrados. No se modifica. Se procesa con
+el informe `referencia-parpadeo.json`, que fija una escala única de
+`0.33910533910533913` y el apoyo `x=128`, `y=244`. Esa escala no es la del
+caminar frontal (`0.3497`): la fuente de parpadeo es un 3 % más alta, y con la
+escala de `armado.json` el cuy saldría un 3 % más grande que en el cuadro
+quieto, con un salto visible al parpadear. Con esta referencia la cabeza y los
+pies coinciden con ese cuadro quieto de frente.
+
+```powershell
+juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-parpadeo-3-cuadros.png --celda 256x256 --referencia juego/arte/cuy/vista-previa/referencia-parpadeo.json --salida juego/public/dibujos/cuy-parpadeo-v1.png --reporte juego/arte/cuy/vista-previa/armado-parpadeo.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-parpadeo-v1.png --celda 256x256 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-parpadeo.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py juego/public/dibujos/cuy-parpadeo-v1.json juego/arte/cuy/vista-previa/parpadeo.gif --direccion frente --estado parpadeo
+juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-parpadeo-3-cuadros.png --celda 256x256 --referencia juego/arte/cuy/vista-previa/referencia-parpadeo.json --hoja-base juego/public/dibujos/cuy-nino-cuadros-v5.png --salida juego/public/dibujos/cuy-nino-cuadros-v6.png --reporte juego/arte/cuy/vista-previa/armado-parpadeo-atlas.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v6.png --celda 256x256 --cuadros 0,1,2,3,4,5,12,13,14,15,16,17 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-parpadeo-atlas.json
+```
+
+Los tres primeros comandos producen la hoja suplementaria `cuy-parpadeo-v1.png`
+(768 × 256, con su manifiesto `cuy-parpadeo-v1.json`) y el GIF de revisión. Los dos
+últimos añaden esos mismos tres cuadros como **sexta fila** del atlas activo
+`cuy-nino-cuadros-v6.png` (768 × 1536). Las cinco filas anteriores se copian de
+la v5 sin remuestrear ni cambiar un píxel, y la fila nueva es idéntica, píxel por
+píxel, a la hoja suplementaria. La v5 se conserva como versión anterior.
+
+El manifiesto `cuy-nino-animado-v1.json` apunta ahora a la v6, declara 6 filas y
+añade solo en `frente` el estado `parpadeo`: cuadros `15,16,17,16,15` a 16 fps
+(312,5 ms), una sola repetición y `siguiente: quieto`. Arriba, izquierda y
+derecha no tienen parpadeo porque no existe esa vista dibujada. El juego lo pide
+con `mostrarEstado('parpadeo', 'frente')`, igual que feliz y asustado; las reglas
+de cuándo parpadear están en `juego/src/efectos/ParpadeoCuy.js`.
+
+La verificación independiente de los píxeles de la sexta fila obtiene:
+
+| Cuadro local (atlas) | Centro cabeza x | Cima cabeza y | Pies y |
+| --- | --- | --- | --- |
+| 0 (15) | 127,5 | 11 | 244 |
+| 1 (16) | 127,5 | 11 | 244 |
+| 2 (17) | 127,5 | 11 | 244 |
+
+La variación dentro del parpadeo es 0 px en x, en la cima y en los pies; los
+cuadros de caminar y de parpadeo juntos, los doce de la comprobación, varían
+0,5 px, 1 px y 1 px: todo dentro de 2 px. El GIF `parpadeo.gif` usa el pasto
+`#5aa04a`, cinco cuadros de 256 × 256 y no lleva extensión de bucle: se reproduce
+una sola vez, con `60,60,70,60,60 ms` (312 ms en total, 16 fps).
+
+Las pruebas `test_parpadeo.py` reconstruyen ambas hojas desde la fuente, comprueban
+que las cinco filas anteriores y la hoja suplementaria no cambian, miden la altura
+de la cabeza y los pies contra el cuadro quieto de frente, y comprueban el
+manifiesto principal y el GIF. En el navegador, `pruebas/parpadeo.spec.js`
+comprueba el estado en Phaser y `pruebas/vida.spec.js` el parpadeo dentro del laberinto.

@@ -141,9 +141,17 @@ class PruebasEspalda(unittest.TestCase):
 
     def test_manifiesto_de_espalda_usa_la_quinta_fila_y_no_deja_voltear_frente_o_espalda(self):
         datos = json.loads(self.manifiesto.read_text(encoding="utf-8"))
-        self.assertEqual(datos["imagen"], self.publicada.name)
+        # El manifiesto apunta al atlas activo, que puede traer filas posteriores
+        # (el parpadeo añade la sexta). Las cinco primeras deben seguir siendo
+        # exactamente las de esta receta, sin remuestrear ni mover un píxel.
         self.assertEqual(datos["fotograma"], {"ancho": 256, "alto": 256})
-        self.assertEqual(datos["cuadricula"], {"columnas": 3, "filas": 5})
+        self.assertEqual(datos["cuadricula"]["columnas"], 3)
+        self.assertGreaterEqual(datos["cuadricula"]["filas"], 5)
+        with Image.open(RAIZ_JUEGO / "public/dibujos" / datos["imagen"]) as activo, Image.open(self.publicada) as espalda:
+            self.assertEqual(
+                activo.convert("RGBA").crop((0, 0, 768, 1280)).tobytes(),
+                espalda.convert("RGBA").tobytes(),
+            )
         espalda = datos["animaciones"]["espaldas"]
         caminar = espalda["caminar_espalda"]
         self.assertEqual(caminar["fotogramas"], SECUENCIA_ESPALDA)
@@ -187,6 +195,9 @@ class PruebasEspalda(unittest.TestCase):
             for voltear in (False, True):
                 datos = json.loads(json.dumps(original))
                 datos["imagen"] = str(self.publicada)
+                # Esta vista previa usa el atlas de cinco filas de la receta,
+                # aunque el manifiesto activo ya declare las filas posteriores.
+                datos["cuadricula"]["filas"] = 5
                 datos["animaciones"][direccion][estado]["voltear"] = voltear
                 manifiesto = self.carpeta / f"{direccion}-{voltear}.json"
                 manifiesto.write_text(json.dumps(datos), encoding="utf-8")

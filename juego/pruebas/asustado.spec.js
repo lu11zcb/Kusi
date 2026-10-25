@@ -28,7 +28,7 @@ async function encontrarCuy(pagina) {
 test('el manifiesto real define asustado una vez con cinco pasos y regreso a quieto', async () => {
   const datos = validarSpriteCuy(await leerManifiesto())
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 5 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 6 })
   for (const direccion of DIRECCIONES_CUY) {
     expect(datos.animaciones[direccion].asustado).toEqual({
       fotogramas: [6, 7, 8, 7, 8],

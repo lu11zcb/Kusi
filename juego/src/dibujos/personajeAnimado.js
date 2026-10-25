@@ -96,6 +96,15 @@ export class PersonajeAnimado extends Phaser.GameObjects.Sprite {
     if (animacion.siguiente) this.mostrarEstado(animacion.siguiente, direccion)
   }
 
+  // Una expresión menor, como el parpadeo, no debe retrasar el caminar: la
+  // escena la corta al empezar el movimiento y animarMovimiento recupera el
+  // control en el mismo cuadro. Solo actúa si esa expresión es la que está en curso.
+  interrumpirEstado(estado) {
+    if (this.estadoExpresivo !== estado) return false
+    this.estadoExpresivo = null
+    return true
+  }
+
   animarMovimiento(direccion, distancia, segundos, tiempo) {
     const caminando = distancia > 0.01
     this.estadoMovimiento = caminando ? 'caminar' : 'reposo'
