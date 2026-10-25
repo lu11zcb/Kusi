@@ -150,3 +150,61 @@ test('los deslizamientos eligen el eje mayor, con un mínimo de 30 píxeles', ()
   assert.equal(direccionDelDeslizamiento(inicio, { x: 90, y: 50 }), 'arriba')
   assert.equal(direccionDelDeslizamiento(inicio, { x: 130, y: 130 }), 'derecha')
 })
+
+test('avisa cada centro atravesado en orden aunque un cuadro avance muchas casillas', () => {
+  const estado = crearMovimiento(PASILLO)
+  const entradas = []
+  const alEntrar = ({ fila, columna }) => entradas.push({ fila, columna })
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, PASILLO, 0.2, 3, alEntrar)
+  assert.deepEqual(entradas, [])
+
+  // No se omiten frutas intermedias al acelerar ni se notifica el muro final.
+  avanzarMovimiento(estado, PASILLO, 10, 3, alEntrar)
+  assert.deepEqual(entradas, [2, 3, 4, 5, 6].map((columna) => ({ fila: 1, columna })))
+  assert.equal(estado.columna, 6)
+  assert.equal(estado.moviendose, false)
+})
+
+test('el callback puede detener la entrada sin gastar el tiempo sobrante en más casillas', () => {
+  const estado = crearMovimiento(PASILLO)
+  const entradas = []
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, PASILLO, 0.2)
+  pedirDireccion(estado, 'arriba')
+  const alEntrar = ({ columna }) => {
+    entradas.push(columna)
+    return columna < 3
+  }
+  avanzarMovimiento(estado, PASILLO, 10, 3, alEntrar)
+  assert.deepEqual(entradas, [2, 3])
+  assert.equal(estado.columna, 3)
+  assert.equal(estado.progreso, 0)
+  assert.equal(estado.moviendose, false)
+  assert.equal(estado.direccionPendiente, null)
+
+  // Una actualización posterior no vuelve a ejecutar la salida ni desplaza al
+  // personaje mientras la escena prepara el siguiente nivel.
+  avanzarMovimiento(estado, PASILLO, 10, 3, alEntrar)
+  assert.deepEqual(entradas, [2, 3])
+  assert.equal(estado.columna, 3)
+})
+
+test('notificar las casillas conserva el giro guardado y el orden del recorrido', () => {
+  const mapa = ['#######', '#C....#', '####.##', '####P##', '#######']
+  const estado = crearMovimiento(mapa)
+  const entradas = []
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, mapa, 0.2)
+  pedirDireccion(estado, 'abajo')
+  avanzarMovimiento(estado, mapa, 5, 3, ({ fila, columna }) => {
+    entradas.push({ fila, columna })
+  })
+  assert.deepEqual(entradas, [
+    { fila: 1, columna: 2 }, { fila: 1, columna: 3 }, { fila: 1, columna: 4 },
+    { fila: 2, columna: 4 }, { fila: 3, columna: 4 },
+  ])
+  assert.equal(estado.direccion, 'abajo')
+  assert.equal(estado.direccionPendiente, null)
+  assert.equal(estado.moviendose, false)
+})

@@ -15,7 +15,10 @@ async function esperarCasilla(pagina, fila, columna) {
     return movimiento.fila === fila && movimiento.columna === columna && !movimiento.moviendose
   }, { fila, columna })
   // Un cuadro posterior permite observar también el reposo del dibujo.
-  await pagina.waitForFunction(() => window.kusi.estado().animacionCuy.estado === 'reposo')
+  await pagina.waitForFunction(() => {
+    const animacion = window.kusi.estado().animacionCuy
+    return animacion.estado === 'reposo' && /:(quieto|reposo)$/.test(animacion.clave)
+  })
   return estado(pagina)
 }
 
@@ -30,7 +33,7 @@ async function puntoEnLienzo(pagina, x, y) {
   return { x: lienzo.x + x * lienzo.width / 1280, y: lienzo.y + y * lienzo.height / 720 }
 }
 
-test('una pulsación sigue hasta el muro aunque falte el dibujo y conserva el nivel', async ({ page: pagina }) => {
+test('una pulsación sigue hasta el muro, recoge en orden y conserva el nivel con la puerta cerrada', async ({ page: pagina }) => {
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
   // La figura simple debe mantener jugable el mapa sin el PNG definitivo.
@@ -47,10 +50,16 @@ test('una pulsación sigue hasta el muro aunque falte el dibujo y conserva el ni
   await pagina.waitForTimeout(180)
   expect((await estado(pagina)).movimiento).toEqual(final.movimiento)
   expect(final.nivel).toBe(1)
-  // Esta entrega se detiene en el movimiento: atravesar una fruta todavía no
-  // recoge objetos ni completa retos de los pasos siguientes.
+  expect(final.regla.recogidos).toBe(2)
+  expect(final.regla.completada).toBe(false)
+  expect(final.puertaAbierta).toBe(false)
+  expect(final.regla.objetos.filter((objeto) => objeto.recogido).map((objeto) => objeto.tipo))
+    .toEqual(['fresa', 'platano'])
   const avisos = await pagina.evaluate(() => window.kusi.avisos)
-  expect(avisos.some((aviso) => ['accion', 'reto_completado', 'fin'].includes(aviso.tipo))).toBe(false)
+  expect(avisos.filter((aviso) => aviso.tipo === 'accion').map((aviso) => ({
+    objeto: aviso.objeto, correcto: aviso.correcto,
+  }))).toEqual([{ objeto: 'fresa', correcto: true }, { objeto: 'platano', correcto: true }])
+  expect(avisos.some((aviso) => ['reto_completado', 'fin'].includes(aviso.tipo))).toBe(false)
   expect(errores).toEqual([])
 })
 
