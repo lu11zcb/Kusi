@@ -54,7 +54,9 @@ test('el joystick táctil conserva el primer dedo y anima al cuy hasta soltarlo'
     expect(durante.cuyX).toBe(inicio.cuyX)
     expect(durante.mirando).toBe('espaldas')
     expect(durante.animacionCuy.estado).toBe('caminar')
-    expect([0, 1, 2]).toContain(durante.animacionCuy.fotograma)
+    // La vista de espaldas tiene su propia fila desde la animación HU46.
+    // Conserva esa fila durante el arrastre y al volver al apoyo central.
+    expect([12, 13, 14]).toContain(durante.animacionCuy.fotograma)
     expect(durante.animacionCuy.flipX).toBe(false)
   } finally {
     await enviar('touchEnd', [])
@@ -68,7 +70,7 @@ test('el joystick táctil conserva el primer dedo y anima al cuy hasta soltarlo'
   const despues = await pagina.evaluate(() => window.kusi.estado())
   expect([despues.cuyX, despues.cuyY]).toEqual([parado.cuyX, parado.cuyY])
   expect(despues.animacionCuy.anclaje).toEqual(datos.anclaje)
-  expect(despues.animacionCuy.fotograma).toBe(1)
+  expect(despues.animacionCuy.fotograma).toBe(13)
 
   // Un arrastre breve hacia abajo deja la cara del jugador visible en las capturas.
   await enviar('touchStart', [centro])

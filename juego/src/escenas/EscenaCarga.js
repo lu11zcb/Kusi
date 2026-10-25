@@ -121,7 +121,12 @@ export class EscenaCarga extends Phaser.Scene {
       })).setOrigin(0.5)
       crearBoton(this, ANCHO / 2, ALTO / 2 + 100, {
         ancho: 300, alto: 76, texto: 'Intentar de nuevo', tamano: 30,
-        alTocar: () => this.scene.restart(),
+        alTocar: () => {
+          // Phaser conserva los JSON entre reinicios de escena. Quitamos solo
+          // el paquete fallido para que el reintento vuelva a pedir el archivo.
+          this.cache.json.remove('paquete')
+          this.scene.restart()
+        },
       })
       window.kusi = {
         listo: false, avisos,

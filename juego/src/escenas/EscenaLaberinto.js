@@ -8,6 +8,12 @@ import { crearBoton, dibujarGlobo } from '../interfaz/piezas.js'
 import { avisos } from '../logica/avisos.js'
 import { avisarPartida } from '../logica/partidaLaberinto.js'
 import { decir } from '../logica/voz.js'
+import {
+  crearMovimiento, pedirDireccion, avanzarMovimiento, direccionDelDeslizamiento,
+} from '../logica/movimientoLaberinto.js'
+
+// Velocidad en casillas por segundo, independiente del tamaño del dibujo.
+export const CASILLAS_POR_SEGUNDO = 3
 
 // La barra y el espacio de Kusi se reservan antes de medir el mapa. Incluso
 // los niveles más grandes quedan completos dentro de la pantalla 1280 × 720.
@@ -27,6 +33,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.indiceNivel = 0
     this.reto = paquete.retos[this.indiceNivel]
     this.indiceAyuda = 0
+    this.movimiento = crearMovimiento(this.reto.mapa)
+    this.multiplicador = new URLSearchParams(window.location.search).get('rapido') === '1' ? 4 : 1
+    this.iniciada = false
+    this.iniciosDeslizamiento = new Map()
   }
 
   create() {
@@ -37,9 +47,15 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearMapa()
     this.crearGuia()
     this.crearPersonajes()
+    this.crearControles()
     this.exponerParaPruebas()
     avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
     this.events.once('shutdown', () => {
+      this.input.keyboard.off('keydown', this.alPulsarFlecha)
+      this.input.off('pointerdown', this.alIniciarDeslizamiento)
+      this.input.off('pointerup', this.alTerminarDeslizamiento)
+      this.input.off('pointerupoutside', this.alTerminarDeslizamiento)
+      this.iniciosDeslizamiento.clear()
       if (window.kusi?.estado === this.leerEstado) delete window.kusi
     })
   }
@@ -92,11 +108,15 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.botones = {
       sonido: crearBoton(this, 1030, 72, {
         ancho: 138, alto: 72, texto: 'Escuchar', tamano: 27,
-        alTocar: () => decir(this.textoGlobo.text),
+        alTocar: () => {
+          if (!this.esDeslizamiento(this.input.activePointer)) decir(this.textoGlobo.text)
+        },
       }).setDepth(1003),
       ayuda: crearBoton(this, 1184, 72, {
         ancho: 118, alto: 72, texto: 'Ayuda', tamano: 28,
-        alTocar: () => this.mostrarAyuda(),
+        alTocar: () => {
+          if (!this.esDeslizamiento(this.input.activePointer)) this.mostrarAyuda()
+        },
       }).setDepth(1003),
     }
   }
@@ -165,6 +185,75 @@ export class EscenaLaberinto extends Phaser.Scene {
     })
   }
 
+  // Una pulsación elige el rumbo y no exige sostener la tecla. Ignorar la
+  // repetición del sistema evita que una tecla sostenida borre un giro guardado.
+  crearControles() {
+    const direcciones = {
+      ArrowUp: 'arriba', ArrowDown: 'abajo', ArrowLeft: 'izquierda', ArrowRight: 'derecha',
+    }
+    this.input.keyboard.addCapture(Object.keys(direcciones))
+    this.alPulsarFlecha = (evento) => {
+      const direccion = direcciones[evento.key]
+      if (!direccion || evento.repeat) return
+      evento.preventDefault()
+      this.elegirRumbo(direccion)
+    }
+    this.input.keyboard.on('keydown', this.alPulsarFlecha)
+
+    // Cada dedo conserva su propio origen. El umbral se mide en píxeles de la
+    // pantalla, para que 30 px sigan siendo 30 al reducir el lienzo en un móvil.
+    this.alIniciarDeslizamiento = (puntero) => {
+      this.iniciosDeslizamiento.set(puntero.id, this.puntoEnPantalla(puntero))
+    }
+    this.alTerminarDeslizamiento = (puntero) => {
+      const direccion = this.esDeslizamiento(puntero)
+      this.iniciosDeslizamiento.delete(puntero.id)
+      if (direccion) this.elegirRumbo(direccion)
+    }
+    this.input.on('pointerdown', this.alIniciarDeslizamiento)
+    this.input.on('pointerup', this.alTerminarDeslizamiento)
+    this.input.on('pointerupoutside', this.alTerminarDeslizamiento)
+  }
+
+  puntoEnPantalla(puntero) {
+    const lienzo = this.game.canvas.getBoundingClientRect()
+    return { x: puntero.x * lienzo.width / ANCHO, y: puntero.y * lienzo.height / ALTO }
+  }
+
+  esDeslizamiento(puntero) {
+    const inicio = this.iniciosDeslizamiento.get(puntero.id)
+    return inicio ? direccionDelDeslizamiento(inicio, this.puntoEnPantalla(puntero)) : null
+  }
+
+  elegirRumbo(direccion) {
+    pedirDireccion(this.movimiento, direccion)
+    if (!this.iniciada) {
+      this.iniciada = true
+      avisarPartida(this.partida, 'inicio', { nivel: this.indiceNivel + 1 })
+    }
+  }
+
+  posicionMovimiento() {
+    const { fila, columna, progreso, direccion } = this.movimiento
+    const avanceFila = direccion === 'arriba' ? -progreso : direccion === 'abajo' ? progreso : 0
+    const avanceColumna = direccion === 'izquierda' ? -progreso : direccion === 'derecha' ? progreso : 0
+    return this.centroCasilla(fila + avanceFila, columna + avanceColumna)
+  }
+
+  update(tiempo, delta) {
+    if (!this.cuy || delta <= 0) return
+    // Una pestaña que vuelve de segundo plano no debe teletransportar al niño.
+    // La lógica pura sí consume deltas completos; la escena limita la pausa visual.
+    const segundos = Math.min(delta, 100) / 1000
+    const anterior = this.posicionMovimiento()
+    avanzarMovimiento(this.movimiento, this.reto.mapa, segundos, CASILLAS_POR_SEGUNDO * this.multiplicador)
+    const punto = this.posicionMovimiento()
+    this.cuy.setPosition(punto.x, punto.y + this.casilla * 0.4)
+    this.sombraCuy.setPosition(punto.x, punto.y + this.casilla * 0.3)
+    const distancia = this.movimiento.moviendose ? Math.hypot(punto.x - anterior.x, punto.y - anterior.y) : 0
+    this.cuy.animarMovimiento(VISTAS[this.movimiento.direccion], distancia, segundos, tiempo)
+  }
+
   exponerParaPruebas() {
     // Solo lectura, igual que en el mercado. Las pruebas realizan las acciones
     // con teclado y puntero reales; no existe un atajo para mover al personaje.
@@ -172,6 +261,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       familia: 'laberinto', nivel: this.indiceNivel + 1, mapa: this.reto.mapa.map((fila) => fila),
       casilla: this.casilla, origenMapa: { ...this.origenMapa },
       inicio: { ...this.inicio }, consigna: this.textoGlobo.text,
+      movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
       cuyX: this.cuy.x, cuyY: this.cuy.y,
       animacionCuy: {
         clave: this.cuy.anims.currentAnim?.key, fotograma: this.cuy.frame.name,
