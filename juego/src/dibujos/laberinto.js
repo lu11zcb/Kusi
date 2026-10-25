@@ -76,3 +76,29 @@ export function dibujarClaseLaberinto(lienzo, clave) {
     lienzo.restore()
   })
 }
+
+export function dibujarManoLaberinto(lienzo) {
+  lienzo.translate(34, 46)
+  lienzo.fillStyle = '#ffdfb5'
+  lienzo.strokeStyle = '#4b211b'
+  lienzo.lineWidth = 3
+  lienzo.lineJoin = 'round'
+  lienzo.beginPath()
+  lienzo.moveTo(-15, 37)
+  lienzo.lineTo(-27, 13)
+  lienzo.quadraticCurveTo(-32, 1, -22, -1)
+  lienzo.lineTo(-12, 11)
+  lienzo.lineTo(-12, -36)
+  lienzo.quadraticCurveTo(-6, -48, 0, -36)
+  lienzo.lineTo(0, -4)
+  lienzo.quadraticCurveTo(10, -12, 12, 0)
+  lienzo.quadraticCurveTo(22, -6, 23, 7)
+  lienzo.quadraticCurveTo(34, 3, 33, 18)
+  lienzo.lineTo(31, 32)
+  lienzo.quadraticCurveTo(28, 46, 12, 48)
+  lienzo.lineTo(-2, 48)
+  lienzo.quadraticCurveTo(-10, 46, -15, 37)
+  lienzo.closePath()
+  lienzo.fill()
+  lienzo.stroke()
+}

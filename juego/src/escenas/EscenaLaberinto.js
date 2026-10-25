@@ -5,6 +5,7 @@ import { ajustarATamano } from '../dibujos/dibujos.js'
 import { CuyAnimado } from '../dibujos/cuyAnimado.js'
 import { ZorroAnimado } from '../dibujos/zorroAnimado.js'
 import { crearBoton, dibujarGlobo } from '../interfaz/piezas.js'
+import { crearManoLaberinto } from '../interfaz/ManoLaberinto.js'
 import { avisos } from '../logica/avisos.js'
 import { avisarPartida, crearPartidaLaberinto } from '../logica/partidaLaberinto.js'
 import { crearRegla, comerEnCasilla } from '../logica/reglasLaberinto.js'
@@ -51,6 +52,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.terminada = false
     this.cambiandoNivel = false
     this.mensajeCierre = ''
+    this.mano = null
     this.iniciosDeslizamiento = new Map()
   }
 
@@ -63,8 +65,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearGuia()
     this.crearPersonajes()
     this.crearControles()
+    if (this.indiceNivel === 0) this.mano = crearManoLaberinto(this)
     this.exponerParaPruebas()
     if (this.indiceNivel === 0) avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: 1 })
+    decir(this.reto.consigna)
     this.events.once('shutdown', () => {
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
       this.input.off('pointerdown', this.alIniciarDeslizamiento)
@@ -128,7 +132,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       sonido: crearBoton(this, 1030, 72, {
         ancho: 138, alto: 72, texto: 'Escuchar', tamano: 27,
         alTocar: () => {
-          if (!this.esDeslizamiento(this.input.activePointer)) decir(this.textoGlobo.text)
+          if (!this.esDeslizamiento(this.input.activePointer)) decir(this.reto.consigna)
         },
       }).setDepth(1003),
       ayuda: crearBoton(this, 1184, 72, {
@@ -267,6 +271,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   elegirRumbo(direccion) {
     if (this.terminada || this.cambiandoNivel) return
     pedirDireccion(this.movimiento, direccion)
+    this.mano?.ocultar()
     this.nivelIniciado = true
     if (!this.iniciada) {
       this.iniciada = true
@@ -322,6 +327,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     } else {
       this.terminada = true
       this.mensajeCierre = this.paquete.cierre?.mensaje ?? '¡Lo lograste! Gracias por ayudar a Kusi.'
+      decir(this.mensajeCierre)
       avisarPartida(this.partida, 'fin', { niveles: this.paquete.retos.length })
       this.mostrarCierre()
     }
@@ -416,6 +422,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
       regla: { ...this.regla, objetos: this.regla.objetos.map((objeto) => ({ ...objeto })) },
       puertaAbierta: this.regla.completada, terminada: this.terminada, mensajeCierre: this.mensajeCierre,
+      manoVisible: Boolean(this.mano?.visible),
       invulnerable: this.segundosInvulnerable > 0, segundosInvulnerable: this.segundosInvulnerable,
       capturas: this.capturas,
       zorros: this.zorros.map((zorro, indice) => ({

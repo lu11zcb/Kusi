@@ -13,7 +13,7 @@ import {
   dibujarProducto, dibujarIcono, dibujarBillete, dibujarMoneda, dibujarCartera, dibujarChoclito,
 } from './productos.js'
 import { dibujarPuesto, dibujarPlaza } from './escenario.js'
-import { dibujarTerrenoLaberinto, dibujarPuertaLaberinto, dibujarClaseLaberinto } from './laberinto.js'
+import { dibujarTerrenoLaberinto, dibujarPuertaLaberinto, dibujarClaseLaberinto, dibujarManoLaberinto } from './laberinto.js'
 
 // Clave del dibujo de cada billete o moneda: 10 → "billete-10", 5 → "moneda-5".
 export function claveDinero(valor) {
@@ -40,6 +40,7 @@ export function clavesDelPaquete(paquete) {
       ['pasto', 'terreno-laberinto'],
       ['puerta-cerrada', 'puerta-laberinto'],
       ['puerta-abierta', 'puerta-laberinto'],
+      ['mano-deslizar', 'mano-laberinto'],
     ])
     for (const reto of paquete.retos) {
       for (const objeto of reto.objetos) claves.set(objeto.tipo, 'producto')
@@ -131,6 +132,8 @@ function elegirFigura(clave, tipo) {
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarPuertaLaberinto(lienzo, clave) }
     case 'clase-laberinto':
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarClaseLaberinto(lienzo, clave) }
+    case 'mano-laberinto':
+      return { ancho: 96, alto: 112, dibujar: dibujarManoLaberinto }
     default:
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarProducto(lienzo, clave) }
   }
