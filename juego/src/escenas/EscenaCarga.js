@@ -76,7 +76,7 @@ export class EscenaCarga extends Phaser.Scene {
       const zorroAnimado = validarSpritePersonaje(this.cache.json.get(CLAVE_MANIFIESTO_ZORRO), 'zorro')
 
       // Carga los dibujos necesarios para los puestos y productos.
-      const claves = esLaberinto ? new Map([['kusi-frente', 'kusi-frente']]) : clavesDelPaquete(paquete)
+      const claves = clavesDelPaquete(paquete)
       pedirDibujos(this, claves)
       pedirHojaCuy(this, cuyAnimado)
       pedirHojaZorro(this, zorroAnimado)

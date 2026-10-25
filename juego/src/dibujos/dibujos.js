@@ -13,6 +13,7 @@ import {
   dibujarProducto, dibujarIcono, dibujarBillete, dibujarMoneda, dibujarCartera, dibujarChoclito,
 } from './productos.js'
 import { dibujarPuesto, dibujarPlaza } from './escenario.js'
+import { dibujarTerrenoLaberinto, dibujarPuertaLaberinto, dibujarClaseLaberinto } from './laberinto.js'
 
 // Clave del dibujo de cada billete o moneda: 10 → "billete-10", 5 → "moneda-5".
 export function claveDinero(valor) {
@@ -31,6 +32,25 @@ function tamanoMoneda(valor) {
 
 // Todas las claves que usa este paquete, cada una con su tipo (para saber qué figura dibujar).
 export function clavesDelPaquete(paquete) {
+  if (paquete.familia === 'laberinto') {
+    const claves = new Map([
+      ['kusi-frente', 'kusi-frente'],
+      ['muro-adobe', 'terreno-laberinto'],
+      ['camino-tierra', 'terreno-laberinto'],
+      ['pasto', 'terreno-laberinto'],
+      ['puerta-cerrada', 'puerta-laberinto'],
+      ['puerta-abierta', 'puerta-laberinto'],
+    ])
+    for (const reto of paquete.retos) {
+      for (const objeto of reto.objetos) claves.set(objeto.tipo, 'producto')
+      if (reto.regla.tipo === 'orden') {
+        for (const tipo of reto.regla.secuencia) claves.set(tipo, 'producto')
+      } else {
+        claves.set('clase-' + reto.regla.clase, 'clase-laberinto')
+      }
+    }
+    return claves
+  }
   const claves = new Map([
     ['kusi-frente', 'kusi-frente'],
     ['kusi-espaldas', 'kusi-espaldas'],
@@ -105,6 +125,12 @@ function elegirFigura(clave, tipo) {
       return { ancho: 56, alto: 56, dibujar: (lienzo) => dibujarChoclito(lienzo, 56) }
     case 'fondo-plaza':
       return { ancho: plaza.ancho, alto: plaza.alto, dibujar: dibujarPlaza }
+    case 'terreno-laberinto':
+      return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarTerrenoLaberinto(lienzo, clave) }
+    case 'puerta-laberinto':
+      return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarPuertaLaberinto(lienzo, clave) }
+    case 'clase-laberinto':
+      return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarClaseLaberinto(lienzo, clave) }
     default:
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarProducto(lienzo, clave) }
   }
