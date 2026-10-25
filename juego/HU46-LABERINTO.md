@@ -71,6 +71,7 @@ constante al comienzo de su archivo.
 | Efecto | Qué hace | Dónde se ajusta |
 | --- | --- | --- |
 | Sombras | Una elipse suave y translúcida bajo el cuy y bajo cada zorro. La del zorro tiene la misma receta, 1,3 veces más grande, como su dibujo. | `SOMBRA` y `PROPORCION_ZORRO`, en `src/escenas/EscenaLaberinto.js` |
+| Rebote al caminar | En cada paso el cuerpo sube unos píxeles (el cuy 0,06 casillas, el zorro 0,04) y, al apoyar el pie, se ensancha y se achata menos del 5 % (3,5 % el cuy; 4,5 % el zorro, que es más pesado y tarda más en soltarse). Sigue el reloj de los cuadros del caminar: aplaste máximo en el apoyo y altura máxima a mitad del paso. La sombra no rebota y el personaje nunca rota. | `PERFIL_CUY` y `PERFIL_ZORRO`, en `src/efectos/CuerpoVivo.js` |
 | Parpadeo | El cuy parpadea de frente, al azar, cada 2 a 4 s que pasa quieto, con los cuadros 0, 1, 2, 1, 0 de la tira de parpadeo a 16 por segundo. Si el niño elige un rumbo a mitad del parpadeo, camina de inmediato. | `ESPERA_MINIMA` y `ESPERA_MAXIMA`, en `src/efectos/ParpadeoCuy.js`; los cuadros, en el manifiesto del cuy |
 | Sonidos | Pisadas del cuy y del zorro cuando un pie se apoya, pop al comer bien, boing al equivocarse, «ay» al ser atrapado, puerta al abrirse y fanfarria al entrar a un nivel nuevo o al llegar al cierre. | `SONIDOS_LABERINTO`, en `src/efectos/SonidosLaberinto.js`; autoría en `public/sonidos/ORIGEN.md` |
 

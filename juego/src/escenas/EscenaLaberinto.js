@@ -19,6 +19,7 @@ import {
 import { vidaActiva } from '../efectos/vida.js'
 import { SonidosLaberinto, esCuadroDePisada } from '../efectos/SonidosLaberinto.js'
 import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
+import { CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO } from '../efectos/CuerpoVivo.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -281,6 +282,11 @@ export class EscenaLaberinto extends Phaser.Scene {
   crearVida() {
     this.sonidos = new SonidosLaberinto(this, { activo: this.vida })
     this.parpadeo = new ParpadeoCuy(this.cuy, { activo: this.vida })
+    // El cuerpo guarda la escala que la escena ya fijó a cada sprite y le suma
+    // el rebote de cada paso; el zorro usa un perfil más pesado.
+    this.cuerpoCuy = new CuerpoVivo(this.cuy, PERFIL_CUY, { casilla: this.casilla, activo: this.vida })
+    this.cuerposZorros = this.dibujosZorros.map((dibujo) =>
+      new CuerpoVivo(dibujo, PERFIL_ZORRO, { casilla: this.casilla, activo: this.vida }))
     this.ultimosCuadros = new Map()
   }
 
@@ -484,6 +490,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.parpadeo.actualizar(segundos, distancia > 0.01)
     this.cuy.animarMovimiento(VISTAS[this.movimiento.direccion], distancia, segundos, tiempo)
     this.sonarPisada(this.cuy, 'paso_cuy')
+    this.cuerpoCuy.actualizar(segundos)
     this.zorros.forEach((zorro, indice) => {
       const posicion = posicionEnCasillas(zorro)
       const centro = this.centroCasilla(posicion.fila, posicion.columna)
@@ -494,6 +501,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         .animarMovimiento('frente', distanciaZorro * this.casilla, segundos, tiempo)
       if (this.sombrasZorros[indice]) this.colocarSombra(this.sombrasZorros[indice], centro)
       this.sonarPisada(dibujoZorro, 'paso_zorro')
+      this.cuerposZorros[indice].actualizar(segundos)
     })
   }
 
@@ -521,15 +529,19 @@ export class EscenaLaberinto extends Phaser.Scene {
       zorros: this.zorros.map((zorro, indice) => ({
         ...zorro, inicio: { ...zorro.inicio }, mirando: this.dibujosZorros[indice].direccionAnimada,
         flipX: this.dibujosZorros[indice].flipX,
-        x: this.dibujosZorros[indice].x, y: this.dibujosZorros[indice].y,
+        // Posición real del zorro, sin el rebote de sus pasos.
+        x: this.dibujosZorros[indice].x - this.cuerposZorros[indice].desplazamiento.x,
+        y: this.dibujosZorros[indice].y - this.cuerposZorros[indice].desplazamiento.y,
       })),
-      cuyX: this.cuy.x, cuyY: this.cuy.y,
+      // Posición real del cuy, sin el rebote ni la sacudida que se le suman al dibujo.
+      cuyX: this.cuy.x - this.cuerpoCuy.desplazamiento.x, cuyY: this.cuy.y - this.cuerpoCuy.desplazamiento.y,
       vida: {
         activa: this.vida,
         sombras: {
           cuy: this.leerSombra(this.sombraCuy),
           zorros: this.sombrasZorros.map((sombra) => this.leerSombra(sombra)),
         },
+        cuerpos: { cuy: this.cuerpoCuy.estado(), zorros: this.cuerposZorros.map((cuerpo) => cuerpo.estado()) },
         parpadeos: this.parpadeo.parpadeos,
         sonidos: this.sonidos.estado(),
       },
