@@ -16,12 +16,34 @@ import { decir } from '../logica/voz.js'
 import {
   crearMovimiento, pedirDireccion, avanzarMovimiento, direccionDelDeslizamiento,
 } from '../logica/movimientoLaberinto.js'
+import { vidaActiva } from '../efectos/vida.js'
+import { SonidosLaberinto, esCuadroDePisada } from '../efectos/SonidosLaberinto.js'
+import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
 export const PROPORCION_VELOCIDAD_ZORRO = 0.6
 export const SEGUNDOS_INVULNERABLE = 2
 const PASO_SIMULACION = 1 / 60
+
+// Tamaño de los personajes. El cuy mide 1,2 casillas de alto y el zorro un 30 %
+// más; los pies apoyan 0,4 casillas por debajo del centro de la casilla.
+const ALTURA_CUY = 1.2
+const PROPORCION_ZORRO = 1.3
+const DESFASE_PIES = 0.4
+
+// Capa de vida: sombra de cada personaje, una elipse suave y translúcida bajo los
+// pies. Las medidas van en casillas para seguir el tamaño del mapa y valen para un
+// personaje del tamaño del cuy; el zorro las multiplica por PROPORCION_ZORRO.
+// Con ?vida=0 no se crea ninguna sombra.
+const SOMBRA = {
+  color: 0x4b211b, // la tinta del juego
+  opacidad: 0.15,
+  ancho: 0.76,
+  alto: 0.18,
+  desfase: 0.3, // casillas por debajo del centro de la casilla, justo sobre los pies
+  profundidad: 4, // sobre el piso y las frutas, bajo los personajes
+}
 
 // La barra y el espacio de Kusi se reservan antes de medir el mapa. Incluso
 // los niveles más grandes quedan completos dentro de la pantalla 1280 × 720.
@@ -33,8 +55,11 @@ export class EscenaLaberinto extends Phaser.Scene {
     super('laberinto')
   }
 
-  init({ paquete, cuyAnimado, zorroAnimado, partida, indiceNivel = 0, iniciada = false }) {
+  init({ paquete, cuyAnimado, zorroAnimado, partida, indiceNivel = 0, iniciada = false, anunciarNivel = false }) {
     this.paquete = paquete
+    // La capa de vida se decide una vez por nivel, leyendo ?vida de la dirección.
+    this.vida = vidaActiva()
+    this.anunciarNivel = anunciarNivel
     this.datosCuyAnimado = cuyAnimado
     this.datosZorroAnimado = zorroAnimado
     this.partida = partida
@@ -64,12 +89,17 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearMapa()
     this.crearGuia()
     this.crearPersonajes()
+    this.crearVida()
     this.crearControles()
     if (this.indiceNivel === 0) this.mano = crearManoLaberinto(this)
     this.exponerParaPruebas()
     avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
     decir(this.reto.consigna)
+    // La fanfarria de fin de nivel suena aquí y no en la escena anterior: esa se
+    // destruye al reiniciarse y cortaría su propio sonido.
+    if (this.anunciarNivel) this.sonidos.reproducir('nivel')
     this.events.once('shutdown', () => {
+      this.sonidos.destruir()
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
       this.input.off('pointerdown', this.alIniciarDeslizamiento)
       this.input.off('pointerup', this.alTerminarDeslizamiento)
@@ -211,22 +241,58 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   crearPersonajes() {
     const punto = this.centroCasilla(this.inicio.fila, this.inicio.columna)
-    this.sombraCuy = this.add.ellipse(punto.x, punto.y + this.casilla * 0.3,
-      this.casilla * 0.76, this.casilla * 0.18, 0x4b211b, 0.15).setDepth(4)
+    // Con ?vida=0 no hay sombras y el laberinto se ve como antes de la capa de vida.
+    this.sombraCuy = this.vida ? this.crearSombra(1, punto) : null
     // La escala se calcula desde la línea de apoyo del manifiesto. Conserva su
     // anclaje original y deja al cuy de unas 1,2 casillas de alto a cualquier tamaño.
     this.cuy = new CuyAnimado(this, this.datosCuyAnimado)
-      .setScale(this.casilla * 1.2 / this.datosCuyAnimado.anclaje.y)
-      .setPosition(punto.x, punto.y + this.casilla * 0.4).setDepth(5)
+      .setScale(this.casilla * ALTURA_CUY / this.datosCuyAnimado.anclaje.y)
+      .setPosition(punto.x, punto.y + this.casilla * DESFASE_PIES).setDepth(5)
     this.auraProteccion = this.add.ellipse(punto.x, punto.y + this.casilla * 0.3,
       this.casilla * 0.95, this.casilla * 0.35, 0xffd56d, 0.2)
       .setStrokeStyle(3, 0xb2731c).setDepth(4).setVisible(false)
+    this.sombrasZorros = []
     this.dibujosZorros = this.zorros.map((enemigo) => {
       const posicion = this.centroCasilla(enemigo.fila, enemigo.columna)
+      // El zorro es más grande que el cuy y su sombra crece en la misma proporción.
+      if (this.vida) this.sombrasZorros.push(this.crearSombra(PROPORCION_ZORRO, posicion))
       return new ZorroAnimado(this, this.datosZorroAnimado)
-        .setScale(this.casilla * 1.2 * 1.3 / this.datosZorroAnimado.anclaje.y)
-        .setPosition(posicion.x, posicion.y + this.casilla * 0.4).setDepth(5)
+        .setScale(this.casilla * ALTURA_CUY * PROPORCION_ZORRO / this.datosZorroAnimado.anclaje.y)
+        .setPosition(posicion.x, posicion.y + this.casilla * DESFASE_PIES).setDepth(5)
     })
+  }
+
+  // Una sombra es una elipse suave y translúcida bajo los pies. El cuy y los
+  // zorros usan la misma receta; solo cambia la proporción con su tamaño.
+  // «centro» es el centro de la casilla que pisa el personaje.
+  crearSombra(proporcion, centro) {
+    const sombra = this.add.ellipse(0, 0, this.casilla * SOMBRA.ancho * proporcion,
+      this.casilla * SOMBRA.alto * proporcion, SOMBRA.color, SOMBRA.opacidad)
+      .setDepth(SOMBRA.profundidad)
+    return this.colocarSombra(sombra, centro)
+  }
+
+  colocarSombra(sombra, centro) {
+    return sombra.setPosition(centro.x, centro.y + this.casilla * SOMBRA.desfase)
+  }
+
+  // Efectos que viven encima de las animaciones por cuadros. Con ?vida=0 se crean
+  // apagados: la escena sigue llamándolos igual, pero no hacen nada.
+  crearVida() {
+    this.sonidos = new SonidosLaberinto(this, { activo: this.vida })
+    this.parpadeo = new ParpadeoCuy(this.cuy, { activo: this.vida })
+    this.ultimosCuadros = new Map()
+  }
+
+  // Una pisada suena cuando el ciclo de caminar apoya un pie. El cuadro se compara
+  // con el anterior para que cada apoyo suene una sola vez; una expresión (feliz,
+  // asustado) no cuenta como caminar aunque el personaje se esté desplazando.
+  sonarPisada(dibujo, tipo) {
+    const caminando = dibujo.estadoMovimiento === 'caminar' && !dibujo.estadoExpresivo
+    const cuadro = caminando ? dibujo.anims.currentFrame : null
+    if (cuadro === this.ultimosCuadros.get(dibujo)) return
+    this.ultimosCuadros.set(dibujo, cuadro)
+    if (esCuadroDePisada(cuadro)) this.sonidos.reproducir(tipo)
   }
 
   // Una pulsación elige el rumbo y no exige sostener la tecla. Ignorar la
@@ -292,7 +358,11 @@ export class EscenaLaberinto extends Phaser.Scene {
         dibujo.setVisible(false)
         this.actualizarBarra()
         this.cuy.mostrarEstado('feliz', 'frente')
-        if (this.regla.completada) this.puerta.setTexture('puerta-abierta')
+        this.sonidos.reproducir('comer')
+        if (this.regla.completada) {
+          this.puerta.setTexture('puerta-abierta')
+          this.sonidos.reproducir('puerta')
+        }
       } else {
         // Solo rebota la fruta. El cuy conserva su posición, velocidad y giro
         // guardado; cruzar otra vez esta casilla permite intentar de nuevo.
@@ -302,6 +372,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         dibujo.setPosition(base.x, base.y)
         this.tweens.add({ targets: dibujo, y: base.y - this.casilla * 0.2,
           duration: 110, yoyo: true, ease: 'Sine.easeOut' })
+        this.sonidos.reproducir('error')
         this.mostrarAyuda(resultado.ayuda)
       }
     }
@@ -324,10 +395,11 @@ export class EscenaLaberinto extends Phaser.Scene {
     avisarPartida(this.partida, 'reto_completado', { nivel: this.indiceNivel + 1 })
     if (this.indiceNivel + 1 < this.paquete.retos.length) {
       this.cambiandoNivel = true
-      this.scene.restart(this.datosParaNivel(this.indiceNivel + 1))
+      this.scene.restart({ ...this.datosParaNivel(this.indiceNivel + 1), anunciarNivel: true })
     } else {
       this.terminada = true
       this.mensajeCierre = this.paquete.cierre?.mensaje ?? '¡Lo lograste! Gracias por ayudar a Kusi.'
+      this.sonidos.reproducir('nivel')
       decir(this.mensajeCierre)
       avisarPartida(this.partida, 'fin', { niveles: this.paquete.retos.length })
       this.mostrarCierre()
@@ -363,6 +435,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     // Se restablece solo el movimiento. La regla y sus dibujos conservan todas
     // las frutas recogidas y la puerta permanece abierta si ya estaba completa.
     this.cuy.mostrarEstado('asustado', 'frente')
+    this.sonidos.reproducir('captura')
     avisarPartida(this.partida, 'accion', { nivel: this.indiceNivel + 1, atrapado: true })
   }
 
@@ -401,20 +474,35 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.avanzarPartida(segundos)
     }
     const punto = this.posicionMovimiento()
-    this.cuy.setPosition(punto.x, punto.y + this.casilla * 0.4)
-    this.sombraCuy.setPosition(punto.x, punto.y + this.casilla * 0.3)
+    this.cuy.setPosition(punto.x, punto.y + this.casilla * DESFASE_PIES)
+    if (this.sombraCuy) this.colocarSombra(this.sombraCuy, punto)
     this.auraProteccion.setPosition(punto.x, punto.y + this.casilla * 0.3)
       .setVisible(this.segundosInvulnerable > 0)
     const distancia = this.movimiento.moviendose ? Math.hypot(punto.x - anterior.x, punto.y - anterior.y) : 0
+    // El parpadeo decide antes de animar: si el cuy empieza a caminar, corta el
+    // parpadeo y animarMovimiento pone el caminar en este mismo cuadro.
+    this.parpadeo.actualizar(segundos, distancia > 0.01)
     this.cuy.animarMovimiento(VISTAS[this.movimiento.direccion], distancia, segundos, tiempo)
+    this.sonarPisada(this.cuy, 'paso_cuy')
     this.zorros.forEach((zorro, indice) => {
       const posicion = posicionEnCasillas(zorro)
       const centro = this.centroCasilla(posicion.fila, posicion.columna)
       const anteriorZorro = anterioresZorros[indice]
       const distanciaZorro = Math.hypot(posicion.fila - anteriorZorro.fila, posicion.columna - anteriorZorro.columna)
-      this.dibujosZorros[indice].setPosition(centro.x, centro.y + this.casilla * 0.4)
+      const dibujoZorro = this.dibujosZorros[indice]
+      dibujoZorro.setPosition(centro.x, centro.y + this.casilla * DESFASE_PIES)
         .animarMovimiento('frente', distanciaZorro * this.casilla, segundos, tiempo)
+      if (this.sombrasZorros[indice]) this.colocarSombra(this.sombrasZorros[indice], centro)
+      this.sonarPisada(dibujoZorro, 'paso_zorro')
     })
+  }
+
+  leerSombra(sombra) {
+    if (!sombra) return null
+    return {
+      x: sombra.x, y: sombra.y, ancho: sombra.width, alto: sombra.height,
+      opacidad: sombra.fillAlpha, profundidad: sombra.depth,
+    }
   }
 
   exponerParaPruebas() {
@@ -433,8 +521,18 @@ export class EscenaLaberinto extends Phaser.Scene {
       zorros: this.zorros.map((zorro, indice) => ({
         ...zorro, inicio: { ...zorro.inicio }, mirando: this.dibujosZorros[indice].direccionAnimada,
         flipX: this.dibujosZorros[indice].flipX,
+        x: this.dibujosZorros[indice].x, y: this.dibujosZorros[indice].y,
       })),
       cuyX: this.cuy.x, cuyY: this.cuy.y,
+      vida: {
+        activa: this.vida,
+        sombras: {
+          cuy: this.leerSombra(this.sombraCuy),
+          zorros: this.sombrasZorros.map((sombra) => this.leerSombra(sombra)),
+        },
+        parpadeos: this.parpadeo.parpadeos,
+        sonidos: this.sonidos.estado(),
+      },
       animacionCuy: {
         clave: this.cuy.anims.currentAnim?.key, fotograma: this.cuy.frame.name,
         estado: this.cuy.estadoMovimiento, flipX: this.cuy.flipX,

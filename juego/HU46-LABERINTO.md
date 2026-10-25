@@ -62,6 +62,28 @@ La mano del nivel 1 desaparece al elegir un rumbo y no vuelve a mostrarse en ese
 navegador. La marca `kusi-laberinto-deslizar-v1` se guarda en `localStorage`; si el
 WebView no permite almacenamiento, se recuerda durante la sesión.
 
+## Capa de vida
+
+Una capa de efectos va encima de las animaciones por cuadros: los dibujos no
+cambian y ningún efecto rota ni inclina al personaje entero. Cada valor es una
+constante al comienzo de su archivo.
+
+| Efecto | Qué hace | Dónde se ajusta |
+| --- | --- | --- |
+| Sombras | Una elipse suave y translúcida bajo el cuy y bajo cada zorro. La del zorro tiene la misma receta, 1,3 veces más grande, como su dibujo. | `SOMBRA` y `PROPORCION_ZORRO`, en `src/escenas/EscenaLaberinto.js` |
+| Parpadeo | El cuy parpadea de frente tras esperar quieto entre 2,5 y 5,5 s. Si el niño elige un rumbo a mitad del parpadeo, camina de inmediato. | `ESPERA_MINIMA` y `ESPERA_MAXIMA`, en `src/efectos/ParpadeoCuy.js`; los cuadros, en el manifiesto del cuy |
+| Sonidos | Pisadas del cuy y del zorro cuando un pie se apoya, pop al comer bien, boing al equivocarse, «ay» al ser atrapado, puerta al abrirse y fanfarria al entrar a un nivel nuevo o al llegar al cierre. | `SONIDOS_LABERINTO`, en `src/efectos/SonidosLaberinto.js`; autoría en `public/sonidos/ORIGEN.md` |
+
+Con `?vida=0` se apagan todos a la vez y los sonidos ni siquiera se descargan, para
+comparar con y sin efectos: <http://127.0.0.1:5174/?paquete=laberinto&vida=0>. Sin
+ese parámetro la capa está encendida. Las pisadas comparten un intervalo mínimo y
+no se superponen, así que con el cuy y el zorro caminando a la vez se oye una sola.
+El navegador solo permite sonar después del primer toque o tecla.
+
+El estado de pruebas expone `vida` con las sombras, los parpadeos y los sonidos
+reproducidos. Todavía no hay un botón para silenciar: el controlador ya tiene
+`cambiarSilencio()`, pero ninguna pantalla lo usa.
+
 ## Recorrido para la revisión
 
 Para completar el primer nivel con las flechas, a velocidad normal:
@@ -92,10 +114,12 @@ esa partida. La comprobación completa HU31 sigue perteneciendo a Spring.
 npm run prueba:logica
 npm run prueba -- --workers=1
 npm run build
+.venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 25 de octubre de 2026: **45 pruebas de lógica**, **38 pruebas de
-navegador** y compilación correctas. La suite completa incluye el mercado.
+Verificado el 25 de octubre de 2026: **57 pruebas de lógica**, **51 pruebas de
+navegador**, **25 pruebas de las hojas de animación** (Python) y compilación
+correctas. La suite completa incluye el mercado y la capa de vida.
 
 La lógica y la validación se prueban con `node --test`, sin instalar paquetes
 adicionales: movimiento, vuelta guardada, recorrido de cada casilla, reglas,

@@ -16,6 +16,8 @@ import { avisos } from '../logica/avisos.js'
 import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
 import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
+import { vidaActiva } from '../efectos/vida.js'
+import { pedirSonidosLaberinto } from '../efectos/SonidosLaberinto.js'
 import {
   ARCHIVO_MANIFIESTO_CUY, CLAVE_MANIFIESTO_CUY, pedirHojaCuy, registrarAnimacionesCuy,
 } from '../dibujos/cuyAnimado.js'
@@ -80,6 +82,9 @@ export class EscenaCarga extends Phaser.Scene {
       pedirDibujos(this, claves)
       pedirHojaCuy(this, cuyAnimado)
       pedirHojaZorro(this, zorroAnimado)
+      // Los sonidos solo pertenecen al laberinto. Con ?vida=0 ni siquiera se
+      // descargan, para que la comparación sin efectos sea también más liviana.
+      if (esLaberinto && vidaActiva()) pedirSonidosLaberinto(this)
 
       this.load.once('complete', () => {
         try {
