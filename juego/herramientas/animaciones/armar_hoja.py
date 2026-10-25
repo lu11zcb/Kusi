@@ -7,6 +7,7 @@ se ordenan por su nombre, considerando los números como números (2 antes de 10
 
 import argparse
 import json
+import math
 import re
 from array import array
 from pathlib import Path
@@ -142,7 +143,14 @@ def leer_cuadros(entrada):
     return separar_columnas(limpia), informe
 
 
-def armar_hoja(entrada, salida, celda, margen=8):
+def armar_hoja(entrada, salida, celda, margen=8, referencia=None, hoja_base=None):
+    """Alinea cuadros nuevos y, si se indica, los añade a una hoja existente.
+
+    La referencia es el informe de otro armado, no una estimación del tamaño
+    visible: reutilizar su número de escala conserva exactamente la relación
+    entre píxeles originales y finales al cambiar de frente a lado. También se
+    reutiliza el apoyo para que el personaje no suba o baje al girar.
+    """
     if entrada.is_file() and entrada.resolve() == salida.resolve():
         raise ValueError("La salida no puede sobrescribir la imagen original")
     if entrada.is_dir() and salida.resolve().parent == entrada.resolve():
@@ -151,6 +159,8 @@ def armar_hoja(entrada, salida, celda, margen=8):
         raise ValueError("Guarda la hoja fuera de la carpeta de cuadros originales")
     if salida.suffix.lower() != ".png":
         raise ValueError("El nombre de salida debe terminar en .png")
+    if hoja_base is not None and hoja_base.resolve() == salida.resolve():
+        raise ValueError("La salida no puede sobrescribir la hoja base")
     cuadros, limpieza = leer_cuadros(entrada)
     anclas = [medir_anclas(cuadro) for cuadro in cuadros]
     cajas = [cuadro.getchannel("A").getbbox() for cuadro in cuadros]
@@ -173,7 +183,43 @@ def armar_hoja(entrada, salida, celda, margen=8):
     )
     centro_destino = ancho / 2
     pies_destino = alto - 1 - reserva - abajo * escala
-    hoja = Image.new("RGBA", (ancho * len(cuadros), alto))
+    if referencia is not None:
+        datos_referencia = json.loads(referencia.read_text(encoding="utf-8"))
+        if datos_referencia["fotograma"] != {"ancho": ancho, "alto": alto}:
+            raise ValueError("La referencia debe usar la misma celda")
+        escala = datos_referencia["escala_uniforme"]
+        centro_destino = datos_referencia["anclaje_objetivo"]["x"]
+        pies_destino = datos_referencia["anclaje_objetivo"]["y"]
+        if not all(math.isfinite(valor) for valor in (escala, centro_destino, pies_destino)) or escala <= 0:
+            raise ValueError("La escala y el anclaje de referencia deben ser finitos y la escala positiva")
+        # Una escala fija nunca se reduce silenciosamente para hacerla caber.
+        # Se comprueban los cuatro bordes antes de remuestrear; si el dibujo no
+        # cabe hay que revisar la entrada, en vez de recortar cabeza o patas.
+        for ancla, caja in zip(anclas, cajas):
+            extremos = (
+                centro_destino + (caja[0] - ancla["centro_cabeza_x"]) * escala,
+                pies_destino + (caja[1] - ancla["linea_pies_y"]) * escala,
+                centro_destino + (caja[2] - 1 - ancla["centro_cabeza_x"]) * escala,
+                pies_destino + (caja[3] - 1 - ancla["linea_pies_y"]) * escala,
+            )
+            if extremos[0] < reserva or extremos[1] < reserva or extremos[2] > ancho - 1 - reserva or extremos[3] > alto - 1 - margen:
+                raise ValueError("La escala de referencia no cabe con el margen solicitado; no se ha reducido ni recortado")
+
+    base = None
+    filas_base = 0
+    if hoja_base is not None:
+        with Image.open(hoja_base) as original:
+            if original.format != "PNG":
+                raise ValueError("La hoja base debe ser PNG")
+            base = original.convert("RGBA")
+        if base.width != ancho * len(cuadros) or base.height % alto:
+            raise ValueError("La hoja base debe tener las mismas columnas y filas completas")
+        filas_base = base.height // alto
+    hoja = Image.new("RGBA", (ancho * len(cuadros), alto * (filas_base + 1)))
+    if base is not None:
+        # Se copian los píxeles sin volver a filtrar la caminata frontal. Los
+        # índices existentes permanecen iguales y la nueva secuencia va debajo.
+        hoja.paste(base, (0, 0))
     detalle = []
     for indice, (cuadro, ancla) in enumerate(zip(cuadros, anclas)):
         # El remuestreo usa la misma transformación isotrópica en TODOS los
@@ -195,9 +241,9 @@ def armar_hoja(entrada, salida, celda, margen=8):
         # El filtro puede crear islas de alfa 1 separadas del borde. Se quitan
         # después de reducir, manteniendo los bordes conectados al personaje.
         celda_final, limpieza_final = limpiar_islas(celda_final, 1)
-        hoja.paste(celda_final, (indice * ancho, 0))
+        hoja.paste(celda_final, (indice * ancho, filas_base * alto))
         detalle.append({
-            "cuadro": indice,
+            "cuadro": filas_base * len(cuadros) + indice,
             "anclas_original": ancla,
             "anclas_salida": medir_anclas(celda_final),
             "caja_alfa_salida": list(celda_final.getchannel("A").getbbox()),
@@ -209,9 +255,11 @@ def armar_hoja(entrada, salida, celda, margen=8):
         "entrada": str(entrada),
         "salida": str(salida),
         "fotograma": {"ancho": ancho, "alto": alto},
-        "cuadricula": {"columnas": len(cuadros), "filas": 1},
+        "cuadricula": {"columnas": len(cuadros), "filas": filas_base + 1},
         "escala_uniforme": escala,
         "anclaje_objetivo": {"x": centro_destino, "y": pies_destino},
+        "referencia": str(referencia) if referencia is not None else None,
+        "hoja_base": str(hoja_base) if hoja_base is not None else None,
         "margen_solicitado": margen,
         "limpieza_original": limpieza,
         "cuadros": detalle,
@@ -235,10 +283,12 @@ def main():
     argumentos.add_argument("--celda", type=interpretar_celda, default=(256, 256))
     argumentos.add_argument("--salida", type=Path, required=True, help="Nombre del PNG de salida")
     argumentos.add_argument("--margen", type=int, default=8)
+    argumentos.add_argument("--referencia", type=Path, help="Informe de armado cuya escala y apoyo se conservan exactamente")
+    argumentos.add_argument("--hoja-base", type=Path, help="PNG al que se añade una fila sin modificar los cuadros existentes")
     argumentos.add_argument("--reporte", type=Path, help="Informe opcional de limpieza, escala y anclas")
     opciones = argumentos.parse_args()
     try:
-        informe = armar_hoja(opciones.entrada, opciones.salida, opciones.celda, opciones.margen)
+        informe = armar_hoja(opciones.entrada, opciones.salida, opciones.celda, opciones.margen, opciones.referencia, opciones.hoja_base)
         if opciones.reporte:
             opciones.reporte.parent.mkdir(parents=True, exist_ok=True)
             opciones.reporte.write_text(json.dumps(informe, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

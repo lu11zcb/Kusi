@@ -20,16 +20,25 @@ async function empezar(pagina) {
   await pagina.waitForFunction(() => window.kusi.estado().puedeMoverse)
 }
 
-test('el manifiesto define caminar 1-2-3-2 y el apoyo central para quieto', async () => {
+test('el manifiesto conserva el frontal y define el lateral con su apoyo central', async () => {
   const datos = validarSpriteCuy(await leerManifiesto())
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 1 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 2 })
   for (const direccion of DIRECCIONES_CUY) {
+    const lateral = direccion === 'derecha' || direccion === 'izquierda'
+    // La primera fila conserva la secuencia frontal; el motor selecciona
+    // caminar_lado para los costados y mantiene quieto en esa misma vista.
     expect(datos.animaciones[direccion].caminar).toMatchObject({
       fotogramas: [0, 1, 2, 1], fps: 8, repetir: -1,
     })
-    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([1])
-    expect(datos.animaciones[direccion].reposo.fotogramas).toEqual([1])
+    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([lateral ? 4 : 1])
+    expect(datos.animaciones[direccion].reposo.fotogramas).toEqual([lateral ? 4 : 1])
+    if (lateral) {
+      expect(datos.animaciones[direccion].caminar_lado).toEqual({
+        fotogramas: [3, 4, 5, 4], fps: 8, repetir: -1, voltear: direccion === 'izquierda',
+      })
+      expect(datos.animaciones[direccion].quieto.voltear).toBe(direccion === 'izquierda')
+    }
   }
 })
 
@@ -49,7 +58,7 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
     const datos = await (await fetch('/dibujos/cuy-nino-animado-v1.json')).json()
     const animaciones = []
     const textura = {
-      getSourceImage: () => ({ width: 768, height: 256 }),
+      getSourceImage: () => ({ width: 768, height: 512 }),
       setFilter: () => {},
     }
     registrarAnimacionesCuy({
@@ -82,7 +91,7 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
   expect(configuracion.intervalos).toEqual([125, 125])
 })
 
-test('la vista frontal conserva el anclaje y la mancha sin voltearse en ninguna dirección', async ({ page: pagina }) => {
+test('el cuy usa el lateral para los costados y conserva el frontal sin voltear arriba y abajo', async ({ page: pagina }) => {
   const datos = await leerManifiesto()
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
@@ -100,8 +109,8 @@ test('la vista frontal conserva el anclaje y la mancha sin voltearse en ninguna 
   await pagina.keyboard.up('ArrowUp')
   await pagina.waitForFunction(() => window.kusi.estado().velocidad === 0)
 
-  // Las cuatro direcciones usan la vista frontal mientras no exista caminar_lado.
-  // La mancha debe conservar su lado al caminar y también al volver a quieto.
+  // El cambio de vista conserva escala y apoyo. Solo el lateral izquierdo se
+  // refleja; arriba y abajo mantienen el dibujo y la mancha del frontal.
   const direcciones = [
     ['ArrowUp', 'espaldas'],
     ['ArrowRight', 'derecha'],
@@ -109,6 +118,8 @@ test('la vista frontal conserva el anclaje y la mancha sin voltearse en ninguna 
     ['ArrowLeft', 'izquierda'],
   ]
   for (const [tecla, direccion] of direcciones) {
+    const lateral = direccion === 'derecha' || direccion === 'izquierda'
+    const volteado = direccion === 'izquierda'
     const antes = await estado(pagina)
     await pagina.keyboard.down(tecla)
     await pagina.waitForFunction((vista) => {
@@ -120,18 +131,20 @@ test('la vista frontal conserva el anclaje y la mancha sin voltearse en ninguna 
     await pagina.waitForFunction((previo) => window.kusi.estado().animacionCuy.fotograma !== previo, primerPaso)
     const durante = await estado(pagina)
     await pagina.keyboard.up(tecla)
-    expect([0, 1, 2]).toContain(durante.animacionCuy.fotograma)
-    expect(durante.animacionCuy.flipX).toBe(false)
+    expect(lateral ? [3, 4, 5] : [0, 1, 2]).toContain(durante.animacionCuy.fotograma)
+    expect(durante.animacionCuy.clave).toBe('cuy-nino-animado-v1:' + direccion + ':' + (lateral ? 'caminar_lado' : 'caminar'))
+    expect(durante.animacionCuy.flipX).toBe(volteado)
     expect(durante.animacionCuy.anclaje).toEqual(datos.anclaje)
+    expect(durante.animacionCuy.escala).toBe(datos.escala)
     expect(Math.hypot(durante.cuyX - antes.cuyX, durante.cuyY - antes.cuyY)).toBeGreaterThan(0)
     await pagina.waitForFunction(() => {
       const actual = window.kusi.estado()
       return actual.velocidad === 0 && actual.animacionCuy.estado === 'reposo'
     })
     const quieto = (await estado(pagina)).animacionCuy
-    expect(quieto.fotograma).toBe(1)
+    expect(quieto.fotograma).toBe(lateral ? 4 : 1)
     expect(quieto.clave).toBe('cuy-nino-animado-v1:' + direccion + ':quieto')
-    expect(quieto.flipX).toBe(false)
+    expect(quieto.flipX).toBe(volteado)
   }
   expect(errores).toEqual([])
 })

@@ -1,13 +1,13 @@
 {
   "formato": "kusi-sprite/1",
-  "imagen": "cuy-nino-caminar-v1.png",
+  "imagen": "cuy-nino-cuadros-v1.png",
   "fotograma": {
     "ancho": 256,
     "alto": 256
   },
   "cuadricula": {
     "columnas": 3,
-    "filas": 1
+    "filas": 2
   },
   "anclaje": {
     "x": 128,
@@ -71,10 +71,11 @@
     "derecha": {
       "reposo": {
         "fotogramas": [
-          1
+          4
         ],
         "fps": 8,
-        "repetir": -1
+        "repetir": -1,
+        "voltear": false
       },
       "caminar": {
         "fotogramas": [
@@ -88,19 +89,27 @@
       },
       "quieto": {
         "fotogramas": [
-          1
+          4
         ],
         "fps": 8,
-        "repetir": -1
+        "repetir": -1,
+        "voltear": false
+      },
+      "caminar_lado": {
+        "fotogramas": [3, 4, 5, 4],
+        "fps": 8,
+        "repetir": -1,
+        "voltear": false
       }
     },
     "izquierda": {
       "reposo": {
         "fotogramas": [
-          1
+          4
         ],
         "fps": 8,
-        "repetir": -1
+        "repetir": -1,
+        "voltear": true
       },
       "caminar": {
         "fotogramas": [
@@ -114,10 +123,17 @@
       },
       "quieto": {
         "fotogramas": [
-          1
+          4
         ],
         "fps": 8,
-        "repetir": -1
+        "repetir": -1,
+        "voltear": true
+      },
+      "caminar_lado": {
+        "fotogramas": [3, 4, 5, 4],
+        "fps": 8,
+        "repetir": -1,
+        "voltear": true
       }
     }
   }
