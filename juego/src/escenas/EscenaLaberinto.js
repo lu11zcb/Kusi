@@ -21,6 +21,7 @@ import { SonidosLaberinto, esCuadroDePisada } from '../efectos/SonidosLaberinto.
 import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
 import { CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO } from '../efectos/CuerpoVivo.js'
 import { Polvito } from '../efectos/Polvito.js'
+import { PopFruta } from '../efectos/PopFruta.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -289,6 +290,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cuerposZorros = this.dibujosZorros.map((dibujo) =>
       new CuerpoVivo(dibujo, PERFIL_ZORRO, { casilla: this.casilla, activo: this.vida }))
     this.polvito = new Polvito(this, { casilla: this.casilla, activo: this.vida })
+    this.popFruta = new PopFruta(this, { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
   }
 
@@ -371,8 +373,8 @@ export class EscenaLaberinto extends Phaser.Scene {
       })
       const dibujo = this.dibujosObjetos[resultado.indice]
       if (resultado.correcto) {
-        this.tweens.killTweensOf(dibujo)
-        dibujo.setVisible(false)
+        // Con vida la fruta hace pop y salen estrellitas; sin ella solo desaparece.
+        this.popFruta.comer(dibujo)
         this.actualizarBarra()
         this.cuy.mostrarEstado('feliz', 'frente')
         this.sonidos.reproducir('comer')
@@ -556,6 +558,11 @@ export class EscenaLaberinto extends Phaser.Scene {
         },
         cuerpos: { cuy: this.cuerpoCuy.estado(), zorros: this.cuerposZorros.map((cuerpo) => cuerpo.estado()) },
         polvito: this.polvito.estado(),
+        pop: this.popFruta.estado(),
+        frutas: this.dibujosObjetos.map((dibujo) => ({
+          x: dibujo.x, y: dibujo.y, visible: dibujo.visible, alpha: dibujo.alpha,
+          escalaX: dibujo.scaleX, escalaY: dibujo.scaleY,
+        })),
         parpadeos: this.parpadeo.parpadeos,
         sonidos: this.sonidos.estado(),
       },
