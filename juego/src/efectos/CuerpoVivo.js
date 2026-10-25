@@ -1,8 +1,8 @@
 // El cuerpo de los personajes del laberinto se mueve un poco con cada paso: sube
-// unos píxeles y, al apoyar el pie, se aplasta apenas. Es una capa de efectos
-// encima de las animaciones por cuadros: no cambia ningún dibujo y nunca rota ni
-// inclina al personaje entero; solo lo sube y lo estira o achata desde los pies,
-// porque el anclaje del dibujo está en la línea de apoyo.
+// unos píxeles y, al apoyar el pie, se aplasta apenas. Quieto, el cuy respira.
+// Es una capa de efectos encima de las animaciones por cuadros: no cambia ningún
+// dibujo y nunca rota ni inclina al personaje entero; solo lo sube y lo estira o
+// achata desde los pies, porque el anclaje del dibujo está en la línea de apoyo.
 
 // Perfil de cada personaje. Las alturas van en casillas, para seguir el tamaño
 // del mapa; el aplaste es una fracción del tamaño del dibujo y se mantiene por
@@ -14,12 +14,20 @@ export const PERFIL_CUY = Object.freeze({
     ventanaAplaste: 0.3, // parte del paso que tarda en soltarse el aplaste (de 0 a 1)
     ventanaPrevia: 0.12, // parte del paso, antes del apoyo, en que el cuerpo ya se prepara
   }),
-  // Rapidez, en veces por segundo, con la que el efecto aparece al empezar a
+  // Respiración quieto: el cuerpo se estira y se encoge a lo alto una fracción de
+  // su tamaño, de 0,02 a 0,03, y completa una respiración cada «periodo» segundos.
+  respiracion: Object.freeze({
+    amplitud: 0.025,
+    periodo: 2,
+    suavizado: 5, // veces por segundo con que empieza y termina al quedarse quieto o caminar
+  }),
+  // Rapidez, en veces por segundo, con la que el rebote aparece al empezar a
   // caminar y se apaga al detenerse. Evita saltos bruscos entre quieto y caminando.
   suavizado: Object.freeze({ subida: 14, bajada: 9 }),
 })
 
 // El zorro es más pesado: sube menos, se aplasta más y tarda más en soltarse.
+// No tiene respiración: solo el cuy se queda esperando al niño.
 export const PERFIL_ZORRO = Object.freeze({
   rebote: Object.freeze({
     altura: 0.04,
@@ -27,6 +35,7 @@ export const PERFIL_ZORRO = Object.freeze({
     ventanaAplaste: 0.42,
     ventanaPrevia: 0.14,
   }),
+  respiracion: null,
   suavizado: Object.freeze({ subida: 10, bajada: 7 }),
 })
 
@@ -66,6 +75,12 @@ export function calcularRebote(fase, { ventanaAplaste, ventanaPrevia }) {
   return { altura, aplaste: Math.max(despues, antes) }
 }
 
+// Cuánto se estira (positivo) o se encoge (negativo) el cuerpo al respirar, como
+// fracción de su alto, «segundos» después de empezar. Empieza estirándose.
+export function calcularRespiracion(segundos, { amplitud, periodo }) {
+  return amplitud * Math.sin((2 * Math.PI * segundos) / periodo)
+}
+
 export class CuerpoVivo {
   // «sprite» ya tiene su escala base: la escena la fija antes de crear el cuerpo.
   constructor(sprite, perfil, { casilla, activo = true }) {
@@ -78,6 +93,9 @@ export class CuerpoVivo {
     this.fase = 0
     this.altura = 0
     this.aplaste = 0
+    this.tiempo = 0 // segundos desde que empezó el nivel; mantiene continua la respiración
+    this.quietud = 0 // de 0 a 1: cuánto está quieto y a la espera, para respirar
+    this.respiracion = 0
     // Lo que se le sumó al sprite en este cuadro; la escena lo resta para saber
     // dónde está de verdad el personaje, sin los efectos.
     this.desplazamiento = { x: 0, y: 0 }
@@ -102,9 +120,25 @@ export class CuerpoVivo {
     this.altura = rebote.altura * this.perfil.rebote.altura * this.casilla * this.intensidad
     this.aplaste = rebote.aplaste * this.perfil.rebote.aplaste * this.intensidad
     this.desplazamiento = { x: 0, y: this.altura === 0 ? 0 : -this.altura }
-    // Más ancho y más bajo al aplastarse; los pies no se mueven porque el
-    // anclaje del dibujo está en la línea de apoyo.
-    sprite.setScale(this.escalaBase.x * (1 + this.aplaste), this.escalaBase.y * (1 - this.aplaste))
+
+    // La respiración solo la hace quien tiene perfil para ella, y solo quieto: la
+    // cuenta de tiempo no se detiene al caminar para que no arranque en un salto.
+    const respiracion = this.perfil.respiracion
+    if (respiracion) {
+      this.tiempo += segundos
+      const quieto = !caminando && !sprite.estadoExpresivo
+      this.quietud += ((quieto ? 1 : 0) - this.quietud) * (1 - Math.exp(-respiracion.suavizado * segundos))
+      if (this.quietud < 0.001) this.quietud = 0
+      this.respiracion = calcularRespiracion(this.tiempo, respiracion) * this.quietud
+    }
+
+    // Más ancho y más bajo al aplastarse, y un poco más alto o más bajo al
+    // respirar; los pies no se mueven porque el anclaje del dibujo está en la
+    // línea de apoyo.
+    sprite.setScale(
+      this.escalaBase.x * (1 + this.aplaste),
+      this.escalaBase.y * (1 - this.aplaste) * (1 + this.respiracion),
+    )
     sprite.x += this.desplazamiento.x
     sprite.y += this.desplazamiento.y
   }
@@ -116,6 +150,8 @@ export class CuerpoVivo {
       fase: this.fase,
       altura: this.altura,
       aplaste: this.aplaste,
+      respiracion: this.respiracion,
+      quietud: this.quietud,
       escalaX: this.sprite.scaleX,
       escalaY: this.sprite.scaleY,
       escalaBaseX: this.escalaBase.x,

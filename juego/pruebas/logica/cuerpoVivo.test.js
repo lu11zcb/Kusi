@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  calcularFase, calcularRebote, leerFase, CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO,
+  calcularFase, calcularRebote, calcularRespiracion, leerFase, CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO,
 } from '../../src/efectos/CuerpoVivo.js'
 
 const CASILLA = 60
@@ -105,9 +105,10 @@ test('al apoyar el pie el sprite queda más ancho y más bajo; a mitad del paso,
   assert.ok(paso.desplazamiento.y < 0)
 })
 
-test('el efecto aparece y desaparece suavemente, y al detenerse el sprite recupera su tamaño', () => {
+test('el rebote aparece y desaparece suavemente, y al detenerse el sprite recupera su tamaño', () => {
   const sprite = crearSpriteFalso({ indice: 1, progreso: 0 })
-  const cuerpo = new CuerpoVivo(sprite, PERFIL_CUY, { casilla: CASILLA })
+  // Sin respiración: el cuy quieto respira y no vuelve a medir exactamente lo mismo.
+  const cuerpo = new CuerpoVivo(sprite, { ...PERFIL_CUY, respiracion: null }, { casilla: CASILLA })
   avanzar(cuerpo, 1 / 60)
   assert.ok(cuerpo.intensidad > 0 && cuerpo.intensidad < 0.35, 'el primer cuadro no salta a toda su fuerza')
   avanzar(cuerpo, 1 / 60, 90)
@@ -135,4 +136,71 @@ test('una expresión o la vida apagada no mueven el cuerpo', () => {
   assert.equal(apagado.sprite.scaleY, 0.5)
   assert.equal(apagado.sprite.y, 200)
   assert.equal(apagado.altura, 0)
+})
+
+test('la respiración estira y encoge el cuerpo entre un 2 % y un 3 % cada 2 segundos', () => {
+  const respiracion = PERFIL_CUY.respiracion
+  assert.ok(respiracion.amplitud >= 0.02 && respiracion.amplitud <= 0.03)
+  assert.equal(respiracion.periodo, 2)
+  cerca(calcularRespiracion(0, respiracion), 0)
+  cerca(calcularRespiracion(0.5, respiracion), respiracion.amplitud)
+  cerca(calcularRespiracion(1, respiracion), 0)
+  cerca(calcularRespiracion(1.5, respiracion), -respiracion.amplitud)
+  cerca(calcularRespiracion(2, respiracion), 0)
+})
+
+test('quieto, el cuy respira solo a lo alto y sin despegar los pies del suelo', () => {
+  const cuerpo = new CuerpoVivo(crearSpriteFalso({ caminando: false }), PERFIL_CUY, { casilla: CASILLA })
+  let maximo = -Infinity
+  let minimo = Infinity
+  for (let cuadro = 0; cuadro < 60 * 6; cuadro += 1) {
+    avanzar(cuerpo, 1 / 60)
+    // Se descartan los primeros segundos, mientras la respiración se asienta.
+    if (cuadro > 60 * 2) {
+      const cambio = cuerpo.sprite.scaleY / 0.5 - 1
+      maximo = Math.max(maximo, cambio)
+      minimo = Math.min(minimo, cambio)
+    }
+    assert.equal(cuerpo.sprite.scaleX, 0.5, 'respirar no ensancha el cuerpo')
+    assert.equal(cuerpo.sprite.y, 200, 'los pies no se despegan del suelo')
+    assert.equal(cuerpo.sprite.rotation, 0)
+  }
+  cerca(maximo, PERFIL_CUY.respiracion.amplitud, 0.001)
+  cerca(minimo, -PERFIL_CUY.respiracion.amplitud, 0.001)
+})
+
+test('la respiración empieza y termina con suavidad al caminar y al hacer una expresión', () => {
+  const sprite = crearSpriteFalso({ caminando: false })
+  const cuerpo = new CuerpoVivo(sprite, PERFIL_CUY, { casilla: CASILLA })
+  // Primer cuadro: todavía no hay respiración, aparece poco a poco.
+  avanzar(cuerpo, 1 / 60)
+  assert.ok(cuerpo.quietud < 0.2)
+  avanzar(cuerpo, 1 / 60, 150)
+  assert.ok(cuerpo.quietud > 0.99)
+
+  // Al empezar a caminar se apaga sin saltos y el sprite recupera su alto.
+  sprite.estadoMovimiento = 'caminar'
+  avanzar(cuerpo, 1 / 60)
+  assert.ok(cuerpo.quietud > 0.5, 'no se apaga de golpe')
+  avanzar(cuerpo, 1 / 60, 120)
+  assert.equal(cuerpo.quietud, 0)
+  assert.equal(cuerpo.respiracion, 0)
+
+  // Una expresión tampoco deja respirar al cuerpo.
+  sprite.estadoMovimiento = 'reposo'
+  sprite.estadoExpresivo = 'feliz'
+  avanzar(cuerpo, 1 / 60, 120)
+  assert.equal(cuerpo.respiracion, 0)
+})
+
+test('el zorro no respira ni con la vida apagada el cuy', () => {
+  const zorro = new CuerpoVivo(crearSpriteFalso({ caminando: false }), PERFIL_ZORRO, { casilla: CASILLA })
+  avanzar(zorro, 1 / 60, 300)
+  assert.equal(zorro.respiracion, 0)
+  assert.equal(zorro.sprite.scaleY, 0.5)
+
+  const apagado = new CuerpoVivo(crearSpriteFalso({ caminando: false }), PERFIL_CUY, { casilla: CASILLA, activo: false })
+  avanzar(apagado, 1 / 60, 300)
+  assert.equal(apagado.respiracion, 0)
+  assert.equal(apagado.sprite.scaleY, 0.5)
 })

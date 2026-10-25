@@ -32,10 +32,13 @@ test('el cuy sube y se aplasta menos del 5 % con cada paso, sincronizado con sus
   expect(Math.max(...aplastes)).toBeGreaterThan(0.02)
   expect(Math.max(...aplastes)).toBeLessThan(0.05)
   for (const m of muestras) {
+    // La respiración se apaga con suavidad al empezar a caminar; se descuenta
+    // para medir solo el aplaste del paso.
+    const altoSinRespirar = m.escalaY / (1 + m.respiracion)
     expect(m.escalaX).toBeGreaterThanOrEqual(m.escalaBaseX - 1e-9)
-    expect(m.escalaY).toBeLessThanOrEqual(m.escalaBaseY + 1e-9)
+    expect(altoSinRespirar).toBeLessThanOrEqual(m.escalaBaseY + 1e-9)
     expect(m.escalaX / m.escalaBaseX - 1).toBeLessThan(0.05)
-    expect(1 - m.escalaY / m.escalaBaseY).toBeLessThan(0.05)
+    expect(1 - altoSinRespirar / m.escalaBaseY).toBeLessThan(0.05)
     // Nunca rota ni inclina al personaje.
     expect(m.rotacion).toBe(0)
   }
@@ -113,7 +116,10 @@ test('al detenerse el cuy recupera su tamaño y su altura exactos', async ({ pag
   const quieto = (await estado(pagina)).vida.cuerpos.cuy
   expect(quieto.intensidad).toBe(0)
   expect(quieto.escalaX).toBe(quieto.escalaBaseX)
-  expect(quieto.escalaY).toBe(quieto.escalaBaseY)
+  expect(quieto.aplaste).toBe(0)
+  expect(quieto.altura).toBe(0)
+  // Quieto solo queda la respiración: el alto es el base más lo que respira.
+  expect(quieto.escalaY).toBeCloseTo(quieto.escalaBaseY * (1 + quieto.respiracion), 9)
   expect(quieto.desplazamiento).toEqual({ x: 0, y: 0 })
 })
 
