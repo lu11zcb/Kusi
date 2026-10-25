@@ -23,6 +23,7 @@ import { CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO } from '../efectos/CuerpoVivo.js'
 import { Polvito } from '../efectos/Polvito.js'
 import { PopFruta } from '../efectos/PopFruta.js'
 import { FrutasVivas } from '../efectos/FrutasVivas.js'
+import { CapturaLaberinto } from '../efectos/CapturaLaberinto.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -104,6 +105,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     if (this.anunciarNivel) this.sonidos.reproducir('nivel')
     this.events.once('shutdown', () => {
       this.sonidos.destruir()
+      this.captura.destruir()
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
       this.input.off('pointerdown', this.alIniciarDeslizamiento)
       this.input.off('pointerup', this.alTerminarDeslizamiento)
@@ -296,6 +298,8 @@ export class EscenaLaberinto extends Phaser.Scene {
     const basesDeLasFrutas = this.reto.objetos.map((objeto) => this.centroCasilla(objeto.fila, objeto.columna))
     this.frutasVivas = new FrutasVivas(this, this.dibujosObjetos, basesDeLasFrutas,
       { casilla: this.casilla, activo: this.vida })
+    // Al ser atrapado, los zorros se detienen junto con todo lo demás.
+    this.captura = new CapturaLaberinto(this, { ancho: ANCHO, congelables: this.dibujosZorros, activo: this.vida })
     this.ultimosCuadros = new Map()
   }
 
@@ -461,8 +465,16 @@ export class EscenaLaberinto extends Phaser.Scene {
     // Se restablece solo el movimiento. La regla y sus dibujos conservan todas
     // las frutas recogidas y la puerta permanece abierta si ya estaba completa.
     this.cuy.mostrarEstado('asustado', 'frente')
-    this.sonidos.reproducir('captura')
     avisarPartida(this.partida, 'accion', { nivel: this.indiceNivel + 1, atrapado: true })
+  }
+
+  // El zorro toca al cuy. Con vida, suena el quejido, el juego se congela un
+  // instante y la pantalla tiembla muy suave; la captura de verdad (volver al
+  // inicio y asustarse) se aplica al terminar ese instante. Sin vida ocurre de
+  // golpe, como antes de la capa de vida.
+  alTocarElZorro() {
+    this.sonidos.reproducir('captura')
+    if (!this.captura.iniciar()) this.capturarCuy()
   }
 
   avanzarPartida(segundos) {
@@ -483,7 +495,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       // Los pasos pequeños también detectan personajes que se cruzan entre dos
       // centros, sin depender de la velocidad de dibujo ni saltarse al zorro.
       if (this.segundosInvulnerable === 0 && this.zorros.some((zorro) => seAtrapan(this.movimiento, zorro))) {
-        this.capturarCuy()
+        this.alTocarElZorro()
         break
       }
     }
@@ -494,6 +506,12 @@ export class EscenaLaberinto extends Phaser.Scene {
     // Una pestaña que vuelve de segundo plano no debe teletransportar al niño.
     // La lógica pura sí consume deltas completos; la escena limita la pausa visual.
     const segundos = Math.min(delta, 100) / 1000
+    // Captura: mientras el juego está congelado no avanza nada (ni los personajes ni
+    // sus animaciones); el temblor de la pantalla sí sigue. Al terminar el congelado
+    // se aplica la captura, antes de medir cuánto se movió cada personaje.
+    const captura = this.captura.actualizar(segundos)
+    if (captura.congelado) return
+    if (captura.termino) this.capturarCuy()
     const anterior = this.posicionMovimiento()
     const anterioresZorros = this.zorros.map(posicionEnCasillas)
     if (!this.terminada && !this.cambiandoNivel) {
@@ -551,7 +569,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       capturas: this.capturas,
       zorros: this.zorros.map((zorro, indice) => ({
         ...zorro, inicio: { ...zorro.inicio }, mirando: this.dibujosZorros[indice].direccionAnimada,
-        flipX: this.dibujosZorros[indice].flipX,
+        flipX: this.dibujosZorros[indice].flipX, fotograma: this.dibujosZorros[indice].frame.name,
         // Posición real del zorro, sin el rebote de sus pasos.
         x: this.dibujosZorros[indice].x - this.cuerposZorros[indice].desplazamiento.x,
         y: this.dibujosZorros[indice].y - this.cuerposZorros[indice].desplazamiento.y,
@@ -568,6 +586,13 @@ export class EscenaLaberinto extends Phaser.Scene {
         polvito: this.polvito.estado(),
         pop: this.popFruta.estado(),
         frutasVivas: this.frutasVivas.estado(),
+        captura: {
+          ...this.captura.estado(),
+          camara: {
+            scrollX: this.cameras.main.scrollX, scrollY: this.cameras.main.scrollY,
+            rotacion: this.cameras.main.rotation, zoom: this.cameras.main.zoom,
+          },
+        },
         frutas: this.dibujosObjetos.map((dibujo) => ({
           x: dibujo.x, y: dibujo.y, visible: dibujo.visible, alpha: dibujo.alpha,
           escalaX: dibujo.scaleX, escalaY: dibujo.scaleY,
