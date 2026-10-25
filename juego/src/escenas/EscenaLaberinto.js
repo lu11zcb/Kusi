@@ -6,7 +6,8 @@ import { CuyAnimado } from '../dibujos/cuyAnimado.js'
 import { ZorroAnimado } from '../dibujos/zorroAnimado.js'
 import { crearBoton, dibujarGlobo } from '../interfaz/piezas.js'
 import { avisos } from '../logica/avisos.js'
-import { avisarPartida } from '../logica/partidaLaberinto.js'
+import { avisarPartida, crearPartidaLaberinto } from '../logica/partidaLaberinto.js'
+import { crearRegla, comerEnCasilla } from '../logica/reglasLaberinto.js'
 import { decir } from '../logica/voz.js'
 import {
   crearMovimiento, pedirDireccion, avanzarMovimiento, direccionDelDeslizamiento,
@@ -25,17 +26,21 @@ export class EscenaLaberinto extends Phaser.Scene {
     super('laberinto')
   }
 
-  init({ paquete, cuyAnimado, zorroAnimado, partida }) {
+  init({ paquete, cuyAnimado, zorroAnimado, partida, indiceNivel = 0, iniciada = false }) {
     this.paquete = paquete
     this.datosCuyAnimado = cuyAnimado
     this.datosZorroAnimado = zorroAnimado
     this.partida = partida
-    this.indiceNivel = 0
+    this.indiceNivel = indiceNivel
     this.reto = paquete.retos[this.indiceNivel]
     this.indiceAyuda = 0
     this.movimiento = crearMovimiento(this.reto.mapa)
+    this.regla = crearRegla(this.reto)
     this.multiplicador = new URLSearchParams(window.location.search).get('rapido') === '1' ? 4 : 1
-    this.iniciada = false
+    this.iniciada = iniciada
+    this.terminada = false
+    this.cambiandoNivel = false
+    this.mensajeCierre = ''
     this.iniciosDeslizamiento = new Map()
   }
 
@@ -49,7 +54,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearPersonajes()
     this.crearControles()
     this.exponerParaPruebas()
-    avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
+    if (this.indiceNivel === 0) avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: 1 })
     this.events.once('shutdown', () => {
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
       this.input.off('pointerdown', this.alIniciarDeslizamiento)
@@ -78,6 +83,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   crearBarra() {
+    this.casilleros = []
     this.add.rectangle(ANCHO / 2, 76, ANCHO - 40, 112, NUMERO.papel)
       .setRounded(24).setStrokeStyle(3, 0xd8b990).setDepth(1000)
     this.add.text(48, 38, this.reto.regla.tipo === 'orden' ? 'Sigue el orden' : 'Busca frutas',
@@ -91,17 +97,20 @@ export class EscenaLaberinto extends Phaser.Scene {
       const lado = Math.min(78, espacio - 10)
       regla.secuencia.forEach((tipo, indice) => {
         const x = 346 + indice * espacio
-        this.add.rectangle(x, 74, lado, lado, indice === 0 ? 0xffe0a3 : 0xf6ebd8)
+        const fondo = this.add.rectangle(x, 74, lado, lado, indice === 0 ? 0xffe0a3 : 0xf6ebd8)
           .setRounded(16).setStrokeStyle(indice === 0 ? 4 : 2, indice === 0 ? 0xb4611f : 0xd8b990)
           .setDepth(1001)
         ajustarATamano(this.add.image(x, 73, tipo), lado - 10, lado - 10).setDepth(1002)
+        this.casilleros.push({ fondo, marca: this.crearMarca(x + lado * 0.34, 74 + lado * 0.34) })
       })
     } else {
       ajustarATamano(this.add.image(344, 74, 'clase-' + regla.clase), 78, 78).setDepth(1002)
       const espacio = Math.min(70, 480 / regla.meta)
       for (let indice = 0; indice < regla.meta; indice += 1) {
-        this.add.rectangle(432 + indice * espacio, 75, espacio - 12, 58, 0xf6ebd8)
+        const x = 432 + indice * espacio
+        const fondo = this.add.rectangle(x, 75, espacio - 12, 58, 0xf6ebd8)
           .setRounded(12).setStrokeStyle(3, 0xb99a70).setDepth(1001)
+        this.casilleros.push({ fondo, marca: this.crearMarca(x, 75) })
       }
     }
 
@@ -119,6 +128,23 @@ export class EscenaLaberinto extends Phaser.Scene {
         },
       }).setDepth(1003),
     }
+  }
+
+  crearMarca(x, y) {
+    const marca = this.add.graphics().setPosition(x, y).setDepth(1004).setVisible(false)
+    marca.fillStyle(0x326b39).fillCircle(0, 0, 13)
+    marca.lineStyle(4, 0xffffff).beginPath().moveTo(-7, 0).lineTo(-2, 5).lineTo(7, -6).strokePath()
+    return marca
+  }
+
+  actualizarBarra() {
+    this.casilleros.forEach(({ fondo, marca }, indice) => {
+      const recogido = indice < this.regla.recogidos
+      const siguiente = !this.regla.completada && indice === this.regla.recogidos
+      fondo.setFillStyle(recogido ? 0xdceac4 : siguiente ? 0xffe0a3 : 0xf6ebd8)
+        .setStrokeStyle(siguiente ? 4 : 2, siguiente ? 0xb4611f : 0xb99a70)
+      marca.setVisible(recogido)
+    })
   }
 
   crearMapa() {
@@ -160,8 +186,8 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.dibujoKusi = ajustarATamano(this.add.image(142, 674, 'kusi-frente').setOrigin(0.5, 1), 164, 180)
   }
 
-  mostrarAyuda() {
-    const indice = Math.min(this.indiceAyuda, this.reto.ayudas.length - 1)
+  mostrarAyuda(numero = null) {
+    const indice = numero === null ? Math.min(this.indiceAyuda, this.reto.ayudas.length - 1) : numero - 1
     this.textoGlobo.setText(this.reto.ayudas[indice])
     this.indiceAyuda += 1
     avisarPartida(this.partida, 'ayuda', { nivel: this.indiceNivel + 1, ayuda: indice + 1 })
@@ -226,11 +252,77 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   elegirRumbo(direccion) {
+    if (this.terminada || this.cambiandoNivel) return
     pedirDireccion(this.movimiento, direccion)
     if (!this.iniciada) {
       this.iniciada = true
       avisarPartida(this.partida, 'inicio', { nivel: this.indiceNivel + 1 })
     }
+  }
+
+  procesarCasilla({ fila, columna }) {
+    const resultado = comerEnCasilla(this.regla, this.reto.regla, fila, columna)
+    if (resultado) {
+      avisarPartida(this.partida, 'accion', {
+        nivel: this.indiceNivel + 1, objeto: resultado.objeto, correcto: resultado.correcto,
+      })
+      const dibujo = this.dibujosObjetos[resultado.indice]
+      if (resultado.correcto) {
+        this.tweens.killTweensOf(dibujo)
+        dibujo.setVisible(false)
+        this.actualizarBarra()
+        this.cuy.mostrarEstado('feliz', 'frente')
+        if (this.regla.completada) this.puerta.setTexture('puerta-abierta')
+      } else {
+        // Solo rebota la fruta. El cuy conserva su posición, velocidad y giro
+        // guardado; cruzar otra vez esta casilla permite intentar de nuevo.
+        const objeto = this.regla.objetos[resultado.indice]
+        const base = this.centroCasilla(objeto.fila, objeto.columna)
+        this.tweens.killTweensOf(dibujo)
+        dibujo.setPosition(base.x, base.y)
+        this.tweens.add({ targets: dibujo, y: base.y - this.casilla * 0.2,
+          duration: 110, yoyo: true, ease: 'Sine.easeOut' })
+        this.mostrarAyuda(resultado.ayuda)
+      }
+    }
+    if (this.reto.mapa[fila][columna] === 'P' && this.regla.completada) {
+      this.completarNivel()
+      return false
+    }
+    return true
+  }
+
+  datosParaNivel(indiceNivel, partida = this.partida) {
+    return {
+      paquete: this.paquete, cuyAnimado: this.datosCuyAnimado, zorroAnimado: this.datosZorroAnimado,
+      partida, indiceNivel, iniciada: partida === this.partida && this.iniciada,
+    }
+  }
+
+  completarNivel() {
+    if (this.cambiandoNivel || this.terminada) return
+    avisarPartida(this.partida, 'reto_completado', { nivel: this.indiceNivel + 1 })
+    if (this.indiceNivel + 1 < this.paquete.retos.length) {
+      this.cambiandoNivel = true
+      this.scene.restart(this.datosParaNivel(this.indiceNivel + 1))
+    } else {
+      this.terminada = true
+      this.mensajeCierre = this.paquete.cierre?.mensaje ?? '¡Lo lograste! Gracias por ayudar a Kusi.'
+      avisarPartida(this.partida, 'fin', { niveles: this.paquete.retos.length })
+      this.mostrarCierre()
+    }
+  }
+
+  mostrarCierre() {
+    this.add.rectangle(ANCHO / 2, ALTO / 2, ANCHO, ALTO, NUMERO.crema, 0.97).setDepth(2000)
+    ajustarATamano(this.add.image(ANCHO / 2, 300, 'kusi-frente').setOrigin(0.5, 1), 180, 204).setDepth(2001)
+    this.add.text(ANCHO / 2, 386, this.mensajeCierre, estiloTexto(40, COLOR.tinta, {
+      wordWrap: { width: 820 }, lineSpacing: 8,
+    })).setOrigin(0.5).setDepth(2001)
+    this.botones.repetir = crearBoton(this, ANCHO / 2, 554, {
+      ancho: 320, alto: 82, texto: 'Jugar otra vez', tamano: 32,
+      alTocar: () => this.scene.restart(this.datosParaNivel(0, crearPartidaLaberinto())),
+    }).setDepth(2002)
   }
 
   posicionMovimiento() {
@@ -246,7 +338,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     // La lógica pura sí consume deltas completos; la escena limita la pausa visual.
     const segundos = Math.min(delta, 100) / 1000
     const anterior = this.posicionMovimiento()
-    avanzarMovimiento(this.movimiento, this.reto.mapa, segundos, CASILLAS_POR_SEGUNDO * this.multiplicador)
+    if (!this.terminada && !this.cambiandoNivel) {
+      avanzarMovimiento(this.movimiento, this.reto.mapa, segundos, CASILLAS_POR_SEGUNDO * this.multiplicador,
+        (casilla) => this.procesarCasilla(casilla))
+    }
     const punto = this.posicionMovimiento()
     this.cuy.setPosition(punto.x, punto.y + this.casilla * 0.4)
     this.sombraCuy.setPosition(punto.x, punto.y + this.casilla * 0.3)
@@ -262,6 +357,8 @@ export class EscenaLaberinto extends Phaser.Scene {
       casilla: this.casilla, origenMapa: { ...this.origenMapa },
       inicio: { ...this.inicio }, consigna: this.textoGlobo.text,
       movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
+      regla: { ...this.regla, objetos: this.regla.objetos.map((objeto) => ({ ...objeto })) },
+      puertaAbierta: this.regla.completada, terminada: this.terminada, mensajeCierre: this.mensajeCierre,
       cuyX: this.cuy.x, cuyY: this.cuy.y,
       animacionCuy: {
         clave: this.cuy.anims.currentAnim?.key, fotograma: this.cuy.frame.name,

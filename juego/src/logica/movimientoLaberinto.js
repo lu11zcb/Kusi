@@ -67,7 +67,7 @@ export function pedirDireccion(estado, direccion) {
 // expresa la fracción recorrida hacia la siguiente casilla en «direccion».
 // Consumimos el tiempo restante después de cada llegada para que un fotograma
 // lento pueda recorrer varias casillas, revisando muros y giros en todas ellas.
-export function avanzarMovimiento(estado, mapa, segundos, casillasPorSegundo = 3) {
+export function avanzarMovimiento(estado, mapa, segundos, casillasPorSegundo = 3, alEntrar = null) {
   if (!Number.isFinite(segundos) || segundos < 0
     || !Number.isFinite(casillasPorSegundo) || casillasPorSegundo <= 0) {
     return estado
@@ -89,6 +89,15 @@ export function avanzarMovimiento(estado, mapa, segundos, casillasPorSegundo = 3
     estado.columna += desplazamiento.columna
     estado.progreso = 0
     distanciaRestante = Math.max(0, distanciaRestante - hastaSiguienteCasilla)
+
+    // Se notifica cada centro atravesado, incluso si el cuadro recorre varias
+    // casillas. Devolver false permite detenerse al salir del nivel sin consumir
+    // el tiempo sobrante en el mapa anterior. El módulo sigue sin conocer Phaser.
+    if (alEntrar?.(estado) === false) {
+      estado.moviendose = false
+      estado.direccionPendiente = null
+      break
+    }
 
     // Decidimos también si se consumió exactamente la distancia disponible:
     // ante un muro, la animación debe quedar quieta en este mismo fotograma.
