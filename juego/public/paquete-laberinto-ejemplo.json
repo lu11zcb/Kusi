@@ -1,0 +1,99 @@
+{
+  "formato": "kusi-paquete/0",
+  "titulo": "Los caminos de Kusi",
+  "curso": "Matemática",
+  "familia": "laberinto",
+  "orientacion": "horizontal",
+  "meta": "Sigue los caminos y encuentra las frutas",
+  "consigna": "Ayuda al cuy a recorrer el laberinto",
+  "historia": "Kusi y su amigo cuy recorren los caminos de su comunidad para reunir frutas.",
+  "retos": [
+    {
+      "id": "laberinto-1",
+      "mapa": [
+        "###########",
+        "#C........#",
+        "#.###.###.#",
+        "#...#.....#",
+        "###.#.###.#",
+        "#...#....P#",
+        "###########"
+      ],
+      "regla": { "tipo": "orden", "secuencia": ["fresa", "platano", "fresa", "platano"] },
+      "objetos": [
+        { "tipo": "fresa", "fila": 1, "columna": 3 },
+        { "tipo": "platano", "fila": 1, "columna": 7 },
+        { "tipo": "fresa", "fila": 3, "columna": 7 },
+        { "tipo": "platano", "fila": 5, "columna": 7 }
+      ],
+      "enemigos": [],
+      "consigna": "Busca una fresa, un plátano, otra fresa y otro plátano. ¡Después ve a la puerta!",
+      "ayudas": [
+        "Mira la fila de frutas de arriba. Busca la que sigue.",
+        "Primero fresa, después plátano. Repite ese orden una vez más."
+      ]
+    },
+    {
+      "id": "laberinto-2",
+      "mapa": [
+        "###############",
+        "#C............#",
+        "#.###.###.###.#",
+        "#...#...#.....#",
+        "###.#.#.###.#.#",
+        "#.....#.....#.#",
+        "#.#####.###.#.#",
+        "#...........#P#",
+        "###############"
+      ],
+      "regla": { "tipo": "orden", "secuencia": ["mango", "mandarina", "mango", "mandarina"] },
+      "objetos": [
+        { "tipo": "mango", "fila": 1, "columna": 4 },
+        { "tipo": "mandarina", "fila": 1, "columna": 10 },
+        { "tipo": "mango", "fila": 3, "columna": 10 },
+        { "tipo": "mandarina", "fila": 5, "columna": 10 }
+      ],
+      "enemigos": [
+        { "tipo": "zorro", "fila": 7, "columna": 5, "movimiento": "patrulla" }
+      ],
+      "consigna": "Busca mango, mandarina, mango y mandarina. ¡Encuentra un camino para pasar al zorro!",
+      "ayudas": [
+        "Mira qué fruta sigue en la fila de arriba.",
+        "Busca un mango y luego una mandarina. Hazlo dos veces."
+      ]
+    },
+    {
+      "id": "laberinto-3",
+      "mapa": [
+        "###############",
+        "#C............#",
+        "#.###.###.###.#",
+        "#...#...#.....#",
+        "#.#.#.#.#.###.#",
+        "#.#.....#.....#",
+        "#.###.#####.#.#",
+        "#...........#P#",
+        "###############"
+      ],
+      "regla": { "tipo": "solo_clase", "clase": "fruta", "meta": 4 },
+      "objetos": [
+        { "tipo": "fresa", "fila": 1, "columna": 4 },
+        { "tipo": "mango", "fila": 3, "columna": 6 },
+        { "tipo": "mandarina", "fila": 5, "columna": 11 },
+        { "tipo": "pina", "fila": 7, "columna": 9 },
+        { "tipo": "zanahoria", "fila": 1, "columna": 10 },
+        { "tipo": "papa", "fila": 5, "columna": 5 },
+        { "tipo": "choclo", "fila": 7, "columna": 3 }
+      ],
+      "enemigos": [
+        { "tipo": "zorro", "fila": 3, "columna": 11, "movimiento": "persigue_cerca" }
+      ],
+      "consigna": "Recoge cuatro frutas. Deja las verduras en su lugar y busca la puerta.",
+      "ayudas": [
+        "Busca frutas como la fresa, el mango, la mandarina y la piña.",
+        "La zanahoria, la papa y el choclo son verduras. Déjalos en el camino."
+      ]
+    }
+  ],
+  "cierre": { "mensaje": "¡Lo lograste! Gracias por recorrer los caminos con Kusi." }
+}

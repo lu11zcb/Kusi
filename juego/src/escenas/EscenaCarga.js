@@ -21,6 +21,7 @@ import {
 
 // Paquete de ejemplo utilizado mientras se integra el generador real.
 const ARCHIVO_DEL_PAQUETE = 'paquete-ejemplo.json'
+const ARCHIVO_DEL_LABERINTO = 'paquete-laberinto-ejemplo.json'
 
 export class EscenaCarga extends Phaser.Scene {
   constructor() {
@@ -28,18 +29,22 @@ export class EscenaCarga extends Phaser.Scene {
   }
 
   preload() {
+    // Solo el alias explícito elige el ejemplo nuevo. Sin parámetros se conserva
+    // el mercado; la escena definitiva se decide por la familia del JSON cargado.
+    const parametros = new URLSearchParams(window.location.search)
+    this.pideLaberinto = parametros.get('paquete') === 'laberinto'
     this.cameras.main.setBackgroundColor(COLOR.crema)
 
     this.add
       .text(
         ANCHO / 2,
         ALTO / 2,
-        'Cargando el mercado...',
+        this.pideLaberinto ? 'Preparando los caminos...' : 'Cargando el mercado...',
         estiloTexto(36),
       )
       .setOrigin(0.5)
 
-    this.load.json('paquete', ARCHIVO_DEL_PAQUETE)
+    this.load.json('paquete', this.pideLaberinto ? ARCHIVO_DEL_LABERINTO : ARCHIVO_DEL_PAQUETE)
     this.load.json(CLAVE_MANIFIESTO_CUY, ARCHIVO_MANIFIESTO_CUY)
     this.load.json(CLAVE_MANIFIESTO_ZORRO, ARCHIVO_MANIFIESTO_ZORRO)
   }
@@ -49,10 +54,11 @@ export class EscenaCarga extends Phaser.Scene {
 
     try {
       // Simula la generación del paquete a partir del ejemplo.
-      const paquete = await generarPaquetePrueba(paqueteBase)
+      const esLaberinto = paqueteBase?.familia === 'laberinto'
+      const paquete = esLaberinto ? structuredClone(paqueteBase) : await generarPaquetePrueba(paqueteBase)
 
       // Verifica que el paquete generado tenga la estructura necesaria.
-      const resultado = validarPaquete(paquete)
+      const resultado = esLaberinto ? { valido: true } : validarPaquete(paquete)
 
       if (!resultado.valido) {
         throw new Error(resultado.errores.join('; '))
@@ -63,7 +69,7 @@ export class EscenaCarga extends Phaser.Scene {
       const zorroAnimado = validarSpritePersonaje(this.cache.json.get(CLAVE_MANIFIESTO_ZORRO), 'zorro')
 
       // Carga los dibujos necesarios para los puestos y productos.
-      const claves = clavesDelPaquete(paquete)
+      const claves = esLaberinto ? new Map([['kusi-frente', 'kusi-frente']]) : clavesDelPaquete(paquete)
       pedirDibujos(this, claves)
       pedirHojaCuy(this, cuyAnimado)
       pedirHojaZorro(this, zorroAnimado)
@@ -81,7 +87,7 @@ export class EscenaCarga extends Phaser.Scene {
           // Abre el mercado usando el paquete preparado.
           registrarAnimacionesCuy(this, cuyAnimado)
           registrarAnimacionesZorro(this, zorroAnimado)
-          this.scene.start('mercado', { paquete, cuyAnimado, zorroAnimado })
+          this.scene.start(esLaberinto ? 'laberinto' : 'mercado', { paquete, cuyAnimado, zorroAnimado })
         } catch (error) {
           this.mostrarError(error)
         }

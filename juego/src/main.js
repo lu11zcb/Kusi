@@ -1,4 +1,4 @@
-// Arranque del juego del mercado de Kusi.
+// Arranque de los juegos de Kusi: la carga elige la familia del paquete.
 
 import * as Phaser from 'phaser'
 import '@fontsource/fredoka/500.css'
@@ -7,6 +7,7 @@ import '@fontsource/fredoka/700.css'
 import { ANCHO, ALTO, LETRA } from './medidas.js'
 import { EscenaCarga } from './escenas/EscenaCarga.js'
 import { EscenaMercado } from './escenas/EscenaMercado.js'
+import { EscenaLaberinto } from './escenas/EscenaLaberinto.js'
 
 async function empezar() {
   // Primero se carga la letra; si no, los textos del lienzo saldrían con otra letra.
@@ -27,7 +28,7 @@ async function empezar() {
     input: {
       activePointers: 3,
     },
-    scene: [EscenaCarga, EscenaMercado],
+    scene: [EscenaCarga, EscenaMercado, EscenaLaberinto],
   })
 }
 
