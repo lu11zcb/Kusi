@@ -358,8 +358,8 @@ export class EscenaMercado extends Phaser.Scene {
     this.marca.setVisible(false)
   }
 
-  // El sprite elige el ciclo lateral para los costados cuando está disponible;
-  // las direcciones verticales mantienen el caminar frontal sin voltearlo.
+  // El sprite elige la vista frontal, de espaldas o lateral y conserva esa
+  // dirección al detenerse; únicamente el lateral izquierdo se refleja.
   mirar(vista) {
     this.mirando = vista
   }

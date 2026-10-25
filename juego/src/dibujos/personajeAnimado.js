@@ -101,7 +101,9 @@ export class PersonajeAnimado extends Phaser.GameObjects.Sprite {
     this.estadoMovimiento = caminando ? 'caminar' : 'reposo'
     if (!this.estadoExpresivo) {
       const animaciones = this.datosSprite.animaciones[direccion]
-      const caminar = esLateral(direccion) && animaciones.caminar_lado ? 'caminar_lado' : 'caminar'
+      let caminar = 'caminar'
+      if (esLateral(direccion) && animaciones.caminar_lado) caminar = 'caminar_lado'
+      else if (direccion === 'espaldas' && animaciones.caminar_espalda) caminar = 'caminar_espalda'
       this.reproducirEstado(direccion, caminando ? caminar : estadoQuieto(animaciones))
     }
     // La cadencia del manifiesto mide tiempo real: acelerar o frenar no cambia

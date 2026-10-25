@@ -78,7 +78,8 @@ de 768 × 512 px. La secuencia local `0,1,2,1` corresponde a `3,4,5,4` en el JSO
 
 Derecha usa esos cuadros sin voltear; izquierda declara `voltear: true` para
 caminar y quieto. Quieto lateral utiliza el cuadro local 1 (índice 4). Arriba y
-abajo conservan `0,1,2,1` de frente, sin voltear. Todos los ciclos caminan a
+abajo usaban inicialmente `0,1,2,1` de frente; con la quinta fila, arriba usa
+`caminar_espalda` y abajo conserva el frente. Todos los ciclos caminan a
 8 fps siempre y la escala de visualización del cuy sigue siendo `0.5`.
 
 La verificación se hace sobre las dos filas juntas: también comprueba que el
@@ -126,7 +127,7 @@ entrar la trayectoria completa. No se bajan los pies del cuadro central para
 alinearlos con los apoyos. La cabeza se centra en la banda superior del 30 %,
 porque en esta pose los brazos levantados invaden la banda habitual del 42 %.
 
-Los cuadros locales `0,1,2` son `9,10,11` del atlas final de 768 × 1024 px:
+Los cuadros locales `0,1,2` son `9,10,11` del atlas de este paso, de 768 × 1024 px:
 8 fps, una vez y regreso a quieto. Phaser reproduce 375 ms; el GIF redondea a
 centésimas (`120,130,130 ms`, 380 ms en total), sin bucle. La vista frontal no
 se voltea aunque la expresión empiece mirando a la izquierda.
@@ -145,3 +146,51 @@ medidas. Sin esas opciones, el verificador conserva la comprobación completa.
 ```powershell
 juego/.venv/Scripts/python -m unittest discover -s juego/herramientas/animaciones -p "test_*.py" -v
 ```
+
+## Caminar de espaldas del cuy
+
+```powershell
+juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-espalda-3-cuadros.png --celda 256x256 --margen 7 --referencia juego/arte/cuy/vista-previa/armado.json --hoja-base juego/public/dibujos/cuy-nino-cuadros-v3.png --salida juego/public/dibujos/cuy-nino-cuadros-v4.png --reporte juego/arte/cuy/vista-previa/armado-caminar-espalda.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v4.png --celda 256x256 --cuadros 0,1,2,3,4,5,12,13,14 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-caminar-espalda.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py juego/public/dibujos/cuy-nino-animado-v1.json juego/arte/cuy/vista-previa/caminar-espalda.gif --direccion espaldas --estado caminar_espalda
+```
+
+La quinta fila añade los índices `12,13,14` al atlas de 768 × 1280 px. Las
+cuatro filas anteriores se copian sin remuestrear ni cambiar sus píxeles.
+`--referencia` reutiliza exactamente la escala frontal
+`0.34970238095238093`, el centro objetivo `x=128` y el apoyo objetivo
+`y=243.95089285714286`. Cada cuadro se alinea en x por la cabeza y en y por
+el pie apoyado; las diferencias de posición del original se corrigen al armar.
+
+Se usa `--margen 7` porque el borde suave del mechón de espalda ocupa entre
+0,35 y 0,70 px de la reserva extra de 2 px que exige el margen predeterminado
+de 8. Esta opción permite conservar la escala exacta y todos los bordes sin
+recortar ni redibujar. La hoja final tiene 8 px transparentes arriba y 9 abajo
+en los tres cuadros de espalda.
+
+Arriba selecciona `espaldas/caminar_espalda`: la secuencia local `0,1,2,1`
+corresponde a `12,13,14,13` en el atlas, a 8 fps y con repetición infinita.
+Abajo usa `frente/caminar` (`0,1,2,1`). Derecha e izquierda usan
+`caminar_lado` (`3,4,5,4`), reflejando solo la izquierda. Frente y espaldas
+nunca se voltean, tanto en Phaser como en las vistas previas. Al detenerse se
+conserva la última dirección con el cuadro del medio: 13 de espalda, 1 de
+frente y 4 de lado (reflejado únicamente al mirar a la izquierda).
+
+La verificación independiente de los píxeles de espalda obtiene:
+
+| Cuadro local (atlas) | Centro cabeza x | Cima cabeza y | Pies y |
+| --- | --- | --- | --- |
+| 0 (12) | 128 | 10 | 244 |
+| 1 (13) | 127,5 | 10 | 244 |
+| 2 (14) | 127,5 | 10 | 244 |
+
+La variación dentro de espalda es 0,5 px en x, 0 px en la cima y 0 px en los
+pies. Comparando los nueve cuadros de caminar de frente, de lado y de espaldas,
+las variaciones son 0,5 px, 1 px y 1 px respectivamente: todas dentro de 2 px.
+El GIF `juego/arte/cuy/vista-previa/caminar-espalda.gif` usa el pasto real
+`#5aa04a`, cuatro cuadros de 256 × 256 y bucle infinito. GIF representa los
+125 ms por paso con `120,130,130,120 ms`: un ciclo de 500 ms, equivalente a 8 fps.
+
+Las pruebas `test_espalda.py` reconstruyen la quinta fila desde el original,
+comprueban igualdad exacta de escala y píxeles anteriores, verifican los 2 px
+y comprueban el GIF, su secuencia y la protección contra reflejos.
