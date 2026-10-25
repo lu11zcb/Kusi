@@ -129,9 +129,11 @@ npm run build
 .venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 25 de octubre de 2026: **57 pruebas de lógica**, **51 pruebas de
+Verificado el 25 de octubre de 2026: **108 pruebas de lógica**, **86 pruebas de
 navegador**, **25 pruebas de las hojas de animación** (Python) y compilación
-correctas. La suite completa incluye el mercado y la capa de vida.
+correctas. La suite completa incluye el mercado y la capa de vida. Las pruebas de
+navegador miden cada efecto con el reloj del propio efecto, porque un Chromium sin
+pantalla corre a unos 35 cuadros por segundo y no siempre a tiempo real.
 
 La lógica y la validación se prueban con `node --test`, sin instalar paquetes
 adicionales: movimiento, vuelta guardada, recorrido de cada casilla, reglas,
