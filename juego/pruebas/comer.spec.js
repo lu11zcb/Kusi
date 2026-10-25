@@ -84,3 +84,72 @@ test('con ?vida=0 la fruta desaparece de golpe, sin pop ni estrellitas', async (
     expect(m.estrellitasVivas).toBe(0)
   }
 })
+
+// Recorrido del nivel 1 hasta el plátano equivocado: dos frutas correctas arriba y, al
+// volver por el pasillo inferior, el plátano llega antes que la fresa.
+async function caminarHastaElError(pagina) {
+  await pagina.keyboard.press('ArrowRight')
+  await esperarCasilla(pagina, 1, 9)
+  await pagina.keyboard.press('ArrowDown')
+  await esperarCasilla(pagina, 5, 9)
+  await pagina.keyboard.press('ArrowLeft')
+  await pagina.waitForFunction(
+    () => window.kusi.estado().regla.errores >= 1, null, { timeout: 8000, polling: 'raf' },
+  )
+}
+
+const leerSacudida = (e) => ({
+  t: performance.now(),
+  dx: e.vida.cuerpos.cuy.desplazamiento.x, dy: e.vida.cuerpos.cuy.desplazamiento.y,
+  sacudiendo: e.vida.cuerpos.cuy.sacudiendo, sacudidas: e.vida.cuerpos.cuy.sacudidas,
+  rotacion: e.vida.cuerpos.cuy.rotacion, escalaX: e.vida.cuerpos.cuy.escalaX, escalaBaseX: e.vida.cuerpos.cuy.escalaBaseX,
+  moviendose: e.movimiento.moviendose, fruta: e.vida.frutas[3], casilla: e.casilla,
+})
+
+test('al comer mal la fruta rebota como antes y el cuy se sacude un poquito sin dejar de caminar', async ({ page: pagina }) => {
+  const inicial = await abrir(pagina)
+  const base = inicial.vida.frutas[3]
+  await caminarHastaElError(pagina)
+  const muestras = await muestrear(pagina, 600, leerSacudida)
+
+  // Comer bien no sacude: las dos primeras frutas fueron correctas y solo hay una sacudida.
+  for (const m of muestras) expect(m.sacudidas).toBe(1)
+  // Un poquito: unos píxeles de lado a lado, sin subir, bajar, ensanchar ni girar.
+  const lados = muestras.map((m) => m.dx)
+  expect(Math.max(...lados.map(Math.abs))).toBeGreaterThan(1)
+  expect(Math.max(...lados.map(Math.abs))).toBeLessThan(inicial.casilla * 0.08)
+  expect(lados.some((dx) => dx > 0.3) && lados.some((dx) => dx < -0.3)).toBe(true)
+  for (const m of muestras) {
+    // La sacudida no sube ni baja al cuy: lo único vertical es el rebote normal de
+    // sus pasos, que nunca pasa de 0,06 casillas. Tampoco lo ensancha ni lo gira.
+    expect(m.dy).toBeLessThanOrEqual(0)
+    expect(-m.dy).toBeLessThan(inicial.casilla * 0.07)
+    expect(m.rotacion).toBe(0)
+  }
+  // Se apaga sola en menos de medio segundo.
+  const quieta = muestras.find((m) => !m.sacudiendo)
+  expect(quieta).toBeDefined()
+  expect(quieta.t - muestras[0].t).toBeLessThan(450)
+  expect(muestras.at(-1).dx).toBe(0)
+  // El cuy sigue su camino mientras se sacude.
+  expect(muestras[0].moviendose).toBe(true)
+
+  // La fruta equivocada rebota como siempre: sube y vuelve a su sitio, sin desaparecer.
+  expect(Math.min(...muestras.map((m) => m.fruta.y))).toBeLessThan(base.y - inicial.casilla * 0.1)
+  expect(muestras.at(-1).fruta.y).toBeCloseTo(base.y, 1)
+  expect(muestras.at(-1).fruta.visible).toBe(true)
+})
+
+test('con ?vida=0 la fruta equivocada rebota y el cuy no se sacude', async ({ page: pagina }) => {
+  const inicial = await abrir(pagina, '&vida=0')
+  const base = inicial.vida.frutas[3]
+  await caminarHastaElError(pagina)
+  const muestras = await muestrear(pagina, 500, leerSacudida)
+  for (const m of muestras) {
+    expect(m.sacudidas).toBe(0)
+    expect(m.sacudiendo).toBe(false)
+    expect(m.dx).toBe(0)
+  }
+  expect(Math.min(...muestras.map((m) => m.fruta.y))).toBeLessThan(base.y - inicial.casilla * 0.1)
+  expect(muestras.at(-1).fruta.y).toBeCloseTo(base.y, 1)
+})

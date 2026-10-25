@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  calcularFase, calcularRebote, calcularRespiracion, leerFase, CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO,
+  calcularFase, calcularRebote, calcularRespiracion, calcularSacudida, leerFase, CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO,
 } from '../../src/efectos/CuerpoVivo.js'
 
 const CASILLA = 60
@@ -203,4 +203,62 @@ test('el zorro no respira ni con la vida apagada el cuy', () => {
   avanzar(apagado, 1 / 60, 300)
   assert.equal(apagado.respiracion, 0)
   assert.equal(apagado.sprite.scaleY, 0.5)
+})
+
+test('la sacudida va y viene de lado a lado y se apaga sola', () => {
+  const sacudida = PERFIL_CUY.sacudida
+  cerca(calcularSacudida(0, sacudida), 0)
+  cerca(calcularSacudida(sacudida.duracion, sacudida), 0)
+  cerca(calcularSacudida(sacudida.duracion * 2, sacudida), 0)
+  let cambiosDeLado = 0
+  let anterior = 0
+  let mayor = 0
+  for (let paso = 1; paso < 200; paso += 1) {
+    const valor = calcularSacudida(sacudida.duracion * paso / 200, sacudida)
+    assert.ok(Math.abs(valor) <= 1)
+    if (anterior * valor < 0) cambiosDeLado += 1
+    if (valor !== 0) anterior = valor
+    mayor = Math.max(mayor, Math.abs(valor))
+  }
+  assert.ok(cambiosDeLado >= 4, 'va y viene varias veces')
+  assert.ok(mayor > 0.5)
+  // «Un poquito»: menos de un décimo de casilla hacia cada lado.
+  assert.ok(sacudida.amplitud > 0.02 && sacudida.amplitud < 0.1)
+  assert.ok(sacudida.duracion > 0.2 && sacudida.duracion < 0.5)
+})
+
+test('al sacudirse el cuerpo se desplaza de lado y vuelve a su sitio sin cambiar de tamaño', () => {
+  const cuerpo = new CuerpoVivo(crearSpriteFalso({ caminando: false }), { ...PERFIL_CUY, respiracion: null }, { casilla: CASILLA })
+  avanzar(cuerpo, 1 / 60, 10)
+  assert.deepEqual(cuerpo.desplazamiento, { x: 0, y: 0 })
+  assert.equal(cuerpo.sacudir(), true)
+  let maximo = 0
+  for (let cuadro = 0; cuadro < 60; cuadro += 1) {
+    avanzar(cuerpo, 1 / 60)
+    maximo = Math.max(maximo, Math.abs(cuerpo.desplazamiento.x))
+    assert.equal(cuerpo.desplazamiento.y, 0, 'se sacude de lado, no sube ni baja')
+    assert.equal(cuerpo.sprite.scaleX, 0.5)
+    assert.equal(cuerpo.sprite.rotation, 0)
+  }
+  assert.ok(maximo > 1 && maximo < PERFIL_CUY.sacudida.amplitud * CASILLA + 1e-9)
+  assert.equal(cuerpo.sacudiendo, false)
+  assert.deepEqual(cuerpo.desplazamiento, { x: 0, y: 0 })
+  assert.equal(cuerpo.sprite.x, 100)
+  assert.equal(cuerpo.sacudidas, 1)
+})
+
+test('una sacudida nueva reinicia la anterior; sin vida o sin perfil no se sacude', () => {
+  const cuerpo = new CuerpoVivo(crearSpriteFalso({ caminando: false }), PERFIL_CUY, { casilla: CASILLA })
+  cuerpo.sacudir()
+  avanzar(cuerpo, 1 / 60, 10)
+  cuerpo.sacudir()
+  assert.equal(cuerpo.tiempoSacudida, 0)
+  assert.equal(cuerpo.sacudidas, 2)
+
+  const zorro = new CuerpoVivo(crearSpriteFalso(), PERFIL_ZORRO, { casilla: CASILLA })
+  assert.equal(zorro.sacudir(), false)
+  const apagado = new CuerpoVivo(crearSpriteFalso(), PERFIL_CUY, { casilla: CASILLA, activo: false })
+  assert.equal(apagado.sacudir(), false)
+  avanzar(apagado, 1 / 60, 30)
+  assert.deepEqual(apagado.desplazamiento, { x: 0, y: 0 })
 })

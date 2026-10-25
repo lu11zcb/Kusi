@@ -392,6 +392,8 @@ export class EscenaLaberinto extends Phaser.Scene {
         this.tweens.add({ targets: dibujo, y: base.y - this.casilla * 0.2,
           duration: 110, yoyo: true, ease: 'Sine.easeOut' })
         this.sonidos.reproducir('error')
+        // Además del rebote de la fruta, el cuy se sacude un poquito de lado a lado.
+        this.cuerpoCuy.sacudir()
         this.mostrarAyuda(resultado.ayuda)
       }
     }

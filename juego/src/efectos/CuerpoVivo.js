@@ -1,8 +1,9 @@
 // El cuerpo de los personajes del laberinto se mueve un poco con cada paso: sube
-// unos píxeles y, al apoyar el pie, se aplasta apenas. Quieto, el cuy respira.
-// Es una capa de efectos encima de las animaciones por cuadros: no cambia ningún
-// dibujo y nunca rota ni inclina al personaje entero; solo lo sube y lo estira o
-// achata desde los pies, porque el anclaje del dibujo está en la línea de apoyo.
+// unos píxeles y, al apoyar el pie, se aplasta apenas. Quieto, el cuy respira, y
+// si se equivoca de fruta se sacude un poquito. Es una capa de efectos encima de
+// las animaciones por cuadros: no cambia ningún dibujo y nunca rota ni inclina al
+// personaje entero; solo lo desplaza y lo estira o achata desde los pies, porque
+// el anclaje del dibujo está en la línea de apoyo.
 
 // Perfil de cada personaje. Las alturas van en casillas, para seguir el tamaño
 // del mapa; el aplaste es una fracción del tamaño del dibujo y se mantiene por
@@ -21,6 +22,13 @@ export const PERFIL_CUY = Object.freeze({
     periodo: 2,
     suavizado: 5, // veces por segundo con que empieza y termina al quedarse quieto o caminar
   }),
+  // Sacudida al comer mal: un temblor de lado a lado que se apaga solo. Solo se
+  // desplaza el dibujo; el cuy sigue caminando con su velocidad de siempre.
+  sacudida: Object.freeze({
+    amplitud: 0.05, // casillas hacia cada lado, al comenzar
+    frecuencia: 11, // idas y vueltas por segundo
+    duracion: 0.32, // segundos hasta quedarse quieto
+  }),
   // Rapidez, en veces por segundo, con la que el rebote aparece al empezar a
   // caminar y se apaga al detenerse. Evita saltos bruscos entre quieto y caminando.
   suavizado: Object.freeze({ subida: 14, bajada: 9 }),
@@ -36,6 +44,7 @@ export const PERFIL_ZORRO = Object.freeze({
     ventanaPrevia: 0.14,
   }),
   respiracion: null,
+  sacudida: null,
   suavizado: Object.freeze({ subida: 10, bajada: 7 }),
 })
 
@@ -81,6 +90,14 @@ export function calcularRespiracion(segundos, { amplitud, periodo }) {
   return amplitud * Math.sin((2 * Math.PI * segundos) / periodo)
 }
 
+// De cuánto es la sacudida, de -1 a 1, «segundos» después de empezar. Va y viene
+// con una onda y se apaga con suavidad hasta valer 0 al cumplirse la duración.
+export function calcularSacudida(segundos, { frecuencia, duracion }) {
+  if (segundos < 0 || segundos >= duracion) return 0
+  const quedan = 1 - segundos / duracion
+  return Math.sin(2 * Math.PI * frecuencia * segundos) * quedan * quedan
+}
+
 export class CuerpoVivo {
   // «sprite» ya tiene su escala base: la escena la fija antes de crear el cuerpo.
   constructor(sprite, perfil, { casilla, activo = true }) {
@@ -96,9 +113,22 @@ export class CuerpoVivo {
     this.tiempo = 0 // segundos desde que empezó el nivel; mantiene continua la respiración
     this.quietud = 0 // de 0 a 1: cuánto está quieto y a la espera, para respirar
     this.respiracion = 0
+    this.sacudiendo = false
+    this.tiempoSacudida = 0
+    this.sacudidas = 0
     // Lo que se le sumó al sprite en este cuadro; la escena lo resta para saber
     // dónde está de verdad el personaje, sin los efectos.
     this.desplazamiento = { x: 0, y: 0 }
+  }
+
+  // Empieza una sacudida, por ejemplo al equivocarse de fruta. Si ya había una en
+  // marcha, vuelve a empezar. No hace nada sin vida o sin perfil de sacudida.
+  sacudir() {
+    if (!this.activo || !this.perfil.sacudida) return false
+    this.sacudiendo = true
+    this.tiempoSacudida = 0
+    this.sacudidas += 1
+    return true
   }
 
   // Se llama una vez por cuadro, después de colocar el sprite en su casilla y de
@@ -119,7 +149,13 @@ export class CuerpoVivo {
     const rebote = calcularRebote(this.fase, this.perfil.rebote)
     this.altura = rebote.altura * this.perfil.rebote.altura * this.casilla * this.intensidad
     this.aplaste = rebote.aplaste * this.perfil.rebote.aplaste * this.intensidad
-    this.desplazamiento = { x: 0, y: this.altura === 0 ? 0 : -this.altura }
+    let lado = 0
+    if (this.sacudiendo) {
+      this.tiempoSacudida += segundos
+      lado = calcularSacudida(this.tiempoSacudida, this.perfil.sacudida) * this.perfil.sacudida.amplitud * this.casilla
+      if (this.tiempoSacudida >= this.perfil.sacudida.duracion) this.sacudiendo = false
+    }
+    this.desplazamiento = { x: lado, y: this.altura === 0 ? 0 : -this.altura }
 
     // La respiración solo la hace quien tiene perfil para ella, y solo quieto: la
     // cuenta de tiempo no se detiene al caminar para que no arranque en un salto.
@@ -152,6 +188,8 @@ export class CuerpoVivo {
       aplaste: this.aplaste,
       respiracion: this.respiracion,
       quietud: this.quietud,
+      sacudiendo: this.sacudiendo,
+      sacudidas: this.sacudidas,
       escalaX: this.sprite.scaleX,
       escalaY: this.sprite.scaleY,
       escalaBaseX: this.escalaBase.x,
