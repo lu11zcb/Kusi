@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 // Pruebas automáticas del juego: abren el mercado en Chromium y juegan con el teclado y el mouse.
 export default defineConfig({
   testDir: './pruebas',
+  // La lógica de casillas se prueba con node --test, sin abrir un navegador.
+  testMatch: '**/*.spec.js',
   timeout: 60_000,
   reporter: 'list',
   use: {

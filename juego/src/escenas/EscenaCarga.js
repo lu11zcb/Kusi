@@ -10,6 +10,10 @@ import {
 } from '../dibujos/dibujos.js'
 import { generarPaquetePrueba } from '../datos/generarPaquetePrueba.js'
 import { validarPaquete } from '../datos/validarPaquete.js'
+import { validarLaberinto } from '../datos/validarLaberinto.js'
+import { crearPartidaLaberinto, avisarPartida } from '../logica/partidaLaberinto.js'
+import { avisos } from '../logica/avisos.js'
+import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
 import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
 import {
@@ -33,6 +37,8 @@ export class EscenaCarga extends Phaser.Scene {
     // el mercado; la escena definitiva se decide por la familia del JSON cargado.
     const parametros = new URLSearchParams(window.location.search)
     this.pideLaberinto = parametros.get('paquete') === 'laberinto'
+    this.partidaLaberinto = this.pideLaberinto ? crearPartidaLaberinto() : null
+    if (this.pideLaberinto) window.kusi = { listo: false, avisos }
     this.cameras.main.setBackgroundColor(COLOR.crema)
 
     this.add
@@ -55,10 +61,11 @@ export class EscenaCarga extends Phaser.Scene {
     try {
       // Simula la generación del paquete a partir del ejemplo.
       const esLaberinto = paqueteBase?.familia === 'laberinto'
+      if (esLaberinto && !this.partidaLaberinto) this.partidaLaberinto = crearPartidaLaberinto()
       const paquete = esLaberinto ? structuredClone(paqueteBase) : await generarPaquetePrueba(paqueteBase)
 
       // Verifica que el paquete generado tenga la estructura necesaria.
-      const resultado = esLaberinto ? { valido: true } : validarPaquete(paquete)
+      const resultado = esLaberinto ? validarLaberinto(paquete) : validarPaquete(paquete)
 
       if (!resultado.valido) {
         throw new Error(resultado.errores.join('; '))
@@ -87,7 +94,9 @@ export class EscenaCarga extends Phaser.Scene {
           // Abre el mercado usando el paquete preparado.
           registrarAnimacionesCuy(this, cuyAnimado)
           registrarAnimacionesZorro(this, zorroAnimado)
-          this.scene.start(esLaberinto ? 'laberinto' : 'mercado', { paquete, cuyAnimado, zorroAnimado })
+          this.scene.start(esLaberinto ? 'laberinto' : 'mercado', {
+            paquete, cuyAnimado, zorroAnimado, partida: this.partidaLaberinto,
+          })
         } catch (error) {
           this.mostrarError(error)
         }
@@ -100,6 +109,26 @@ export class EscenaCarga extends Phaser.Scene {
   }
 
   mostrarError(error) {
+    // No se intenta dibujar un mapa inválido. El niño recibe una salida simple;
+    // el diagnóstico técnico queda en consola y el puente recibe un solo fallo.
+    if (this.partidaLaberinto) {
+      console.error('[carga] No se pudo preparar el laberinto:', error)
+      avisarPartida(this.partidaLaberinto, 'fallo', { motivo: String(error.message ?? error) })
+      this.children.removeAll(true)
+      const mensaje = 'Este camino no está listo todavía.\n¡Vamos a intentarlo de nuevo!'
+      this.add.text(ANCHO / 2, ALTO / 2 - 60, mensaje, estiloTexto(36, COLOR.tinta, {
+        wordWrap: { width: 800 },
+      })).setOrigin(0.5)
+      crearBoton(this, ANCHO / 2, ALTO / 2 + 100, {
+        ancho: 300, alto: 76, texto: 'Intentar de nuevo', tamano: 30,
+        alTocar: () => this.scene.restart(),
+      })
+      window.kusi = {
+        listo: false, avisos,
+        estado: () => ({ familia: 'laberinto', error: mensaje }),
+      }
+      return
+    }
     console.error('[carga] No se pudo preparar el mercado:', error)
 
     this.add
