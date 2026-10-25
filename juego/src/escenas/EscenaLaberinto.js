@@ -20,6 +20,7 @@ import { vidaActiva } from '../efectos/vida.js'
 import { SonidosLaberinto, esCuadroDePisada } from '../efectos/SonidosLaberinto.js'
 import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
 import { CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO } from '../efectos/CuerpoVivo.js'
+import { Polvito } from '../efectos/Polvito.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -287,18 +288,28 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cuerpoCuy = new CuerpoVivo(this.cuy, PERFIL_CUY, { casilla: this.casilla, activo: this.vida })
     this.cuerposZorros = this.dibujosZorros.map((dibujo) =>
       new CuerpoVivo(dibujo, PERFIL_ZORRO, { casilla: this.casilla, activo: this.vida }))
+    this.polvito = new Polvito(this, { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
   }
 
-  // Una pisada suena cuando el ciclo de caminar apoya un pie. El cuadro se compara
-  // con el anterior para que cada apoyo suene una sola vez; una expresión (feliz,
-  // asustado) no cuenta como caminar aunque el personaje se esté desplazando.
-  sonarPisada(dibujo, tipo) {
+  // ¿Se apoyó un pie en este cuadro? El ciclo de caminar apoya un pie en el primer
+  // y el tercer cuadro; el cuadro se compara con el anterior para que cada apoyo
+  // cuente una sola vez. Una expresión (feliz, asustado) no cuenta como caminar
+  // aunque el personaje se esté desplazando.
+  detectarPisada(dibujo) {
     const caminando = dibujo.estadoMovimiento === 'caminar' && !dibujo.estadoExpresivo
     const cuadro = caminando ? dibujo.anims.currentFrame : null
-    if (cuadro === this.ultimosCuadros.get(dibujo)) return
+    if (cuadro === this.ultimosCuadros.get(dibujo)) return false
     this.ultimosCuadros.set(dibujo, cuadro)
-    if (esCuadroDePisada(cuadro)) this.sonidos.reproducir(tipo)
+    return esCuadroDePisada(cuadro)
+  }
+
+  // Cada pisada suena y, cada dos pasos, levanta una nubecita de polvo detrás de
+  // los pies. «centro» es el centro de la casilla que pisa el personaje; el
+  // polvo sale de su línea de apoyo, sin el rebote del cuerpo.
+  alPisar(clave, sonido, centro, direccion, tamano) {
+    this.sonidos.reproducir(sonido)
+    this.polvito.alPisar(clave, centro.x, centro.y + this.casilla * DESFASE_PIES, direccion, tamano)
   }
 
   // Una pulsación elige el rumbo y no exige sostener la tecla. Ignorar la
@@ -489,7 +500,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     // parpadeo y animarMovimiento pone el caminar en este mismo cuadro.
     this.parpadeo.actualizar(segundos, distancia > 0.01)
     this.cuy.animarMovimiento(VISTAS[this.movimiento.direccion], distancia, segundos, tiempo)
-    this.sonarPisada(this.cuy, 'paso_cuy')
+    if (this.detectarPisada(this.cuy)) this.alPisar('cuy', 'paso_cuy', punto, this.movimiento.direccion, 1)
     this.cuerpoCuy.actualizar(segundos)
     this.zorros.forEach((zorro, indice) => {
       const posicion = posicionEnCasillas(zorro)
@@ -500,7 +511,9 @@ export class EscenaLaberinto extends Phaser.Scene {
       dibujoZorro.setPosition(centro.x, centro.y + this.casilla * DESFASE_PIES)
         .animarMovimiento('frente', distanciaZorro * this.casilla, segundos, tiempo)
       if (this.sombrasZorros[indice]) this.colocarSombra(this.sombrasZorros[indice], centro)
-      this.sonarPisada(dibujoZorro, 'paso_zorro')
+      if (this.detectarPisada(dibujoZorro)) {
+        this.alPisar('zorro' + indice, 'paso_zorro', centro, zorro.direccion, PROPORCION_ZORRO)
+      }
       this.cuerposZorros[indice].actualizar(segundos)
     })
   }
@@ -542,6 +555,7 @@ export class EscenaLaberinto extends Phaser.Scene {
           zorros: this.sombrasZorros.map((sombra) => this.leerSombra(sombra)),
         },
         cuerpos: { cuy: this.cuerpoCuy.estado(), zorros: this.cuerposZorros.map((cuerpo) => cuerpo.estado()) },
+        polvito: this.polvito.estado(),
         parpadeos: this.parpadeo.parpadeos,
         sonidos: this.sonidos.estado(),
       },
