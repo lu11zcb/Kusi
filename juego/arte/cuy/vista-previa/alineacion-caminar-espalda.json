@@ -1,5 +1,5 @@
 {
-  "hoja": "juego\\public\\dibujos\\cuy-nino-cuadros-v4.png",
+  "hoja": "juego\\public\\dibujos\\cuy-nino-cuadros-v5.png",
   "medicion": "Alfa >= 32; centro horizontal de la cabeza en el 42.0 % superior de la silueta; última fila visible de los pies",
   "tolerancia_px": 2.0,
   "cuadros_comprobados": [
@@ -148,55 +148,55 @@
     },
     {
       "cuadro": 12,
-      "centro_cabeza_x": 128.0,
-      "cima_cabeza_y": 10,
-      "linea_pies_y": 244,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 243,
       "caja_silueta": [
-        43,
-        10,
-        205,
-        245
+        45,
+        11,
+        195,
+        244
       ],
       "margenes": {
-        "izquierdo": 41,
-        "superior": 8,
-        "derecho": 49,
-        "inferior": 9
+        "izquierdo": 43,
+        "superior": 9,
+        "derecho": 59,
+        "inferior": 10
       }
     },
     {
       "cuadro": 13,
       "centro_cabeza_x": 127.5,
-      "cima_cabeza_y": 10,
+      "cima_cabeza_y": 11,
       "linea_pies_y": 244,
       "caja_silueta": [
-        41,
-        10,
-        215,
+        45,
+        11,
+        213,
         245
       ],
       "margenes": {
-        "izquierdo": 39,
-        "superior": 8,
-        "derecho": 39,
+        "izquierdo": 43,
+        "superior": 9,
+        "derecho": 41,
         "inferior": 9
       }
     },
     {
       "cuadro": 14,
       "centro_cabeza_x": 127.5,
-      "cima_cabeza_y": 10,
-      "linea_pies_y": 244,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 243,
       "caja_silueta": [
-        48,
-        10,
-        212,
-        245
+        59,
+        11,
+        213,
+        244
       ],
       "margenes": {
-        "izquierdo": 46,
-        "superior": 8,
-        "derecho": 42,
+        "izquierdo": 57,
+        "superior": 9,
+        "derecho": 41,
         "inferior": 9
       }
     }

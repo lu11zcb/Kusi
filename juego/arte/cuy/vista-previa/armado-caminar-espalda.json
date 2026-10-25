@@ -1,6 +1,6 @@
 {
-  "entrada": "juego\\arte\\cuy\\origen\\cuy-espalda-3-cuadros.png",
-  "salida": "juego\\public\\dibujos\\cuy-nino-cuadros-v4.png",
+  "entrada": "juego\\arte\\cuy\\origen\\cuy-espalda-3-cuadros-v2.png",
+  "salida": "juego\\public\\dibujos\\cuy-nino-cuadros-v5.png",
   "fotograma": {
     "ancho": 256,
     "alto": 256
@@ -22,41 +22,77 @@
   "margen_solicitado": 7,
   "limpieza_original": [
     {
-      "archivo": "juego\\arte\\cuy\\origen\\cuy-espalda-3-cuadros.png",
-      "islas_eliminadas": 312,
-      "pixeles_eliminados": 1025
+      "archivo": "juego\\arte\\cuy\\origen\\cuy-espalda-3-cuadros-v2.png",
+      "islas_eliminadas": 100,
+      "pixeles_eliminados": 186
     }
   ],
   "cuadros": [
     {
       "cuadro": 12,
       "anclas_original": {
-        "centro_cabeza_x": 245.5,
-        "cima_cabeza_y": 23,
-        "linea_pies_y": 691,
+        "centro_cabeza_x": 240.0,
+        "cima_cabeza_y": 21,
+        "linea_pies_y": 686,
         "caja_silueta": [
           3,
-          23,
-          465,
-          692
+          21,
+          431,
+          687
         ]
       },
-      "referencia_y_original": 691,
+      "referencia_y_original": 686,
       "anclas_salida": {
-        "centro_cabeza_x": 128.0,
-        "cima_cabeza_y": 10,
+        "centro_cabeza_x": 127.5,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 243,
+        "caja_silueta": [
+          45,
+          11,
+          195,
+          244
+        ]
+      },
+      "caja_alfa_salida": [
+        43,
+        9,
+        197,
+        246
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 1,
+        "pixeles_eliminados": 10
+      }
+    },
+    {
+      "cuadro": 13,
+      "anclas_original": {
+        "centro_cabeza_x": 238.5,
+        "cima_cabeza_y": 20,
+        "linea_pies_y": 686,
+        "caja_silueta": [
+          3,
+          20,
+          481,
+          687
+        ]
+      },
+      "referencia_y_original": 686,
+      "anclas_salida": {
+        "centro_cabeza_x": 127.5,
+        "cima_cabeza_y": 11,
         "linea_pies_y": 244,
         "caja_silueta": [
-          43,
-          10,
-          205,
+          45,
+          11,
+          213,
           245
         ]
       },
       "caja_alfa_salida": [
-        41,
-        8,
-        207,
+        43,
+        9,
+        215,
         247
       ],
       "limpieza_remuestreo": {
@@ -65,70 +101,34 @@
       }
     },
     {
-      "cuadro": 13,
-      "anclas_original": {
-        "centro_cabeza_x": 250.5,
-        "cima_cabeza_y": 23,
-        "linea_pies_y": 691,
-        "caja_silueta": [
-          3,
-          23,
-          499,
-          692
-        ]
-      },
-      "referencia_y_original": 691,
-      "anclas_salida": {
-        "centro_cabeza_x": 127.5,
-        "cima_cabeza_y": 10,
-        "linea_pies_y": 244,
-        "caja_silueta": [
-          41,
-          10,
-          215,
-          245
-        ]
-      },
-      "caja_alfa_salida": [
-        39,
-        8,
-        217,
-        247
-      ],
-      "limpieza_remuestreo": {
-        "islas_eliminadas": 1,
-        "pixeles_eliminados": 8
-      }
-    },
-    {
       "cuadro": 14,
       "anclas_original": {
-        "centro_cabeza_x": 231.0,
-        "cima_cabeza_y": 23,
-        "linea_pies_y": 691,
+        "centro_cabeza_x": 198.0,
+        "cima_cabeza_y": 20,
+        "linea_pies_y": 686,
         "caja_silueta": [
           2,
-          23,
-          471,
-          692
+          20,
+          440,
+          687
         ]
       },
-      "referencia_y_original": 691,
+      "referencia_y_original": 686,
       "anclas_salida": {
         "centro_cabeza_x": 127.5,
-        "cima_cabeza_y": 10,
-        "linea_pies_y": 244,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 243,
         "caja_silueta": [
-          48,
-          10,
-          212,
-          245
+          59,
+          11,
+          213,
+          244
         ]
       },
       "caja_alfa_salida": [
-        46,
-        8,
-        214,
+        57,
+        9,
+        215,
         247
       ],
       "limpieza_remuestreo": {

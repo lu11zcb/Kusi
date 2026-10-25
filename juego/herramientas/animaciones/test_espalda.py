@@ -41,19 +41,19 @@ class PruebasEspalda(unittest.TestCase):
             raise ValueError("La carpeta temporal debe permanecer dentro de juego/")
         cls.addClassCleanup(cls.temporal.cleanup)
         cls.carpeta = Path(cls.temporal.name)
-        cls.original = RAIZ_JUEGO / "arte/cuy/origen/cuy-espalda-3-cuadros.png"
+        cls.original = RAIZ_JUEGO / "arte/cuy/origen/cuy-espalda-3-cuadros-v2.png"
         cls.referencia = RAIZ_JUEGO / "arte/cuy/vista-previa/armado.json"
         cls.base = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v3.png"
-        cls.publicada = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v4.png"
+        cls.publicada = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v5.png"
         cls.manifiesto = RAIZ_JUEGO / "public/dibujos/cuy-nino-animado-v1.json"
         cls.atlas = cls.carpeta / "cuadros-con-espalda.png"
         cls.informe = armar_hoja(
             cls.original,
             cls.atlas,
             CELDA,
-            # La fuente de espalda tiene unos píxeles más de alto que la
-            # frontal. Siete deja entrar su borde suave conservando la escala
-            # y el apoyo originales; no altera la transformación de referencia.
+            # Se conserva el margen de la receta de espalda. La referencia
+            # fija la escala y el apoyo; el margen solo comprueba que cabe
+            # todo el borde suave, sin alterar esa transformación.
             margen=7,
             referencia=cls.referencia,
             hoja_base=cls.base,
