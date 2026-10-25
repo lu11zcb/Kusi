@@ -67,7 +67,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearControles()
     if (this.indiceNivel === 0) this.mano = crearManoLaberinto(this)
     this.exponerParaPruebas()
-    if (this.indiceNivel === 0) avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: 1 })
+    avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
     decir(this.reto.consigna)
     this.events.once('shutdown', () => {
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
@@ -201,6 +201,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   mostrarAyuda(numero = null) {
+    if (this.terminada || this.cambiandoNivel) return
     const indice = numero === null ? Math.min(this.indiceAyuda, this.reto.ayudas.length - 1) : numero - 1
     this.textoGlobo.setText(this.reto.ayudas[indice])
     this.indiceAyuda += 1
@@ -334,6 +335,10 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   mostrarCierre() {
+    // Los controles cubiertos por el cierre dejan de recibir toques. El último
+    // aviso de la partida es fin; Jugar otra vez crea un identificador nuevo.
+    this.botones.sonido.fondo.disableInteractive()
+    this.botones.ayuda.fondo.disableInteractive()
     this.add.rectangle(ANCHO / 2, ALTO / 2, ANCHO, ALTO, NUMERO.crema, 0.97).setDepth(2000)
     ajustarATamano(this.add.image(ANCHO / 2, 300, 'kusi-frente').setOrigin(0.5, 1), 180, 204).setDepth(2001)
     this.add.text(ANCHO / 2, 386, this.mensajeCierre, estiloTexto(40, COLOR.tinta, {
