@@ -124,10 +124,10 @@ test('el cuy parpadea de frente después de esperar y vuelve a sus ojos abiertos
   const inicial = await abrir(pagina)
   expect(inicial.animacionCuy.clave).toBe('cuy-nino-animado-v1:frente:quieto')
   expect(inicial.vida.parpadeos).toBe(0)
-  // La espera máxima es de 5,5 s; el tiempo extra cubre el arranque del navegador.
+  // La espera máxima es de 4 s; el tiempo extra cubre el arranque del navegador.
   await pagina.waitForFunction(
     () => /:frente:parpadeo$/.test(window.kusi.estado().animacionCuy.clave),
-    null, { timeout: 9000, polling: 'raf' },
+    null, { timeout: 8000, polling: 'raf' },
   )
   const cerrando = await estado(pagina)
   expect([15, 16, 17]).toContain(cerrando.animacionCuy.fotograma)
@@ -147,7 +147,7 @@ test('si el niño elige un rumbo a mitad de un parpadeo, el cuy camina de inmedi
   await abrir(pagina)
   await pagina.waitForFunction(
     () => /:frente:parpadeo$/.test(window.kusi.estado().animacionCuy.clave),
-    null, { timeout: 9000, polling: 'raf' },
+    null, { timeout: 8000, polling: 'raf' },
   )
   await pagina.keyboard.press('ArrowRight')
   // Un parpadeo completo dura 312 ms; caminar debe llegar bastante antes.

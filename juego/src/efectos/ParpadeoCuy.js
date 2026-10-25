@@ -1,11 +1,12 @@
 // El cuy parpadea de vez en cuando mientras espera de frente. Es una capa de
 // efectos: no cambia ningún dibujo, solo pide al motor de cuadros el estado
-// «parpadeo» del manifiesto (cuadros 15, 16, 17, 16 y 15 de la hoja, a 16 fps).
+// «parpadeo» del manifiesto: los cuadros 0, 1, 2, 1, 0 de la tira de parpadeo,
+// que en la hoja del cuy son el 15, 16, 17, 16 y 15, a 16 cuadros por segundo.
 
 // Segundos que espera quieto y de frente antes de parpadear. El tiempo se sortea
-// entre estos dos valores para que los parpadeos no marquen un ritmo fijo.
-export const ESPERA_MINIMA = 2.5
-export const ESPERA_MAXIMA = 5.5
+// entre estos dos valores, al azar, para que los parpadeos no marquen un ritmo fijo.
+export const ESPERA_MINIMA = 2
+export const ESPERA_MAXIMA = 4
 const ESTADO_PARPADEO = 'parpadeo'
 // Solo existe la tira frontal: de lado o de espaldas el cuy no parpadea.
 const VISTA_PARPADEO = 'frente'

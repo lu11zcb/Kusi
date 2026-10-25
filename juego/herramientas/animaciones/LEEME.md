@@ -235,6 +235,16 @@ derecha no tienen parpadeo porque no existe esa vista dibujada. El juego lo pide
 con `mostrarEstado('parpadeo', 'frente')`, igual que feliz y asustado; las reglas
 de cuándo parpadear están en `juego/src/efectos/ParpadeoCuy.js`.
 
+La regla de las demás animaciones pide la escala del caminar frontal y una
+verificación de 2 px. Con esta fuente no se pueden cumplir las dos a la vez, y
+se comprobó armando el parpadeo con `--referencia armado.json` (escala
+`0.34970238095238093`): con los márgenes 8 a 2 la herramienta rechaza la hoja
+porque el dibujo no cabe sin recortar, y con margen 1 cabe, pero la cabeza queda
+en y=4 en vez de y=11 (7 px más arriba que el cuadro quieto, a 1 px del borde de
+la celda), lejos de los 2 px de tolerancia. Se mantiene la escala compensada: es
+la que deja el cuy del parpadeo exactamente del mismo tamaño en pantalla que el
+quieto, que es lo que protege la regla.
+
 La verificación independiente de los píxeles de la sexta fila obtiene:
 
 | Cuadro local (atlas) | Centro cabeza x | Cima cabeza y | Pies y |
