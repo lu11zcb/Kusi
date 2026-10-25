@@ -92,3 +92,22 @@ la igualdad de escala, los píxeles frontales, el rechazo de recortes y los GIF:
 ```powershell
 juego/.venv/Scripts/python -m unittest discover -s juego/herramientas/animaciones -p test_animaciones.py -v
 ```
+
+## Asustado del cuy
+
+```powershell
+juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-asustado-3-cuadros.png --celda 256x256 --hoja-base juego/public/dibujos/cuy-nino-cuadros-v1.png --salida juego/public/dibujos/cuy-nino-cuadros-v2.png --reporte juego/arte/cuy/vista-previa/armado-asustado.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v2.png --celda 256x256 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-asustado.json
+juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py juego/public/dibujos/cuy-nino-animado-v1.json juego/arte/cuy/vista-previa/asustado.gif --estado asustado
+```
+
+La tercera fila añade los cuadros `6,7,8` y conserva las dos primeras sin
+remuestrearlas. La secuencia local `0,1,2,1,2` equivale a `6,7,8,7,8` en el
+atlas: 10 fps, `repetir: 0` y `siguiente: "quieto"`. La expresión usa el dibujo
+frontal sin voltear en cualquier dirección; al terminar recupera quieto en la
+dirección que tenía el personaje. El GIF dura 500 ms y no incluye bucle.
+
+En estos tres cuadros las cabezas miden `127,5; 128; 128 px` en x y
+`12; 11; 11 px` en su cima; los pies quedan en `243; 244; 243 px`. La hoja
+completa de nueve cuadros varía 0,5 px, 2 px y 1 px respectivamente, también
+dentro de la tolerancia de 2 px.

@@ -164,6 +164,22 @@ class PruebasAnimaciones(unittest.TestCase):
         for cuadro_original, cuadro_con_volteo in zip(original, con_volteo):
             self.assertEqual(cuadro_original.tobytes(), cuadro_con_volteo.tobytes())
 
+    def test_asustado_conserva_las_vistas_previas_y_su_gif_no_se_repite(self):
+        # Añadir una expresión no debe filtrar de nuevo las filas que ya están
+        # verificadas. También se inspecciona el GIF entregado, no solo uno de
+        # prueba, para comprobar la secuencia finita publicada sobre el pasto.
+        with Image.open(RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v2.png") as atlas:
+            self.assertEqual(atlas.size, (768, 768))
+            with Image.open(RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v1.png") as anterior:
+                self.assertEqual(atlas.crop((0, 0, 768, 512)).tobytes(), anterior.convert("RGBA").tobytes())
+        cuadros, duraciones, bucle = self.leer_gif(RAIZ_JUEGO / "arte/cuy/vista-previa/asustado.gif")
+        self.assertEqual(len(cuadros), 5)
+        self.assertEqual(duraciones, [100, 100, 100, 100, 100])
+        self.assertIsNone(bucle)
+        for cuadro in cuadros:
+            self.assertEqual(cuadro.size, CELDA)
+            self.assertEqual(cuadro.getpixel((0, 0)), COLOR_PASTO)
+
 
 if __name__ == "__main__":
     unittest.main()

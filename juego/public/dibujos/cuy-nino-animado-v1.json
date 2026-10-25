@@ -1,13 +1,13 @@
 {
   "formato": "kusi-sprite/1",
-  "imagen": "cuy-nino-cuadros-v1.png",
+  "imagen": "cuy-nino-cuadros-v2.png",
   "fotograma": {
     "ancho": 256,
     "alto": 256
   },
   "cuadricula": {
     "columnas": 3,
-    "filas": 2
+    "filas": 3
   },
   "anclaje": {
     "x": 128,
@@ -40,6 +40,19 @@
         ],
         "fps": 8,
         "repetir": -1
+      },
+      "asustado": {
+        "fotogramas": [
+          6,
+          7,
+          8,
+          7,
+          8
+        ],
+        "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
       }
     },
     "espaldas": {
@@ -66,6 +79,19 @@
         ],
         "fps": 8,
         "repetir": -1
+      },
+      "asustado": {
+        "fotogramas": [
+          6,
+          7,
+          8,
+          7,
+          8
+        ],
+        "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
       }
     },
     "derecha": {
@@ -96,9 +122,27 @@
         "voltear": false
       },
       "caminar_lado": {
-        "fotogramas": [3, 4, 5, 4],
+        "fotogramas": [
+          3,
+          4,
+          5,
+          4
+        ],
         "fps": 8,
         "repetir": -1,
+        "voltear": false
+      },
+      "asustado": {
+        "fotogramas": [
+          6,
+          7,
+          8,
+          7,
+          8
+        ],
+        "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
         "voltear": false
       }
     },
@@ -130,10 +174,28 @@
         "voltear": true
       },
       "caminar_lado": {
-        "fotogramas": [3, 4, 5, 4],
+        "fotogramas": [
+          3,
+          4,
+          5,
+          4
+        ],
         "fps": 8,
         "repetir": -1,
         "voltear": true
+      },
+      "asustado": {
+        "fotogramas": [
+          6,
+          7,
+          8,
+          7,
+          8
+        ],
+        "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
       }
     }
   }
