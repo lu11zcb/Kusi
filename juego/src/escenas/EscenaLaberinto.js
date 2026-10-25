@@ -8,6 +8,9 @@ import { crearBoton, dibujarGlobo } from '../interfaz/piezas.js'
 import { avisos } from '../logica/avisos.js'
 import { avisarPartida, crearPartidaLaberinto } from '../logica/partidaLaberinto.js'
 import { crearRegla, comerEnCasilla } from '../logica/reglasLaberinto.js'
+import {
+  crearZorro, avanzarZorro, restablecerZorro, posicionEnCasillas, seAtrapan,
+} from '../logica/zorrosLaberinto.js'
 import { decir } from '../logica/voz.js'
 import {
   crearMovimiento, pedirDireccion, avanzarMovimiento, direccionDelDeslizamiento,
@@ -15,6 +18,9 @@ import {
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
+export const PROPORCION_VELOCIDAD_ZORRO = 0.6
+export const SEGUNDOS_INVULNERABLE = 2
+const PASO_SIMULACION = 1 / 60
 
 // La barra y el espacio de Kusi se reservan antes de medir el mapa. Incluso
 // los niveles más grandes quedan completos dentro de la pantalla 1280 × 720.
@@ -36,6 +42,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.indiceAyuda = 0
     this.movimiento = crearMovimiento(this.reto.mapa)
     this.regla = crearRegla(this.reto)
+    this.zorros = this.reto.enemigos.map((enemigo) => crearZorro(enemigo, this.reto.mapa))
+    this.nivelIniciado = false
+    this.segundosInvulnerable = 0
+    this.capturas = 0
     this.multiplicador = new URLSearchParams(window.location.search).get('rapido') === '1' ? 4 : 1
     this.iniciada = iniciada
     this.terminada = false
@@ -203,7 +213,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cuy = new CuyAnimado(this, this.datosCuyAnimado)
       .setScale(this.casilla * 1.2 / this.datosCuyAnimado.anclaje.y)
       .setPosition(punto.x, punto.y + this.casilla * 0.4).setDepth(5)
-    this.zorros = this.reto.enemigos.map((enemigo) => {
+    this.auraProteccion = this.add.ellipse(punto.x, punto.y + this.casilla * 0.3,
+      this.casilla * 0.95, this.casilla * 0.35, 0xffd56d, 0.2)
+      .setStrokeStyle(3, 0xb2731c).setDepth(4).setVisible(false)
+    this.dibujosZorros = this.zorros.map((enemigo) => {
       const posicion = this.centroCasilla(enemigo.fila, enemigo.columna)
       return new ZorroAnimado(this, this.datosZorroAnimado)
         .setScale(this.casilla * 1.2 * 1.3 / this.datosZorroAnimado.anclaje.y)
@@ -254,6 +267,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   elegirRumbo(direccion) {
     if (this.terminada || this.cambiandoNivel) return
     pedirDireccion(this.movimiento, direccion)
+    this.nivelIniciado = true
     if (!this.iniciada) {
       this.iniciada = true
       avisarPartida(this.partida, 'inicio', { nivel: this.indiceNivel + 1 })
@@ -326,10 +340,43 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   posicionMovimiento() {
-    const { fila, columna, progreso, direccion } = this.movimiento
-    const avanceFila = direccion === 'arriba' ? -progreso : direccion === 'abajo' ? progreso : 0
-    const avanceColumna = direccion === 'izquierda' ? -progreso : direccion === 'derecha' ? progreso : 0
-    return this.centroCasilla(fila + avanceFila, columna + avanceColumna)
+    const posicion = posicionEnCasillas(this.movimiento)
+    return this.centroCasilla(posicion.fila, posicion.columna)
+  }
+
+  capturarCuy() {
+    this.movimiento = crearMovimiento(this.reto.mapa)
+    this.zorros.forEach(restablecerZorro)
+    this.segundosInvulnerable = SEGUNDOS_INVULNERABLE
+    this.capturas += 1
+    // Se restablece solo el movimiento. La regla y sus dibujos conservan todas
+    // las frutas recogidas y la puerta permanece abierta si ya estaba completa.
+    this.cuy.mostrarEstado('asustado', 'frente')
+    avisarPartida(this.partida, 'accion', { nivel: this.indiceNivel + 1, atrapado: true })
+  }
+
+  avanzarPartida(segundos) {
+    let restante = segundos
+    while (restante > 0.000000001 && !this.terminada && !this.cambiandoNivel) {
+      const paso = Math.min(PASO_SIMULACION, restante)
+      restante -= paso
+      // La protección usa segundos reales; rapido acelera los desplazamientos,
+      // pero no acorta los dos segundos para recuperarse después de una captura.
+      this.segundosInvulnerable = Math.max(0, this.segundosInvulnerable - paso)
+      avanzarMovimiento(this.movimiento, this.reto.mapa, paso, CASILLAS_POR_SEGUNDO * this.multiplicador,
+        (casilla) => this.procesarCasilla(casilla))
+      if (this.terminada || this.cambiandoNivel || !this.nivelIniciado) continue
+      for (const zorro of this.zorros) {
+        avanzarZorro(zorro, this.reto.mapa, this.movimiento, paso,
+          CASILLAS_POR_SEGUNDO * PROPORCION_VELOCIDAD_ZORRO * this.multiplicador)
+      }
+      // Los pasos pequeños también detectan personajes que se cruzan entre dos
+      // centros, sin depender de la velocidad de dibujo ni saltarse al zorro.
+      if (this.segundosInvulnerable === 0 && this.zorros.some((zorro) => seAtrapan(this.movimiento, zorro))) {
+        this.capturarCuy()
+        break
+      }
+    }
   }
 
   update(tiempo, delta) {
@@ -338,15 +385,25 @@ export class EscenaLaberinto extends Phaser.Scene {
     // La lógica pura sí consume deltas completos; la escena limita la pausa visual.
     const segundos = Math.min(delta, 100) / 1000
     const anterior = this.posicionMovimiento()
+    const anterioresZorros = this.zorros.map(posicionEnCasillas)
     if (!this.terminada && !this.cambiandoNivel) {
-      avanzarMovimiento(this.movimiento, this.reto.mapa, segundos, CASILLAS_POR_SEGUNDO * this.multiplicador,
-        (casilla) => this.procesarCasilla(casilla))
+      this.avanzarPartida(segundos)
     }
     const punto = this.posicionMovimiento()
     this.cuy.setPosition(punto.x, punto.y + this.casilla * 0.4)
     this.sombraCuy.setPosition(punto.x, punto.y + this.casilla * 0.3)
+    this.auraProteccion.setPosition(punto.x, punto.y + this.casilla * 0.3)
+      .setVisible(this.segundosInvulnerable > 0)
     const distancia = this.movimiento.moviendose ? Math.hypot(punto.x - anterior.x, punto.y - anterior.y) : 0
     this.cuy.animarMovimiento(VISTAS[this.movimiento.direccion], distancia, segundos, tiempo)
+    this.zorros.forEach((zorro, indice) => {
+      const posicion = posicionEnCasillas(zorro)
+      const centro = this.centroCasilla(posicion.fila, posicion.columna)
+      const anteriorZorro = anterioresZorros[indice]
+      const distanciaZorro = Math.hypot(posicion.fila - anteriorZorro.fila, posicion.columna - anteriorZorro.columna)
+      this.dibujosZorros[indice].setPosition(centro.x, centro.y + this.casilla * 0.4)
+        .animarMovimiento('frente', distanciaZorro * this.casilla, segundos, tiempo)
+    })
   }
 
   exponerParaPruebas() {
@@ -359,6 +416,12 @@ export class EscenaLaberinto extends Phaser.Scene {
       movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
       regla: { ...this.regla, objetos: this.regla.objetos.map((objeto) => ({ ...objeto })) },
       puertaAbierta: this.regla.completada, terminada: this.terminada, mensajeCierre: this.mensajeCierre,
+      invulnerable: this.segundosInvulnerable > 0, segundosInvulnerable: this.segundosInvulnerable,
+      capturas: this.capturas,
+      zorros: this.zorros.map((zorro, indice) => ({
+        ...zorro, inicio: { ...zorro.inicio }, mirando: this.dibujosZorros[indice].direccionAnimada,
+        flipX: this.dibujosZorros[indice].flipX,
+      })),
       cuyX: this.cuy.x, cuyY: this.cuy.y,
       animacionCuy: {
         clave: this.cuy.anims.currentAnim?.key, fotograma: this.cuy.frame.name,
