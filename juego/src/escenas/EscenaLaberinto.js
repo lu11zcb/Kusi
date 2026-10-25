@@ -22,6 +22,7 @@ import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
 import { CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO } from '../efectos/CuerpoVivo.js'
 import { Polvito } from '../efectos/Polvito.js'
 import { PopFruta } from '../efectos/PopFruta.js'
+import { FrutasVivas } from '../efectos/FrutasVivas.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -291,6 +292,10 @@ export class EscenaLaberinto extends Phaser.Scene {
       new CuerpoVivo(dibujo, PERFIL_ZORRO, { casilla: this.casilla, activo: this.vida }))
     this.polvito = new Polvito(this, { casilla: this.casilla, activo: this.vida })
     this.popFruta = new PopFruta(this, { casilla: this.casilla, activo: this.vida })
+    // Cada fruta flota alrededor del centro de su casilla, con su propio desfase.
+    const basesDeLasFrutas = this.reto.objetos.map((objeto) => this.centroCasilla(objeto.fila, objeto.columna))
+    this.frutasVivas = new FrutasVivas(this, this.dibujosObjetos, basesDeLasFrutas,
+      { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
   }
 
@@ -520,6 +525,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       }
       this.cuerposZorros[indice].actualizar(segundos)
     })
+    this.frutasVivas.actualizar(segundos)
   }
 
   leerSombra(sombra) {
@@ -561,6 +567,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         cuerpos: { cuy: this.cuerpoCuy.estado(), zorros: this.cuerposZorros.map((cuerpo) => cuerpo.estado()) },
         polvito: this.polvito.estado(),
         pop: this.popFruta.estado(),
+        frutasVivas: this.frutasVivas.estado(),
         frutas: this.dibujosObjetos.map((dibujo) => ({
           x: dibujo.x, y: dibujo.y, visible: dibujo.visible, alpha: dibujo.alpha,
           escalaX: dibujo.scaleX, escalaY: dibujo.scaleY,

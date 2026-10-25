@@ -134,9 +134,10 @@ test('al comer mal la fruta rebota como antes y el cuy se sacude un poquito sin 
   // El cuy sigue su camino mientras se sacude.
   expect(muestras[0].moviendose).toBe(true)
 
-  // La fruta equivocada rebota como siempre: sube y vuelve a su sitio, sin desaparecer.
+  // La fruta equivocada rebota como siempre: sube y vuelve a su casilla, sin desaparecer.
+  // Después sigue flotando unos píxeles alrededor de su sitio, como las demás.
   expect(Math.min(...muestras.map((m) => m.fruta.y))).toBeLessThan(base.y - inicial.casilla * 0.1)
-  expect(muestras.at(-1).fruta.y).toBeCloseTo(base.y, 1)
+  expect(Math.abs(muestras.at(-1).fruta.y - base.y)).toBeLessThan(inicial.casilla * 0.05)
   expect(muestras.at(-1).fruta.visible).toBe(true)
 })
 
