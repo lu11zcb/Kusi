@@ -70,27 +70,31 @@ constante al comienzo de su archivo.
 
 | Efecto | Qué hace | Dónde se ajusta |
 | --- | --- | --- |
-| Sombras | Una elipse suave y translúcida bajo el cuy y bajo cada zorro. La del zorro tiene la misma receta, 1,3 veces más grande, como su dibujo. | `SOMBRA` y `PROPORCION_ZORRO`, en `src/escenas/EscenaLaberinto.js` |
-| Rebote al caminar | En cada paso el cuerpo sube unos píxeles (el cuy 0,06 casillas, el zorro 0,04) y, al apoyar el pie, se ensancha y se achata menos del 5 % (3,5 % el cuy; 4,5 % el zorro, que es más pesado y tarda más en soltarse). Sigue el reloj de los cuadros del caminar: aplaste máximo en el apoyo y altura máxima a mitad del paso. La sombra no rebota y el personaje nunca rota. | `PERFIL_CUY` y `PERFIL_ZORRO`, en `src/efectos/CuerpoVivo.js` |
-| Puerta | Al abrirse, la puerta sube estirándose 0,14 casillas y cae rebotando hasta su sitio, y suelta 18 trozos de confeti de seis colores: salen en abanico, giran como hojitas, caen por su peso y se apagan en 1,1 s. | `REBOTE` y `CONFETI`, en `src/efectos/PuertaViva.js` |
-| Captura | Cuando el zorro atrapa al cuy suena el quejido, el juego se congela 0,18 s (nada se mueve, ni las animaciones) y la pantalla tiembla muy suave: unos 2,6 px de lado a lado, 8 idas y vueltas por segundo, durante 0,45 s, sin girar ni acercar. Solo después el cuy vuelve al inicio y hace «asustado», con sus dos segundos de protección. | `CONGELADO` y `TEMBLOR`, en `src/efectos/CapturaLaberinto.js` |
-| Frutas vivas | Las frutas y verduras del mapa suben y bajan muy despacio en su casilla: 0,04 casillas (unos 3 px) cada 3 s, cada una con un desfase distinto (la razón áurea reparte las fases). Una fruta comida deja de moverse y, tras el rebote de una equivocada, vuelve al vaivén sin saltos. | `FLOTAR`, en `src/efectos/FrutasVivas.js` |
-| Comer bien | La fruta correcta hace «pop»: crece 1,45 veces en 0,22 s mientras se desvanece, y de ella salen 5 estrellitas que se abren en círculo, giran y se apagan en medio segundo. | Constantes arriba de `src/efectos/PopFruta.js` |
-| Comer mal | La fruta equivocada rebota como siempre y el cuy se sacude un poquito: va y viene de lado a lado 0,05 casillas, a 11 idas y vueltas por segundo, y se apaga en 0,32 s. Sigue caminando mientras se sacude y no gira ni sube. | `PERFIL_CUY.sacudida`, en `src/efectos/CuerpoVivo.js` |
-| Polvito | Al caminar, el cuy y el zorro sueltan una nubecita de tierra cada dos pasos, detrás de los pies: 3 o 4 bolitas que se abren, suben un poco y se desvanecen en medio segundo. La del zorro es 1,3 veces más grande. | Constantes arriba de `src/efectos/Polvito.js` |
+| Sombras | Una elipse suave y translúcida bajo el cuy y bajo cada zorro. La del zorro tiene la misma receta, 1,3 veces más grande, como su dibujo. No rebota: se queda en el suelo mientras el cuerpo sube. | `SOMBRA` y `PROPORCION_ZORRO`, en `src/escenas/EscenaLaberinto.js` |
+| Rebote al caminar | En cada paso el cuerpo sube unos píxeles (el cuy 0,06 casillas, el zorro 0,04) y, al apoyar el pie, se ensancha y se achata menos del 5 % (3,5 % el cuy; 4,5 % el zorro, que es más pesado y tarda más en soltarse). Sigue el reloj de los cuadros del caminar: aplaste máximo en el apoyo y altura máxima a mitad del paso. El personaje nunca rota. | `PERFIL_CUY` y `PERFIL_ZORRO`, en `src/efectos/CuerpoVivo.js` |
 | Respiración | Quieto, el cuy se estira y se encoge a lo alto un 2,5 % cada 2 s, con los pies en el suelo. Al caminar o al hacer una expresión se apaga con suavidad y al detenerse vuelve. El zorro no respira. | `PERFIL_CUY.respiracion`, en `src/efectos/CuerpoVivo.js` |
 | Parpadeo | El cuy parpadea de frente, al azar, cada 2 a 4 s que pasa quieto, con los cuadros 0, 1, 2, 1, 0 de la tira de parpadeo a 16 por segundo. Si el niño elige un rumbo a mitad del parpadeo, camina de inmediato. | `ESPERA_MINIMA` y `ESPERA_MAXIMA`, en `src/efectos/ParpadeoCuy.js`; los cuadros, en el manifiesto del cuy |
-| Sonidos | Pisadas del cuy y del zorro cuando un pie se apoya, pop al comer bien, boing al equivocarse, «ay» al ser atrapado, puerta al abrirse y fanfarria al entrar a un nivel nuevo o al llegar al cierre. | `SONIDOS_LABERINTO`, en `src/efectos/SonidosLaberinto.js`; autoría en `public/sonidos/ORIGEN.md` |
+| Polvito | Al caminar, el cuy y el zorro sueltan una nubecita de tierra cada dos pasos, detrás de los pies: 3 o 4 bolitas que se abren, suben un poco y se desvanecen en medio segundo. La del zorro es 1,3 veces más grande. | Constantes arriba de `src/efectos/Polvito.js` |
+| Comer bien | La fruta correcta hace «pop»: crece 1,45 veces en 0,22 s mientras se desvanece, y de ella salen 5 estrellitas que se abren en círculo, giran y se apagan en medio segundo. | Constantes arriba de `src/efectos/PopFruta.js` |
+| Comer mal | La fruta equivocada rebota como siempre y el cuy se sacude un poquito: va y viene de lado a lado 0,05 casillas, a 11 idas y vueltas por segundo, y se apaga en 0,32 s. Sigue caminando mientras se sacude y no gira ni sube. | `PERFIL_CUY.sacudida`, en `src/efectos/CuerpoVivo.js` |
+| Frutas vivas | Las frutas y verduras del mapa suben y bajan muy despacio en su casilla: 0,04 casillas (unos 3 px) cada 3 s, cada una con un desfase distinto (la razón áurea reparte las fases). Una fruta comida deja de moverse y, tras el rebote de una equivocada, vuelve al vaivén sin saltos. | `FLOTAR`, en `src/efectos/FrutasVivas.js` |
+| Captura | Cuando el zorro atrapa al cuy suena el quejido, el juego se congela 0,18 s (nada se mueve, ni las animaciones) y la pantalla tiembla muy suave: unos 2,6 px de lado a lado, 8 idas y vueltas por segundo, durante 0,45 s, sin girar ni acercar. Solo después el cuy vuelve al inicio y hace «asustado», con sus dos segundos de protección. | `CONGELADO` y `TEMBLOR`, en `src/efectos/CapturaLaberinto.js` |
+| Puerta | Al abrirse, la puerta sube estirándose 0,14 casillas y cae rebotando hasta su sitio, y suelta 18 trozos de confeti de seis colores: salen en abanico, giran como hojitas, caen por su peso y se apagan en 1,1 s. | `REBOTE` y `CONFETI`, en `src/efectos/PuertaViva.js` |
+| Sonidos | A volumen bajo: pisadas del cuy y del zorro cuando un pie se apoya, pop al comer bien, boing al equivocarse, «ay» al ser atrapado, puerta al abrirse y fanfarria al entrar a un nivel nuevo o al llegar al cierre. | `SONIDOS_LABERINTO`, en `src/efectos/SonidosLaberinto.js`; autoría y licencias CC0 de Kenney en `public/sonidos/` |
+| Botón de sonido | Un altavoz en la esquina de abajo a la derecha apaga y enciende todos esos sonidos de golpe; se tacha y se pone gris cuando están apagados. La elección se conserva en los niveles siguientes y al volver a abrir el juego. «Escuchar» sigue leyendo la consigna con la voz de Kusi. | `BOTON_SONIDO`, en `src/interfaz/BotonSonido.js`; la marca, en `src/efectos/silencio.js` |
 
-Con `?vida=0` se apagan todos a la vez y los sonidos ni siquiera se descargan, para
-comparar con y sin efectos: <http://127.0.0.1:5174/?paquete=laberinto&vida=0>. Sin
-ese parámetro la capa está encendida. Las pisadas comparten un intervalo mínimo y
-no se superponen, así que con el cuy y el zorro caminando a la vez se oye una sola.
-El navegador solo permite sonar después del primer toque o tecla.
+Con `?vida=0` se apagan todos a la vez, también el botón de sonido, y los sonidos ni
+siquiera se descargan. El navegador solo permite sonar después del primer toque o
+tecla, y las pisadas comparten un intervalo mínimo y no se superponen, así que con el
+cuy y el zorro caminando a la vez suena sobre todo la del cuy.
 
-El estado de pruebas expone `vida` con las sombras, los parpadeos y los sonidos
-reproducidos. Todavía no hay un botón para silenciar: el controlador ya tiene
-`cambiarSilencio()`, pero ninguna pantalla lo usa.
+Para comparar en el navegador (después de `npm run dev`):
+
+- Con efectos: <http://127.0.0.1:5174/?paquete=laberinto>
+- Sin efectos: <http://127.0.0.1:5174/?paquete=laberinto&vida=0>
+
+El estado de pruebas expone `vida` con el cuerpo, las sombras, el polvo, el pop, las
+frutas, la captura, la puerta y los sonidos, para que las pruebas midan cada efecto.
 
 ## Recorrido para la revisión
 

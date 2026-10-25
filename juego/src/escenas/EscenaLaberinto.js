@@ -25,6 +25,8 @@ import { PopFruta } from '../efectos/PopFruta.js'
 import { FrutasVivas } from '../efectos/FrutasVivas.js'
 import { CapturaLaberinto } from '../efectos/CapturaLaberinto.js'
 import { PuertaViva } from '../efectos/PuertaViva.js'
+import { leerSilencio, guardarSilencio } from '../efectos/silencio.js'
+import { crearBotonSonido, BOTON_SONIDO } from '../interfaz/BotonSonido.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -286,7 +288,8 @@ export class EscenaLaberinto extends Phaser.Scene {
   // Efectos que viven encima de las animaciones por cuadros. Con ?vida=0 se crean
   // apagados: la escena sigue llamándolos igual, pero no hacen nada.
   crearVida() {
-    this.sonidos = new SonidosLaberinto(this, { activo: this.vida })
+    // El silencio que se eligió antes, en este nivel o en otro, se conserva.
+    this.sonidos = new SonidosLaberinto(this, { activo: this.vida, silenciado: leerSilencio() })
     this.parpadeo = new ParpadeoCuy(this.cuy, { activo: this.vida })
     // El cuerpo guarda la escala que la escena ya fijó a cada sprite y le suma
     // el rebote de cada paso; el zorro usa un perfil más pesado.
@@ -303,6 +306,23 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.captura = new CapturaLaberinto(this, { ancho: ANCHO, congelables: this.dibujosZorros, activo: this.vida })
     this.puertaViva = new PuertaViva(this, this.puerta, { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
+    // Sin vida no hay sonidos que apagar y tampoco botón.
+    if (this.vida) {
+      this.botones.altavoz = crearBotonSonido(this, {
+        silenciado: this.sonidos.silenciado,
+        alTocar: () => {
+          if (!this.esDeslizamiento(this.input.activePointer)) this.alternarSonido()
+        },
+      })
+    }
+  }
+
+  // El altavoz apaga todos los sonidos de golpe, también el que esté sonando, y
+  // vuelve a encenderlos; la elección se guarda para los niveles siguientes.
+  alternarSonido() {
+    const silenciado = this.sonidos.cambiarSilencio()
+    guardarSilencio(silenciado)
+    this.botones.altavoz.mostrar(silenciado)
   }
 
   // ¿Se apoyó un pie en este cuadro? El ciclo de caminar apoya un pie en el primer
@@ -445,6 +465,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     // aviso de la partida es fin; Jugar otra vez crea un identificador nuevo.
     this.botones.sonido.fondo.disableInteractive()
     this.botones.ayuda.fondo.disableInteractive()
+    this.botones.altavoz?.fondo.disableInteractive()
     this.add.rectangle(ANCHO / 2, ALTO / 2, ANCHO, ALTO, NUMERO.crema, 0.97).setDepth(2000)
     ajustarATamano(this.add.image(ANCHO / 2, 300, 'kusi-frente').setOrigin(0.5, 1), 180, 204).setDepth(2001)
     this.add.text(ANCHO / 2, 386, this.mensajeCierre, estiloTexto(40, COLOR.tinta, {
@@ -591,6 +612,10 @@ export class EscenaLaberinto extends Phaser.Scene {
         pop: this.popFruta.estado(),
         frutasVivas: this.frutasVivas.estado(),
         puerta: this.puertaViva.estado(),
+        botonSonido: this.botones.altavoz ? {
+          x: this.botones.altavoz.x, y: this.botones.altavoz.y, ancho: BOTON_SONIDO.ancho, alto: BOTON_SONIDO.alto,
+          silenciado: this.botones.altavoz.silenciado,
+        } : null,
         captura: {
           ...this.captura.estado(),
           camara: {

@@ -11,24 +11,29 @@ export function fijarEnPantalla(objeto) {
 }
 
 // Botón grande y redondeado, con sombra, que se hunde al tocarlo.
-// La acción ocurre al soltar el dedo sobre el botón.
+// La acción ocurre al soltar el dedo sobre el botón. En vez de texto puede llevar
+// un «icono»: un dibujo de Graphics centrado en (0, 0) que se hunde con el botón.
 export function crearBoton(escena, x, y, {
   ancho, alto, texto, tamano = 32, radio = 22,
-  relleno = NUMERO.naranja, colorTexto = COLOR.tinta, alTocar,
+  relleno = NUMERO.naranja, colorTexto = COLOR.tinta, alTocar, icono = null,
 }) {
   const sombra = escena.add.rectangle(0, 6, ancho, alto, NUMERO.terracota).setRounded(radio)
   const fondo = escena.add.rectangle(0, 0, ancho, alto, relleno).setRounded(radio).setStrokeStyle(4, NUMERO.tinta)
   const etiqueta = escena.add.text(0, 0, texto, estiloTexto(tamano, colorTexto)).setOrigin(0.5)
-  const boton = escena.add.container(x, y, [sombra, fondo, etiqueta])
+  const piezas = [sombra, fondo, etiqueta]
+  if (icono) piezas.push(icono)
+  const boton = escena.add.container(x, y, piezas)
   boton.setSize(ancho, alto)
   boton.fondo = fondo
   boton.etiqueta = etiqueta
+  boton.icono = icono
   boton.activo = true
 
   let presionado = false
   const hundir = (hundido) => {
     fondo.y = hundido ? 4 : 0
     etiqueta.y = hundido ? 4 : 0
+    if (icono) icono.y = hundido ? 4 : 0
   }
   fondo.setInteractive({ useHandCursor: true })
   fondo.on('pointerdown', () => {
