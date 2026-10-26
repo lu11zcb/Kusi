@@ -16,13 +16,17 @@ Visita <http://127.0.0.1:5174/?paquete=laberinto>. Sin el parámetro `paquete`,
 
 ## Qué probar
 
-1. Pulsa y suelta una flecha. El cuy sigue solo hasta el muro, sin atravesarlo.
-2. Desde el inicio, pulsa derecha. Después de pasar la primera casilla y antes
-   del pasillo central, pulsa abajo: guarda la vuelta y baja por la columna 5.
-3. Al llegar al muro inferior, pulsa arriba: camina de espaldas y queda quieto
-   mirando hacia arriba al detenerse.
-4. Desliza un dedo o arrastra el ratón en cualquier parte del lienzo. Se necesitan
-   al menos 30 píxeles de pantalla; en diagonal manda el eje más largo.
+1. Toca la primera fresa. El cuy busca el camino y camina hasta ella, se la come
+   y se detiene mirando a su última dirección. El circulito indica su destino.
+2. Toca una fruta lejana: busca el camino más corto que evite los otros alimentos.
+   Si solo puede pasar por encima de otro, lo atraviesa sin comerlo ni equivocarse.
+   Solo se intenta comer la fruta elegida. Tocar camino no recoge frutas de paso.
+3. Toca otro lugar mientras camina para cambiar de destino sin saltos de posición.
+   Un muro o un punto fuera del mapa elige el camino alcanzable más cercano;
+   ese ajuste no elige automáticamente una fruta vecina.
+4. Las flechas conservan el control de computadora: una pulsación sigue hasta
+   el muro y recoge al pasar, como antes. Una flecha cancela el destino tocado.
+   Los arrastres no se interpretan como toques ni como direcciones.
 5. Toca **Ayuda** para ver las pistas y **Escuchar** para oír el texto de Kusi,
    cuando el navegador disponga de voz. Los botones no hacen caminar al cuy.
 
@@ -42,7 +46,8 @@ menos por los pasillos. La búsqueda en anchura mide el camino, sin cruzar muros
 
 La fruta correcta desaparece, el cuy muestra `feliz` y la barra marca lo recogido.
 La fruta equivocada rebota y permanece; Kusi muestra la primera ayuda y después
-la segunda. El movimiento del cuy continúa. Al cumplir la regla se abre la puerta;
+la segunda. Con flechas el cuy continúa; con un toque se detiene en la fruta elegida.
+Al cumplir la regla se abre la puerta;
 entrar por ella lleva al siguiente nivel. La última puerta muestra el mensaje de
 cierre. **Jugar otra vez** comienza una partida nueva.
 
@@ -58,9 +63,12 @@ La consigna se narra al entrar en cada nivel. **Escuchar** repite la consigna y
 `speechSynthesis` cuando está disponible y queda preparada para conectar
 KusiPuente. El globo permite leer los mensajes también sin voz.
 
-La mano del nivel 1 desaparece al elegir un rumbo y no vuelve a mostrarse en ese
-navegador. La marca `kusi-laberinto-deslizar-v1` se guarda en `localStorage`; si el
+La mano del nivel 1 señala la primera fruta con un dedo que toca y un anillo que
+se agranda. Desaparece al elegir un destino o usar una flecha y no vuelve a
+mostrarse en ese navegador. La marca `kusi-laberinto-tocar-v1` se guarda en `localStorage`; si el
 WebView no permite almacenamiento, se recuerda durante la sesión.
+El texto inferior dice «Toca donde quieres ir · También puedes usar las flechas».
+Una captura del zorro cancela el destino y su circulito; la capa de vida se conserva.
 
 ## Capa de vida
 
@@ -76,7 +84,7 @@ constante al comienzo de su archivo.
 | Parpadeo | El cuy parpadea de frente, al azar, cada 2 a 4 s que pasa quieto, con los cuadros 0, 1, 2, 1, 0 de la tira de parpadeo a 16 por segundo. Si el niño elige un rumbo a mitad del parpadeo, camina de inmediato. | `ESPERA_MINIMA` y `ESPERA_MAXIMA`, en `src/efectos/ParpadeoCuy.js`; los cuadros, en el manifiesto del cuy |
 | Polvito | Al caminar, el cuy y el zorro sueltan una nubecita de tierra cada dos pasos, detrás de los pies: 3 o 4 bolitas que se abren, suben un poco y se desvanecen en medio segundo. La del zorro es 1,3 veces más grande. | Constantes arriba de `src/efectos/Polvito.js` |
 | Comer bien | La fruta correcta hace «pop»: crece 1,45 veces en 0,22 s mientras se desvanece, y de ella salen 5 estrellitas que se abren en círculo, giran y se apagan en medio segundo. | Constantes arriba de `src/efectos/PopFruta.js` |
-| Comer mal | La fruta equivocada rebota como siempre y el cuy se sacude un poquito: va y viene de lado a lado 0,05 casillas, a 11 idas y vueltas por segundo, y se apaga en 0,32 s. Sigue caminando mientras se sacude y no gira ni sube. | `PERFIL_CUY.sacudida`, en `src/efectos/CuerpoVivo.js` |
+| Comer mal | La fruta equivocada rebota como siempre y el cuy se sacude un poquito: va y viene de lado a lado 0,05 casillas, a 11 idas y vueltas por segundo, y se apaga en 0,32 s. Con flechas sigue caminando; con un toque se detiene en la fruta elegida. No gira ni sube. | `PERFIL_CUY.sacudida`, en `src/efectos/CuerpoVivo.js` |
 | Frutas vivas | Las frutas y verduras del mapa suben y bajan muy despacio en su casilla: 0,04 casillas (unos 3 px) cada 3 s, cada una con un desfase distinto (la razón áurea reparte las fases). Una fruta comida deja de moverse y, tras el rebote de una equivocada, vuelve al vaivén sin saltos. | `FLOTAR`, en `src/efectos/FrutasVivas.js` |
 | Captura | Cuando el zorro atrapa al cuy suena el quejido, el juego se congela 0,18 s (nada se mueve, ni las animaciones) y la pantalla tiembla muy suave: unos 2,6 px de lado a lado, 8 idas y vueltas por segundo, durante 0,45 s, sin girar ni acercar. Solo después el cuy vuelve al inicio y hace «asustado», con sus dos segundos de protección. | `CONGELADO` y `TEMBLOR`, en `src/efectos/CapturaLaberinto.js` |
 | Puerta | Al abrirse, la puerta sube estirándose 0,14 casillas y cae rebotando hasta su sitio, y suelta 18 trozos de confeti de seis colores: salen en abanico, giran como hojitas, caen por su peso y se apagan en 1,1 s. | `REBOTE` y `CONFETI`, en `src/efectos/PuertaViva.js` |
@@ -129,20 +137,24 @@ npm run build
 .venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 25 de octubre de 2026: **108 pruebas de lógica**, **86 pruebas de
-navegador**, **25 pruebas de las hojas de animación** (Python) y compilación
-correctas. La suite completa incluye el mercado y la capa de vida. Las pruebas de
+Verificado el 25 de octubre de 2026 tras cambiar a toques: **130 pruebas de lógica**,
+**94 pruebas de navegador** y compilación correctas. La suite completa incluye el
+mercado y la capa de vida. Las pruebas de
 navegador miden cada efecto con el reloj del propio efecto, porque un Chromium sin
 pantalla corre a unos 35 cuadros por segundo y no siempre a tiempo real.
 
 La lógica y la validación se prueban con `node --test`, sin instalar paquetes
-adicionales: movimiento, vuelta guardada, recorrido de cada casilla, reglas,
+adicionales: movimiento, vuelta guardada, rutas por búsqueda en anchura, selección
+de la fruta tocada, ajuste del destino al camino y cambio de ruta sin saltos, reglas,
 clasificación, patrulla, búsqueda en anchura, captura y orden de avisos.
 
 Playwright verifica el nivel 1 real hasta la puerta y el nivel 2, fruta equivocada
 y ayudas, voz, mano persistente, clasificación y cierre, continuidad de la partida,
 captura con frutas conservadas y dos segundos de protección, además de teclado,
-ratón, tacto, distribución de pantalla y reintento de carga. Los escenarios
+ratón, tacto, distribución de pantalla y reintento de carga. También prueba el
+toque de la primera fruta, el rodeo de otras frutas, el paso sin comer una fruta
+intermedia inevitable, el cambio de destino y su cancelación por teclado o zorro.
+Los escenarios
 controlados de clasificación, captura y transición de tres niveles usan paquetes
 válidos interceptados en la carga; no modifican el estado de la escena.
 
@@ -150,3 +162,9 @@ Las capturas locales de revisión están en `output/laberinto-completo/`: inicio
 niveles 2 y 3 y cierre en 1280 × 720 y 844 × 390. El nivel 2 se alcanza completando
 el primer mapa real; las capturas de nivel 3 y cierre usan entradas previas cortas
 para preparar esos estados. El mercado y sus recursos se conservan.
+
+Las capturas del control por toque están en `output/laberinto-tocar/`, tomadas con
+Playwright en **800 × 360, `hasTouch: true` e `isMobile: true`**, y revisadas visualmente:
+`inicio-800x360.png`, `destino-800x360.png` y `fruta-comida-800x360.png` muestran el
+primer mapa real; `fruta-intermedia-intacta-800x360.png` muestra el escenario controlado
+de un pasillo con un plátano intermedio que permanece y una fresa lejana elegida.

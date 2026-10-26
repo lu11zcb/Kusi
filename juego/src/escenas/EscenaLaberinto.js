@@ -14,8 +14,9 @@ import {
 } from '../logica/zorrosLaberinto.js'
 import { decir } from '../logica/voz.js'
 import {
-  crearMovimiento, pedirDireccion, avanzarMovimiento, direccionDelDeslizamiento,
+  crearMovimiento, pedirDireccion, avanzarMovimiento, iniciarRecorrido,
 } from '../logica/movimientoLaberinto.js'
+import { planearRuta } from '../logica/rutaLaberinto.js'
 import { vidaActiva } from '../efectos/vida.js'
 import { SonidosLaberinto, esCuadroDePisada } from '../efectos/SonidosLaberinto.js'
 import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
@@ -57,6 +58,7 @@ const SOMBRA = {
 // los niveles más grandes quedan completos dentro de la pantalla 1280 × 720.
 const ZONA_MAPA = { x: 302, y: 168, ancho: 940, alto: 478 }
 const VISTAS = { arriba: 'espaldas', abajo: 'frente', izquierda: 'izquierda', derecha: 'derecha' }
+const TOQUE = { tolerancia: 12, radioDestino: 0.22, grosorDestino: 4, colorDestino: 0xb4611f, profundidad: 4 }
 
 export class EscenaLaberinto extends Phaser.Scene {
   constructor() {
@@ -86,7 +88,11 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cambiandoNivel = false
     this.mensajeCierre = ''
     this.mano = null
-    this.iniciosDeslizamiento = new Map()
+    this.iniciosToque = new Map()
+    this.modoControl = 'teclado'
+    this.destino = null
+    this.ruta = []
+    this.frutaObjetivo = null
   }
 
   create() {
@@ -99,7 +105,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearPersonajes()
     this.crearVida()
     this.crearControles()
-    if (this.indiceNivel === 0) this.mano = crearManoLaberinto(this)
+    if (this.indiceNivel === 0) {
+      const fruta = this.reto.objetos[0]
+      if (fruta) this.mano = crearManoLaberinto(this, this.centroCasilla(fruta.fila, fruta.columna))
+    }
     this.exponerParaPruebas()
     avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
     decir(this.reto.consigna)
@@ -110,10 +119,10 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.sonidos.destruir()
       this.captura.destruir()
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
-      this.input.off('pointerdown', this.alIniciarDeslizamiento)
-      this.input.off('pointerup', this.alTerminarDeslizamiento)
-      this.input.off('pointerupoutside', this.alTerminarDeslizamiento)
-      this.iniciosDeslizamiento.clear()
+      this.input.off('pointerdown', this.alIniciarToque)
+      this.input.off('pointerup', this.alTerminarToque)
+      this.input.off('pointerupoutside', this.alCancelarToque)
+      this.iniciosToque.clear()
       if (window.kusi?.estado === this.leerEstado) delete window.kusi
     })
   }
@@ -171,13 +180,13 @@ export class EscenaLaberinto extends Phaser.Scene {
       sonido: crearBoton(this, 1030, 72, {
         ancho: 138, alto: 72, texto: 'Escuchar', tamano: 27,
         alTocar: () => {
-          if (!this.esDeslizamiento(this.input.activePointer)) decir(this.reto.consigna)
+          decir(this.reto.consigna)
         },
       }).setDepth(1003),
       ayuda: crearBoton(this, 1184, 72, {
         ancho: 118, alto: 72, texto: 'Ayuda', tamano: 28,
         alTocar: () => {
-          if (!this.esDeslizamiento(this.input.activePointer)) this.mostrarAyuda()
+          this.mostrarAyuda()
         },
       }).setDepth(1003),
     }
@@ -225,8 +234,10 @@ export class EscenaLaberinto extends Phaser.Scene {
         this.casilla * 0.78, this.casilla * 0.78).setDepth(3)
     })
     this.add.text(ZONA_MAPA.x + ZONA_MAPA.ancho / 2, 675,
-      'Desliza para caminar · También puedes usar las flechas', estiloTexto(24, COLOR.tinta))
+      'Toca donde quieres ir · También puedes usar las flechas', estiloTexto(24, COLOR.tinta))
       .setOrigin(0.5)
+    this.marcadorDestino = this.add.circle(0, 0, this.casilla * TOQUE.radioDestino, 0, 0)
+      .setStrokeStyle(TOQUE.grosorDestino, TOQUE.colorDestino).setDepth(TOQUE.profundidad).setVisible(false)
   }
 
   crearGuia() {
@@ -311,7 +322,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.botones.altavoz = crearBotonSonido(this, {
         silenciado: this.sonidos.silenciado,
         alTocar: () => {
-          if (!this.esDeslizamiento(this.input.activePointer)) this.alternarSonido()
+          this.alternarSonido()
         },
       })
     }
@@ -360,19 +371,28 @@ export class EscenaLaberinto extends Phaser.Scene {
     }
     this.input.keyboard.on('keydown', this.alPulsarFlecha)
 
-    // Cada dedo conserva su propio origen. El umbral se mide en píxeles de la
-    // pantalla, para que 30 px sigan siendo 30 al reducir el lienzo en un móvil.
-    this.alIniciarDeslizamiento = (puntero) => {
-      this.iniciosDeslizamiento.set(puntero.id, this.puntoEnPantalla(puntero))
+    // Cada dedo conserva su propio toque. Un arrastre se ignora: no se interpreta
+    // como rumbo ni como destino. Los botones tampoco envían al cuy al mapa.
+    this.alIniciarToque = (puntero, objetosTocados) => {
+      this.iniciosToque.set(puntero.id, {
+        ...this.puntoEnPantalla(puntero), sobreControl: objetosTocados.length > 0,
+      })
     }
-    this.alTerminarDeslizamiento = (puntero) => {
-      const direccion = this.esDeslizamiento(puntero)
-      this.iniciosDeslizamiento.delete(puntero.id)
-      if (direccion) this.elegirRumbo(direccion)
+    this.alTerminarToque = (puntero, objetosTocados) => {
+      const inicio = this.iniciosToque.get(puntero.id)
+      this.iniciosToque.delete(puntero.id)
+      if (!inicio || inicio.sobreControl || objetosTocados.length > 0) return
+      const fin = this.puntoEnPantalla(puntero)
+      if (Math.hypot(fin.x - inicio.x, fin.y - inicio.y) > TOQUE.tolerancia) return
+      this.caminarHasta({
+        fila: (puntero.y - this.origenMapa.y) / this.casilla - 0.5,
+        columna: (puntero.x - this.origenMapa.x) / this.casilla - 0.5,
+      })
     }
-    this.input.on('pointerdown', this.alIniciarDeslizamiento)
-    this.input.on('pointerup', this.alTerminarDeslizamiento)
-    this.input.on('pointerupoutside', this.alTerminarDeslizamiento)
+    this.alCancelarToque = (puntero) => this.iniciosToque.delete(puntero.id)
+    this.input.on('pointerdown', this.alIniciarToque)
+    this.input.on('pointerup', this.alTerminarToque)
+    this.input.on('pointerupoutside', this.alCancelarToque)
   }
 
   puntoEnPantalla(puntero) {
@@ -380,14 +400,22 @@ export class EscenaLaberinto extends Phaser.Scene {
     return { x: puntero.x * lienzo.width / ANCHO, y: puntero.y * lienzo.height / ALTO }
   }
 
-  esDeslizamiento(puntero) {
-    const inicio = this.iniciosDeslizamiento.get(puntero.id)
-    return inicio ? direccionDelDeslizamiento(inicio, this.puntoEnPantalla(puntero)) : null
+  cancelarDestino() {
+    this.destino = null
+    this.ruta = []
+    this.frutaObjetivo = null
+    this.marcadorDestino?.setVisible(false)
   }
 
   elegirRumbo(direccion) {
-    if (this.terminada || this.cambiandoNivel) return
+    if (this.terminada || this.cambiandoNivel || this.captura.congelado) return
+    this.cancelarDestino()
+    this.modoControl = 'teclado'
     pedirDireccion(this.movimiento, direccion)
+    this.iniciarNivel()
+  }
+
+  iniciarNivel() {
     this.mano?.ocultar()
     this.nivelIniciado = true
     if (!this.iniciada) {
@@ -396,8 +424,47 @@ export class EscenaLaberinto extends Phaser.Scene {
     }
   }
 
+  caminarHasta(toque) {
+    if (this.terminada || this.cambiandoNivel || this.captura.congelado) return
+    const plan = planearRuta(this.reto.mapa, this.movimiento, toque, this.regla.objetos)
+    if (!plan.destino) return
+    this.modoControl = 'toque'
+    this.destino = plan.destino
+    this.ruta = plan.pasos
+    this.frutaObjetivo = plan.frutaObjetivo
+    const punto = this.centroCasilla(this.destino.fila, this.destino.columna)
+    this.marcadorDestino.setPosition(punto.x, punto.y).setVisible(true)
+    this.iniciarNivel()
+    iniciarRecorrido(this.movimiento, this.ruta)
+    // Tocar la fruta bajo los pies también es una decisión, aunque el recorrido
+    // tenga cero pasos. No hace falta alejarse y volver para recogerla.
+    if (this.movimiento.progreso === 0 && this.ruta.length === 0) this.procesarCasilla(this.movimiento)
+  }
+
+  continuarRecorrido(fila, columna) {
+    if (this.modoControl !== 'toque' || !this.destino) return true
+    if (fila === this.destino.fila && columna === this.destino.columna) {
+      this.cancelarDestino()
+      return false
+    }
+    // Al cambiar de destino entre centros puede llegar primero al origen del
+    // nuevo plan. Solo se consume un paso si coincide con la casilla alcanzada.
+    if (this.ruta[0]?.fila === fila && this.ruta[0]?.columna === columna) this.ruta.shift()
+    if (this.ruta.length === 0) {
+      this.cancelarDestino()
+      return false
+    }
+    pedirDireccion(this.movimiento, this.ruta[0].direccion)
+    return true
+  }
+
   procesarCasilla({ fila, columna }) {
-    const resultado = comerEnCasilla(this.regla, this.reto.regla, fila, columna)
+    // Las flechas conservan la recolección al pasar. Con toques solo cuenta el
+    // objeto elegido; las frutas de paso no producen errores, ayudas ni avisos.
+    const objetoElegido = this.regla.objetos[this.frutaObjetivo]
+    const puedeComer = this.modoControl === 'teclado' || (objetoElegido
+      && objetoElegido.fila === fila && objetoElegido.columna === columna)
+    const resultado = puedeComer ? comerEnCasilla(this.regla, this.reto.regla, fila, columna) : null
     if (resultado) {
       avisarPartida(this.partida, 'accion', {
         nivel: this.indiceNivel + 1, objeto: resultado.objeto, correcto: resultado.correcto,
@@ -434,7 +501,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.completarNivel()
       return false
     }
-    return true
+    return this.continuarRecorrido(fila, columna)
   }
 
   datosParaNivel(indiceNivel, partida = this.partida) {
@@ -446,6 +513,7 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   completarNivel() {
     if (this.cambiandoNivel || this.terminada) return
+    this.cancelarDestino()
     avisarPartida(this.partida, 'reto_completado', { nivel: this.indiceNivel + 1 })
     if (this.indiceNivel + 1 < this.paquete.retos.length) {
       this.cambiandoNivel = true
@@ -483,6 +551,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   capturarCuy() {
+    this.cancelarDestino()
     this.movimiento = crearMovimiento(this.reto.mapa)
     this.zorros.forEach(restablecerZorro)
     this.segundosInvulnerable = SEGUNDOS_INVULNERABLE
@@ -498,6 +567,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   // inicio y asustarse) se aplica al terminar ese instante. Sin vida ocurre de
   // golpe, como antes de la capa de vida.
   alTocarElZorro() {
+    this.cancelarDestino()
     this.sonidos.reproducir('captura')
     if (!this.captura.iniciar()) this.capturarCuy()
   }
@@ -587,6 +657,9 @@ export class EscenaLaberinto extends Phaser.Scene {
       casilla: this.casilla, origenMapa: { ...this.origenMapa },
       inicio: { ...this.inicio }, consigna: this.textoGlobo.text,
       movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
+      modoControl: this.modoControl, destino: this.destino ? { ...this.destino } : null,
+      ruta: this.ruta.map((paso) => ({ ...paso })),
+      marcadorDestino: { visible: this.marcadorDestino.visible, x: this.marcadorDestino.x, y: this.marcadorDestino.y },
       regla: { ...this.regla, objetos: this.regla.objetos.map((objeto) => ({ ...objeto })) },
       puertaAbierta: this.regla.completada, terminada: this.terminada, mensajeCierre: this.mensajeCierre,
       manoVisible: Boolean(this.mano?.visible),

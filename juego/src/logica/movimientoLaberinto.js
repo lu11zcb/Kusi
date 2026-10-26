@@ -9,6 +9,7 @@ const DESPLAZAMIENTOS = {
 
 // Evita que errores mínimos de decimales dejen al cuy casi en una esquina.
 const MARGEN_DECIMAL = 0.000000001
+const CONTRARIAS = { arriba: 'abajo', abajo: 'arriba', izquierda: 'derecha', derecha: 'izquierda' }
 
 function puedeAvanzar(estado, mapa, direccion) {
   const desplazamiento = DESPLAZAMIENTOS[direccion]
@@ -22,7 +23,7 @@ function puedeAvanzar(estado, mapa, direccion) {
 
 // Los cambios de rumbo se resuelven únicamente en el centro de una casilla.
 // Si todavía no existe una salida en la dirección solicitada, la conservamos:
-// así un deslizamiento temprano sirve para doblar en la próxima esquina.
+// así una flecha temprana sirve para doblar en la próxima esquina.
 function elegirDireccion(estado, mapa) {
   if (puedeAvanzar(estado, mapa, estado.direccionPendiente)) {
     estado.direccion = estado.direccionPendiente
@@ -59,6 +60,31 @@ export function crearMovimiento(mapa) {
 export function pedirDireccion(estado, direccion) {
   if (Object.hasOwn(DESPLAZAMIENTOS, direccion)) {
     estado.direccionPendiente = direccion
+  }
+  return estado
+}
+
+// Un destino nuevo reemplaza el giro anterior sin teletransportar al cuy. Si
+// ya está entre centros y el nuevo camino vuelve hacia la casilla de origen,
+// expresamos la misma posición desde el otro extremo del tramo y regresamos.
+// El siguiente centro permite continuar la ruta nueva o detenerse allí.
+export function iniciarRecorrido(estado, pasos = []) {
+  pasos ??= []
+  estado.direccionPendiente = null
+  if (estado.progreso > MARGEN_DECIMAL) {
+    if (pasos[0]?.direccion !== estado.direccion) {
+      const paso = DESPLAZAMIENTOS[estado.direccion]
+      estado.fila += paso.fila
+      estado.columna += paso.columna
+      estado.direccion = CONTRARIAS[estado.direccion]
+      estado.progreso = 1 - estado.progreso
+    }
+    estado.moviendose = true
+  } else if (pasos.length > 0) {
+    pedirDireccion(estado, pasos[0].direccion)
+  } else {
+    estado.progreso = 0
+    estado.moviendose = false
   }
   return estado
 }

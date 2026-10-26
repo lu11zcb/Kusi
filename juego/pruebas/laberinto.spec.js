@@ -91,22 +91,20 @@ test('guarda un giro temprano, dobla en la próxima esquina y sube de espaldas',
   })
 })
 
-test('ignora un toque corto y un deslizamiento diagonal elige su eje mayor', async ({ page: pagina }) => {
+test('un toque elige una casilla y el cuy se detiene sin continuar hasta el muro', async ({ page: pagina }) => {
   const inicial = await abrirLaberinto(pagina)
-  const inicio = await puntoEnLienzo(pagina, 760, 676)
-  await pagina.mouse.move(inicio.x, inicio.y)
-  await pagina.mouse.down()
-  await pagina.mouse.move(inicio.x + 15, inicio.y - 8)
-  await pagina.mouse.up()
+  const destino = await puntoEnLienzo(pagina,
+    inicial.origenMapa.x + 2.5 * inicial.casilla,
+    inicial.origenMapa.y + 1.5 * inicial.casilla)
+  await pagina.mouse.click(destino.x, destino.y)
+  const final = await esperarCasilla(pagina, 1, 2)
+  expect(final.modoControl).toBe('toque')
+  expect(final.regla.recogidos).toBe(0)
+  expect(final.destino).toBeNull()
+  expect(final.ruta).toEqual([])
+  expect(final.marcadorDestino.visible).toBe(false)
   await pagina.waitForTimeout(180)
-  expect((await estado(pagina)).movimiento).toEqual(inicial.movimiento)
-
-  await pagina.mouse.move(inicio.x, inicio.y)
-  await pagina.mouse.down()
-  await pagina.mouse.move(inicio.x + 110, inicio.y - 34, { steps: 4 })
-  await pagina.mouse.up()
-  const final = await esperarCasilla(pagina, 1, 9)
-  expect(final.movimiento.direccion).toBe('derecha')
+  expect((await estado(pagina)).movimiento).toEqual(final.movimiento)
 })
 
 test('Escuchar y Ayuda se pueden tocar sin elegir una dirección', async ({ page: pagina }) => {
@@ -180,38 +178,28 @@ for (const pantalla of [{ width: 1280, height: 720 }, { width: 844, height: 390 
     })
 }
 
-test.describe('deslizamiento táctil', () => {
-  test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true })
+test.describe('toque táctil', () => {
+  test.use({ viewport: { width: 800, height: 360 }, hasTouch: true, isMobile: true })
 
-  test('un dedo fuera del mapa elige la dirección y el cuy continúa solo', async ({ page: pagina }) => {
+  test('un dedo llega al camino y luego a la fruta en el lienzo reducido', async ({ page: pagina }) => {
     const inicial = await abrirLaberinto(pagina)
-    const inicio = await puntoEnLienzo(pagina, 90, 210)
-    const entrada = await pagina.context().newCDPSession(pagina)
-    const dedo = (x, y) => ({ id: 1, x, y, radiusX: 8, radiusY: 8, force: 1 })
-    try {
-      // Con el lienzo reducido, 29 px de la ventana equivalen a más de 30 px
-      // internos. El umbral se debe medir en la pantalla que toca el niño.
-      await entrada.send('Input.dispatchTouchEvent', {
-        type: 'touchStart', touchPoints: [dedo(inicio.x, inicio.y)],
-      })
-      await entrada.send('Input.dispatchTouchEvent', {
-        type: 'touchMove', touchPoints: [dedo(inicio.x + 29, inicio.y)],
-      })
-      await entrada.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-      await pagina.waitForTimeout(180)
-      expect((await estado(pagina)).movimiento).toEqual(inicial.movimiento)
+    const camino = await puntoEnLienzo(pagina,
+      inicial.origenMapa.x + 2.5 * inicial.casilla,
+      inicial.origenMapa.y + 1.5 * inicial.casilla)
+    await pagina.touchscreen.tap(camino.x, camino.y)
+    const enCamino = await esperarCasilla(pagina, 1, 2)
+    expect(enCamino.regla.recogidos).toBe(0)
+    expect(enCamino.modoControl).toBe('toque')
 
-      await entrada.send('Input.dispatchTouchEvent', {
-        type: 'touchStart', touchPoints: [dedo(inicio.x, inicio.y)],
-      })
-      await entrada.send('Input.dispatchTouchEvent', {
-        type: 'touchMove', touchPoints: [dedo(inicio.x + 31, inicio.y + 12)],
-      })
-      await entrada.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-      const final = await esperarCasilla(pagina, 1, 9)
-      expect(final.movimiento.direccion).toBe('derecha')
-    } finally {
-      await entrada.detach()
-    }
+    const fruta = await puntoEnLienzo(pagina,
+      inicial.origenMapa.x + 3.5 * inicial.casilla,
+      inicial.origenMapa.y + 1.5 * inicial.casilla)
+    await pagina.touchscreen.tap(fruta.x, fruta.y)
+    const final = await esperarCasilla(pagina, 1, 3)
+    expect(final.regla.recogidos).toBe(1)
+    expect(final.regla.objetos[0].recogido).toBe(true)
+    expect(final.marcadorDestino.visible).toBe(false)
+    await pagina.waitForTimeout(180)
+    expect((await estado(pagina)).movimiento).toEqual(final.movimiento)
   })
 })

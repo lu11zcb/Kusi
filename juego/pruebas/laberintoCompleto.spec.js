@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
 const RUTA_PAQUETE = new URL('../public/paquete-laberinto-ejemplo.json', import.meta.url)
-const CLAVE_MANO = 'kusi-laberinto-deslizar-v1'
+const CLAVE_MANO = 'kusi-laberinto-tocar-v1'
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))
 
@@ -140,7 +140,7 @@ test('la voz dice la consigna al entrar y Escuchar la repite después de una ayu
   expect(await pagina.evaluate(() => window.frasesKusi.every((frase) => frase.idioma.startsWith('es')))).toBe(true)
 })
 
-test('la mano enseña a deslizar una sola vez y no reaparece al recargar', async ({ page: pagina }) => {
+test('la mano enseña a tocar una fruta una sola vez y no reaparece al recargar', async ({ page: pagina }) => {
   await abrirLaberinto(pagina)
   expect((await estado(pagina)).manoVisible).toBe(true)
   await pagina.keyboard.press('ArrowRight')

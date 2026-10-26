@@ -3,9 +3,11 @@ import assert from 'node:assert/strict'
 import {
   crearMovimiento,
   pedirDireccion,
+  iniciarRecorrido,
   avanzarMovimiento,
   direccionDelDeslizamiento,
 } from '../../src/logica/movimientoLaberinto.js'
+import { posicionEnCasillas } from '../../src/logica/zorrosLaberinto.js'
 
 const PASILLO = [
   '########',
@@ -207,4 +209,113 @@ test('notificar las casillas conserva el giro guardado y el orden del recorrido'
   assert.equal(estado.direccion, 'abajo')
   assert.equal(estado.direccionPendiente, null)
   assert.equal(estado.moviendose, false)
+})
+
+test('un recorrido iniciado en reposo reemplaza la flecha pendiente y camina hacia su primer paso', () => {
+  const estado = crearMovimiento(PASILLO)
+  pedirDireccion(estado, 'izquierda')
+  iniciarRecorrido(estado, [{ fila: 1, columna: 2, direccion: 'derecha' }])
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 1, columna: 1 })
+
+  avanzarMovimiento(estado, PASILLO, 0.25, 1)
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 1, columna: 1.25 })
+  assert.equal(estado.direccion, 'derecha')
+  assert.equal(estado.direccionPendiente, null)
+  assert.equal(estado.moviendose, true)
+})
+
+test('retocar hacia otro pasillo a mitad del tramo conserva la posición y vuelve al centro para girar', () => {
+  const mapa = ['#####', '#...#', '#.C.#', '#..P#', '#####']
+  const estado = crearMovimiento(mapa)
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, mapa, 0.25, 1)
+  pedirDireccion(estado, 'abajo')
+  const posicionAntes = posicionEnCasillas(estado)
+  const nuevaRuta = [{ fila: 1, columna: 2, direccion: 'arriba' }]
+  iniciarRecorrido(estado, nuevaRuta)
+
+  assert.deepEqual(posicionEnCasillas(estado), posicionAntes)
+  assert.equal(estado.direccionPendiente, null)
+  avanzarMovimiento(estado, mapa, 0.125, 1)
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 2, columna: 2.125 })
+
+  // La ejecución de la ruta decide de nuevo al entrar en un centro. Detener el
+  // cuadro aquí impide gastar el tiempo restante antes de preparar el giro.
+  const centros = []
+  avanzarMovimiento(estado, mapa, 3, 1, ({ fila, columna }) => {
+    centros.push({ fila, columna })
+    return false
+  })
+  assert.deepEqual(centros, [{ fila: 2, columna: 2 }])
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 2, columna: 2 })
+  iniciarRecorrido(estado, nuevaRuta)
+  avanzarMovimiento(estado, mapa, 1, 1, () => false)
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 1, columna: 2 })
+})
+
+test('retocar hacia el mismo tramo sigue avanzando sin saltar ni obedecer una flecha anterior', () => {
+  const mapa = ['#####', '#...#', '#.C.#', '#..P#', '#####']
+  const estado = crearMovimiento(mapa)
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, mapa, 0.25, 1)
+  pedirDireccion(estado, 'arriba')
+  const posicionAntes = posicionEnCasillas(estado)
+  iniciarRecorrido(estado, [{ fila: 2, columna: 3, direccion: 'derecha' }])
+
+  assert.deepEqual(posicionEnCasillas(estado), posicionAntes)
+  assert.equal(estado.direccionPendiente, null)
+  avanzarMovimiento(estado, mapa, 0.125, 1)
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 2, columna: 2.375 })
+  const centros = []
+  avanzarMovimiento(estado, mapa, 3, 1, ({ fila, columna }) => {
+    centros.push({ fila, columna })
+    return false
+  })
+  assert.deepEqual(centros, [{ fila: 2, columna: 3 }])
+})
+
+test('un recorrido vacío a mitad de cualquiera de los cuatro rumbos regresa al centro sin saltar', () => {
+  const mapa = ['#####', '#...#', '#.C.#', '#..P#', '#####']
+  for (const direccion of ['arriba', 'abajo', 'izquierda', 'derecha']) {
+    const estado = crearMovimiento(mapa)
+    pedirDireccion(estado, direccion)
+    avanzarMovimiento(estado, mapa, 0.25, 1)
+    const posicionAntes = posicionEnCasillas(estado)
+    iniciarRecorrido(estado, [])
+    assert.deepEqual(posicionEnCasillas(estado), posicionAntes, direccion)
+
+    const centros = []
+    avanzarMovimiento(estado, mapa, 3, 1, ({ fila, columna }) => {
+      centros.push({ fila, columna })
+      return false
+    })
+    assert.deepEqual(centros, [{ fila: 2, columna: 2 }], direccion)
+    assert.deepEqual(posicionEnCasillas(estado), { fila: 2, columna: 2 }, direccion)
+    assert.equal(estado.moviendose, false, direccion)
+    avanzarMovimiento(estado, mapa, 3, 1)
+    assert.deepEqual(posicionEnCasillas(estado), { fila: 2, columna: 2 }, direccion)
+  }
+})
+
+test('un recorrido de cero pasos detiene el avance desde un centro y borra la flecha guardada', () => {
+  const estado = crearMovimiento(PASILLO)
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, PASILLO, 1, 1)
+  pedirDireccion(estado, 'izquierda')
+  iniciarRecorrido(estado, [])
+  avanzarMovimiento(estado, PASILLO, 10, 1)
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 1, columna: 2 })
+  assert.equal(estado.moviendose, false)
+  assert.equal(estado.direccionPendiente, null)
+})
+
+test('un recorrido nulo equivale a cero pasos y detiene el movimiento en el centro', () => {
+  const estado = crearMovimiento(PASILLO)
+  pedirDireccion(estado, 'derecha')
+  avanzarMovimiento(estado, PASILLO, 1, 1)
+  iniciarRecorrido(estado, null)
+  avanzarMovimiento(estado, PASILLO, 10, 1)
+  assert.deepEqual(posicionEnCasillas(estado), { fila: 1, columna: 2 })
+  assert.equal(estado.moviendose, false)
+  assert.equal(estado.direccionPendiente, null)
 })
