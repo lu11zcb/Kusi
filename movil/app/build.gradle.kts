@@ -13,6 +13,7 @@ android {
         versionName = "0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "DJANGO_URL", "\"" + providers.gradleProperty("KUSI_DJANGO_URL").getOrElse("http://10.0.2.2:8000") + "\"")
+        buildConfigField("String", "JUEGO_URL", "\"" + providers.gradleProperty("KUSI_JUEGO_URL").getOrElse("http://10.0.2.2:5174") + "\"")
         buildConfigField("String", "EDU_URL", "\"" + providers.gradleProperty("KUSI_EDU_URL").getOrElse("http://10.0.2.2:8080") + "\"")
     }
     buildTypes {

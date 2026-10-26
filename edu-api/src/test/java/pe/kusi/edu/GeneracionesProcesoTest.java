@@ -763,4 +763,25 @@ class GeneracionesProcesoTest {
         assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("update edu.propuestas set regla_juego = 'mercado'"));
         assertEquals(1, jdbc.update("update edu.propuestas set regla_juego = null"));
     }
+    @Test
+    void hu46_la_biblioteca_solo_muestra_los_cinco_ultimos_juegos_de_la_seccion_vinculada() throws Exception {
+        UUID alumno = UUID.randomUUID(), ajeno = UUID.randomUUID();
+        when(django.validarSesion("ses-alumno-demo")).thenReturn(Map.of("id", alumno.toString(), "roles", List.of("estudiante")));
+        when(django.validarSesion("ses-alumno-ajeno")).thenReturn(Map.of("id", ajeno.toString(), "roles", List.of("estudiante")));
+        vinculos.saveAndFlush(new pe.kusi.edu.model.VinculoEstudiante(alumno, seccion, seccion.getAnioEscolar(), ADMIN));
+        Seccion otra = secciones.saveAndFlush(new Seccion("Sección sin juegos", 1, seccion.getAnioEscolar()));
+        vinculos.saveAndFlush(new pe.kusi.edu.model.VinculoEstudiante(ajeno, otra, otra.getAnioEscolar(), ADMIN));
+        respuestasDeLaIa(GuionesDePrueba.respuestaBuena());
+        UUID solicitud = solicitudAprobada();
+        UUID ultima = null;
+        for (int numero = 0; numero < 6; numero++) {
+            ultima = generar(solicitud);
+            procesar(ultima, "ses-docente").andExpect(jsonPath("$.generacion.estado").value("lista"));
+        }
+        leer("/api/edu/estudiante/juegos/", "ses-alumno-demo").andExpect(status().isOk())
+                .andExpect(jsonPath("$.juegos.length()").value(5)).andExpect(jsonPath("$.juegos[0].id").value(ultima.toString()))
+                .andExpect(jsonPath("$.juegos[0].titulo").isNotEmpty()).andExpect(jsonPath("$.juegos[0].paquete").isNotEmpty());
+        leer("/api/edu/estudiante/juegos/", "ses-alumno-ajeno").andExpect(status().isOk()).andExpect(jsonPath("$.juegos.length()").value(0));
+        leer("/api/edu/estudiante/juegos/", "ses-docente").andExpect(status().isForbidden());
+    }
 }

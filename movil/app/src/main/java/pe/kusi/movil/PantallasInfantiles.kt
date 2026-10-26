@@ -173,7 +173,12 @@ private fun InicioAventurasInfantil(cuenta: Cuenta, estado: EstadoEntradaKusi, b
                 Text("Tu profe te avisará cuando puedas jugar.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp))
                 BotonKusi("Escuchar a Kusi", { voz.hablar("Todavía no tienes juegos. Tu profe te avisará cuando tu aventura esté lista.") }, Modifier.fillMaxWidth(), icono = R.drawable.ic_speaker_high)
             }
-            else -> items(biblioteca.aventuras.size, key = { biblioteca.aventuras[it].id }) { indice -> val aventura = biblioteca.aventuras[indice]; AventuraTarjeta(aventura, indice, estado.validado && !estado.ocupado) { elegir(aventura) } }
+        }
+        // El ejemplo sigue al final incluso si falla la consulta de la biblioteca.
+        // Conserva la autorización de estudiante, pero no depende de una generación.
+        if (biblioteca.aventuras.isNotEmpty()) items(biblioteca.aventuras.size, key = { biblioteca.aventuras[it].id }) { indice ->
+            val aventura = biblioteca.aventuras[indice]
+            AventuraTarjeta(aventura, indice, estado.validado && !estado.ocupado) { elegir(aventura) }
         }
     }
 }

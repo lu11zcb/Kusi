@@ -58,11 +58,12 @@ class AccesoApi(private val django: String, private val edu: String, private val
         almacen?.guardar(null)
     }
 
-    private fun solicitar(
+    @Synchronized private fun solicitar(
         base: String,
         ruta: String,
         datos: JSONObject? = null,
-        csrf: String? = null
+        csrf: String? = null,
+        educativo: Boolean = false
     ): JSONObject {
         val uri = URI(base.trimEnd('/') + ruta)
         val conexion = uri.toURL().openConnection() as HttpURLConnection
@@ -82,7 +83,7 @@ class AccesoApi(private val django: String, private val edu: String, private val
             conexion.doOutput = true
             conexion.setRequestProperty("Content-Type", "application/json")
             if (csrf != null) {
-                conexion.setRequestProperty("X-CSRFToken", csrf)
+                conexion.setRequestProperty(if (educativo) "X-XSRF-TOKEN" else "X-CSRFToken", csrf)
             }
         }
 
@@ -200,6 +201,31 @@ class AccesoApi(private val django: String, private val edu: String, private val
     fun validarEstudiante(): Cuenta =
         cuenta(solicitar(edu, "/api/edu/acceso/estudiante/"))
             ?: throw FalloAcceso(401, "Debes volver a ingresar.")
+
+    /** La sesión de Django viaja también a Spring por el mismo host. */
+    fun juegosDePrueba(): List<JuegoDisponible> {
+        val lista = solicitar(edu, "/api/edu/estudiante/juegos/").getJSONArray("juegos")
+        require(lista.length() <= 5)
+        return (0 until lista.length()).map { indice ->
+            val juego = lista.getJSONObject(indice)
+            val paquete = juego.getString("paquete")
+            mensajePaqueteJuego(paquete)
+            JuegoDisponible(juego.getString("id"), juego.getString("titulo"), paquete)
+        }
+    }
+
+    fun guardarAvisoJuego(aviso: JSONObject): JSONObject {
+        require(avisoJuegoValido(aviso))
+        val csrf = solicitar(edu, "/api/edu/acceso/csrf/").optString("csrf_token").takeIf { it.isNotBlank() }
+            ?: throw FalloAcceso(403, "No se pudo comprobar la seguridad del avance.")
+        val datos = solicitar(edu, "/api/edu/partidas/avisos/", JSONObject().put("aviso", aviso), csrf, educativo = true)
+        val resumen = datos.getJSONObject("resumen")
+        if (!datos.optBoolean("guardado") || resumen.optString("partida") != aviso.getString("partida") ||
+            resumen.optInt("ayudas_usadas", -1) < 0 || resumen.optInt("niveles_completados", -1) !in 0..5) {
+            throw FalloAcceso(502, "No se pudo confirmar el avance guardado.")
+        }
+        return resumen
+    }
 
     /** Aunque falle la red, el celular olvida la sesión. */
     fun salir() {
