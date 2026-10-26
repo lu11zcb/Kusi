@@ -34,7 +34,7 @@ public class ClienteIa {
     private final String proveedor;
     private final boolean esquemaEstricto;
     private final ObjectMapper json;
-    private final HttpClient cliente = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    private final HttpClient cliente = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(10)).build();
 
     public ClienteIa(String clave, String modelo, String url, boolean esquemaEstricto, String proveedor, ObjectMapper json) {
         this.clave = clave;
