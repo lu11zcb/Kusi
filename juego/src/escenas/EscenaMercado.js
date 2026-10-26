@@ -21,6 +21,7 @@ import { Joystick } from '../interfaz/Joystick.js'
 import { Cartel, BORDE_CARTEL } from '../interfaz/Cartel.js'
 import { VentanaPuesto } from '../interfaz/VentanaPuesto.js'
 import { crearBoton, dibujarGlobo, fijarEnPantalla } from '../interfaz/piezas.js'
+import { leerRenderizador } from '../renderizador.js'
 
 const TAMANO_KUSI = { ancho: 124, alto: 140 }
 const FUERZA_MINIMA = 0.15 // al frenar llegando a un punto, nunca va más lento que esto (de la velocidad máxima)
@@ -543,6 +544,7 @@ export class EscenaMercado extends Phaser.Scene {
 
   estadoParaPruebas() {
     return {
+      renderizador: leerRenderizador(this.game),
       plata: sumar(this.estado.cartera),
       cartera: [...this.estado.cartera],
       compras: { ...this.estado.compras },

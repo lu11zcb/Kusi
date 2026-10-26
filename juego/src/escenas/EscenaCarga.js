@@ -12,6 +12,7 @@ import { generarPaquetePrueba } from '../datos/generarPaquetePrueba.js'
 import { validarPaquete } from '../datos/validarPaquete.js'
 import { validarLaberinto } from '../datos/validarLaberinto.js'
 import { crearPartidaLaberinto, avisarPartida } from '../logica/partidaLaberinto.js'
+import { nivelPedido } from '../logica/parametrosLaberinto.js'
 import { avisos } from '../logica/avisos.js'
 import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
@@ -99,9 +100,11 @@ export class EscenaCarga extends Phaser.Scene {
           // Abre el mercado usando el paquete preparado.
           registrarAnimacionesCuy(this, cuyAnimado)
           registrarAnimacionesZorro(this, zorroAnimado)
-          this.scene.start(esLaberinto ? 'laberinto' : 'mercado', {
-            paquete, cuyAnimado, zorroAnimado, partida: this.partidaLaberinto,
-          })
+          // ?nivel=N sirve para revisar cualquier nivel sin ganar los anteriores;
+          // sin él, o con un valor dudoso, el laberinto empieza en el primero.
+          const datos = { paquete, cuyAnimado, zorroAnimado, partida: this.partidaLaberinto }
+          if (esLaberinto) datos.indiceNivel = nivelPedido(window.location.search, paquete.retos.length)
+          this.scene.start(esLaberinto ? 'laberinto' : 'mercado', datos)
         } catch (error) {
           this.mostrarError(error)
         }

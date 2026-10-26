@@ -8,16 +8,21 @@ import { ANCHO, ALTO, LETRA } from './medidas.js'
 import { EscenaCarga } from './escenas/EscenaCarga.js'
 import { EscenaMercado } from './escenas/EscenaMercado.js'
 import { EscenaLaberinto } from './escenas/EscenaLaberinto.js'
+import { elegirRenderizador } from './logica/parametrosLaberinto.js'
+import { CLAVE_RENDERIZADOR_PEDIDO } from './renderizador.js'
 
 async function empezar() {
   // Primero se carga la letra; si no, los textos del lienzo saldrían con otra letra.
   await Promise.all(['500', '600', '700'].map((peso) => document.fonts.load(`${peso} 32px ${LETRA}`, 'áéíóúñ¡¿')))
 
   const laberinto = new URLSearchParams(window.location.search).get('paquete') === 'laberinto'
-  new Phaser.Game({
-    // Este tablero es 2D y está compuesto por filas estáticas. Canvas evita el
-    // coste de los cambios de textura de WebGL en equipos sin GPU dedicada.
-    type: laberinto ? Phaser.CANVAS : Phaser.AUTO,
+  // Este tablero es 2D y está compuesto por filas estáticas. Canvas evita el
+  // coste de los cambios de textura de WebGL en equipos sin GPU dedicada.
+  // ?renderizador=auto devuelve la elección a Phaser para comparar los dos; la
+  // plaza no lee ese parámetro y conserva AUTO siempre.
+  const pedido = laberinto ? elegirRenderizador() : 'auto'
+  const juego = new Phaser.Game({
+    type: pedido === 'canvas' ? Phaser.CANVAS : Phaser.AUTO,
     parent: 'juego',
     width: ANCHO,
     height: ALTO,
@@ -36,6 +41,8 @@ async function empezar() {
     },
     scene: [EscenaCarga, EscenaMercado, EscenaLaberinto],
   })
+  // Las pruebas leen desde las escenas qué lienzo se pidió y cuál quedó activo.
+  juego.registry.set(CLAVE_RENDERIZADOR_PEDIDO, pedido)
 }
 
 empezar()

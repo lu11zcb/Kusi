@@ -30,6 +30,7 @@ import { leerSilencio, guardarSilencio } from '../efectos/silencio.js'
 import { crearBotonSonido, BOTON_SONIDO } from '../interfaz/BotonSonido.js'
 import { crearAmbienteLaberinto, ajustarAmbienteLaberinto, decorarPradera, cachearAdobes } from '../dibujos/ambienteLaberinto.js'
 import { repartirMuros } from '../logica/presentacionLaberinto.js'
+import { leerRenderizador } from '../renderizador.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -763,6 +764,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.leerEstado = () => ({
       familia: 'laberinto', nivel: this.indiceNivel + 1, mapa: this.reto.mapa.map((fila) => fila),
       pantalla: {
+        renderizador: leerRenderizador(this.game),
         ancho: this.scale.width, alto: this.scale.height,
         escala: this.game.canvas.getBoundingClientRect().width / this.scale.width,
         fps: this.game.loop.actualFps,
