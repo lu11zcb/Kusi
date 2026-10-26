@@ -6,6 +6,22 @@ const RUTA_PAQUETE = new URL('../../public/paquete-laberinto-ejemplo.json', impo
 export const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))
 export const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 
+// La escena publica la transformación real de cámara. EXPAND puede añadir
+// espacio alrededor del mundo de 1280 × 720; dividir por ese tamaño ya no basta.
+export async function puntoEnLienzo(pagina, x, y) {
+  return pagina.evaluate(({ x, y }) => {
+    if (window.kusi?.proyectar) return window.kusi.proyectar(x, y)
+    // La pantalla de error del paquete conserva el lienzo de carga y sus botones.
+    const lienzo = document.querySelector('canvas').getBoundingClientRect()
+    return { x: lienzo.left + x * lienzo.width / 1280, y: lienzo.top + y * lienzo.height / 720 }
+  }, { x, y })
+}
+
+export function seSuperponen(a, b) {
+  return a.x < b.x + b.ancho && a.x + a.ancho > b.x &&
+    a.y < b.y + b.alto && a.y + a.alto > b.y
+}
+
 // Abre el laberinto real; «parametros» añade, por ejemplo, '&vida=0' o '&rapido=1'.
 export async function abrir(pagina, parametros = '') {
   await pagina.goto('/?paquete=laberinto' + parametros)

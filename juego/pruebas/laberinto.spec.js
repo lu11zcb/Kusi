@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { puntoEnLienzo, seSuperponen } from './ayudas/laberinto.js'
 
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 
@@ -28,16 +29,11 @@ async function tocarBoton(pagina, nombre) {
   await pagina.mouse.click(punto.x, punto.y)
 }
 
-async function puntoEnLienzo(pagina, x, y) {
-  const lienzo = await pagina.locator('canvas').boundingBox()
-  return { x: lienzo.x + x * lienzo.width / 1280, y: lienzo.y + y * lienzo.height / 720 }
-}
-
 test('una pulsación sigue hasta el muro, recoge en orden y conserva el nivel con la puerta cerrada', async ({ page: pagina }) => {
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
   // La figura simple debe mantener jugable el mapa sin el PNG definitivo.
-  await pagina.route('**/dibujos/muro-adobe.png', (ruta) => ruta.fulfill({ status: 404, body: '' }))
+  await pagina.route('**/dibujos/muro-adobe-*.png', (ruta) => ruta.fulfill({ status: 404, body: '' }))
   const inicial = await abrirLaberinto(pagina)
   expect(inicial.inicio).toEqual({ fila: 1, columna: 1 })
   await pagina.keyboard.press('ArrowRight')
@@ -168,13 +164,19 @@ for (const pantalla of [{ width: 1280, height: 720 }, { width: 844, height: 390 
       expect(lienzo.y).toBeGreaterThanOrEqual(-1)
       expect(lienzo.x + lienzo.width).toBeLessThanOrEqual(pantalla.width + 1)
       expect(lienzo.y + lienzo.height).toBeLessThanOrEqual(pantalla.height + 1)
-      expect(lienzo.width / lienzo.height).toBeCloseTo(1280 / 720, 2)
-      // La barra ocupa hasta y=132; la guía y su globo terminan antes de x=280.
-      // El mapa debe reservar esas zonas incluso al ajustar todo el lienzo.
-      expect(actual.origenMapa.y).toBeGreaterThanOrEqual(156)
-      expect(actual.origenMapa.x).toBeGreaterThanOrEqual(280)
-      expect(actual.origenMapa.x + actual.mapa[0].length * actual.casilla).toBeLessThanOrEqual(1248)
-      expect(actual.origenMapa.y + actual.mapa.length * actual.casilla).toBeLessThanOrEqual(656)
+      expect(lienzo.width).toBeCloseTo(pantalla.width, 0)
+      expect(lienzo.height).toBeCloseTo(pantalla.height, 0)
+      // Se comprueba el espacio ocupado, sin fijar la composición anterior de
+      // Kusi. Así puede crecer el mapa y seguir quedando completo y separado.
+      const { mapa, barra, guia } = actual.presentacion
+      expect(seSuperponen(mapa, barra)).toBe(false)
+      expect(seSuperponen(mapa, guia)).toBe(false)
+      const esquina = await puntoEnLienzo(pagina, mapa.x, mapa.y)
+      const opuesta = await puntoEnLienzo(pagina, mapa.x + mapa.ancho, mapa.y + mapa.alto)
+      expect(esquina.x).toBeGreaterThanOrEqual(-1)
+      expect(esquina.y).toBeGreaterThanOrEqual(-1)
+      expect(opuesta.x).toBeLessThanOrEqual(pantalla.width + 1)
+      expect(opuesta.y).toBeLessThanOrEqual(pantalla.height + 1)
     })
 }
 

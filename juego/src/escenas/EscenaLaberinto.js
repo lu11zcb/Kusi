@@ -28,6 +28,8 @@ import { CapturaLaberinto } from '../efectos/CapturaLaberinto.js'
 import { PuertaViva } from '../efectos/PuertaViva.js'
 import { leerSilencio, guardarSilencio } from '../efectos/silencio.js'
 import { crearBotonSonido, BOTON_SONIDO } from '../interfaz/BotonSonido.js'
+import { crearAmbienteLaberinto, ajustarAmbienteLaberinto, decorarPradera, cachearAdobes } from '../dibujos/ambienteLaberinto.js'
+import { repartirMuros } from '../logica/presentacionLaberinto.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -56,7 +58,7 @@ const SOMBRA = {
 
 // La barra y el espacio de Kusi se reservan antes de medir el mapa. Incluso
 // los niveles más grandes quedan completos dentro de la pantalla 1280 × 720.
-const ZONA_MAPA = { x: 302, y: 168, ancho: 940, alto: 478 }
+const ZONA_MAPA = { x: 218, y: 136, ancho: 1040, alto: 568 }
 const VISTAS = { arriba: 'espaldas', abajo: 'frente', izquierda: 'izquierda', derecha: 'derecha' }
 const TOQUE = { tolerancia: 12, radioDestino: 0.22, grosorDestino: 4, colorDestino: 0xb4611f, profundidad: 4 }
 const AVISO_PERSECUCION = {
@@ -109,6 +111,10 @@ export class EscenaLaberinto extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor(COLOR.crema)
     document.title = 'Kusi · Laberinto'
+    crearAmbienteLaberinto(this)
+    this.actualizarEncuadre()
+    this.alRedimensionar = () => this.actualizarEncuadre()
+    this.scale.on('resize', this.alRedimensionar)
     this.calcularCuadricula()
     this.crearBarra()
     this.crearMapa()
@@ -134,8 +140,32 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.input.off('pointerup', this.alTerminarToque)
       this.input.off('pointerupoutside', this.alCancelarToque)
       this.iniciosToque.clear()
+      this.scale.off('resize', this.alRedimensionar)
       if (window.kusi?.estado === this.leerEstado) delete window.kusi
     })
+  }
+
+  // EXPAND deja espacio alrededor del mundo, sin recortar su barra ni el mapa.
+  // Solo cambia la cámara: un giro del celular no reinicia la partida ni sus efectos.
+  actualizarEncuadre() {
+    const { width, height } = this.scale.gameSize
+    this.desplazamientoPantalla = { x: (ANCHO - width) / 2, y: (ALTO - height) / 2 }
+    this.encuadrarCamara()
+    ajustarAmbienteLaberinto(this)
+  }
+
+  encuadrarCamara() {
+    const temblor = this.captura?.scroll ?? { x: 0, y: 0 }
+    this.cameras.main.setScroll(this.desplazamientoPantalla.x + temblor.x,
+      this.desplazamientoPantalla.y + temblor.y)
+  }
+
+  proyectar(x, y) {
+    const lienzo = this.game.canvas.getBoundingClientRect()
+    return {
+      x: lienzo.left + (x - this.cameras.main.scrollX) * lienzo.width / this.scale.width,
+      y: lienzo.top + (y - this.cameras.main.scrollY) * lienzo.height / this.scale.height,
+    }
   }
 
   calcularCuadricula() {
@@ -146,6 +176,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       x: ZONA_MAPA.x + (ZONA_MAPA.ancho - columnas * this.casilla) / 2,
       y: ZONA_MAPA.y + (ZONA_MAPA.alto - filas * this.casilla) / 2,
     }
+    this.cajaMapa = { ...this.origenMapa, ancho: columnas * this.casilla, alto: filas * this.casilla }
   }
 
   centroCasilla(fila, columna) {
@@ -157,11 +188,12 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   crearBarra() {
     this.casilleros = []
-    this.add.rectangle(ANCHO / 2, 76, ANCHO - 40, 112, NUMERO.papel)
+    this.cajaBarra = { x: 20, y: 12, ancho: ANCHO - 40, alto: 104 }
+    this.add.rectangle(ANCHO / 2, 64, ANCHO - 40, 104, NUMERO.papel)
       .setRounded(24).setStrokeStyle(3, 0xd8b990).setDepth(1000)
-    this.add.text(48, 38, this.reto.regla.tipo === 'orden' ? 'Sigue el orden' : 'Busca frutas',
-      estiloTexto(32)).setDepth(1001)
-    this.add.text(48, 82, 'Nivel ' + (this.indiceNivel + 1) + ' de ' + this.paquete.retos.length,
+    this.add.text(48, 24, this.reto.regla.tipo === 'orden' ? 'Sigue el orden' : 'Busca frutas',
+      estiloTexto(30)).setDepth(1001)
+    this.add.text(48, 68, 'Nivel ' + (this.indiceNivel + 1) + ' de ' + this.paquete.retos.length,
       estiloTexto(23, COLOR.tintaSuave)).setDepth(1001)
 
     const regla = this.reto.regla
@@ -170,31 +202,31 @@ export class EscenaLaberinto extends Phaser.Scene {
       const lado = Math.min(78, espacio - 10)
       regla.secuencia.forEach((tipo, indice) => {
         const x = 346 + indice * espacio
-        const fondo = this.add.rectangle(x, 74, lado, lado, indice === 0 ? 0xffe0a3 : 0xf6ebd8)
+        const fondo = this.add.rectangle(x, 64, lado, lado, indice === 0 ? 0xffe0a3 : 0xf6ebd8)
           .setRounded(16).setStrokeStyle(indice === 0 ? 4 : 2, indice === 0 ? 0xb4611f : 0xd8b990)
           .setDepth(1001)
-        ajustarATamano(this.add.image(x, 73, tipo), lado - 10, lado - 10).setDepth(1002)
-        this.casilleros.push({ fondo, marca: this.crearMarca(x + lado * 0.34, 74 + lado * 0.34) })
+        ajustarATamano(this.add.image(x, 63, tipo), lado - 10, lado - 10).setDepth(1002)
+        this.casilleros.push({ fondo, marca: this.crearMarca(x + lado * 0.34, 64 + lado * 0.34) })
       })
     } else {
-      ajustarATamano(this.add.image(344, 74, 'clase-' + regla.clase), 78, 78).setDepth(1002)
+      ajustarATamano(this.add.image(344, 64, 'clase-' + regla.clase), 78, 78).setDepth(1002)
       const espacio = Math.min(70, 480 / regla.meta)
       for (let indice = 0; indice < regla.meta; indice += 1) {
         const x = 432 + indice * espacio
-        const fondo = this.add.rectangle(x, 75, espacio - 12, 58, 0xf6ebd8)
+        const fondo = this.add.rectangle(x, 65, espacio - 12, 58, 0xf6ebd8)
           .setRounded(12).setStrokeStyle(3, 0xb99a70).setDepth(1001)
-        this.casilleros.push({ fondo, marca: this.crearMarca(x, 75) })
+        this.casilleros.push({ fondo, marca: this.crearMarca(x, 65) })
       }
     }
 
     this.botones = {
-      sonido: crearBoton(this, 1030, 72, {
+      sonido: crearBoton(this, 1030, 62, {
         ancho: 138, alto: 72, texto: 'Escuchar', tamano: 27,
         alTocar: () => {
           decir(this.reto.consigna)
         },
       }).setDepth(1003),
-      ayuda: crearBoton(this, 1184, 72, {
+      ayuda: crearBoton(this, 1184, 62, {
         ancho: 118, alto: 72, texto: 'Ayuda', tamano: 28,
         alTocar: () => {
           this.mostrarAyuda()
@@ -222,43 +254,67 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   crearMapa() {
     const { mapa } = this.reto
-    const ancho = mapa[0].length * this.casilla
-    const alto = mapa.length * this.casilla
-    this.add.tileSprite(this.origenMapa.x - 16, this.origenMapa.y - 16,
-      ancho + 32, alto + 32, 'pasto').setOrigin(0).setDepth(0)
+    const { ancho, alto } = this.cajaMapa
+    // Una sola superficie continua: la textura no vuelve a empezar en cada casilla.
+    this.piso = this.add.tileSprite(this.origenMapa.x, this.origenMapa.y, ancho, alto, 'piso-tierra')
+      .setOrigin(0).setDepth(1)
+    this.piso.setTileScale(this.casilla * 5 / this.textures.get('piso-tierra').getSourceImage().width)
+    decorarPradera(this, this.cajaMapa)
+    this.semillaMuros = this.paquete.titulo + ':' + (this.reto.id ?? this.indiceNivel)
+    this.muros = repartirMuros(mapa, this.semillaMuros)
+    this.sombrasMuros = []
+    this.muros.forEach((muro) => {
+      const punto = this.centroCasilla(muro.fila, muro.columna)
+      this.crearSombraMuro(punto)
+      muro.dibujo = this.crearBloque(punto, muro.variante, muro.fila)
+    })
     mapa.forEach((filaTexto, fila) => {
       for (let columna = 0; columna < filaTexto.length; columna += 1) {
         const simbolo = filaTexto[columna]
         const punto = this.centroCasilla(fila, columna)
-        this.add.image(punto.x, punto.y, simbolo === '#' ? 'muro-adobe' : 'camino-tierra')
-          .setDisplaySize(this.casilla, this.casilla).setDepth(1)
         if (simbolo === 'P') {
-          this.puerta = this.add.image(punto.x, punto.y, 'puerta-cerrada')
-            .setDisplaySize(this.casilla, this.casilla).setDepth(2)
+          this.crearSombraMuro(punto)
+          this.puerta = this.crearBloque(punto, 'puerta-cerrada', fila)
         }
         if (simbolo === 'C') this.inicio = { fila, columna }
       }
     })
+    cachearAdobes(this)
+    this.apoyosFrutas = []
     this.dibujosObjetos = this.reto.objetos.map((objeto) => {
       const punto = this.centroCasilla(objeto.fila, objeto.columna)
+      // Este apoyo de contraste pertenece al arte, también cuando vida=0.
+      this.apoyosFrutas.push(this.add.ellipse(punto.x, punto.y + this.casilla * 0.13,
+        this.casilla * 0.78, this.casilla * 0.50, 0xfffcf0, 0.55).setDepth(2.8))
       return ajustarATamano(this.add.image(punto.x, punto.y, objeto.tipo),
-        this.casilla * 0.78, this.casilla * 0.78).setDepth(3)
+        this.casilla * 0.82, this.casilla * 0.82).setDepth(3)
     })
-    this.add.text(ZONA_MAPA.x + ZONA_MAPA.ancho / 2, 675,
-      'Toca donde quieres ir · También puedes usar las flechas', estiloTexto(24, COLOR.tinta))
-      .setOrigin(0.5)
     this.marcadorDestino = this.add.circle(0, 0, this.casilla * TOQUE.radioDestino, 0, 0)
       .setStrokeStyle(TOQUE.grosorDestino, TOQUE.colorDestino).setDepth(TOQUE.profundidad).setVisible(false)
   }
 
+  crearBloque(punto, textura, fila) {
+    // La cara del frente cae un poco sobre la siguiente fila del piso.
+    return this.add.image(punto.x, punto.y + this.casilla * 0.02, textura)
+      .setDisplaySize(this.casilla * 1.02, this.casilla * 1.18)
+      .setDepth(2 + fila / (this.reto.mapa.length + 1) * 0.5)
+  }
+
+  crearSombraMuro(punto) {
+    this.sombrasMuros.push(this.add.image(punto.x + this.casilla * 0.075,
+      punto.y + this.casilla * 0.10, 'sombra-adobe')
+      .setDisplaySize(this.casilla * 1.08, this.casilla * 1.08).setDepth(1.5))
+  }
+
   crearGuia() {
-    this.add.text(142, 179, '¡Vamos, cuy!', estiloTexto(32)).setOrigin(0.5)
-    const globo = dibujarGlobo(this.add.graphics(), 236, 250)
-    globo.setPosition(142, 355)
-    this.textoGlobo = this.add.text(142, 355, this.reto.consigna,
-      estiloTexto(25, COLOR.tinta, { wordWrap: { width: 204 }, lineSpacing: 3 })).setOrigin(0.5)
-    this.add.ellipse(142, 675, 132, 16, 0x4b211b, 0.12)
-    this.dibujoKusi = ajustarATamano(this.add.image(142, 674, 'kusi-frente').setOrigin(0.5, 1), 164, 180)
+    this.cajaGuia = { x: 10, y: 276, ancho: 196, alto: 432 }
+    this.add.text(108, 296, 'Toca un lugar\no usa las flechas', estiloTexto(22)).setOrigin(0.5)
+    const globo = dibujarGlobo(this.add.graphics(), 196, 220)
+    globo.setPosition(108, 458)
+    this.textoGlobo = this.add.text(108, 458, this.reto.consigna,
+      estiloTexto(22, COLOR.tinta, { wordWrap: { width: 172 }, lineSpacing: 1 })).setOrigin(0.5)
+    this.add.ellipse(64, 701, 76, 10, 0x4b211b, 0.12)
+    this.dibujoKusi = ajustarATamano(this.add.image(64, 702, 'kusi-frente').setOrigin(0.5, 1), 94, 106)
   }
 
   mostrarAyuda(numero = null) {
@@ -367,7 +423,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         alTocar: () => {
           this.alternarSonido()
         },
-      })
+      }).setPosition(166, 674)
     }
   }
 
@@ -427,9 +483,10 @@ export class EscenaLaberinto extends Phaser.Scene {
       if (!inicio || inicio.sobreControl || objetosTocados.length > 0) return
       const fin = this.puntoEnPantalla(puntero)
       if (Math.hypot(fin.x - inicio.x, fin.y - inicio.y) > TOQUE.tolerancia) return
+      const mundo = this.cameras.main.getWorldPoint(puntero.x, puntero.y)
       this.caminarHasta({
-        fila: (puntero.y - this.origenMapa.y) / this.casilla - 0.5,
-        columna: (puntero.x - this.origenMapa.x) / this.casilla - 0.5,
+        fila: (mundo.y - this.origenMapa.y) / this.casilla - 0.5,
+        columna: (mundo.x - this.origenMapa.x) / this.casilla - 0.5,
       })
     }
     this.alCancelarToque = (puntero) => this.iniciosToque.delete(puntero.id)
@@ -440,7 +497,7 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   puntoEnPantalla(puntero) {
     const lienzo = this.game.canvas.getBoundingClientRect()
-    return { x: puntero.x * lienzo.width / ANCHO, y: puntero.y * lienzo.height / ALTO }
+    return { x: puntero.x * lienzo.width / this.scale.width, y: puntero.y * lienzo.height / this.scale.height }
   }
 
   cancelarDestino() {
@@ -514,6 +571,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       })
       const dibujo = this.dibujosObjetos[resultado.indice]
       if (resultado.correcto) {
+        this.apoyosFrutas[resultado.indice].setVisible(false)
         // Con vida la fruta hace pop y salen estrellitas; sin ella solo desaparece.
         this.popFruta.comer(dibujo)
         this.actualizarBarra()
@@ -653,6 +711,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     // sus animaciones); el temblor de la pantalla sí sigue. Al terminar el congelado
     // se aplica la captura, antes de medir cuánto se movió cada personaje.
     const captura = this.captura.actualizar(segundos)
+    this.encuadrarCamara()
     if (captura.congelado) return
     if (captura.termino) this.capturarCuy()
     const anterior = this.posicionMovimiento()
@@ -703,6 +762,29 @@ export class EscenaLaberinto extends Phaser.Scene {
     // con teclado y puntero reales; no existe un atajo para mover al personaje.
     this.leerEstado = () => ({
       familia: 'laberinto', nivel: this.indiceNivel + 1, mapa: this.reto.mapa.map((fila) => fila),
+      pantalla: {
+        ancho: this.scale.width, alto: this.scale.height,
+        escala: this.game.canvas.getBoundingClientRect().width / this.scale.width,
+        fps: this.game.loop.actualFps,
+        desplazamiento: { ...this.desplazamientoPantalla },
+      },
+      presentacion: {
+        fondo: {
+          x: this.fondoPueblito.x - this.fondoPueblito.displayWidth / 2 + this.cameras.main.scrollX,
+          y: this.fondoPueblito.y - this.fondoPueblito.displayHeight / 2 + this.cameras.main.scrollY,
+          ancho: this.fondoPueblito.displayWidth, alto: this.fondoPueblito.displayHeight,
+        },
+        barra: { ...this.cajaBarra }, mapa: { ...this.cajaMapa }, guia: { ...this.cajaGuia },
+        globo: { x: 10, y: 348, ancho: 196, alto: 248 },
+        kusi: { x: this.dibujoKusi.x - this.dibujoKusi.displayWidth / 2,
+          y: this.dibujoKusi.y - this.dibujoKusi.displayHeight,
+          ancho: this.dibujoKusi.displayWidth, alto: this.dibujoKusi.displayHeight },
+        piso: { tipo: this.piso.type, cantidad: 1, textura: this.piso.texture.key },
+        semillaMuros: this.semillaMuros,
+        muros: this.muros.map(({ fila, columna, variante, dibujo }) => ({ fila, columna, variante, profundidad: dibujo.depth })),
+        sombrasMuros: this.sombrasMuros.length, vineta: this.vineta.visible,
+        puerta: this.puerta.texture.key,
+      },
       casilla: this.casilla, origenMapa: { ...this.origenMapa },
       inicio: { ...this.inicio }, consigna: this.textoGlobo.text,
       movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
@@ -764,11 +846,15 @@ export class EscenaLaberinto extends Phaser.Scene {
     })
     window.kusi = {
       listo: true, avisos, estado: this.leerEstado,
+      proyectar: (x, y) => this.proyectar(x, y),
+      ubicarCasilla: (fila, columna) => {
+        const punto = this.centroCasilla(fila, columna)
+        return this.proyectar(punto.x, punto.y)
+      },
       ubicar: (nombre) => {
         const boton = this.botones[nombre]
         if (!boton) return null
-        const lienzo = this.game.canvas.getBoundingClientRect()
-        return { x: lienzo.left + boton.x * lienzo.width / ANCHO, y: lienzo.top + boton.y * lienzo.height / ALTO }
+        return this.proyectar(boton.x, boton.y)
       },
     }
   }

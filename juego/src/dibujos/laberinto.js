@@ -3,7 +3,7 @@
 import { dibujarProducto } from './productos.js'
 
 export function dibujarTerrenoLaberinto(lienzo, clave) {
-  if (clave === 'muro-adobe') {
+  if (clave.startsWith('muro-adobe')) {
     lienzo.fillStyle = '#b87547'
     lienzo.fillRect(0, 0, 96, 96)
     lienzo.fillStyle = '#dca66f'
@@ -34,6 +34,14 @@ export function dibujarTerrenoLaberinto(lienzo, clave) {
     lienzo.ellipse(x, y, pasto ? 3 : 4, 2, 0, 0, Math.PI * 2)
     lienzo.fill()
   }
+}
+
+// Si falta el paisaje, el resto del kit sigue siendo jugable sobre una pradera.
+export function dibujarFondoLaberinto(lienzo, ancho, alto) {
+  lienzo.fillStyle = '#a6ca63'
+  lienzo.fillRect(0, 0, ancho, alto)
+  lienzo.fillStyle = '#91d5ec'
+  lienzo.fillRect(0, 0, ancho, alto * 0.15)
 }
 
 export function dibujarPuertaLaberinto(lienzo, clave) {

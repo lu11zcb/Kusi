@@ -13,7 +13,7 @@ import {
   dibujarProducto, dibujarIcono, dibujarBillete, dibujarMoneda, dibujarCartera, dibujarChoclito,
 } from './productos.js'
 import { dibujarPuesto, dibujarPlaza } from './escenario.js'
-import { dibujarTerrenoLaberinto, dibujarPuertaLaberinto, dibujarClaseLaberinto, dibujarManoLaberinto } from './laberinto.js'
+import { dibujarTerrenoLaberinto, dibujarPuertaLaberinto, dibujarClaseLaberinto, dibujarManoLaberinto, dibujarFondoLaberinto } from './laberinto.js'
 
 // Clave del dibujo de cada billete o moneda: 10 → "billete-10", 5 → "moneda-5".
 export function claveDinero(valor) {
@@ -35,9 +35,10 @@ export function clavesDelPaquete(paquete) {
   if (paquete.familia === 'laberinto') {
     const claves = new Map([
       ['kusi-frente', 'kusi-frente'],
-      ['muro-adobe', 'terreno-laberinto'],
-      ['camino-tierra', 'terreno-laberinto'],
-      ['pasto', 'terreno-laberinto'],
+      ['fondo-pueblito', 'fondo-laberinto'],
+      ['muro-adobe-1', 'terreno-laberinto'],
+      ['muro-adobe-2', 'terreno-laberinto'],
+      ['piso-tierra', 'terreno-laberinto'],
       ['puerta-cerrada', 'puerta-laberinto'],
       ['puerta-abierta', 'puerta-laberinto'],
       ['mano-deslizar', 'mano-laberinto'],
@@ -69,11 +70,14 @@ export function clavesDelPaquete(paquete) {
   return claves
 }
 
-// Pide al cargador de Phaser el PNG de cada clave. Si falta, no se reintenta.
+// Pide al cargador de Phaser el PNG de cada clave (el fondo del pueblito es un
+// WebP, que pesa mucho menos). Si falta, no se reintenta.
 export function pedirDibujos(escena, claves) {
   escena.load.maxRetries = 0
   escena.load.setPath('dibujos/')
-  for (const clave of claves.keys()) escena.load.image(clave, `${clave}.png`)
+  for (const clave of claves.keys()) {
+    escena.load.image(clave, clave + '.' + (clave === 'fondo-pueblito' ? 'webp' : 'png'))
+  }
   escena.load.setPath('')
 }
 
@@ -128,6 +132,8 @@ function elegirFigura(clave, tipo) {
       return { ancho: plaza.ancho, alto: plaza.alto, dibujar: dibujarPlaza }
     case 'terreno-laberinto':
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarTerrenoLaberinto(lienzo, clave) }
+    case 'fondo-laberinto':
+      return { ancho: 1280, alto: 720, dibujar: dibujarFondoLaberinto }
     case 'puerta-laberinto':
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarPuertaLaberinto(lienzo, clave) }
     case 'clase-laberinto':

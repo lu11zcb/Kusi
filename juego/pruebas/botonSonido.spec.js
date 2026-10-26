@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { BOTON_SONIDO } from '../src/interfaz/BotonSonido.js'
-import { abrir, estado, servirPaquete, servirPasillo, leerPaquete } from './ayudas/laberinto.js'
+import { abrir, estado, servirPaquete, servirPasillo, leerPaquete, puntoEnLienzo, seSuperponen } from './ayudas/laberinto.js'
 
 async function tocarAltavoz(pagina) {
   const punto = await pagina.evaluate(() => window.kusi.ubicar('altavoz'))
@@ -26,30 +26,28 @@ async function servirTresNivelesCortos(pagina) {
 
 // El altavoz no debe pisar el mapa jugable, la barra de arriba ni las instrucciones
 // de abajo, ni siquiera con el mapa más ancho que cabe en pantalla.
-function comprobarQueNoPisaNada(nivel) {
+async function comprobarQueNoPisaNada(pagina, nivel) {
   const boton = nivel.vida.botonSonido
   expect(boton).toMatchObject({ silenciado: false, ancho: BOTON_SONIDO.ancho, alto: BOTON_SONIDO.alto })
   const caja = {
     izquierda: boton.x - boton.ancho / 2, derecha: boton.x + boton.ancho / 2,
     arriba: boton.y - boton.alto / 2, abajo: boton.y + boton.alto / 2,
   }
-  expect(caja.derecha).toBeLessThanOrEqual(1280)
-  expect(caja.abajo).toBeLessThanOrEqual(720)
-  const casillas = {
-    izquierda: nivel.origenMapa.x, arriba: nivel.origenMapa.y,
-    derecha: nivel.origenMapa.x + nivel.mapa[0].length * nivel.casilla,
-    abajo: nivel.origenMapa.y + nivel.mapa.length * nivel.casilla,
+  const rectangulo = { x: caja.izquierda, y: caja.arriba, ancho: boton.ancho, alto: boton.alto }
+  for (const ocupado of ['mapa', 'barra', 'globo', 'kusi']) {
+    expect(seSuperponen(rectangulo, nivel.presentacion[ocupado]), ocupado).toBe(false)
   }
-  const separados = caja.izquierda >= casillas.derecha || caja.arriba >= casillas.abajo ||
-    caja.derecha <= casillas.izquierda || caja.abajo <= casillas.arriba
-  expect(separados).toBe(true)
-  // La barra de arriba termina en y=132 y las instrucciones de abajo, en x=1070.
-  expect(caja.arriba).toBeGreaterThan(132)
-  expect(caja.izquierda).toBeGreaterThan(1075)
+  const esquina = await puntoEnLienzo(pagina, caja.izquierda, caja.arriba)
+  const opuesta = await puntoEnLienzo(pagina, caja.derecha, caja.abajo)
+  const pantalla = pagina.viewportSize()
+  expect(esquina.x).toBeGreaterThanOrEqual(0)
+  expect(esquina.y).toBeGreaterThanOrEqual(0)
+  expect(opuesta.x).toBeLessThanOrEqual(pantalla.width)
+  expect(opuesta.y).toBeLessThanOrEqual(pantalla.height)
 }
 
 test('el altavoz está en la esquina de abajo, sin pisar el mapa, la barra ni las instrucciones', async ({ page: pagina }) => {
-  comprobarQueNoPisaNada(await abrir(pagina))
+  await comprobarQueNoPisaNada(pagina, await abrir(pagina))
   // Un mapa de 16 × 8, el más ancho y alto que cabe, es el caso con menos espacio libre.
   const ancho = await pagina.context().newPage()
   await servirPasillo(ancho, {
@@ -59,7 +57,7 @@ test('el altavoz está en la esquina de abajo, sin pisar el mapa, la barra ni la
     ],
     objetos: [{ tipo: 'fresa', fila: 1, columna: 5 }], regla: { tipo: 'orden', secuencia: ['fresa'] },
   })
-  comprobarQueNoPisaNada(await abrir(ancho))
+  await comprobarQueNoPisaNada(ancho, await abrir(ancho))
   // Los botones de la barra siguen donde estaban.
   expect(await pagina.evaluate(() => window.kusi.ubicar('sonido'))).not.toBeNull()
   expect(await pagina.evaluate(() => window.kusi.ubicar('ayuda'))).not.toBeNull()

@@ -1,13 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { abrir, estado, esperarCasilla, leerPaquete, servirPaquete, servirPasillo } from './ayudas/laberinto.js'
-
-// Solo se lee la geometría publicada por la escena. Los destinos se eligen con
-// el ratón real, convirtiendo las coordenadas internas al tamaño del canvas.
-async function puntoEnLienzo(pagina, x, y) {
-  const lienzo = await pagina.locator('canvas').boundingBox()
-  expect(lienzo).not.toBeNull()
-  return { x: lienzo.x + x * lienzo.width / 1280, y: lienzo.y + y * lienzo.height / 720 }
-}
+import { abrir, estado, esperarCasilla, leerPaquete, servirPaquete, servirPasillo, puntoEnLienzo } from './ayudas/laberinto.js'
 
 async function tocarCasilla(pagina, fila, columna) {
   const actual = await estado(pagina)
