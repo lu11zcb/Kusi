@@ -110,7 +110,7 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor(COLOR.crema)
-    document.title = 'Kusi · Laberinto'
+    document.title = 'Kusi · El laberinto'
     crearAmbienteLaberinto(this)
     // La disposición se elige una vez por nivel, según la forma de la pantalla.
     this.calcularCuadricula()
@@ -151,7 +151,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     })
   }
 
-  // Si el laberinto se abrió para recibir guiones (?paquete=laberinto o ?paquete=mensaje),
+  // El laberinto acepta guiones por mensaje desde cualquier dirección de entrada;
   // esta escena atiende lo que mande la página que contiene el juego. Cada nivel es
   // una escena nueva: la anterior suelta su lugar al cerrarse y esta lo toma.
   conectarPuente() {
@@ -813,7 +813,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   exponerParaPruebas() {
-    // Solo lectura, igual que en el mercado. Las pruebas realizan las acciones
+    // Solo lectura. Las pruebas realizan las acciones
     // con teclado y puntero reales; no existe un atajo para mover al personaje.
     this.leerEstado = () => ({
       familia: 'laberinto', nivel: this.indiceNivel + 1, mapa: this.reto.mapa.map((fila) => fila),

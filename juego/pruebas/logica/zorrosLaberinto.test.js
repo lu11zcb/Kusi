@@ -253,7 +253,7 @@ test('los intervalos inválidos y la pausa no desplazan ni cambian el rumbo', ()
   }
 })
 
-test('la captura usa posiciones interpoladas y detecta cruces en sentidos opuestos', () => {
+test('la captura usa posiciones interpoladas y detecta cruces en direcciones contrarias', () => {
   const cuy = { fila: 1, columna: 2, direccion: 'derecha', progreso: 0.4 }
   const zorro = { fila: 1, columna: 3, direccion: 'izquierda', progreso: 0.3 }
   assert.equal(seAtrapan(cuy, zorro), true)

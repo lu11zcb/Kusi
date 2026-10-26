@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
+import { estado, esperarCasilla } from './ayudas/laberinto.js'
 
 test.use({
   viewport: { width: 960, height: 540 },
@@ -8,83 +8,62 @@ test.use({
   isMobile: true,
 })
 
-test('el joystick táctil conserva el primer dedo y anima al cuy hasta soltarlo', async ({ page: pagina }, prueba) => {
-  const datos = JSON.parse(await readFile(
-    new URL('../public/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
-  ))
+test('el toque táctil recoge una fruta y un segundo dedo no convierte su arrastre en destino', async ({ page: pagina }, prueba) => {
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
   await pagina.goto('/')
   await pagina.waitForFunction(() => window.kusi?.listo)
-  const vamos = await (await pagina.waitForFunction(() => window.kusi.ubicar('vamos'))).jsonValue()
-  await pagina.touchscreen.tap(vamos.x, vamos.y)
-  await pagina.waitForFunction(() => window.kusi.estado().puedeMoverse)
-
-  // CDP entrega eventos táctiles reales a Chromium, con coordenadas CSS del
-  // lienzo ajustado; el juego sigue trabajando en sus 1280 × 720 internos.
+  expect((await estado(pagina)).familia).toBe('laberinto')
   const lienzo = await pagina.locator('canvas').boundingBox()
   expect(lienzo.width).toBe(960)
   expect(lienzo.height).toBe(540)
-  const punto = (id, x, y) => ({
-    id, x: lienzo.x + x * lienzo.width / 1280, y: lienzo.y + y * lienzo.height / 720,
-    radiusX: 8, radiusY: 8, force: 1,
-  })
-  const centro = punto(1, 150, 566)
-  const arriba = punto(1, 150, 500)
-  const segundo = punto(2, 190, 566)
-  const segundoMovido = punto(2, 216, 566)
+
+  // CDP entrega dos dedos reales. El primero hace un toque y el segundo se
+  // arrastra; sus inicios se guardan por separado y solo el toque elige destino.
+  const fruta = await pagina.evaluate(() => window.kusi.ubicarCasilla(1, 3))
+  const otro = await pagina.evaluate(() => window.kusi.ubicarCasilla(3, 1))
+  const punto = (id, posicion) => ({ id, ...posicion, radiusX: 8, radiusY: 8, force: 1 })
+  const primero = punto(1, fruta)
+  const segundo = punto(2, otro)
+  const movido = { ...segundo, x: segundo.x + 35 }
   const entrada = await pagina.context().newCDPSession(pagina)
   const enviar = (type, touchPoints) => entrada.send('Input.dispatchTouchEvent', { type, touchPoints })
-  const inicio = await pagina.evaluate(() => window.kusi.estado())
   try {
-    await enviar('touchStart', [centro])
-    await enviar('touchMove', [arriba])
-    await pagina.waitForFunction((y) => {
-      const actual = window.kusi.estado()
-      return actual.cuyY < y - 15 && actual.mirando === 'espaldas' && actual.animacionCuy.estado === 'caminar'
-    }, inicio.cuyY)
-    const antesDelSegundoDedo = await pagina.evaluate(() => window.kusi.estado())
-
-    // El segundo dedo toca y arrastra dentro de la misma zona del joystick.
-    // No debe apropiarse del control ni convertir el avance vertical en lateral.
-    await enviar('touchStart', [arriba, segundo])
-    await enviar('touchMove', [arriba, segundoMovido])
-    await pagina.waitForFunction((y) => window.kusi.estado().cuyY < y - 70, antesDelSegundoDedo.cuyY)
-    const durante = await pagina.evaluate(() => window.kusi.estado())
-    expect(durante.cuyX).toBe(inicio.cuyX)
-    expect(durante.mirando).toBe('espaldas')
-    expect(durante.animacionCuy.estado).toBe('caminar')
-    // La vista de espaldas tiene su propia fila desde la animación HU46.
-    // Conserva esa fila durante el arrastre y al volver al apoyo central.
-    expect([12, 13, 14]).toContain(durante.animacionCuy.fotograma)
-    expect(durante.animacionCuy.flipX).toBe(false)
-  } finally {
+    await enviar('touchStart', [primero])
+    await enviar('touchStart', [primero, segundo])
+    await enviar('touchMove', [primero, movido])
+    // En CDP, un touchMove sin el primer dedo lo levanta; touchEnd va sin puntos.
+    await enviar('touchMove', [movido])
     await enviar('touchEnd', [])
-  }
-  await pagina.waitForFunction(() => {
-    const actual = window.kusi.estado()
-    return actual.velocidad === 0 && actual.animacionCuy.estado === 'reposo'
-  })
-  const parado = await pagina.evaluate(() => window.kusi.estado())
-  await pagina.waitForTimeout(200)
-  const despues = await pagina.evaluate(() => window.kusi.estado())
-  expect([despues.cuyX, despues.cuyY]).toEqual([parado.cuyX, parado.cuyY])
-  expect(despues.animacionCuy.anclaje).toEqual(datos.anclaje)
-  expect(despues.animacionCuy.fotograma).toBe(13)
+    await pagina.waitForFunction(() => window.kusi.estado().movimiento.moviendose)
+    const andando = await estado(pagina)
+    // Solo el toque del primer dedo elige destino; el arrastre del segundo no.
+    expect(andando.destino).toEqual({ fila: 1, columna: 3 })
+    expect(andando.animacionCuy.clave).toContain(':derecha:caminar_lado')
+    const llegado = await esperarCasilla(pagina, 1, 3)
+    expect(llegado.regla.recogidos).toBe(1)
+    expect(llegado.regla.errores).toBe(0)
+    expect(llegado.destino).toBeNull()
+    // Al comer, el cuy pone la cara feliz mirando al niño y después se queda
+    // quieto de frente, sin voltear esa vista.
+    await pagina.waitForFunction(() => window.kusi.estado().animacionCuy.clave.endsWith(':quieto'))
+    expect((await estado(pagina)).animacionCuy).toMatchObject({
+      clave: 'cuy-nino-animado-v1:frente:quieto', fotograma: 1, flipX: false,
+    })
+    await pagina.screenshot({ path: prueba.outputPath('cuy-laberinto-tactil.png') })
 
-  // Un arrastre breve hacia abajo deja la cara del jugador visible en las capturas.
-  await enviar('touchStart', [centro])
-  await enviar('touchMove', [punto(1, 150, 632)])
-  await pagina.waitForFunction((y) => window.kusi.estado().cuyY > y + 20, parado.cuyY)
-  await enviar('touchEnd', [])
-  await pagina.waitForFunction(() => window.kusi.estado().velocidad === 0)
-  await pagina.screenshot({ path: prueba.outputPath('cuy-nino-mercado-tactil-v1.png') })
-  await pagina.setViewportSize({ width: 1280, height: 720 })
-  await pagina.waitForFunction(() => {
-    const caja = document.querySelector('canvas').getBoundingClientRect()
-    return caja.width === 1280 && caja.height === 720
-  })
-  await pagina.screenshot({ path: prueba.outputPath('cuy-nino-mercado-v1.png') })
-  await entrada.detach()
+    // Un toque del botón usa el mismo control táctil, sin mover al personaje.
+    const ayuda = await pagina.evaluate(() => window.kusi.ubicar('ayuda'))
+    await pagina.touchscreen.tap(ayuda.x, ayuda.y)
+    expect((await estado(pagina)).movimiento).toEqual(llegado.movimiento)
+    await pagina.setViewportSize({ width: 1280, height: 720 })
+    await pagina.waitForFunction(() => document.querySelector('canvas').getBoundingClientRect().width === 1280)
+    await pagina.screenshot({ path: prueba.outputPath('cuy-laberinto.png') })
+  } finally {
+    // Si la prueba falló con un dedo apoyado, lo levanta; si ya no queda ninguno,
+    // CDP rechaza el touchEnd y no hay nada que soltar.
+    await enviar('touchEnd', []).catch(() => {})
+    await entrada.detach()
+  }
   expect(errores).toEqual([])
 })

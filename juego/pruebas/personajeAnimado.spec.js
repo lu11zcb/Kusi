@@ -39,20 +39,6 @@ test('el contrato rechaza voltear frente o espalda y las transiciones sin destin
     .toThrow('El estado siguiente necesita una animación finita')
 })
 
-test('el vendedor zorro del mapa está quieto con su escala y textura propias', async ({ page: pagina }) => {
-  const datos = await leerZorro()
-  await pagina.goto('/')
-  await pagina.waitForFunction(() => window.kusi?.listo)
-  const zorros = await pagina.evaluate(() => window.kusi.estado().animacionZorro)
-  expect(zorros).toEqual([{
-    recurso: 'zorro-animado-v1',
-    clave: 'zorro-animado-v1:frente:quieto',
-    fotograma: 1,
-    escala: datos.escala,
-    flipX: false,
-  }])
-})
-
 test('el motor compartido conserva una expresión finita y vuelve al estado del manifiesto', async ({ page: pagina }) => {
   await pagina.goto('/')
   await pagina.waitForFunction(() => window.kusi?.listo)

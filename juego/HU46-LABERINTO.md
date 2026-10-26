@@ -11,8 +11,8 @@ cd juego
 npm run dev
 ```
 
-Visita <http://127.0.0.1:5174/?paquete=laberinto>. Sin el parámetro `paquete`,
-<http://127.0.0.1:5174/> sigue abriendo el mercado.
+Visita <http://localhost:5174/>. El alias `?paquete=laberinto` sigue abriendo
+el mismo ejemplo.
 
 ## Qué probar
 
@@ -58,7 +58,7 @@ original, procesa los demás y lo informa sin modificar las fuentes.
 El laberinto usa `Scale.EXPAND`: el lienzo ocupa toda la ventana, sin franjas
 negras, y el fondo del pueblito lo cubre entero. El alto base (720 unidades) se
 ve siempre completo; en una pantalla más ancha que 16:9 el lienzo se ensancha
-hacia los lados. El mercado conserva `Scale.FIT` y su renderizador AUTO.
+hacia los lados.
 
 `src/logica/disposicionLaberinto.js` elige una de dos disposiciones al abrir
 cada nivel. Es lógica pura, con pruebas en `pruebas/logica/disposicionLaberinto.test.js`.
@@ -122,9 +122,10 @@ a elegir la disposición.
 
 ### Canvas o AUTO
 
-El laberinto dibuja con **Canvas** y el mercado conserva **AUTO** (WebGL si el
-equipo lo permite). Es un tablero 2D casi quieto y en un equipo sin tarjeta
-gráfica WebGL se emula por software, que es lo más lento. Tampoco se usa el
+El laberinto dibuja con **Canvas**; `?renderizador=auto` permite comparar con
+la elección de Phaser (WebGL si el equipo lo permite). Es un tablero 2D casi
+quieto y en un equipo sin tarjeta gráfica WebGL se emula por software, que es
+lo más lento. Tampoco se usa el
 suavizado de pasos de Phaser (`fps.smoothStep` en falso): los movimientos usan los
 deltas reales.
 
@@ -149,9 +150,7 @@ lento, así que Canvas no cuesta nada. Por eso el laberinto se queda en Canvas.
 Esta PC sí tiene tarjeta gráfica; el navegador sin pantalla de las pruebas no la
 usa, y ese es el caso que representa un equipo sin ella. Sin el límite de la
 pantalla, Canvas muestra además un 1 % de cuadros de unos 18 ms (los «peores» de
-56 fps) que, con la pantalla a 72 Hz, no se notan. Como referencia, el mercado,
-que sigue con AUTO, corre a unos 30 fps en ese mismo navegador sin pantalla; no se
-cambió ni se probó con Canvas, porque la tarea pedía conservarlo.
+56 fps) que, con la pantalla a 72 Hz, no se notan.
 
 ### Cómo se comprobó cada efecto en Canvas
 
@@ -305,7 +304,7 @@ en un iframe) se lo manda con `postMessage`.
 
 - `?paquete=mensaje` abre el laberinto **sin guion** y espera el que le manden.
 - `?paquete=laberinto` abre el ejemplo y también acepta guiones por mensaje.
-- Sin parámetro (el mercado) el juego no escucha mensajes.
+- Sin parámetros abre el ejemplo y también acepta guiones por mensaje.
 
 Lo que la página le manda al juego:
 
@@ -354,9 +353,11 @@ npm run build
 .venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 26 de octubre de 2026 tras agregar el guion por mensaje:
-**158 pruebas de lógica**, **130 pruebas de navegador** y compilación correctas.
-La suite completa incluye el mercado y la capa de vida, y corre con un solo
+Tras retirar el juego anterior, la suite contiene **158 pruebas de lógica** y
+**124 pruebas de navegador**. La lógica y la compilación pasan; la ejecución de
+Playwright queda pendiente en este entorno por el bloqueo del puerto 5174
+(`listen EPERM`).
+La suite actual cubre el laberinto y la capa de vida, y corre con un solo
 trabajador (`workers: 1` en `playwright.config.js`): varias pruebas miden tiempos
 de animación y sonido y fallaban por unos milisegundos cuando varios navegadores
 competían por el procesador. Las pruebas de navegador miden cada efecto con el
@@ -393,7 +394,7 @@ válidos interceptados en la carga; no modifican el estado de la escena.
 Las capturas locales de revisión están en `output/laberinto-completo/`: inicio,
 niveles 2 y 3 y cierre en 1280 × 720 y 844 × 390. El nivel 2 se alcanza completando
 el primer mapa real; las capturas de nivel 3 y cierre usan entradas previas cortas
-para preparar esos estados. El mercado y sus recursos se conservan.
+para preparar esos estados.
 
 Las capturas del control por toque están en `output/laberinto-tocar/`, tomadas con
 Playwright en **800 × 360, `hasTouch: true` e `isMobile: true`**, y revisadas visualmente:

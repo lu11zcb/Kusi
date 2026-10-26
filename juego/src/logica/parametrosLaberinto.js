@@ -8,7 +8,7 @@ const PARAMETRO_NIVEL = 'nivel'
 // El tablero es 2D y casi todo está quieto, así que Canvas gasta menos que WebGL
 // en equipos sin tarjeta gráfica. ?renderizador=auto devuelve la elección a
 // Phaser (WebGL si el equipo lo permite) para comparar los dos con la misma
-// partida. La plaza no lee este parámetro: siempre usa AUTO.
+// partida.
 export function elegirRenderizador(busqueda = globalThis.location?.search ?? '') {
   return new URLSearchParams(busqueda).get(PARAMETRO_RENDERIZADOR) === VALOR_AUTO ? 'auto' : 'canvas'
 }

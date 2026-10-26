@@ -2,14 +2,6 @@
 
 import { COLOR, NUMERO, estiloTexto } from '../medidas.js'
 
-// Deja un objeto (y todo lo que tiene dentro) quieto en la pantalla aunque la cámara se mueva.
-// Se aplica también a los hijos para que los toques caigan donde se ve el dibujo.
-export function fijarEnPantalla(objeto) {
-  objeto.setScrollFactor(0)
-  if (objeto.list) objeto.list.forEach(fijarEnPantalla)
-  return objeto
-}
-
 // Botón grande y redondeado, con sombra, que se hunde al tocarlo.
 // La acción ocurre al soltar el dedo sobre el botón. En vez de texto puede llevar
 // un «icono»: un dibujo de Graphics centrado en (0, 0) que se hunde con el botón.

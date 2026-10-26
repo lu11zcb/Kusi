@@ -1,4 +1,4 @@
-// Lista de todo lo que pasa en el juego (compras, pagos que no alcanzan, lista completa).
+// Lista de los avisos del laberinto: inicio, acciones, ayudas y niveles completados.
 // Más adelante estos avisos se mandarán a la app por KusiPuente; por ahora solo se muestran en la consola.
 
 export const avisos = []

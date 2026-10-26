@@ -199,14 +199,12 @@ test('con ?paquete=laberinto el juego empieza con el ejemplo y también acepta u
   expect((await estado(pagina)).barra).toEqual({ titulo: 'Busca frutas', fichas: 3 })
 })
 
-test('la plaza no escucha mensajes ni avisa nada', async ({ page: pagina }) => {
+test('sin parámetros abre el ejemplo y acepta un guion nuevo por mensaje', async ({ page: pagina }) => {
   await escucharAvisos(pagina)
   await pagina.goto('/')
-  await pagina.waitForFunction(() => window.kusi?.listo)
-
-  await mandar(pagina, { tipo: 'paquete', paquete: await leerPaquete() })
-  await pagina.waitForTimeout(400)
-
-  expect((await estado(pagina)).familia).not.toBe('laberinto')
-  expect(await avisosDelJuego(pagina)).toEqual([])
+  await esperarJuego(pagina)
+  expect((await avisosDelJuego(pagina)).map((aviso) => aviso.tipo)).toEqual(['listo', 'cargado'])
+  await mandar(pagina, { tipo: 'paquete', paquete: await leerFixture('laberinto-solo-clase.json') })
+  await pagina.waitForFunction(() => window.kusi?.listo && window.kusi.estado().reglaDelReto.tipo === 'solo_clase')
+  expect((await estado(pagina)).barra).toEqual({ titulo: 'Busca frutas', fichas: 3 })
 })

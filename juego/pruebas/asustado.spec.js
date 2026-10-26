@@ -69,7 +69,7 @@ test('el sprite real conserva asustado sin reflejarlo y vuelve a quieto al compl
     const cuy = window.cuyAnimacionDePrueba
     // Se detiene el reloj exterior para entregar exactamente 100 ms por paso.
     // El sprite, sus texturas, AnimationState y eventos siguen siendo los reales
-    // del mercado; no se simula la finalización ni se reemplaza el reloj interno.
+    // del laberinto; no se simula la finalización ni se reemplaza el reloj interno.
     cuy.scene.game.loop.stop()
     cuy.animarMovimiento('izquierda', 10, 0, 0)
     const lateral = { clave: cuy.anims.currentAnim.key, volteado: cuy.flipX }

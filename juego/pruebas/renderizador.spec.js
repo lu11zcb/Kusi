@@ -19,14 +19,16 @@ test('?renderizador=auto devuelve el laberinto a la elección de Phaser', async 
   expect(await lienzoEs2D(pagina)).toBe(esperado === 'canvas')
 })
 
-test('el mercado conserva AUTO, también si la dirección pide Canvas', async ({ page: pagina }) => {
-  for (const direccion of ['/', '/?renderizador=canvas']) {
+test('sin alias se abre el laberinto y respeta el lienzo y el nivel pedidos', async ({ page: pagina }) => {
+  for (const [direccion, nivel] of [['/', 1], ['/?renderizador=canvas', 1], ['/?nivel=2', 2], ['/?nivel=3&vida=0', 3]]) {
     await pagina.goto(direccion)
     await pagina.waitForFunction(() => window.kusi?.listo)
-    const { renderizador } = await pagina.evaluate(() => window.kusi.estado())
-    const esperado = (await hayWebGL(pagina)) ? 'webgl' : 'canvas'
-    expect(renderizador, direccion).toEqual({ pedido: 'auto', activo: esperado })
-    expect(await lienzoEs2D(pagina), direccion).toBe(esperado === 'canvas')
+    const actual = await pagina.evaluate(() => window.kusi.estado())
+    expect(actual.familia, direccion).toBe('laberinto')
+    expect(actual.nivel, direccion).toBe(nivel)
+    expect(actual.pantalla.renderizador, direccion).toEqual({ pedido: 'canvas', activo: 'canvas' })
+    expect(await lienzoEs2D(pagina), direccion).toBe(true)
+    if (direccion.includes('vida=0')) expect(actual.vida.activa).toBe(false)
   }
 })
 

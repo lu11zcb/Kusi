@@ -5,7 +5,7 @@ import { avisos } from '../../src/logica/avisos.js'
 
 // Cada prueba conserva los avisos anteriores y observa solamente los suyos.
 // El mock de consola pertenece al contexto de la prueba y Node lo restaura al
-// terminar, sin cambiar el registro que también utiliza el mercado.
+// terminar, sin cambiar el registro de avisos del laberinto.
 function prepararPrueba(contexto) {
   contexto.mock.method(console, 'log', () => {})
   const desde = avisos.length

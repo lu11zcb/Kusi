@@ -217,7 +217,7 @@ export function posicionEnCasillas(estado) {
 }
 
 // Las posiciones interpoladas detectan el contacto antes de coincidir en un
-// centro y permiten capturar al cruzarse en sentidos opuestos por un pasillo.
+// centro y permiten capturar al cruzarse en direcciones contrarias por un pasillo.
 // La escena avanza en pasos pequeños para revisar también esos cruces.
 export function seAtrapan(cuy, zorro, distancia = 0.55) {
   const posicionCuy = posicionEnCasillas(cuy)

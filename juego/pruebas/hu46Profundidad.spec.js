@@ -82,12 +82,22 @@ for (const pantalla of PANTALLAS) {
         test('nivel ' + nivel + ': fondo completo, casillas de al menos 40 px y frutas visibles con vida=' + (vida ? 1 : 0),
           async ({ page: pagina }) => {
             const errores = []
+            const fallosDeRed = []
             pagina.on('pageerror', (error) => errores.push(error.message))
+            pagina.on('console', (mensaje) => {
+              if (mensaje.type() === 'error') errores.push(mensaje.text())
+            })
+            // La limpieza de recursos debe conservar también las rutas armadas
+            // con el tipo del alimento y las hojas declaradas en los manifiestos.
+            pagina.on('response', (respuesta) => {
+              if (respuesta.status() >= 400) fallosDeRed.push(respuesta.status() + ' ' + respuesta.url())
+            })
             const inicial = await abrir(pagina, '&nivel=' + nivel + (vida ? '' : '&vida=0'))
             expect(inicial.nivel).toBe(nivel)
             const actual = await comprobarPresentacion(pagina, pantalla)
             expect(actual.vida.activa).toBe(vida)
             expect(errores).toEqual([])
+            expect(fallosDeRed).toEqual([])
           })
       }
     }

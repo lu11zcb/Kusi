@@ -56,9 +56,8 @@ juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py 
 ```
 
 El ciclo es `0,1,2,1` a 8 fps siempre; quieto utiliza el cuadro 1. En el
-mercado el vendedor permanece quieto. Su altura visible es 232 px × 0,6556 =
-152,10 px, frente a 234 px × 0,5 = 117 px del cuy: aproximadamente 1,3 veces.
-La escala del manifiesto mide el dibujo visible, sin contar sus márgenes.
+laberinto su altura se calcula desde el anclaje del manifiesto y es 1,3 veces
+la del cuy. Los márgenes transparentes no cuentan como altura visible.
 
 ## Caminar de lado del cuy
 
@@ -155,11 +154,12 @@ juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py jueg
 juego/.venv/Scripts/python juego/herramientas/animaciones/crear_vista_previa.py juego/public/dibujos/cuy-nino-animado-v1.json juego/arte/cuy/vista-previa/caminar-espalda.gif --direccion espaldas --estado caminar_espalda
 ```
 
-El atlas activo `cuy-nino-cuadros-v5.png` usa la fuente corregida
+La fila de espalda incorporada en `cuy-nino-cuadros-v5.png` usa la fuente corregida
 `cuy-espalda-3-cuadros-v2.png`: talones apoyados sin líneas de dedos, orejas
 vistas por detrás en crema y marrón, mayor balanceo de brazos y nuca sobre la
-tira roja. Se conservan la fuente original `cuy-espalda-3-cuadros.png` y el
-atlas anterior `cuy-nino-cuadros-v4.png`.
+tira roja. El juego utiliza el atlas v6, que conserva esta fila. La fuente
+anterior de espalda y el atlas v4 fueron reemplazados y se retiraron.
+Los atlas intermedios que nombran los reportes y herramientas se conservan.
 
 La quinta fila contiene los índices `12,13,14` en el atlas de 768 × 1280 px.
 Las cuatro filas anteriores se copian del atlas v3 sin remuestrear ni cambiar

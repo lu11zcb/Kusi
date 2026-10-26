@@ -1,23 +1,15 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { estado, esperarCasilla, leerPaquete, servirPaquete } from './ayudas/laberinto.js'
 import { DIRECCIONES_CUY, validarSpriteCuy } from '../src/datos/validarSpriteCuy.js'
 
 const leerManifiesto = async () => JSON.parse(await readFile(
   new URL('../public/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
 ))
 
-const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
-
-async function tocar(pagina, nombre) {
-  const punto = await (await pagina.waitForFunction((n) => window.kusi.ubicar(n), nombre)).jsonValue()
-  await pagina.mouse.click(punto.x, punto.y)
-}
-
 async function empezar(pagina) {
   await pagina.goto('/')
   await pagina.waitForFunction(() => window.kusi?.listo)
-  await tocar(pagina, 'vamos')
-  await pagina.waitForFunction(() => window.kusi.estado().puedeMoverse)
 }
 
 test('el manifiesto define frente, espalda y lateral con su apoyo central', async () => {
@@ -101,66 +93,41 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
 })
 
 test('el cuy cambia entre espalda, frente y laterales y queda quieto en su última dirección', async ({ page: pagina }) => {
-  const datos = await leerManifiesto()
+  const paquete = await leerPaquete()
+  // Un patio con una fruta fuera del recorrido permite observar las cuatro
+  // vistas sin que una expresión o un cambio de nivel interrumpa la caminata.
+  paquete.retos = [{
+    ...paquete.retos[0],
+    mapa: ['#########', '#......P#', '#.......#', '#...C...#', '#.......#', '#.......#', '#########'],
+    objetos: [{ tipo: 'fresa', fila: 3, columna: 1 }],
+    regla: { tipo: 'orden', secuencia: ['fresa'] }, enemigos: [],
+  }]
+  await servirPaquete(pagina, paquete)
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
   await empezar(pagina)
-  const inicial = await estado(pagina)
-  expect(inicial.animacionCuy).toMatchObject({
-    recurso: 'cuy-nino-animado-v1', estado: 'reposo',
-    fotograma: 1, clave: 'cuy-nino-animado-v1:frente:quieto',
-    anclaje: datos.anclaje, escala: datos.escala, flipX: false,
-  })
-
-  // Separa el recorrido de la jardinera y del muro situados junto a la entrada.
-  await pagina.keyboard.down('ArrowUp')
-  await pagina.waitForFunction(() => window.kusi.estado().cuyY < 940)
-  await pagina.keyboard.up('ArrowUp')
-  await pagina.waitForFunction(() => window.kusi.estado().velocidad === 0)
-
-  // El cambio de vista conserva escala y apoyo. Solo el lateral izquierdo se
-  // refleja; arriba usa espalda y abajo frente, sin voltear esas dos vistas.
-  const direcciones = [
-    ['ArrowUp', 'espaldas'],
-    ['ArrowRight', 'derecha'],
-    ['ArrowDown', 'frente'],
-    ['ArrowLeft', 'izquierda'],
-  ]
-  for (const [tecla, direccion] of direcciones) {
-    const lateral = direccion === 'derecha' || direccion === 'izquierda'
-    const espaldas = direccion === 'espaldas'
-    const cuadros = lateral ? [3, 4, 5] : espaldas ? [12, 13, 14] : [0, 1, 2]
-    const caminar = lateral ? 'caminar_lado' : espaldas ? 'caminar_espalda' : 'caminar'
-    const apoyo = lateral ? 4 : espaldas ? 13 : 1
-    const volteado = direccion === 'izquierda'
+  for (const [tecla, vista, fila, columna, apoyo, cuadros] of [
+    ['ArrowUp', 'espaldas', 1, 4, 13, [12, 13, 14]],
+    ['ArrowRight', 'derecha', 1, 7, 4, [3, 4, 5]],
+    ['ArrowDown', 'frente', 5, 7, 1, [0, 1, 2]],
+    ['ArrowLeft', 'izquierda', 5, 1, 4, [3, 4, 5]],
+  ]) {
     const antes = await estado(pagina)
-    await pagina.keyboard.down(tecla)
-    await pagina.waitForFunction((vista) => {
-      const actual = window.kusi.estado()
-      return actual.mirando === vista && actual.animacionCuy?.estado === 'caminar'
-    }, direccion)
-    // Dos fotogramas distintos demuestran que se reproduce el ciclo de patas.
+    await pagina.keyboard.press(tecla)
+    await pagina.waitForFunction(() => window.kusi.estado().movimiento.moviendose)
     const primerPaso = (await estado(pagina)).animacionCuy.fotograma
     await pagina.waitForFunction((previo) => window.kusi.estado().animacionCuy.fotograma !== previo, primerPaso)
     const durante = await estado(pagina)
-    await pagina.keyboard.up(tecla)
     expect(cuadros).toContain(durante.animacionCuy.fotograma)
-    expect(durante.animacionCuy.clave).toBe('cuy-nino-animado-v1:' + direccion + ':' + caminar)
-    expect(durante.animacionCuy.flipX).toBe(volteado)
-    expect(durante.animacionCuy.anclaje).toEqual(datos.anclaje)
-    expect(durante.animacionCuy.escala).toBe(datos.escala)
+    expect(durante.animacionCuy.clave).toContain(':' + vista + ':')
+    expect(durante.animacionCuy.flipX).toBe(vista === 'izquierda')
     expect(Math.hypot(durante.cuyX - antes.cuyX, durante.cuyY - antes.cuyY)).toBeGreaterThan(0)
-    await pagina.waitForFunction(() => {
-      const actual = window.kusi.estado()
-      return actual.velocidad === 0 && actual.animacionCuy.estado === 'reposo'
-    })
-    const detenido = await estado(pagina)
-    const quieto = detenido.animacionCuy
-    expect(detenido.mirando).toBe(direccion)
-    expect(quieto.fotograma).toBe(apoyo)
-    expect(quieto.clave).toBe('cuy-nino-animado-v1:' + direccion + ':quieto')
-    expect(quieto.flipX).toBe(volteado)
-    await pagina.waitForTimeout(300)
+    await esperarCasilla(pagina, fila, columna)
+    // La expresión feliz puede terminar después de alcanzar la última fruta.
+    await pagina.waitForFunction(() => window.kusi.estado().animacionCuy.estado === 'reposo')
+    const quieto = (await estado(pagina)).animacionCuy
+    expect(quieto).toMatchObject({ fotograma: apoyo, clave: 'cuy-nino-animado-v1:' + vista + ':quieto', flipX: vista === 'izquierda' })
+    await pagina.waitForTimeout(150)
     expect((await estado(pagina)).animacionCuy).toEqual(quieto)
   }
   expect(errores).toEqual([])
@@ -210,26 +177,14 @@ test('la espalda real repite 0,1,2,1 a ocho fps y las vistas verticales nunca se
   expect(resultado.volteos).toEqual([false, false])
 })
 
-test('al empujar la pileta el jugador queda en reposo y no camina sin avanzar', async ({ page: pagina }) => {
-  await pagina.goto('/?rapido=1')
-  await pagina.waitForFunction(() => window.kusi?.listo)
-  await tocar(pagina, 'vamos')
-  await tocar(pagina, 'pileta')
-  await pagina.waitForFunction(() => {
-    const actual = window.kusi.estado()
-    return !actual.caminando && actual.velocidad === 0 && actual.animacionCuy?.estado === 'reposo'
-  })
-  await pagina.keyboard.down('ArrowUp')
-  try {
-    await pagina.waitForTimeout(800)
-    const bloqueado = await estado(pagina)
-    expect(bloqueado.animacionCuy.estado).toBe('reposo')
-    const { pileta, cuyX, cuyY } = bloqueado
-    expect(((cuyX - pileta.x) / pileta.radioX) ** 2 + ((cuyY - pileta.y) / pileta.radioY) ** 2).toBeGreaterThan(1)
-    await pagina.waitForTimeout(200)
-    const despues = await estado(pagina)
-    expect([despues.cuyX, despues.cuyY]).toEqual([cuyX, cuyY])
-  } finally {
-    await pagina.keyboard.up('ArrowUp')
-  }
+test('al intentar atravesar un muro el jugador queda en reposo sin avanzar', async ({ page: pagina }) => {
+  await empezar(pagina)
+  const inicial = await estado(pagina)
+  await pagina.keyboard.press('ArrowUp')
+  await pagina.waitForTimeout(300)
+  const bloqueado = await estado(pagina)
+  expect(bloqueado.movimiento.moviendose).toBe(false)
+  expect(bloqueado.animacionCuy.estado).toBe('reposo')
+  expect([bloqueado.cuyX, bloqueado.cuyY]).toEqual([inicial.cuyX, inicial.cuyY])
+  expect(bloqueado.mapa[bloqueado.movimiento.fila - 1][bloqueado.movimiento.columna]).toBe('#')
 })

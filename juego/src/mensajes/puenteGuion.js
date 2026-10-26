@@ -94,7 +94,8 @@ export function crearPuente(ventana) {
 // escenas lo encuentren sin importarlo ni crearlo otra vez.
 export const CLAVE_PUENTE = 'puente-guion'
 
-// El puente del juego, o null si esta dirección no lo pidió (por ejemplo, la plaza).
+// El puente se registra al arrancar el laberinto; null permite usar esta lectura
+// también antes de que el juego haya terminado de inicializar su registro.
 export function leerPuente(juego) {
   return juego.registry.get(CLAVE_PUENTE) ?? null
 }

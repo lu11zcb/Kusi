@@ -69,7 +69,7 @@ test('el sprite real mantiene feliz sin reflejarlo hasta completar el salto y vu
     const cuy = window.cuyAnimacionDePrueba
     // Se detiene únicamente el reloj exterior para entregar 125 ms exactos por
     // cuadro. La reproducción y la transición siguen usando los eventos reales
-    // del Sprite de Phaser, incluidos los tres cuadros de la hoja del mercado.
+    // del Sprite de Phaser, incluidos los tres cuadros de la hoja del laberinto.
     cuy.scene.game.loop.stop()
     cuy.animarMovimiento('izquierda', 10, 0, 0)
     const lateral = { clave: cuy.anims.currentAnim.key, volteado: cuy.flipX }
