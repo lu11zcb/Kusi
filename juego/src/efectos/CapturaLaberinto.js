@@ -23,14 +23,21 @@ export function calcularTemblor(segundos, { frecuencia, duracion, alto }) {
   return { x: Math.sin(onda) * envolvente, y: Math.sin(onda * 1.31 + 1.1) * envolvente * alto }
 }
 
+// Donde mira la cámara cuando no tiembla. Una escena con el mundo centrado en una
+// pantalla más grande indica su propio encuadre con la opción «desfase».
+const SIN_DESFASE = () => ({ x: 0, y: 0 })
+
 export class CapturaLaberinto {
   // «congelables» son los sprites cuya animación se detiene mientras dura el
   // congelado; la del cuy no hace falta porque la escena deja de avanzarla.
-  constructor(escena, { ancho, congelables = [], activo = true }) {
+  // «desfase» devuelve el encuadre de la cámara: el temblor se suma a él y,
+  // al apagarse, la cámara vuelve exactamente ahí.
+  constructor(escena, { ancho, congelables = [], activo = true, desfase = SIN_DESFASE }) {
     this.escena = escena
     this.ancho = ancho
     this.congelables = congelables
     this.activo = activo
+    this.desfase = desfase
     this.congelado = false
     this.temblando = false
     this.restante = 0
@@ -68,7 +75,8 @@ export class CapturaLaberinto {
         this.temblando = false
         this.scroll = { x: 0, y: 0 }
       }
-      this.escena.cameras.main.setScroll(this.scroll.x, this.scroll.y)
+      const encuadre = this.desfase()
+      this.escena.cameras.main.setScroll(encuadre.x + this.scroll.x, encuadre.y + this.scroll.y)
     }
     if (this.congelado) {
       this.restante -= segundos

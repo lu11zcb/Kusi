@@ -101,6 +101,24 @@ test('salir de la escena en pleno congelado deja todo reanudado', () => {
   assert.equal(captura.estado().temblando, false)
 })
 
+test('el temblor se suma al encuadre de la escena y al apagarse la cámara vuelve a él', () => {
+  const { escena, zorros } = crearEscena()
+  // Una pantalla alargada deja el mundo centrado: la cámara mira 160 px a la izquierda.
+  const encuadre = { x: -160, y: 0 }
+  const captura = new CapturaLaberinto(escena, { ancho: ANCHO, congelables: zorros, desfase: () => encuadre })
+  captura.iniciar()
+  let mayorDesvio = 0
+  for (let cuadro = 0; cuadro < 60; cuadro += 1) {
+    captura.actualizar(1 / 60)
+    mayorDesvio = Math.max(mayorDesvio, Math.abs(escena.cameras.main.scrollX - encuadre.x))
+    assert.ok(Math.abs(escena.cameras.main.scrollX - encuadre.x) <= TEMBLOR.amplitud * ANCHO + 1e-9)
+  }
+  assert.ok(mayorDesvio > 0.5, 'tiembla alrededor del encuadre')
+  assert.equal(captura.estado().temblando, false)
+  assert.equal(escena.cameras.main.scrollX, -160)
+  assert.equal(escena.cameras.main.scrollY, 0)
+})
+
 test('con la vida apagada no congela ni tiembla y la escena aplica la captura de golpe', () => {
   const { escena, zorros } = crearEscena()
   const captura = new CapturaLaberinto(escena, { ancho: ANCHO, congelables: zorros, activo: false })

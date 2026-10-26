@@ -414,7 +414,11 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.frutasVivas = new FrutasVivas(this, this.dibujosObjetos, basesDeLasFrutas,
       { casilla: this.casilla, activo: this.vida })
     // Al ser atrapado, los zorros se detienen junto con todo lo demás.
-    this.captura = new CapturaLaberinto(this, { ancho: ANCHO, congelables: this.dibujosZorros, activo: this.vida })
+    this.captura = new CapturaLaberinto(this, {
+      ancho: ANCHO, congelables: this.dibujosZorros, activo: this.vida,
+      // El temblor se suma al encuadre de la pantalla y vuelve a él al apagarse.
+      desfase: () => this.desplazamientoPantalla,
+    })
     this.puertaViva = new PuertaViva(this, this.puerta, { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
     // Sin vida no hay sonidos que apagar y tampoco botón.
@@ -712,7 +716,6 @@ export class EscenaLaberinto extends Phaser.Scene {
     // sus animaciones); el temblor de la pantalla sí sigue. Al terminar el congelado
     // se aplica la captura, antes de medir cuánto se movió cada personaje.
     const captura = this.captura.actualizar(segundos)
-    this.encuadrarCamara()
     if (captura.congelado) return
     if (captura.termino) this.capturarCuy()
     const anterior = this.posicionMovimiento()
