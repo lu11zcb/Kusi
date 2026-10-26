@@ -26,11 +26,16 @@ export async function solicitar<T>(ruta: string, opciones: RequestInit = {}): Pr
 }
 
 export async function enviar<T>(ruta: string, datos: unknown, metodo = 'POST'): Promise<T> {
-  const contexto = await solicitar<{ csrf_token: string }>('/api/acceso/sesion/')
-  if (!contexto.csrf_token) throw new ErrorApi('Recarga la página para comprobar la seguridad.', 0)
+  // Django y Spring verifican tokens distintos aunque compartan la sesión.
+  // Las rutas educativas renuevan el CSRF de Spring; el resto conserva Django.
+  const educativo = ruta.startsWith('/api/edu/')
+  const contexto = await solicitar<{ csrf_token: unknown }>(educativo ? '/api/edu/acceso/csrf/' : '/api/acceso/sesion/')
+  if (typeof contexto.csrf_token !== 'string' || !contexto.csrf_token.trim() || contexto.csrf_token.length > 512) {
+    throw new ErrorApi('Recarga la página para comprobar la seguridad.', educativo ? 403 : 0)
+  }
   return solicitar<T>(ruta, {
     method: metodo,
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': contexto.csrf_token },
+    headers: { 'Content-Type': 'application/json', [educativo ? 'X-XSRF-TOKEN' : 'X-CSRFToken']: contexto.csrf_token },
     body: JSON.stringify(datos),
   })
 }

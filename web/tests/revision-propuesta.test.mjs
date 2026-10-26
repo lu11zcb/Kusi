@@ -34,3 +34,25 @@ test('HU20: las acciones corresponden al estado de revisión y los recursos ause
   assert.ok(!aprobada.includes('Aprobar versión'))
   assert.ok(!aprobada.includes('Pedir otra alternativa'))
 })
+
+test('HU27: solo una propuesta aprobada ofrece Generar juego y muestra la regla del laberinto', () => {
+  const pendiente = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, regla_juego: 'orden' } })
+  assert.ok(pendiente.includes('Seguir el orden (patrones)'))
+  assert.ok(!pendiente.includes('>Generar juego</button>'))
+  const aprobada = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, estado_revision: 'aprobada', regla_juego: 'solo_clase' } })
+  assert.ok(aprobada.includes('Solo una clase (clasificar)'))
+  assert.ok(aprobada.includes('Generar juego</button>'))
+  assert.ok(aprobada.includes('Generar y probar el juego'))
+})
+
+// El menú conserva las pantallas ocultas. Verificamos que la revisión siga
+// presente para conservar su borrador, pero que se retire todo el seguimiento
+// (cuyos efectos cancelan las consultas al desmontarse) hasta volver a entrar.
+test('HU27: una revisión oculta conserva la propuesta sin montar consultas ni vista previa', () => {
+  const html = renderToStaticMarkup(createElement(RevisionPropuesta, {
+    solicitud, alCambiar() {}, activo: false,
+  }))
+  assert.ok(html.includes('Los niños aprenderán a sumar.'))
+  assert.ok(!html.includes('Generar y probar el juego'))
+  assert.ok(!html.includes('<iframe'))
+})

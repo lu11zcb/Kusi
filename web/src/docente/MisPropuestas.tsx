@@ -36,7 +36,7 @@ export function MisPropuestas({ contextos, crear, alOcupar, activo }: { contexto
   return <section id="mis-propuestas" className="doc-pagina" aria-label="Mis propuestas">
     {actual ? <>
       <div className="doc-volver"><button className="doc-texto-boton secundario" type="button" disabled={ocupado} onClick={volver}><IconoDocente nombre="atras" />Volver a mis propuestas</button><span>{nombreCurso(actual.curso_id)}</span></div>
-      <RevisionPropuesta key={actual.id_solicitud} solicitud={actual} alCambiar={actualizar} alOcupar={ocupar} />
+      <RevisionPropuesta key={actual.id_solicitud} solicitud={actual} alCambiar={actualizar} alOcupar={ocupar} activo={activo} />
     </> : <div ref={lista} tabIndex={-1}>
       <CabeceraDocente titulo="Mis propuestas" descripcion="Tus ideas para la clase, desde el primer borrador hasta la propuesta aprobada."><button type="button" onClick={crear}><IconoDocente nombre="mas" />Crear propuesta</button></CabeceraDocente>
       {error && <MensajeDocente titulo="No pudimos actualizar tus propuestas" error><p>{error}</p><button className="secundario" type="button" onClick={() => establecerRecarga((n) => n + 1)}>Volver a intentar</button></MensajeDocente>}

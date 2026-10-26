@@ -21,6 +21,7 @@ export type Propuesta = {
   // HU20-HU25: datos de la versión y su revisión.
   version?: number; origen?: 'ia' | 'docente'; version_base?: number | null; observaciones?: string | null
   recursos?: string[] | null; estado_revision?: 'pendiente' | 'aprobada' | 'rechazada'
+  regla_juego?: 'orden' | 'solo_clase' | null
   apta_para_juego?: boolean; revisada_en?: string | null; creado_en?: string
 }
 export type SolicitudPropuesta = {
@@ -44,6 +45,7 @@ function lista(valor: unknown): valor is string[] {
 function propuestaValida(valor: unknown): valor is Propuesta {
   return objeto(valor) && identificador(valor.id) && texto(valor.objetivo, 4000)
     && (valor.origen_objetivo === 'docente' || valor.origen_objetivo === 'ia')
+    && (valor.regla_juego === undefined || valor.regla_juego === null || valor.regla_juego === 'orden' || valor.regla_juego === 'solo_clase')
     && texto(valor.historia, 10000) && lista(valor.acciones) && lista(valor.reglas) && lista(valor.retos) && lista(valor.ayudas)
 }
 

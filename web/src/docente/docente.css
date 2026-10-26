@@ -233,3 +233,42 @@
   .panel-docente .doc-mensaje { padding: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { .panel-docente .doc-pagina *, .panel-docente .doc-pagina *::before, .panel-docente .doc-pagina *::after { transition: none !important; animation: none !important; } }
+
+/* El juego ocupa el ancho de la revisión; no queda encerrado en la columna de
+   decisiones. Se conservan los colores, botones y foco del panel docente. */
+.panel-docente .doc-generacion { margin-top: 30px; padding: 26px; background: var(--doc-papel); border: 1px solid var(--doc-linea); border-radius: 18px; min-width: 0; }
+.panel-docente .doc-generacion-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; }
+.panel-docente .doc-generacion-cabecera h2, .panel-docente .doc-generacion-cabecera h3 { margin: 0; }
+.panel-docente .doc-generacion-cabecera p { color: var(--doc-suave); max-width: 65ch; }
+.panel-docente .doc-pagina .doc-generar-juego { min-height: 52px; padding: 14px 24px; font-size: 16px; flex: none; }
+.panel-docente .doc-generacion-avance { margin-top: 28px; }
+.panel-docente .doc-generacion-avance > p { color: var(--doc-suave); font-size: 14px; }
+.panel-docente .doc-generacion-pasos { list-style: none; padding: 0; margin: 24px 0; }
+.panel-docente .doc-generacion-paso { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 14px; padding-bottom: 24px; }
+.panel-docente .doc-generacion-paso:not(:last-child)::before { content: ''; position: absolute; top: 36px; bottom: 0; left: 17px; width: 2px; background: var(--doc-linea); }
+.panel-docente .doc-generacion-marca { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #835116; background: #fff0d1; }
+.panel-docente .doc-generacion-completada .doc-generacion-marca { color: #266140; background: #e6f3e7; }
+.panel-docente .doc-generacion-fallida .doc-generacion-marca { color: #9c3826; background: #fbe9e5; }
+.panel-docente .doc-generacion-paso strong, .panel-docente .doc-generacion-paso small { display: block; }
+.panel-docente .doc-generacion-paso small { margin-top: 5px; color: var(--doc-suave); }
+.panel-docente .doc-generacion-paso p { margin: 8px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.panel-docente .doc-generacion-reloj { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--doc-suave); white-space: nowrap; }
+.panel-docente .doc-generacion-reloj .doc-icono { width: 18px; height: 18px; }
+.panel-docente .doc-generacion-procedencia { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; margin-bottom: 0; }
+.panel-docente .doc-generacion-procedencia dt { color: var(--doc-suave); font-size: 13px; }
+.panel-docente .doc-generacion-procedencia dd { margin: 5px 0 0; overflow-wrap: anywhere; }
+.panel-docente .doc-generacion-historial { margin: 24px 0; padding: 18px 0; border-block: 1px solid var(--doc-linea); }
+.panel-docente .doc-generacion-historial > p { color: var(--doc-suave); font-size: 13px; }
+.panel-docente .doc-generacion-historial ol { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; padding: 0; }
+.panel-docente .doc-generacion-historial button { text-align: left; max-width: 100%; overflow-wrap: anywhere; }
+.panel-docente .doc-generacion-historial button[aria-pressed='true'] { background: #fbe5bc; border-color: #bd9355; }
+.panel-docente .doc-generacion-historial small { display: block; font-weight: 600; margin-top: 4px; }
+.panel-docente .doc-vista-previa { margin-top: 26px; }
+.panel-docente .doc-vista-previa iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--doc-linea); border-radius: 14px; background: #fff7e8; }
+@media (max-width: 600px) {
+  .panel-docente .doc-generacion { padding: 18px; }
+  .panel-docente .doc-pagina .doc-generar-juego { width: 100%; }
+  .panel-docente .doc-generacion-procedencia { grid-template-columns: minmax(0, 1fr); }
+  .panel-docente .doc-generacion-paso { grid-template-columns: 36px minmax(0, 1fr); }
+  .panel-docente .doc-generacion-paso > .doc-generacion-reloj { grid-column: 2; }
+}

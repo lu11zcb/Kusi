@@ -55,7 +55,7 @@ export function PanelDocente({ usuario, salir, cambiarRol }: { usuario: Cuenta; 
     {seccion === 'inicio' && <InicioDocente nombre={usuario.nombre} contextos={contextos} ir={ir} />}
     {visitadas.includes('cursos') && <div hidden={seccion !== 'cursos'}><MisCursos contextos={contextos} error={errorContextos} recargar={() => establecerRecarga((valor) => valor + 1)} crear={(curso) => ir('solicitar', curso)} /></div>}
     {visitadas.includes('estudiantes') && <div hidden={seccion !== 'estudiantes'}><EstudiantesSecciones /></div>}
-    {visitadas.includes('solicitar') && <div hidden={seccion !== 'solicitar'}><SolicitarPropuesta borrador={borrador} alCambiarBorrador={establecerBorrador} alOcupar={establecerOcupado} /></div>}
+    {visitadas.includes('solicitar') && <div hidden={seccion !== 'solicitar'}><SolicitarPropuesta borrador={borrador} alCambiarBorrador={establecerBorrador} alOcupar={establecerOcupado} activo={seccion === 'solicitar'} /></div>}
     {visitadas.includes('propuestas') && <div hidden={seccion !== 'propuestas'}><MisPropuestas contextos={contextos} crear={() => ir('solicitar')} alOcupar={establecerOcupado} activo={seccion === 'propuestas'} /></div>}
   </Tablero></div>
 }
