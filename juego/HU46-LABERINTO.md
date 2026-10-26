@@ -34,8 +34,167 @@ La velocidad normal es de 3 casillas por segundo. Para las pruebas rápidas usa
 <http://127.0.0.1:5174/?paquete=laberinto&rapido=1>, que multiplica esa velocidad por cuatro.
 
 Los dibujos que falten se reemplazan con figuras simples bajo las mismas claves:
-`muro-adobe`, `camino-tierra`, `pasto`, `puerta-cerrada` y `puerta-abierta`.
+`fondo-pueblito`, `muro-adobe-1`, `muro-adobe-2`, `piso-tierra`,
+`puerta-cerrada` y `puerta-abierta`.
 El cuy utiliza las animaciones compartidas existentes; Kusi permanece fuera del mapa.
+
+## Pueblito y profundidad
+
+Los tres originales aprobados de `arte/laberinto/origen/` se conservan. Para
+preparar las copias que usa el juego, desde `juego/`:
+
+```powershell
+.venv/Scripts/python herramientas/procesar_laberinto.py
+```
+
+El script requiere Pillow. Recorta los dos adobes y las dos puertas en PNG de
+256 × 256 con alfa limpio, corrige suavemente los bordes del suelo para que
+coincidan píxel a píxel y convierte el fondo a WebP de hasta 2048 px de ancho.
+El kit servido pesa aproximadamente 1,26 MB; el fondo pesa 159 KB. Si falta un
+original, procesa los demás y lo informa sin modificar las fuentes.
+
+### Pantalla completa y dos disposiciones
+
+El laberinto usa `Scale.EXPAND`: el lienzo ocupa toda la ventana, sin franjas
+negras, y el fondo del pueblito lo cubre entero. El alto base (720 unidades) se
+ve siempre completo; en una pantalla más ancha que 16:9 el lienzo se ensancha
+hacia los lados. El mercado conserva `Scale.FIT` y su renderizador AUTO.
+
+`src/logica/disposicionLaberinto.js` elige una de dos disposiciones al abrir
+cada nivel. Es lógica pura, con pruebas en `pruebas/logica/disposicionLaberinto.test.js`.
+
+- **Clásica**: la barra arriba, la columna de Kusi a la izquierda y el mapa a la
+  derecha, dentro del mundo de 1280 × 720 centrado. Es la de 16:9 y la de las
+  pantallas altas; no cambió.
+- **Lateral**: en una pantalla alargada la barra se vuelve una tarjeta y se junta
+  con Kusi (letrero, globo y altavoz) en un panel a la izquierda; el mapa ocupa
+  todo el alto. Solo se elige si agranda las casillas al menos un 12 %.
+
+Lo que mide de verdad una casilla, en píxeles de la pantalla:
+
+| Pantalla | Disposición | Nivel 1 (7 × 11) | Niveles 2 y 3 (9 × 15) |
+| --- | --- | --- | --- |
+| 1280 × 720 | clásica | 81 | 63 |
+| 1366 × 768 | clásica | 86,4 | 67,2 |
+| **800 × 360 táctil** | lateral | **51** | **40** |
+| 844 × 390 | lateral | 55,2 | 43,3 |
+| 915 × 412 | lateral | 58,4 | 45,8 |
+| 932 × 430 | lateral | 60,9 | 47,8 |
+| 740 × 360 | lateral | 51 | 37,5 |
+| 667 × 375 (16:9) | clásica | 42,2 | 32,8 |
+
+En 800 × 360 todas las casillas miden al menos 40 px y la barra y el mapa quedan
+completos. Con la barra arriba era imposible en los niveles de 9 filas: nueve
+filas de 40 px ocupan por sí solas los 360 px del celular (antes 31,5 px). Los
+adobes de la primera y la última fila quedan a ras de la pantalla. Un celular de
+360 px de alto necesita unos 780 px de ancho para llegar a 40 px en esos niveles;
+con menos ancho (740 × 360) o en 16:9 (667 × 375) el panel y las 15 columnas ya
+no caben y la casilla queda por debajo.
+
+Si, con el nivel abierto, la ventana se hace más angosta que ese nivel (por
+ejemplo, al girar el celular), la cámara se aleja lo justo para que la barra,
+Kusi y el mapa sigan completos, y la partida continúa. Al pasar de nivel se vuelve
+a elegir la disposición.
+
+### Piso, adobes, adornos y contraste
+
+- **Piso**: un solo `TileSprite` con `piso-tierra` (1024 px, se repite cada cinco
+  casillas). Sus bordes opuestos coinciden: la diferencia media entre ellos es
+  0,00 por canal, frente a 0,65 entre dos columnas vecinas, así que no hay uniones.
+- **Adobes**: dos variantes (`muro-adobe-1` y `muro-adobe-2`) repartidas con una
+  semilla fija por nivel (título del paquete y reto), así que una recarga no
+  cambia el mosaico. Se dibujan de arriba hacia abajo, una profundidad por fila, y
+  cada uno proyecta una sombra suave sobre el piso hacia abajo y a la derecha.
+  La sombra (`sombra-adobe`) se arma con capas de transparencia, no con la
+  propiedad `filter` del lienzo, que no existe en todos los navegadores de celular.
+  Los adobes se guardan por filas en una `RenderTexture`; la puerta es aparte para
+  poder abrirse y rebotar.
+- **Adornos**: unas pocas flores y piedritas en el pasto, fuera del camino (alrededor
+  del mapa en la disposición clásica; en el hueco junto al globo en la lateral) y
+  una viñeta muy suave.
+- **Contraste**: bajo cada fruta hay un apoyo claro que es parte del arte, así que
+  se ve igual con `?vida=0`. Los personajes se leen por su contorno oscuro sobre
+  el piso, con y sin efectos (revisado en las capturas de los tres niveles); su
+  sombra de contacto es de la capa de vida. El letrero «Toca un lugar o usa las
+  flechas» lleva un fondo claro porque sobre el follaje se perdía.
+- **Despedida**: la cortina del cierre cubre todo el lienzo, también las franjas
+  que EXPAND añade a los lados.
+
+### Canvas o AUTO
+
+El laberinto dibuja con **Canvas** y el mercado conserva **AUTO** (WebGL si el
+equipo lo permite). Es un tablero 2D casi quieto y en un equipo sin tarjeta
+gráfica WebGL se emula por software, que es lo más lento. Tampoco se usa el
+suavizado de pasos de Phaser (`fps.smoothStep` en falso): los movimientos usan los
+deltas reales.
+
+Medido con `herramientas/medir_fps_laberinto.mjs`: tres momentos de juego (quieto,
+caminando y caminando con el zorro del nivel 2), en 1280 × 720 y en un celular
+táctil de 800 × 360, con la misma partida en Canvas y en AUTO. Sin el límite de la
+pantalla, el número dice cuánto aguanta cada lienzo.
+
+| Dónde se mide | Canvas | AUTO (WebGL) | Canvas / AUTO |
+| --- | --- | --- | --- |
+| Chromium sin pantalla, con WebGL por software (SwiftShader): lo que vería un equipo sin tarjeta gráfica | 102 a 114 fps | 11 a 15 fps | 7 a 9 veces |
+| Lo mismo con `--disable-gpu` | 97 a 109 fps | 11 a 15 fps | 7 a 9 veces |
+| Chromium con ventana y la tarjeta de esta PC (NVIDIA RTX 5060 Ti), sin límite | 970 a 1155 fps | 980 a 1308 fps | parecido |
+| Chromium con ventana y la tarjeta, al ritmo de la pantalla (72 Hz) | 72 fps, 0 % de cuadros lentos | 72 fps, 0 % de cuadros lentos | igual |
+
+**Canvas va mejor.** Sin tarjeta gráfica da unos 105 fps contra 13 de AUTO (de 7 a 9
+veces más, y más en el celular de 800 × 360, cuyo lienzo es más ancho), con
+margen de sobra para una pantalla de 60 Hz; AUTO ni llega a 15 y se vería a
+tirones. Con tarjeta gráfica los dos sostienen la pantalla sin un solo cuadro
+lento, así que Canvas no cuesta nada. Por eso el laberinto se queda en Canvas.
+
+Esta PC sí tiene tarjeta gráfica; el navegador sin pantalla de las pruebas no la
+usa, y ese es el caso que representa un equipo sin ella. Sin el límite de la
+pantalla, Canvas muestra además un 1 % de cuadros de unos 18 ms (los «peores» de
+56 fps) que, con la pantalla a 72 Hz, no se notan. Como referencia, el mercado,
+que sigue con AUTO, corre a unos 30 fps en ese mismo navegador sin pantalla; no se
+cambió ni se probó con Canvas, porque la tarea pedía conservarlo.
+
+### Cómo se comprobó cada efecto en Canvas
+
+| Efecto | Comprobación |
+| --- | --- |
+| Sombras | `pruebas/canvas.spec.js` mide que el piso bajo la sombra del cuy es más oscuro que con `?vida=0`; comparación con AUTO |
+| Rebote, respiración y parpadeo | Pruebas de estado de siempre y cuadros exactos junto a AUTO en `herramientas/comparar_efectos.mjs` |
+| Polvito | Cuadros exactos junto a AUTO |
+| Pop y estrellitas | `canvas.spec.js` cuenta los puntos con los colores de las estrellitas; con `?vida=0` no aparecen |
+| Frutas vivas | Pruebas de estado de siempre (posición de cada fruta) |
+| Temblor al ser atrapado | `comparar_efectos.mjs` mide cuánto se corre de verdad el lienzo en cada cuadro del temblor: coincide con el de la cámara con un error menor de 0,5 px, igual que con AUTO |
+| Confeti de la puerta | `canvas.spec.js` cuenta los puntos de sus colores sobre la puerta |
+
+Las comparaciones por cuadros son imágenes con Canvas arriba y AUTO abajo
+(`evidencias/hu46-profundidad/canvas-contra-auto/comparacion-<efecto>.png`); en
+todas se ve el mismo efecto con el mismo aspecto.
+
+### Cómo verlo en el navegador
+
+Con `npm run dev` encendido:
+
+- Con efectos, nivel 1: <http://127.0.0.1:5174/?paquete=laberinto>
+- Sin efectos: <http://127.0.0.1:5174/?paquete=laberinto&vida=0>
+- Otro nivel: `&nivel=2` o `&nivel=3` (sin ganar el anterior).
+- WebGL en lugar de Canvas, para comparar: `&renderizador=auto`.
+- Celular alargado: en las herramientas del navegador (F12, modo dispositivo) elige
+  800 × 360 con pantalla táctil, o haz la ventana el doble de ancha que alta (2:1).
+  Con 16:9 se ve la disposición clásica.
+
+### Herramientas
+
+Todas se ejecutan desde `juego/` con Vite encendido y dejan su resultado en
+`evidencias/` (carpeta local, no se versiona):
+
+```powershell
+node herramientas/capturar_hu46.mjs          # los 3 niveles, 1280 × 720 y 800 × 360 táctil, con y sin vida
+node herramientas/comparar_efectos.mjs       # cada efecto con Canvas arriba y AUTO abajo; mide el temblor
+node herramientas/medir_fps_laberinto.mjs 8  # fps de Canvas y AUTO; variantes: --sin-gpu, --ventana, --con-vsync
+```
+
+`capturar_hu46.mjs` también escribe `medidas.json` con el tamaño físico de las
+casillas y los errores del navegador. Todo es emulación de Chromium; queda
+pendiente probar el teléfono físico.
 
 ## Reglas y niveles
 
@@ -99,7 +258,7 @@ constante al comienzo de su archivo.
 | Captura | Cuando el zorro atrapa al cuy suena el quejido, el juego se congela 0,18 s (nada se mueve, ni las animaciones) y la pantalla tiembla muy suave: unos 2,6 px de lado a lado, 8 idas y vueltas por segundo, durante 0,45 s, sin girar ni acercar. Solo después el cuy vuelve al inicio y hace «asustado», con sus dos segundos de protección. | `CONGELADO` y `TEMBLOR`, en `src/efectos/CapturaLaberinto.js` |
 | Puerta | Al abrirse, la puerta sube estirándose 0,14 casillas y cae rebotando hasta su sitio, y suelta 18 trozos de confeti de seis colores: salen en abanico, giran como hojitas, caen por su peso y se apagan en 1,1 s. | `REBOTE` y `CONFETI`, en `src/efectos/PuertaViva.js` |
 | Sonidos | A volumen bajo: pisadas del cuy y del zorro cuando un pie se apoya, pop al comer bien, boing al equivocarse, «ay» al ser atrapado, puerta al abrirse y fanfarria al entrar a un nivel nuevo o al llegar al cierre. | `SONIDOS_LABERINTO`, en `src/efectos/SonidosLaberinto.js`; autoría y licencias CC0 de Kenney en `public/sonidos/` |
-| Botón de sonido | Un altavoz en la esquina de abajo a la derecha apaga y enciende todos esos sonidos de golpe; se tacha y se pone gris cuando están apagados. La elección se conserva en los niveles siguientes y al volver a abrir el juego. «Escuchar» sigue leyendo la consigna con la voz de Kusi. | `BOTON_SONIDO`, en `src/interfaz/BotonSonido.js`; la marca, en `src/efectos/silencio.js` |
+| Botón de sonido | Un altavoz junto a Kusi, abajo a la izquierda, apaga y enciende todos esos sonidos de golpe; se tacha y se pone gris cuando están apagados. La elección se conserva en los niveles siguientes y al volver a abrir el juego. «Escuchar» sigue leyendo la consigna con la voz de Kusi. | `BOTON_SONIDO`, en `src/interfaz/BotonSonido.js`; la marca, en `src/efectos/silencio.js` |
 
 Con `?vida=0` se apagan todos a la vez, también el botón de sonido, y los sonidos ni
 siquiera se descargan. El navegador solo permite sonar después del primer toque o
@@ -142,16 +301,27 @@ esa partida. La comprobación completa HU31 sigue perteneciendo a Spring.
 
 ```powershell
 npm run prueba:logica
-npm run prueba -- --workers=1
+npm run prueba
 npm run build
 .venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 25 de octubre de 2026 tras ampliar la persecución: **137 pruebas de lógica**,
-**97 pruebas de navegador** y compilación correctas. La suite completa incluye el
-mercado y la capa de vida. Las pruebas de
-navegador miden cada efecto con el reloj del propio efecto, porque un Chromium sin
-pantalla corre a unos 35 cuadros por segundo y no siempre a tiempo real.
+Verificado el 25 de octubre de 2026 tras terminar la profundidad del laberinto:
+**148 pruebas de lógica**, **120 pruebas de navegador** y compilación correctas.
+La suite completa incluye el mercado y la capa de vida, y corre con un solo
+trabajador (`workers: 1` en `playwright.config.js`): varias pruebas miden tiempos
+de animación y sonido y fallaban por unos milisegundos cuando varios navegadores
+competían por el procesador. Las pruebas de navegador miden cada efecto con el
+reloj del propio efecto, porque un Chromium sin pantalla corre con WebGL por
+software y no siempre a tiempo real.
+
+Las pruebas de la profundidad miden en la pantalla real, con la proyección de la
+cámara: los tres niveles en 1280 × 720 y en un celular táctil de 800 × 360, con y
+sin `?vida=0`, comprueban que el fondo cubre todo, que la barra, el mapa y la
+columna de Kusi caben sin pisarse, que cada casilla mide al menos 40 px y que las
+frutas se ven. Otras comprueban el cambio de tamaño de la ventana en los dos
+sentidos, la despedida a pantalla completa, el lienzo pedido (`?renderizador`) y
+el nivel pedido (`?nivel`).
 
 La lógica y la validación se prueban con `node --test`, sin instalar paquetes
 adicionales: movimiento, vuelta guardada, rutas por búsqueda en anchura, selección
