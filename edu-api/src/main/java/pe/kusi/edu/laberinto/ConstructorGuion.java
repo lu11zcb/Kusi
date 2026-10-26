@@ -22,7 +22,7 @@ import static pe.kusi.edu.laberinto.CatalogoLaberinto.*;
 //    secuencia y «solo_clase», su clase y su meta.
 //  - conMapasBase: el respaldo. Cambia los mapas de la IA por los mapas base y
 //    recoloca los objetos donde el cuy sí puede alcanzarlos.
-// Ninguna de las dos valida: eso lo hace ValidadorLaberinto.
+// HU31 sigue comprobando el resultado completo antes de guardarlo como listo.
 public final class ConstructorGuion {
     private ConstructorGuion() {}
 
@@ -88,33 +88,145 @@ public final class ConstructorGuion {
         return regla;
     }
 
-    // El respaldo: los tres primeros niveles de la IA con los mapas base. De la IA se
-    // conservan la regla, los objetos (recolocados), la consigna y las ayudas; los
-    // enemigos vienen del mapa base, ya colocados lejos del inicio. Devuelve vacío si
-    // la IA no entregó tres niveles que se puedan aprovechar.
+    // Conserva la firma anterior para lectores y pruebas de guiones antiguos.
     public static Optional<ObjectNode> conMapasBase(JsonNode respuesta, String curso, List<JsonNode> mapasBase) {
+        return conMapasBase(respuesta, curso, mapasBase, null);
+    }
+
+    // El respaldo repara solo lo que HU31 no puede aceptar. Los mapas de confianza
+    // aportan espacio y enemigos; una respuesta incompleta nunca deja sin demo al
+    // docente. La comprobación final sigue siendo responsabilidad de HU31.
+    public static Optional<ObjectNode> conMapasBase(JsonNode respuesta, String curso, List<JsonNode> mapasBase, String reglaJuego) {
+        if (respuesta == null || mapasBase.size() < MIN_NIVELES) return Optional.empty();
         ObjectNode guion = desdeLaIa(respuesta, curso);
-        if (guion == null || guion.get("retos").size() < MIN_NIVELES || mapasBase.size() < MIN_NIVELES) {
-            return Optional.empty();
-        }
-        if (guion.get("titulo").asText().isBlank()) guion.put("titulo", TITULO_POR_OMISION);
+        if (guion == null) guion = desdeLaIa(NODOS.objectNode(), curso);
+        if (guion.path("titulo").asText().isBlank()) guion.put("titulo", TITULO_POR_OMISION);
+        JsonNode originales = guion.path("retos");
         ArrayNode retos = NODOS.arrayNode();
         for (int posicion = 0; posicion < MIN_NIVELES; posicion++) {
-            JsonNode nivelIa = guion.get("retos").get(posicion);
-            if (!nivelIa.isObject()) return Optional.empty();
+            JsonNode original = originales.path(posicion);
             JsonNode base = mapasBase.get(posicion);
             ObjectNode nivel = NODOS.objectNode();
             nivel.put("id", "laberinto-" + (posicion + 1));
             nivel.set("mapa", base.get("mapa").deepCopy());
-            if (nivelIa.has("regla")) nivel.set("regla", nivelIa.get("regla").deepCopy());
-            nivel.set("objetos", recolocarObjetos(nivelIa.path("objetos"), nivelIa.path("regla"), base));
+            ObjectNode regla = repararRegla(original, reglaJuego, posicion);
+            nivel.set("regla", regla);
+            nivel.set("objetos", recolocarObjetos(completarObjetos(original.path("objetos"), regla), regla, base));
             nivel.set("enemigos", base.get("enemigos").deepCopy());
-            copiarSiExiste(nivelIa, nivel, "consigna");
-            copiarSiExiste(nivelIa, nivel, "ayudas");
+            copiarSiExiste(original, nivel, "consigna");
+            copiarSiExiste(original, nivel, "ayudas");
+            if (!regla.equals(original.path("regla")) || textosInvalidos(nivel)) ponerTextosDeRespaldo(nivel, regla);
             retos.add(nivel);
         }
         guion.set("retos", retos);
         return Optional.of(guion);
+    }
+
+    private static ObjectNode repararRegla(JsonNode nivel, String elegida, int posicion) {
+        JsonNode anterior = nivel.path("regla");
+        String tipo = esTipoRegla(elegida) ? elegida : anterior.path("tipo").asText();
+        if (!esTipoRegla(tipo)) tipo = REGLA_ORDEN;
+        ObjectNode regla = NODOS.objectNode().put("tipo", tipo);
+        if (REGLA_ORDEN.equals(tipo)) {
+            List<String> secuencia = new ArrayList<>();
+            JsonNode lista = anterior.path("secuencia");
+            if (lista.isArray()) for (JsonNode elemento : lista) secuencia.add(textoOVacio(elemento));
+            boolean valida = lista.isArray() && secuencia.size() >= MIN_SECUENCIA && secuencia.size() <= MAX_SECUENCIA
+                    && secuencia.stream().allMatch(TIPOS_OBJETO::contains) && ValidadorLaberinto.esPatronQueSeRepite(secuencia);
+            if (!valida) {
+                List<String> tipos = new ArrayList<>();
+                secuencia.forEach(nombre -> agregarTipoDistinto(tipos, nombre));
+                JsonNode objetos = nivel.path("objetos");
+                if (objetos.isArray()) objetos.forEach(objeto -> agregarTipoDistinto(tipos, objeto.path("tipo").asText()));
+                agregarTipoDistinto(tipos, "fresa");
+                agregarTipoDistinto(tipos, "platano");
+                String primero = tipos.get(0), segundo = tipos.get(1);
+                secuencia = posicion == 0 ? List.of(primero, segundo, primero, segundo)
+                        : posicion == 1 ? List.of(primero, segundo, primero, segundo, primero, segundo)
+                        : List.of(primero, primero, segundo, primero, primero, segundo);
+            }
+            ArrayNode resultado = regla.putArray("secuencia");
+            secuencia.forEach(resultado::add);
+        } else {
+            String clase = anterior.path("clase").asText();
+            if (!CLASES.containsKey(clase)) clase = "fruta";
+            JsonNode meta = anterior.path("meta");
+            int cantidad = meta.isIntegralNumber() && meta.canConvertToInt()
+                    ? Math.max(MIN_META, Math.min(MAX_META, meta.intValue())) : MIN_META;
+            regla.put("clase", clase).put("meta", cantidad);
+        }
+        return regla;
+    }
+
+    private static boolean esTipoRegla(String tipo) {
+        return REGLA_ORDEN.equals(tipo) || REGLA_SOLO_CLASE.equals(tipo);
+    }
+
+    private static void agregarTipoDistinto(List<String> tipos, String nombre) {
+        if (TIPOS_OBJETO.contains(nombre) && !tipos.contains(nombre)) tipos.add(nombre);
+    }
+
+    // Primero van los objetos indispensables: incluso una respuesta con cientos de
+    // trampas no puede ocupar las casillas que necesita la secuencia o la meta.
+    private static ArrayNode completarObjetos(JsonNode originales, ObjectNode regla) {
+        List<String> disponibles = new ArrayList<>();
+        if (originales.isArray()) originales.forEach(objeto -> {
+            String tipo = objeto.path("tipo").asText();
+            if (TIPOS_OBJETO.contains(tipo)) disponibles.add(tipo);
+        });
+        List<String> necesarios = new ArrayList<>();
+        if (REGLA_ORDEN.equals(regla.path("tipo").asText())) {
+            regla.path("secuencia").forEach(tipo -> necesarios.add(tipo.asText()));
+        } else {
+            String clase = regla.path("clase").asText();
+            List<String> usados = disponibles.stream().filter(tipo -> clase.equals(claseDe(tipo))).toList();
+            for (int indice = 0; indice < regla.path("meta").asInt(); indice++) {
+                necesarios.add(indice < usados.size() ? usados.get(indice) : CLASES.get(clase).get(indice % CLASES.get(clase).size()));
+            }
+            String otra = clase.equals("fruta") ? "verdura" : "fruta";
+            necesarios.add(disponibles.stream().filter(tipo -> otra.equals(claseDe(tipo))).findFirst().orElse(CLASES.get(otra).get(0)));
+        }
+        ArrayNode objetos = NODOS.arrayNode();
+        for (String tipo : necesarios) {
+            objetos.addObject().put("tipo", tipo);
+            disponibles.remove(tipo);
+        }
+        disponibles.forEach(tipo -> objetos.addObject().put("tipo", tipo));
+        return objetos;
+    }
+
+    private static boolean textosInvalidos(ObjectNode nivel) {
+        ObjectNode temporal = NODOS.objectNode().put("formato", FORMATO).put("familia", FAMILIA).put("titulo", TITULO_POR_OMISION);
+        temporal.putArray("retos").add(nivel);
+        // Reutilizamos los mismos códigos del validador; sus restricciones no se
+        // copian ni se aflojan en el constructor de respaldo.
+        return new ValidadorLaberinto().validar(temporal).stream().anyMatch(problema ->
+                problema.codigo().startsWith("CONSIGNA_") || problema.codigo().startsWith("AYUDA_")
+                        || problema.codigo().equals("AYUDAS_CANTIDAD"));
+    }
+
+    private static void ponerTextosDeRespaldo(ObjectNode nivel, ObjectNode regla) {
+        boolean orden = REGLA_ORDEN.equals(regla.path("tipo").asText());
+        nivel.put("consigna", orden ? "Sigue el patrón de la barra. Después busca la puerta."
+                : "Recoge " + regla.path("meta").asInt() + (regla.path("clase").asText().equals("fruta") ? " frutas" : " verduras") + ". Después busca la puerta.");
+        ArrayNode ayudas = nivel.putArray("ayudas");
+        ayudas.add(orden ? "Mira la barra. ¿Cuál sigue en el patrón?" : "Recoge solo las del grupo que pide Kusi.");
+        ayudas.add(orden ? "El patrón se repite. Busca dónde vuelve a empezar." : "Deja los del otro grupo. Puedes mirar antes de elegir.");
+    }
+
+    // La etapa explica lo reparado sin atribuirle al proveedor los cambios de Kusi.
+    public static String cambiosDelRespaldo(JsonNode respuesta, ObjectNode guion) {
+        ObjectNode original = desdeLaIa(respuesta, null);
+        String mensaje = "Se usaron los mapas base y se recolocaron los objetos.";
+        for (int indice = 0; indice < guion.path("retos").size(); indice++) {
+            JsonNode antes = original == null ? NODOS.objectNode() : original.path("retos").path(indice);
+            JsonNode despues = guion.path("retos").path(indice);
+            boolean regla = !antes.path("regla").equals(despues.path("regla"));
+            boolean textos = !antes.path("consigna").equals(despues.path("consigna")) || !antes.path("ayudas").equals(despues.path("ayudas"));
+            if (regla || textos) mensaje += " Nivel " + (indice + 1) + ": se rehízo "
+                    + (regla && textos ? "la regla y los textos." : regla ? "la regla." : "los textos.");
+        }
+        return mensaje;
     }
 
     // Pone los objetos de la IA en casillas del mapa base a las que el cuy sí puede

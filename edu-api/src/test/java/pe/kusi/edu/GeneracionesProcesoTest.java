@@ -505,20 +505,15 @@ class GeneracionesProcesoTest {
     }
 
     @Test
-    void hu26_si_ni_la_respuesta_ni_el_respaldo_sirven_queda_fallida_con_los_problemas() throws Exception {
-        // Tres respuestas que ni siquiera son un objeto: no hay de dónde sacar regla, objetos ni textos.
+    void hu26_una_respuesta_incompleta_recibe_niveles_de_respaldo_validos() throws Exception {
         respuestasDeLaIa(json.createArrayNode().add(1));
         UUID generacion = generacionPendiente();
-
         JsonNode respuesta = cuerpo(procesar(generacion, "ses-docente").andExpect(status().isOk())
-            .andExpect(jsonPath("$.generacion.estado").value("fallida"))
-            .andExpect(jsonPath("$.generacion.paquete").isEmpty())).path("generacion");
-
+            .andExpect(jsonPath("$.generacion.estado").value("lista"))).path("generacion");
         assertEquals(3, pedidos.size());
-        assertTrue(resumenDeEtapas(respuesta).contains("mapa_base:fallida"));
-        String error = respuesta.path("ultimo_error").asText();
-        assertTrue(error.contains("GUION_INVALIDO: "), error);
-        assertTrue(error.length() <= 1000);
+        assertTrue(resumenDeEtapas(respuesta).contains("mapa_base:completada"));
+        assertEquals(List.of(), validadorReal.validar(paqueteDe(respuesta)));
+        assertTrue(mensajeDeEtapa(respuesta, "mapa_base", "completada").contains("Nivel 1: se rehízo la regla y los textos."));
     }
 
     @Test
@@ -657,19 +652,15 @@ class GeneracionesProcesoTest {
     }
 
     @Test
-    void hu28_si_la_ia_insiste_con_otra_regla_la_generacion_queda_fallida_sin_cambiarle_la_regla() throws Exception {
+    void hu28_el_respaldo_respeta_la_regla_de_la_propuesta_si_la_ia_insiste_con_otra() throws Exception {
         iaQueEligeLaReglaSegunElTema();
         respuestasDeLaIa(GuionesDePrueba.respuestaConLaRegla("orden"));
         UUID generacion = generar(solicitudAprobada(TEMA_DE_CLASIFICAR));
-
         JsonNode respuesta = cuerpo(procesar(generacion, "ses-docente").andExpect(status().isOk())
-            .andExpect(jsonPath("$.generacion.estado").value("fallida"))
-            .andExpect(jsonPath("$.generacion.paquete").isEmpty())).path("generacion");
-
-        // Ni con los mapas base se arregla: el respaldo no inventa otra regla.
+            .andExpect(jsonPath("$.generacion.estado").value("lista"))).path("generacion");
         assertEquals(3, pedidos.size());
-        assertTrue(resumenDeEtapas(respuesta).contains("mapa_base:fallida"));
-        assertTrue(respuesta.path("ultimo_error").asText().contains("REGLA_DISTINTA: "));
+        assertTrue(resumenDeEtapas(respuesta).contains("mapa_base:completada"));
+        assertEquals(List.of(), validadorReal.validar(paqueteDe(respuesta), "solo_clase"));
     }
 
     @Test

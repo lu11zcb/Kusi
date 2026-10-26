@@ -32,8 +32,8 @@ import java.util.UUID;
 //                           correccion   (si no pasa, se vuelve a pedir con la lista de problemas)
 //
 // Se pide como máximo 3 veces: el primer intento y dos correcciones. Si el guion
-// sigue sin pasar, se usan los mapas base y de la IA se conserva la regla, los
-// objetos, las consignas y las ayudas. Si ni así pasa, o la IA no responde, la
+// sigue sin pasar, se usan los mapas base y se conserva lo aprovechable de la IA;
+// las reglas, objetos y textos defectuosos se reparan sin aflojar HU31. Si la IA no responde, la
 // generación queda «fallida» con su motivo.
 //
 // Cada paso queda como una etapa de la generación («generacion» o «correccion» para
@@ -150,15 +150,15 @@ public class ProcesoGeneracionLaberinto {
         return conMapasBase(generacion, contexto.cursoNombre(), reglaJuego, ultimaRespuesta, intentos, problemas);
     }
 
-    // El respaldo: los mapas base con la regla, los objetos, las consignas y las ayudas de la IA.
+    // El respaldo conserva lo válido y repara lo que HU31 rechazó.
     private Generacion conMapasBase(Generacion generacion, String curso, String reglaJuego, JsonNode respuesta,
                                     int intentos, List<ProblemaLaberinto> ultimosProblemas) {
         UUID id = generacion.getId();
         etapa(id, ETAPA_MAPA_BASE, EN_PROGRESO, "No se logró un guion que pase las comprobaciones con la IA ("
                 + intentos + (intentos == 1 ? " intento" : " intentos") + "): se usan los mapas base.");
-        Optional<ObjectNode> guion = ConstructorGuion.conMapasBase(respuesta, curso, mapasBase.niveles());
+        Optional<ObjectNode> guion = ConstructorGuion.conMapasBase(respuesta, curso, mapasBase.niveles(), reglaJuego);
         if (guion.isEmpty()) {
-            etapa(id, ETAPA_MAPA_BASE, FALLIDA, "La IA no entregó tres niveles que se puedan aprovechar con los mapas base.");
+            etapa(id, ETAPA_MAPA_BASE, FALLIDA, "No hay una respuesta o no se pudieron obtener los mapas de respaldo.");
             return fallar(generacion, mensajeDeProblemas("El guion de la IA no sirve", ultimosProblemas));
         }
         cambiarEstado(generacion, "comprobando", null);
@@ -168,7 +168,7 @@ public class ProcesoGeneracionLaberinto {
             etapa(id, ETAPA_COMPROBACION, FALLIDA, mensajeDeProblemas("Con los mapas base", problemas));
             return fallar(generacion, mensajeDeProblemas("Ni con los mapas base pasa las comprobaciones", problemas));
         }
-        etapa(id, ETAPA_MAPA_BASE, COMPLETADA, "Se usaron los mapas base y se recolocaron los objetos donde el cuy puede alcanzarlos.");
+        etapa(id, ETAPA_MAPA_BASE, COMPLETADA, ConstructorGuion.cambiosDelRespaldo(respuesta, guion.get()));
         etapa(id, ETAPA_COMPROBACION, COMPLETADA, "Con los mapas base: el guion pasó todas las comprobaciones.");
         return terminar(generacion, guion.get(), intentos, true);
     }

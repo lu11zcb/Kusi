@@ -12,8 +12,8 @@ import java.util.List;
 
 // Los tres mapas base de respaldo (laberinto/mapas-base.json). Son los mismos del
 // paquete de ejemplo del juego: pasan todas las comprobaciones. Si la IA no logra un
-// mapa que las pase tras corregirlo, el guion usa estos y conserva de la IA la regla,
-// los objetos, las consignas y las ayudas.
+// mapa que las pase tras corregirlo, el constructor usa estos y conserva solo lo
+// aprovechable de la IA; repara el contenido defectuoso antes de comprobarlo otra vez.
 @Component
 public class MapasBase {
     private static final String RECURSO = "laberinto/mapas-base.json";
