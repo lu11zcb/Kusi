@@ -13,7 +13,7 @@ test('el paquete escrito a mano admite los tres niveles previstos', () => {
   assert.deepEqual(validarLaberinto(ejemplo), { valido: true, errores: [] })
   assert.equal(ejemplo.retos.length, 3)
   assert.deepEqual(ejemplo.retos[0].enemigos, [])
-  assert.equal(ejemplo.retos[1].enemigos[0].movimiento, 'patrulla')
+  assert.equal(ejemplo.retos[1].enemigos[0].movimiento, 'persigue_cerca')
   assert.equal(ejemplo.retos[2].enemigos[0].movimiento, 'persigue_cerca')
   assert.equal(ejemplo.retos[2].regla.tipo, 'solo_clase')
 })

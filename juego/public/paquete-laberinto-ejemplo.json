@@ -54,7 +54,7 @@
         { "tipo": "mandarina", "fila": 5, "columna": 10 }
       ],
       "enemigos": [
-        { "tipo": "zorro", "fila": 7, "columna": 5, "movimiento": "patrulla" }
+        { "tipo": "zorro", "fila": 7, "columna": 5, "movimiento": "persigue_cerca" }
       ],
       "consigna": "Busca mango, mandarina, mango y mandarina. ¡Encuentra un camino para pasar al zorro!",
       "ayudas": [

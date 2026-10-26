@@ -40,9 +40,14 @@ El cuy utiliza las animaciones compartidas existentes; Kusi permanece fuera del 
 ## Reglas y niveles
 
 En el nivel 1 se recoge fresa, plátano, fresa y plátano. En el nivel 2 se alternan
-mango y mandarina con un zorro de patrulla. El nivel 3 pide cuatro frutas: las
-verduras se dejan en el camino y el zorro persigue cuando está a tres pasos o
-menos por los pasillos. La búsqueda en anchura mide el camino, sin cruzar muros.
+mango y mandarina con un zorro que persigue de cerca. El nivel 3 pide cuatro frutas:
+las verduras se dejan en el camino y su zorro también usa `persigue_cerca`.
+Ambos persiguen cuando el cuy está a cinco pasos o menos por los pasillos;
+si se aleja más, vuelven a patrullar. La búsqueda en anchura mide el camino,
+sin cruzar muros. El signo «!» aparece brevemente sobre la cabeza del zorro
+al empezar cada persecución, también con `?vida=0`.
+La duración de ese aviso (0,8 s) y su tamaño se ajustan en
+`AVISO_PERSECUCION`, al comienzo de `src/escenas/EscenaLaberinto.js`.
 
 La fruta correcta desaparece, el cuy muestra `feliz` y la barra marca lo recogido.
 La fruta equivocada rebota y permanece; Kusi muestra la primera ayuda y después
@@ -52,6 +57,11 @@ entrar por ella lleva al siguiente nivel. La última puerta muestra el mensaje d
 cierre. **Jugar otra vez** comienza una partida nueva.
 
 El zorro avanza al 60 % de la velocidad del cuy y siempre usa su vista de frente.
+Después de perseguir durante cinco segundos seguidos descansa quieto dos segundos
+y continúa. Alejarse del radio de persecución reinicia la cuenta de esfuerzo;
+`rapido` acelera el desplazamiento, pero no acorta el esfuerzo ni el descanso.
+El radio y los tiempos se ajustan al comienzo de `src/logica/zorrosLaberinto.js`;
+el 60 % se fija en `PROPORCION_VELOCIDAD_ZORRO`, en `src/escenas/EscenaLaberinto.js`.
 Cada nivel espera el primer rumbo del niño antes de activar al zorro. Si atrapa
 al cuy, este muestra `asustado`, ambos vuelven a sus posiciones iniciales y las
 frutas recogidas se conservan. El aro del cuy indica dos segundos de protección;
@@ -137,8 +147,8 @@ npm run build
 .venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 25 de octubre de 2026 tras cambiar a toques: **130 pruebas de lógica**,
-**94 pruebas de navegador** y compilación correctas. La suite completa incluye el
+Verificado el 25 de octubre de 2026 tras ampliar la persecución: **137 pruebas de lógica**,
+**97 pruebas de navegador** y compilación correctas. La suite completa incluye el
 mercado y la capa de vida. Las pruebas de
 navegador miden cada efecto con el reloj del propio efecto, porque un Chromium sin
 pantalla corre a unos 35 cuadros por segundo y no siempre a tiempo real.
@@ -147,6 +157,10 @@ La lógica y la validación se prueban con `node --test`, sin instalar paquetes
 adicionales: movimiento, vuelta guardada, rutas por búsqueda en anchura, selección
 de la fruta tocada, ajuste del destino al camino y cambio de ruta sin saltos, reglas,
 clasificación, patrulla, búsqueda en anchura, captura y orden de avisos.
+La persecución se verifica dentro y fuera de cinco pasos, con caminos separados
+por muros, fatiga tras cinco segundos seguidos, dos segundos quieto y reanudación
+desde la misma posición. Las pruebas de navegador comprueban el aviso sobre la
+cabeza, su ocultación, la velocidad del 60 % y su nueva aparición tras descansar.
 
 Playwright verifica el nivel 1 real hasta la puerta y el nivel 2, fruta equivocada
 y ayudas, voz, mano persistente, clasificación y cierre, continuidad de la partida,

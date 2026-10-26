@@ -59,6 +59,17 @@ const SOMBRA = {
 const ZONA_MAPA = { x: 302, y: 168, ancho: 940, alto: 478 }
 const VISTAS = { arriba: 'espaldas', abajo: 'frente', izquierda: 'izquierda', derecha: 'derecha' }
 const TOQUE = { tolerancia: 12, radioDestino: 0.22, grosorDestino: 4, colorDestino: 0xb4611f, profundidad: 4 }
+const AVISO_PERSECUCION = {
+  segundos: 0.8,
+  radio: 0.24,
+  tamanoTexto: 0.52,
+  tamanoMinimo: 24,
+  separacionCabeza: 8,
+  relleno: 0xffe7a4,
+  borde: 0x4b211b,
+  grosorBorde: 2,
+  profundidad: 6,
+}
 
 export class EscenaLaberinto extends Phaser.Scene {
   constructor() {
@@ -279,6 +290,38 @@ export class EscenaLaberinto extends Phaser.Scene {
       return new ZorroAnimado(this, this.datosZorroAnimado)
         .setScale(this.casilla * ALTURA_CUY * PROPORCION_ZORRO / this.datosZorroAnimado.anclaje.y)
         .setPosition(posicion.x, posicion.y + this.casilla * DESFASE_PIES).setDepth(5)
+    })
+    // El signo explica un cambio de conducta; se conserva también con vida=0.
+    // Su posición se calcula después del rebote del cuerpo, siempre sobre la
+    // cabeza, sin modificar el dibujo ni girar al personaje.
+    this.avisosPersecucion = this.zorros.map(() => {
+      const fondo = this.add.circle(0, 0, this.casilla * AVISO_PERSECUCION.radio, AVISO_PERSECUCION.relleno)
+        .setStrokeStyle(AVISO_PERSECUCION.grosorBorde, AVISO_PERSECUCION.borde)
+      const texto = this.add.text(0, 0, '!', estiloTexto(
+        Math.max(AVISO_PERSECUCION.tamanoMinimo, this.casilla * AVISO_PERSECUCION.tamanoTexto),
+      )).setOrigin(0.5)
+      return {
+        dibujo: this.add.container(0, 0, [fondo, texto]).setDepth(AVISO_PERSECUCION.profundidad).setVisible(false),
+        ultimoInicio: 0, restante: 0, apariciones: 0,
+      }
+    })
+  }
+
+  actualizarAvisosPersecucion(segundos) {
+    this.zorros.forEach((zorro, indice) => {
+      const aviso = this.avisosPersecucion[indice]
+      if (zorro.iniciosPersecucion > aviso.ultimoInicio) {
+        aviso.restante = AVISO_PERSECUCION.segundos
+        aviso.apariciones += 1
+      } else {
+        aviso.restante = Math.max(0, aviso.restante - segundos)
+      }
+      aviso.ultimoInicio = zorro.iniciosPersecucion
+      if (!zorro.persiguiendo) aviso.restante = 0
+      const cuerpo = this.dibujosZorros[indice]
+      aviso.dibujo.setPosition(cuerpo.x,
+        cuerpo.y - this.casilla * ALTURA_CUY * PROPORCION_ZORRO - AVISO_PERSECUCION.separacionCabeza)
+        .setVisible(aviso.restante > 0)
     })
   }
 
@@ -554,6 +597,11 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cancelarDestino()
     this.movimiento = crearMovimiento(this.reto.mapa)
     this.zorros.forEach(restablecerZorro)
+    this.avisosPersecucion.forEach((aviso) => {
+      aviso.ultimoInicio = 0
+      aviso.restante = 0
+      aviso.dibujo.setVisible(false)
+    })
     this.segundosInvulnerable = SEGUNDOS_INVULNERABLE
     this.capturas += 1
     // Se restablece solo el movimiento. La regla y sus dibujos conservan todas
@@ -638,6 +686,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       }
       this.cuerposZorros[indice].actualizar(segundos)
     })
+    this.actualizarAvisosPersecucion(segundos)
     this.frutasVivas.actualizar(segundos)
   }
 
@@ -667,6 +716,11 @@ export class EscenaLaberinto extends Phaser.Scene {
       capturas: this.capturas,
       zorros: this.zorros.map((zorro, indice) => ({
         ...zorro, inicio: { ...zorro.inicio }, mirando: this.dibujosZorros[indice].direccionAnimada,
+        avisoPersecucion: {
+          visible: this.avisosPersecucion[indice].dibujo.visible,
+          x: this.avisosPersecucion[indice].dibujo.x, y: this.avisosPersecucion[indice].dibujo.y,
+          texto: '!', apariciones: this.avisosPersecucion[indice].apariciones,
+        },
         flipX: this.dibujosZorros[indice].flipX, fotograma: this.dibujosZorros[indice].frame.name,
         // Posición real del zorro, sin el rebote de sus pasos.
         x: this.dibujosZorros[indice].x - this.cuerposZorros[indice].desplazamiento.x,

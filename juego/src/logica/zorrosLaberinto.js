@@ -2,6 +2,13 @@
 // decide únicamente el rumbo: patrullar o seguir un camino corto hasta el niño.
 import { avanzarMovimiento, pedirDireccion } from './movimientoLaberinto.js'
 
+// Todos los ajustes de la persecución se expresan aquí: el radio cuenta pasos
+// transitables del laberinto y los dos relojes cuentan segundos reales. Cambiar
+// la velocidad del desplazamiento nunca acorta ni alarga estos intervalos.
+export const DISTANCIA_PERSECUCION = 5
+export const SEGUNDOS_PERSECUCION = 5
+export const SEGUNDOS_DESCANSO = 2
+
 const PASOS = {
   derecha: { fila: 0, columna: 1 },
   izquierda: { fila: 0, columna: -1 },
@@ -10,7 +17,6 @@ const PASOS = {
 }
 const CONTRARIAS = { derecha: 'izquierda', izquierda: 'derecha', arriba: 'abajo', abajo: 'arriba' }
 const MARGEN_DECIMAL = 0.000000001
-export const DISTANCIA_PERSECUCION = 3
 
 const claveCasilla = (fila, columna) => fila + ',' + columna
 const esCamino = (mapa, fila, columna) => ['.', 'C', 'P'].includes(mapa[fila]?.[columna])
@@ -74,6 +80,10 @@ export function crearZorro(enemigo, mapa) {
     progreso: 0,
     moviendose,
     movimiento: enemigo.movimiento,
+    persiguiendo: false,
+    segundosPersiguiendo: 0,
+    segundosDescanso: 0,
+    iniciosPersecucion: 0,
     inicio: { ...posicion, direccion, moviendose },
   }
 }
@@ -81,42 +91,116 @@ export function crearZorro(enemigo, mapa) {
 // Restablecer la patrulla no toca el estado de los objetos recogidos por el cuy.
 // Su posición inicial se conserva aparte para que la captura pueda repetirse.
 export function restablecerZorro(estado) {
-  Object.assign(estado, estado.inicio, { progreso: 0, direccionPendiente: null })
+  Object.assign(estado, estado.inicio, {
+    progreso: 0,
+    direccionPendiente: null,
+    persiguiendo: false,
+    segundosPersiguiendo: 0,
+    segundosDescanso: 0,
+    iniciosPersecucion: 0,
+  })
   return estado
 }
 
-function elegirRumbo(estado, mapa, cuy) {
-  if (estado.movimiento === 'persigue_cerca') {
-    const camino = buscarCamino(mapa, estado, cuy, DISTANCIA_PERSECUCION)
-    if (camino?.length) return camino[0]
+// La ruta acotada sirve a la vez para detectar al niño y para elegir el giro.
+// Una ruta vacía también está dentro del radio; null incluye destinos inválidos,
+// separados por muros o demasiado lejanos. Al perder el radio se rompe la racha
+// de persecución, aunque el zorro aún deba terminar el tramo que había iniciado.
+function actualizarPersecucion(estado, mapa, cuy) {
+  const camino = estado.movimiento === 'persigue_cerca'
+    ? buscarCamino(mapa, estado, cuy, DISTANCIA_PERSECUCION)
+    : null
+  if (camino !== null) {
+    if (!estado.persiguiendo) estado.iniciosPersecucion += 1
+    estado.persiguiendo = true
+  } else {
+    estado.persiguiendo = false
+    estado.segundosPersiguiendo = 0
   }
+  return camino
+}
+
+function elegirRumbo(estado, mapa, camino) {
+  if (estado.persiguiendo && camino?.length) return camino[0]
   if (puedeAvanzar(estado, mapa, estado.direccion)) return estado.direccion
   const contraria = CONTRARIAS[estado.direccion]
   return puedeAvanzar(estado, mapa, contraria) ? contraria : null
 }
 
-// Cada tramo termina en el siguiente centro. Así una actualización larga revisa
-// la persecución en todas las esquinas y revierte la patrulla en cada muro,
-// mientras el avance y la interpolación siguen perteneciendo al módulo común.
+function prepararTramo(estado, mapa, camino, casillasPorSegundo) {
+  if (estado.progreso > 0) {
+    estado.moviendose = true
+    return
+  }
+  const direccion = elegirRumbo(estado, mapa, camino)
+  if (!direccion) {
+    estado.moviendose = false
+    estado.direccionPendiente = null
+    return
+  }
+  pedirDireccion(estado, direccion)
+  // Un avance de cero solo resuelve el rumbo y la animación en el centro. Esto
+  // permite reanudar exactamente al terminar el descanso sin gastar más tiempo.
+  avanzarMovimiento(estado, mapa, 0, casillasPorSegundo)
+}
+
+function iniciarDescanso(estado) {
+  estado.persiguiendo = false
+  estado.segundosPersiguiendo = 0
+  // segundosDescanso es el tiempo que falta para volver a decidir el rumbo.
+  // No alteramos fila, columna, dirección ni progreso: también se puede descansar
+  // a mitad de una casilla y continuar luego desde la misma posición visible.
+  estado.segundosDescanso = SEGUNDOS_DESCANSO
+  estado.moviendose = false
+  estado.direccionPendiente = null
+}
+
+// Consumimos el delta en orden cronológico, cortándolo en cada centro, al cumplir
+// cinco segundos seguidos de persecución o al acabar los dos de descanso. Así un
+// cuadro largo puede contener persecución, descanso y reanudación, y un efecto de
+// rapidez solo modifica la distancia recorrida durante cada intervalo activo.
 export function avanzarZorro(estado, mapa, cuy, segundos, casillasPorSegundo = 1.8) {
   if (!Number.isFinite(segundos) || segundos <= 0 ||
       !Number.isFinite(casillasPorSegundo) || casillasPorSegundo <= 0) return estado
-  let distancia = segundos * casillasPorSegundo
-  if (!Number.isFinite(distancia)) return estado
+  if (!Number.isFinite(segundos * casillasPorSegundo)) return estado
+  let restante = segundos
 
-  while (distancia > MARGEN_DECIMAL) {
-    if (estado.progreso === 0) {
-      const direccion = elegirRumbo(estado, mapa, cuy)
-      if (!direccion) {
-        estado.moviendose = false
-        estado.direccionPendiente = null
-        break
-      }
-      pedirDireccion(estado, direccion)
+  while (restante > 0) {
+    if (estado.segundosDescanso > 0) {
+      const descanso = Math.min(restante, estado.segundosDescanso)
+      estado.segundosDescanso = Math.max(0, estado.segundosDescanso - descanso)
+      restante = Math.max(0, restante - descanso)
+      if (restante < MARGEN_DECIMAL) restante = 0
+      if (estado.segundosDescanso > MARGEN_DECIMAL) continue
+      estado.segundosDescanso = 0
+      // La posición del niño puede haber cambiado durante la espera: solo entra
+      // en una nueva persecución si sigue existiendo un camino de hasta cinco.
+      const camino = actualizarPersecucion(estado, mapa, cuy)
+      prepararTramo(estado, mapa, camino, casillasPorSegundo)
+      if (restante === 0) break
     }
-    const tramo = Math.min(distancia, 1 - estado.progreso)
-    avanzarMovimiento(estado, mapa, tramo / casillasPorSegundo, casillasPorSegundo)
-    distancia = Math.max(0, distancia - tramo)
+
+    const camino = actualizarPersecucion(estado, mapa, cuy)
+    prepararTramo(estado, mapa, camino, casillasPorSegundo)
+    if (!estado.moviendose && !estado.persiguiendo) break
+
+    const hastaCentro = estado.moviendose ? (1 - estado.progreso) / casillasPorSegundo : Infinity
+    const hastaDescanso = estado.persiguiendo ? SEGUNDOS_PERSECUCION - estado.segundosPersiguiendo : Infinity
+    const tramo = Math.min(restante, hastaCentro, hastaDescanso)
+    if (estado.moviendose) avanzarMovimiento(estado, mapa, tramo, casillasPorSegundo)
+    if (estado.persiguiendo) estado.segundosPersiguiendo += tramo
+    restante = Math.max(0, restante - tramo)
+    // Una resta como 0.1 - (5 - 4.9) puede dejar una fracción mínima positiva.
+    // No dejamos que ese residuo consuma parte del descanso recién iniciado.
+    if (restante < MARGEN_DECIMAL) restante = 0
+
+    if (estado.persiguiendo && estado.segundosPersiguiendo >= SEGUNDOS_PERSECUCION - MARGEN_DECIMAL) {
+      iniciarDescanso(estado)
+    } else if (estado.progreso === 0) {
+      // Reflejamos la entrada o salida del radio incluso si el delta acaba justo
+      // al llegar. El próximo giro seguirá resolviéndose siempre en el centro.
+      actualizarPersecucion(estado, mapa, cuy)
+    }
   }
   return estado
 }
