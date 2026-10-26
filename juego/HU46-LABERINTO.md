@@ -4,10 +4,10 @@ La parte A de HU46 está implementada: tres niveles escritos a mano, recolecció
 reglas, puerta, zorro, ayudas, voz, tutorial y cierre. Los pasos 1 a 4 se revisaron
 antes de continuar; los pasos 5 a 10 se guardaron por separado, sin push.
 
-Para abrirlo desde PowerShell:
+Para abrirlo, desde la carpeta del repositorio (en PowerShell o en la Terminal de macOS):
 
 ```powershell
-cd D:\Escritorio\Kusi\juego
+cd juego
 npm run dev
 ```
 

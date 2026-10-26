@@ -3,3 +3,10 @@ movil/app/src/main/res/drawable/ic_*.xml -text whitespace=trailing-space,space-b
 movil/recursos/iconos-rellenos/*.svg -text
 # Copias literales de licencias externas; conservan el espacio del original.
 movil/app/src/main/assets/licencias/*-*.txt -text -whitespace
+# Los scripts de arranque de Unix siempre con LF: con CRLF fallan en macOS y Linux con
+# «bad interpreter», también si se clonan en Windows (mvnw lo fija edu-api/.gitattributes).
+# Los de Windows, con CRLF. Ya se guardan así: estas reglas no cambian ningún archivo.
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+# No se usa «* text=auto»: renormalizaría archivos que se guardan con CRLF a propósito.
