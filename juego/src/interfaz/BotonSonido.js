@@ -1,12 +1,13 @@
-// Botón de sonido del laberinto: un altavoz en la esquina de abajo que apaga y
-// vuelve a encender todos los sonidos de los personajes y de las frutas. No toca
-// la voz de Kusi: esa se repite con «Escuchar». Con el sonido apagado el altavoz
-// se tacha y el botón se pone gris.
+// Botón de sonido del laberinto: un altavoz junto a Kusi, abajo a la izquierda,
+// que apaga y vuelve a encender todos los sonidos de los personajes y de las
+// frutas. No toca la voz de Kusi: esa se repite con «Escuchar». Con el sonido
+// apagado el altavoz se tacha y el botón se pone gris.
 import { NUMERO } from '../medidas.js'
 import { crearBoton } from './piezas.js'
 
-// Dónde queda y cuánto mide. Es la esquina inferior derecha: ahí no llega el mapa
-// de ningún nivel y la barra de arriba no tiene más espacio para otro botón.
+// Cuánto mide y de qué color es. Dónde queda lo decide la escena según la
+// disposición (en la columna de Kusi, donde no llega el mapa de ningún nivel);
+// «x» e «y» son solo el lugar donde nace antes de que la escena lo coloque.
 export const BOTON_SONIDO = Object.freeze({
   x: 1220, y: 684, ancho: 76, alto: 64, radio: 20, profundidad: 1003,
   colorEncendido: NUMERO.naranja, colorApagado: 0xd9c9ad,
