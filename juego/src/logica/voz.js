@@ -1,6 +1,13 @@
-// Este es el único punto de salida de voz del laberinto. Jesús puede conectar
-// KusiPuente aquí más adelante, sin cambiar los botones ni los mensajes de Kusi.
+// La voz nativa de Kusi tiene prioridad en Android; en web se conserva la
+// síntesis del navegador, sin cambiar botones ni mensajes del juego.
 export function decir(texto) {
+  if (typeof texto !== 'string' || !texto.trim()) return false
+  try {
+    if (typeof globalThis.window?.KusiPuente?.decir === 'function') {
+      globalThis.window.KusiPuente.decir(texto)
+      return true
+    }
+  } catch { /* Si Android no está disponible, queda la voz del navegador. */ }
   const sintesis = globalThis.speechSynthesis
   const Frase = globalThis.SpeechSynthesisUtterance
   if (!sintesis || typeof Frase !== 'function' || typeof texto !== 'string' || !texto.trim()) return false

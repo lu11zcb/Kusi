@@ -1,3 +1,4 @@
+import { emitirAlAnfitrion } from '../logica/salidasPuente.js'
 // El puente entre el juego y la página que lo contiene (por ejemplo, la vista previa
 // del panel docente, que muestra el juego dentro de un iframe). Con él la página le
 // manda al juego el guion que generó la IA, sin que el juego tenga que pedirlo a
@@ -24,8 +25,7 @@ export const AVISO_ERROR = 'error'
 
 // El juego no sabe en qué dirección está la página que lo contiene, y lo que avisa
 // no lleva nada privado (solo si está listo, si cargó o por qué no pudo), así que
-// el aviso va a cualquier origen.
-const CUALQUIER_ORIGEN = '*'
+// el aviso va a cualquier origen y también al puente nativo cuando existe.
 
 // Convierte lo que llegó por postMessage en una orden para el juego, o null si el
 // mensaje no es para él (otra página, otra librería, un texto cualquiera). Si el guion
@@ -64,7 +64,7 @@ export function crearPuente(ventana) {
   ventana.addEventListener('message', alRecibir)
 
   const avisar = (mensaje) => {
-    ventana.parent.postMessage(mensaje, CUALQUIER_ORIGEN)
+    emitirAlAnfitrion(ventana, mensaje)
   }
 
   return {
