@@ -208,7 +208,8 @@ public class PropuestasController {
                 Map.of("generacion", dtoGeneracion(generacion, true)));
     }
 
-    // HU29: procesar una generación pendiente con el paquete de prueba.
+    // HU26: procesar una generación pendiente: la IA escribe el guion del laberinto,
+    // se comprueba y la generación termina «lista» o «fallida».
     @PostMapping("/generaciones/{id}/procesar/")
     public ResponseEntity<Map<String, Object>> procesarGeneracion(
             @CookieValue(value = "sessionid", required = false) String sesion,
@@ -216,7 +217,7 @@ public class PropuestasController {
         UUID docenteId = docente(sesion);
 
         Generacion generacion =
-                generacionesService.procesarPaquetePrueba(docenteId, id);
+                generacionesService.procesar(docenteId, id);
 
         return sinCache(200,
                 Map.of("generacion", dtoGeneracion(generacion, true)));
@@ -245,7 +246,10 @@ public class PropuestasController {
         datos.put("propuesta_id", g.getPropuestaId());
         datos.put("version_propuesta", g.getVersionPropuesta());
         datos.put("estado", g.getEstado());
+        // El paquete es el guion del juego (JSON en texto); cuando la generación está
+        // lista incluye su bloque «procedencia», que aquí también se da por separado.
         datos.put("paquete", g.getPaquete());
+        datos.put("procedencia", generacionesService.procedencia(g));
         datos.put("ultimo_error", g.getUltimoError());
         datos.put("creado_en", g.getCreadoEn());
         datos.put("actualizado_en", g.getActualizadoEn());

@@ -7,9 +7,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,21 +23,9 @@ class ValidadorLaberintoTest {
 
     // ---------- Ayudas de las pruebas ----------
 
-    // El proyecto es un repositorio con carpetas hermanas: se sube desde la carpeta de
-    // trabajo (edu-api) hasta encontrar juego/. Si no está, la prueba falla con un aviso claro.
-    private static Path buscarEjemplo() {
-        Path carpeta = Path.of("").toAbsolutePath();
-        while (carpeta != null) {
-            Path candidato = carpeta.resolve("juego/public/paquete-laberinto-ejemplo.json");
-            if (Files.exists(candidato)) return candidato;
-            carpeta = carpeta.getParent();
-        }
-        throw new IllegalStateException("No se encontró juego/public/paquete-laberinto-ejemplo.json "
-                + "subiendo desde " + Path.of("").toAbsolutePath() + ". Ejecuta las pruebas dentro del repositorio.");
-    }
-
+    // El guion de ejemplo del juego, que se busca en GuionesDePrueba.
     static ObjectNode ejemplo() throws IOException {
-        return (ObjectNode) JSON.readTree(Files.readString(buscarEjemplo(), StandardCharsets.UTF_8));
+        return GuionesDePrueba.ejemplo();
     }
 
     private static ObjectNode nivel(ObjectNode guion, int numero) {

@@ -197,6 +197,18 @@ public class PropuestasService {
         return leer(id, false);
     }
 
+    // Lo que el generador del guion necesita saber de la solicitud, además de la
+    // propuesta: el curso, el grado y lo que pidió el docente. Solo datos del recurso
+    // educativo, nunca de estudiantes.
+    public record ContextoSolicitud(String cursoNombre, int grado, String tema, String proposito, String instrucciones) {}
+
+    // Igual que consultar: una solicitud ajena se responde como inexistente.
+    public ContextoSolicitud contextoDe(UUID docenteId, UUID solicitudId) {
+        SolicitudPropuesta s=leerPropia(docenteId, solicitudId).solicitud();
+        Contexto contexto=autorizar(docenteId, s.getCursoId(), s.getSeccionId());
+        return new ContextoSolicitud(contexto.cursoNombre(), contexto.grado(), s.getTema(), s.getProposito(), s.getInstrucciones());
+    }
+
     // Base para el Sprint 2: solo la versión vigente y aprobada puede generar un juego.
     public Optional<Propuesta> aprobadaParaJuego(UUID solicitudId) {
         return transaccion.execute(estado -> propuestas.findFirstBySolicitudIdOrderByVersionDesc(solicitudId)
