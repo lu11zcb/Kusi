@@ -59,6 +59,7 @@ class GeneradorPropuestasIaTest {
 
     @Test void pideHistoriaComoTextoYListasConElModeloConfigurado() throws Exception {
         Map<String,Object> propuesta = new java.util.LinkedHashMap<>();
+        propuesta.put("regla_juego", "orden");
         propuesta.put("objetivo", "Los niños aprenderán a sumar hasta diez.");
         propuesta.put("historia", "Kusi va al mercado. Cuenta los productos.");
         for (String campo : List.of("acciones", "reglas", "retos", "ayudas", "recursos"))
@@ -72,11 +73,66 @@ class GeneradorPropuestasIaTest {
         assertTrue(formato.path("json_schema").path("strict").asBoolean());
         var esquema = formato.path("json_schema").path("schema");
         assertFalse(esquema.path("additionalProperties").asBoolean());
-        assertEquals(7, esquema.path("required").size());
+        assertEquals(8, esquema.path("required").size());
         assertEquals("string", esquema.path("properties").path("historia").path("type").asText());
         assertEquals("array", esquema.path("properties").path("acciones").path("type").asText());
         assertEquals("string", esquema.path("properties").path("acciones").path("items").path("type").asText());
-        assertEquals("Kusi va al mercado. Cuenta los productos.", new ValidadorPropuesta().validar(respuesta, null).historia());
+        ValidadorPropuesta.Resultado validada = new ValidadorPropuesta().validar(respuesta, null);
+        assertEquals("Kusi va al mercado. Cuenta los productos.", validada.historia());
+        assertEquals("orden", validada.reglaJuego());
+    }
+
+    private static List<String> textos(JsonNode lista) {
+        List<String> textos = new java.util.ArrayList<>();
+        lista.forEach(elemento -> textos.add(elemento.asText()));
+        return textos;
+    }
+
+    // HU28: la propuesta elige la regla del juego, y la elige antes de escribir el resto.
+    @Test void elEsquemaPideLaReglaDelJuegoComoUnaDeLasDosYLaPoneAntesQueElResto() throws Exception {
+        JsonNode esquema = json.valueToTree(GeneradorPropuestasIa.esquema());
+
+        assertEquals(List.of("regla_juego", "objetivo", "historia", "acciones", "reglas", "retos", "ayudas", "recursos"),
+            textos(esquema.get("required")));
+        assertEquals("string", esquema.at("/properties/regla_juego/type").asText());
+        assertEquals(List.of("orden", "solo_clase"), textos(esquema.at("/properties/regla_juego/enum")));
+        assertFalse(esquema.toString().contains("anyOf"));
+    }
+
+    @Test void lasInstruccionesOfrecenSoloElLaberintoConSusDosReglasYSusObjetos() throws Exception {
+        AtomicReference<String> recibido = new AtomicReference<>();
+        String propuesta = json.writeValueAsString(Map.of("regla_juego", "orden", "objetivo", "Sumar", "historia", "Kusi cuenta."));
+
+        generador(200, respuestaConContenido(propuesta), recibido).generar(entrada);
+
+        String instrucciones = json.readTree(recibido.get().split("\n", 2)[1]).path("messages").get(0).path("content").asText();
+        // El laberinto con sus dos reglas, y la IA elige según el tema; si no encaja, lo dice.
+        for (String texto : List.of("laberinto", "\"orden\"", "\"solo_clase\"", "patrones", "clasificar", "\"regla_juego\"",
+                "Si el tema no encaja", "dilo con claridad en la historia")) {
+            assertTrue(instrucciones.contains(texto), "Las instrucciones deben decir: " + texto);
+        }
+        // Solo los objetos de la fase 1, con el zorro como único enemigo.
+        for (String objeto : List.of("fresa", "plátano", "mango", "mandarina", "piña", "zanahoria", "papa", "choclo", "zorro", "cuy")) {
+            assertTrue(instrucciones.contains(objeto), "Falta el objeto: " + objeto);
+        }
+        // Ni el mercado ni el juego de ordenar, ni productos que el laberinto no tiene.
+        for (String fuera : List.of("mercado", "puesto", "soles", "plaza", "vuelto", "ordenar", "tomate", "palta", "camote")) {
+            assertFalse(instrucciones.contains(fuera), "No debe aparecer: " + fuera);
+        }
+    }
+
+    @Test void alAjustarUnaPropuestaSeConservaLaReglaQueYaTenia() throws Exception {
+        AtomicReference<String> recibido = new AtomicReference<>();
+        String propuesta = json.writeValueAsString(Map.of("regla_juego", "solo_clase", "objetivo", "Sumar", "historia", "Kusi cuenta."));
+        EntradaGeneracion ajuste = new EntradaGeneracion("Matemática", 1, "A", 2026, "Clasificar frutas", null, null, null,
+            "observaciones", Map.of("regla_juego", "solo_clase", "objetivo", "Clasificar"), "Más corto, por favor");
+
+        generador(200, respuestaConContenido(propuesta), recibido).generar(ajuste);
+
+        String pedido = json.readTree(recibido.get().split("\n", 2)[1]).path("messages").get(1).path("content").asText();
+        assertTrue(pedido.contains("\"regla_juego\":\"solo_clase\""));
+        assertTrue(pedido.contains("conserva en «regla_juego» la que ya tiene"));
+        assertTrue(pedido.contains("Más corto, por favor"));
     }
 
     @Test void elEsquemaEstrictoSePuedePedirConCualquierModelo() throws Exception {

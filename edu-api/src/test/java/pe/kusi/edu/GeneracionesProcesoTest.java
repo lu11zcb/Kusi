@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -16,10 +18,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.web.server.ResponseStatusException;
+import pe.kusi.edu.ia.EntradaGeneracion;
 import pe.kusi.edu.ia.EntradaGuion;
 import pe.kusi.edu.ia.FalloGeneracion;
 import pe.kusi.edu.ia.GeneradorGuion;
 import pe.kusi.edu.ia.GeneradorPropuestas;
+import pe.kusi.edu.laberinto.CatalogoLaberinto;
 import pe.kusi.edu.laberinto.GuionesDePrueba;
 import pe.kusi.edu.laberinto.MapasBase;
 import pe.kusi.edu.laberinto.ValidadorLaberinto;
@@ -28,8 +32,11 @@ import pe.kusi.edu.model.Seccion;
 import pe.kusi.edu.repository.*;
 import pe.kusi.edu.service.DjangoInternoClient;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -56,7 +63,11 @@ class GeneracionesProcesoTest {
     private static final UUID CURSO = UUID.fromString("44444444-4444-4444-4444-444444444444");
     private static final String TOKEN = "token-csrf-de-prueba-con-cuarenta-y-tres-ch";
     private static final String TEMA = "Patrones con frutas";
+    private static final String TEMA_DE_PATRONES = TEMA;
+    private static final String TEMA_DE_CLASIFICAR = "Clasificar frutas y verduras";
     private static final String RUTA_SOLICITUDES = "/api/edu/propuestas/solicitudes/";
+    // Contesta con el guion de la regla que le pidieron (o con «orden» si no le pidieron ninguna).
+    private static final Function<EntradaGuion, Object> GUION_CON_LA_REGLA_PEDIDA = GeneracionesProcesoTest::guionConLaReglaPedida;
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
@@ -88,6 +99,7 @@ class GeneracionesProcesoTest {
     private final List<EntradaGuion> pedidos = new ArrayList<>();
     private final List<String> estadosVistos = new ArrayList<>();
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void preparar() throws Exception {
         etapas.deleteAll(); generaciones.deleteAll(); propuestas.deleteAll(); solicitudes.deleteAll();
@@ -112,9 +124,12 @@ class GeneracionesProcesoTest {
         when(generadorGuion.proveedor()).thenReturn("proveedor-simulado");
         when(generadorGuion.modelo()).thenReturn("modelo-simulado");
         when(generadorGuion.generarGuion(any())).thenAnswer(llamada -> {
-            pedidos.add(llamada.getArgument(0));
+            EntradaGuion pedido = llamada.getArgument(0);
+            pedidos.add(pedido);
             estadosVistos.add("ia:" + estadoGuardado());
             Object siguiente = respuestas.isEmpty() ? ultimaRespuesta : respuestas.poll();
+            // Una función contesta según lo que se le pidió (por ejemplo, con la regla que pidieron).
+            if (siguiente instanceof Function<?, ?> segunElPedido) siguiente = ((Function<EntradaGuion, Object>) segunElPedido).apply(pedido);
             if (siguiente instanceof FalloGeneracion fallo) throw fallo;
             if (siguiente instanceof RuntimeException error) throw error;
             return siguiente;
@@ -159,13 +174,26 @@ class GeneracionesProcesoTest {
 
     // Una solicitud con su propuesta ya aprobada: lo que el docente hace antes de generar.
     private UUID solicitudAprobada() throws Exception {
-        UUID id = UUID.randomUUID();
-        Map<String, Object> datos = new HashMap<>();
-        datos.put("id_solicitud", id); datos.put("curso_id", CURSO); datos.put("seccion_id", seccion.getId());
-        datos.put("tema", TEMA); datos.put("proposito", "refuerzo"); datos.put("instrucciones", "Que sea corto");
-        escribir(RUTA_SOLICITUDES, "ses-docente", datos).andExpect(status().isCreated());
+        return solicitudAprobada(TEMA);
+    }
+
+    private UUID solicitudAprobada(String tema) throws Exception {
+        UUID id = solicitudSinAprobar(tema);
         escribir(RUTA_SOLICITUDES + id + "/versiones/1/aprobar/", "ses-docente", Map.of()).andExpect(status().isOk());
         return id;
+    }
+
+    private UUID solicitudSinAprobar(String tema) throws Exception {
+        UUID id = UUID.randomUUID();
+        escribir(RUTA_SOLICITUDES, "ses-docente", datosDeSolicitud(id, tema)).andExpect(status().isCreated());
+        return id;
+    }
+
+    private Map<String, Object> datosDeSolicitud(UUID id, String tema) {
+        Map<String, Object> datos = new HashMap<>();
+        datos.put("id_solicitud", id); datos.put("curso_id", CURSO); datos.put("seccion_id", seccion.getId());
+        datos.put("tema", tema); datos.put("proposito", "refuerzo"); datos.put("instrucciones", "Que sea corto");
+        return datos;
     }
 
     private UUID generar(UUID solicitud) throws Exception {
@@ -201,6 +229,61 @@ class GeneracionesProcesoTest {
     private JsonNode paqueteDe(JsonNode generacion) throws Exception {
         assertTrue(generacion.path("paquete").isTextual(), "La generación debía traer su paquete.");
         return json.readTree(generacion.path("paquete").asText());
+    }
+
+    // HU28 · Una propuesta de la IA con la regla indicada (o sin ninguna si es null).
+    private Map<String, Object> propuestaConRegla(String regla) {
+        Map<String, Object> propuesta = new HashMap<>(propuestaValida());
+        if (regla != null) propuesta.put("regla_juego", regla);
+        return propuesta;
+    }
+
+    // HU28 · Una IA que hace lo esperado: «orden» para un tema de patrones y «solo_clase» para
+    // uno de clasificar. Es un doble de prueba: acredita que la elección viaja de la propuesta al
+    // guion, no que una IA real elija bien (eso se prueba a mano con Groq).
+    private void iaQueEligeLaReglaSegunElTema() throws Exception {
+        when(generadorPropuestas.generar(any())).thenAnswer(llamada -> {
+            String tema = ((EntradaGeneracion) llamada.getArgument(0)).tema().toLowerCase();
+            return propuestaConRegla(tema.contains("patrones") ? "orden" : tema.contains("clasificar") ? "solo_clase" : null);
+        });
+    }
+
+    private static Object guionConLaReglaPedida(EntradaGuion pedido) {
+        try {
+            return GuionesDePrueba.respuestaConLaRegla(pedido.reglaJuego() != null ? pedido.reglaJuego() : "orden");
+        } catch (IOException error) {
+            throw new UncheckedIOException(error);
+        }
+    }
+
+    // HU28 · La barra de arriba del juego: con «orden», una ficha por cada fruta del patrón; con
+    // «solo_clase», una ficha por cada fruta (o verdura) que hay que juntar.
+    private List<String> barra(JsonNode reto) {
+        JsonNode regla = reto.path("regla");
+        List<String> fichas = new ArrayList<>();
+        if (regla.path("tipo").asText().equals("orden")) {
+            regla.path("secuencia").forEach(tipo -> fichas.add(tipo.asText()));
+        } else {
+            for (int ficha = 0; ficha < regla.path("meta").asInt(); ficha++) fichas.add(regla.path("clase").asText());
+        }
+        return fichas;
+    }
+
+    // HU28 · Las trampas de un nivel: con «orden», los objetos que no forman parte del patrón; con
+    // «solo_clase», los objetos de la otra clase. Recogerlos es equivocarse, y equivocarse no termina el juego.
+    private List<String> trampas(JsonNode reto) {
+        JsonNode regla = reto.path("regla");
+        Set<String> secuencia = new HashSet<>();
+        regla.path("secuencia").forEach(tipo -> secuencia.add(tipo.asText()));
+        List<String> trampas = new ArrayList<>();
+        for (JsonNode objeto : reto.path("objetos")) {
+            String tipo = objeto.path("tipo").asText();
+            boolean esTrampa = regla.path("tipo").asText().equals("orden")
+                ? !secuencia.contains(tipo)
+                : !CatalogoLaberinto.CLASES.get(regla.path("clase").asText()).contains(tipo);
+            if (esTrampa) trampas.add(tipo);
+        }
+        return trampas;
     }
 
     // ---------- Un guion bueno ----------
@@ -506,5 +589,167 @@ class GeneracionesProcesoTest {
 
         verify(generadorGuion, never()).generarGuion(any());
         assertEquals("generando", estadoGuardado());
+    }
+
+    // ---------- HU28: la propuesta elige la regla y el guion la respeta ----------
+
+    @Test
+    void hu28_un_tema_de_patrones_elige_orden_y_uno_de_clasificar_elige_solo_clase_y_el_juego_cambia() throws Exception {
+        iaQueEligeLaReglaSegunElTema();
+        respuestasDeLaIa(GUION_CON_LA_REGLA_PEDIDA);
+        UUID patrones = solicitudAprobada(TEMA_DE_PATRONES);
+        UUID clasificar = solicitudAprobada(TEMA_DE_CLASIFICAR);
+
+        // La propuesta ya trae la regla que eligió la IA, también al consultarla.
+        leer(RUTA_SOLICITUDES + patrones + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").value("orden"));
+        leer(RUTA_SOLICITUDES + clasificar + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").value("solo_clase"));
+
+        JsonNode juegoDePatrones = cuerpo(procesar(generar(patrones), "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.estado").value("lista"))
+            .andExpect(jsonPath("$.generacion.procedencia.intentos").value(1))).path("generacion");
+        JsonNode juegoDeClasificar = cuerpo(procesar(generar(clasificar), "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.estado").value("lista"))
+            .andExpect(jsonPath("$.generacion.procedencia.intentos").value(1))).path("generacion");
+
+        // La llamada 2 recibe la regla de cada propuesta.
+        assertEquals(List.of("orden", "solo_clase"), pedidos.stream().map(EntradaGuion::reglaJuego).toList());
+
+        // Cada guion usa su regla en los tres niveles y pasa las comprobaciones de esa regla.
+        JsonNode guionDePatrones = paqueteDe(juegoDePatrones);
+        JsonNode guionDeClasificar = paqueteDe(juegoDeClasificar);
+        assertEquals(List.of(), validadorReal.validar(guionDePatrones, "orden"));
+        assertEquals(List.of(), validadorReal.validar(guionDeClasificar, "solo_clase"));
+
+        // Y el juego cambia de verdad en cada nivel: otra regla, otra barra y otras trampas.
+        for (int nivel = 0; nivel < 3; nivel++) {
+            JsonNode conPatron = guionDePatrones.path("retos").path(nivel);
+            JsonNode porClase = guionDeClasificar.path("retos").path(nivel);
+            String cual = "nivel " + (nivel + 1);
+            assertEquals("orden", conPatron.path("regla").path("tipo").asText(), cual);
+            assertEquals("solo_clase", porClase.path("regla").path("tipo").asText(), cual);
+            assertNotEquals(barra(conPatron), barra(porClase), cual);
+            assertNotEquals(trampas(conPatron), trampas(porClase), cual);
+        }
+        // Un caso concreto: el primer nivel de cada juego.
+        assertEquals(List.of("fresa", "platano", "fresa", "platano"), barra(guionDePatrones.path("retos").path(0)));
+        assertEquals(List.of(), trampas(guionDePatrones.path("retos").path(0)));
+        assertEquals(List.of("fruta", "fruta", "fruta"), barra(guionDeClasificar.path("retos").path(0)));
+        assertEquals(List.of("zanahoria"), trampas(guionDeClasificar.path("retos").path(0)));
+    }
+
+    @Test
+    void hu28_si_la_llamada_2_cambia_la_regla_de_la_propuesta_se_le_pide_corregirla() throws Exception {
+        iaQueEligeLaReglaSegunElTema();
+        // La primera vez se equivoca y escribe «orden»; la segunda obedece.
+        respuestasDeLaIa(GuionesDePrueba.respuestaConLaRegla("orden"), GUION_CON_LA_REGLA_PEDIDA);
+        UUID generacion = generar(solicitudAprobada(TEMA_DE_CLASIFICAR));
+
+        JsonNode respuesta = cuerpo(procesar(generacion, "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.estado").value("lista"))
+            .andExpect(jsonPath("$.generacion.procedencia.intentos").value(2))).path("generacion");
+
+        assertTrue(mensajeDeEtapa(respuesta, "comprobacion", "fallida").contains("REGLA_DISTINTA: "));
+        assertEquals("solo_clase", pedidos.get(1).reglaJuego());
+        assertTrue(pedidos.get(1).problemas().stream().anyMatch(problema -> problema.codigo().equals("REGLA_DISTINTA")));
+        assertEquals(List.of(), validadorReal.validar(paqueteDe(respuesta), "solo_clase"));
+    }
+
+    @Test
+    void hu28_si_la_ia_insiste_con_otra_regla_la_generacion_queda_fallida_sin_cambiarle_la_regla() throws Exception {
+        iaQueEligeLaReglaSegunElTema();
+        respuestasDeLaIa(GuionesDePrueba.respuestaConLaRegla("orden"));
+        UUID generacion = generar(solicitudAprobada(TEMA_DE_CLASIFICAR));
+
+        JsonNode respuesta = cuerpo(procesar(generacion, "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.estado").value("fallida"))
+            .andExpect(jsonPath("$.generacion.paquete").isEmpty())).path("generacion");
+
+        // Ni con los mapas base se arregla: el respaldo no inventa otra regla.
+        assertEquals(3, pedidos.size());
+        assertTrue(resumenDeEtapas(respuesta).contains("mapa_base:fallida"));
+        assertTrue(respuesta.path("ultimo_error").asText().contains("REGLA_DISTINTA: "));
+    }
+
+    @Test
+    void hu28_una_propuesta_sin_regla_deja_que_la_llamada_2_elija() throws Exception {
+        // La propuesta de siempre de estas pruebas no trae regla, como las de antes de la HU28.
+        UUID solicitud = solicitudAprobada();
+        leer(RUTA_SOLICITUDES + solicitud + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").isEmpty());
+        respuestasDeLaIa(GuionesDePrueba.respuestaConLaRegla("solo_clase"));
+
+        procesar(generar(solicitud), "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.estado").value("lista"));
+
+        assertNull(pedidos.get(0).reglaJuego());
+    }
+
+    @Test
+    void hu28_una_regla_que_kusi_no_sabe_jugar_hace_invalida_la_propuesta() throws Exception {
+        when(generadorPropuestas.generar(any())).thenReturn(propuestaConRegla("mercado"));
+        UUID id = UUID.randomUUID();
+
+        escribir(RUTA_SOLICITUDES, "ses-docente", datosDeSolicitud(id, TEMA_DE_PATRONES)).andExpect(status().isBadGateway());
+
+        leer(RUTA_SOLICITUDES + id + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.estado").value("fallida"))
+            .andExpect(jsonPath("$.solicitud.propuesta").isEmpty());
+        assertEquals(0, propuestas.count());
+    }
+
+    @Test
+    void hu28_la_regla_pasa_de_una_version_de_la_propuesta_a_la_siguiente() throws Exception {
+        iaQueEligeLaReglaSegunElTema();
+        UUID id = solicitudSinAprobar(TEMA_DE_PATRONES);
+        String ruta = RUTA_SOLICITUDES + id;
+
+        // El docente edita los textos (versión 2): la regla no se edita, se conserva.
+        Map<String, Object> edicion = Map.of("objetivo", "Los niños aprenderán a seguir patrones.", "historia", "Kusi sigue el camino.",
+            "acciones", List.of("Mover al cuy"), "reglas", List.of("Se recoge en orden"), "retos", List.of("Completar el patrón"),
+            "ayudas", List.of("Mira lo que se repite"));
+        escribir(ruta + "/versiones/1/modificar/", "ses-docente", edicion).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.solicitud.propuesta.version").value(2))
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").value("orden"));
+
+        // La IA ajusta según las observaciones y no repite la regla (versión 3): hereda la de la base.
+        // (doReturn y no when: when volvería a ejecutar la respuesta anterior con un pedido vacío.)
+        doReturn(propuestaConRegla(null)).when(generadorPropuestas).generar(any());
+        escribir(ruta + "/versiones/2/observaciones/", "ses-docente", Map.of("observaciones", "Más corto, por favor"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.solicitud.propuesta.version").value(3))
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").value("orden"));
+        // A la IA le llegó la regla de la versión que ajusta.
+        ArgumentCaptor<EntradaGeneracion> pedidosDePropuesta = ArgumentCaptor.forClass(EntradaGeneracion.class);
+        verify(generadorPropuestas, atLeastOnce()).generar(pedidosDePropuesta.capture());
+        EntradaGeneracion ajuste = pedidosDePropuesta.getAllValues().stream()
+            .filter(entrada -> "observaciones".equals(entrada.tipo())).findFirst().orElseThrow();
+        assertEquals("orden", ajuste.propuestaBase().get("regla_juego"));
+
+        // El docente rechaza y la IA propone otra alternativa con otra regla (versión 4).
+        escribir(ruta + "/versiones/3/rechazar/", "ses-docente", Map.of()).andExpect(status().isOk());
+        doReturn(propuestaConRegla("solo_clase")).when(generadorPropuestas).generar(any());
+        escribir(ruta + "/alternativa/", "ses-docente", Map.of()).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.solicitud.propuesta.version").value(4))
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").value("solo_clase"));
+
+        // Las versiones anteriores no cambian.
+        leer(ruta + "/versiones/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.versiones.length()").value(4))
+            .andExpect(jsonPath("$.versiones[0].regla_juego").value("solo_clase"))
+            .andExpect(jsonPath("$.versiones[1].regla_juego").value("orden"))
+            .andExpect(jsonPath("$.versiones[2].regla_juego").value("orden"))
+            .andExpect(jsonPath("$.versiones[3].regla_juego").value("orden"));
+    }
+
+    @Test
+    void hu28_la_base_solo_acepta_las_dos_reglas_o_ninguna() throws Exception {
+        iaQueEligeLaReglaSegunElTema();
+        solicitudSinAprobar(TEMA_DE_PATRONES);
+        assertEquals("orden", jdbc.queryForObject("select regla_juego from edu.propuestas", String.class));
+
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("update edu.propuestas set regla_juego = 'mercado'"));
+        assertEquals(1, jdbc.update("update edu.propuestas set regla_juego = null"));
     }
 }

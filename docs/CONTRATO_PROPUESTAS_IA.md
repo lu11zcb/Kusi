@@ -1,5 +1,7 @@
 # HU16–HU25 · Propuestas, revisión y versiones (prueba real de IA pendiente)
 
+**Actualización 26 de octubre (HU28).** Cada versión de la propuesta trae `regla_juego` (`orden`, `solo_clase` o `null`): la regla con la que se juega el laberinto, que la IA elige según el tema y que la generación del guion (HU26) respeta. Se guarda en la columna `propuestas.regla_juego` (migración `V5__regla_del_juego.sql`) y la versión editada por el docente conserva la de su base. La llamada 1 ya no ofrece el mercado ni el juego de ordenar. Ver `edu-api/README.md`.
+
 **Actualización 13 de octubre (HU19–HU25).** La solicitud acepta `proposito` (`preparacion`|`refuerzo`, por defecto `preparacion`) e `instrucciones` (hasta 4000, exactas o null). Cada propuesta es una versión con `version`, `origen` (`ia`|`docente`), `version_base`, `observaciones`, `recursos` (opcional), `estado_revision` (`pendiente`|`aprobada`|`rechazada`), `revisada_en` y `apta_para_juego` (solo la versión vigente y aprobada). Rutas nuevas (todas con sesión docente, asignación vigente y CSRF Spring en escrituras):
 
 | Ruta | HU |

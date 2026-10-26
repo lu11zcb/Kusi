@@ -119,3 +119,13 @@ Para probar con Groq de verdad, sin el panel:
 3. Con esa cookie, `GET /api/edu/acceso/csrf/` da el token CSRF; las escrituras llevan la cookie `kusi_edu_csrf` y la cabecera `X-XSRF-TOKEN` con ese mismo valor.
 4. `GET /api/edu/contexto/propuestas/` da el `curso_id` y el `seccion_id`; luego `POST /api/edu/propuestas/solicitudes/` (con un `id_solicitud` nuevo), `POST .../{id}/versiones/1/aprobar/`, `POST .../{id}/versiones/1/generar/` y `POST /api/edu/generaciones/{id}/procesar/`.
 5. `GET /api/edu/generaciones/{id}/` muestra las etapas, la `procedencia` y el `paquete`. Cada generación gasta llamadas reales a la IA.
+
+## HU28: la propuesta elige la regla del juego
+Kusi hoy hace un solo juego, el laberinto, con dos reglas: `orden` (patrones que se repiten, de primer grado) y `solo_clase` (solo frutas o solo verduras). La llamada 1 (la propuesta) ya no ofrece el mercado ni el juego de ordenar: usa solo los objetos de la fase 1 (fresa, plátano, mango, mandarina, piña, zanahoria, papa y choclo, con el zorro como único enemigo), **elige la regla según el tema** y la devuelve en `regla_juego`. Si el tema no encaja en ninguna regla, elige la más cercana y lo dice en la historia.
+
+- La regla se guarda con cada versión de la propuesta (columna `propuestas.regla_juego`, migración `V5__regla_del_juego.sql`; queda vacía en las versiones anteriores) y sale en la propuesta de la API como `regla_juego`: `"orden"`, `"solo_clase"` o `null`.
+- El docente edita los textos, no la regla: una versión editada (HU23) conserva la de su base. Si la IA ajusta una versión (observaciones) o propone una alternativa y no repite `regla_juego`, hereda la de la base; si la repite, manda la nueva.
+- La llamada 2 la respeta: al pedir el guion se le dice «usa `orden` en todos los niveles» y `ValidadorLaberinto` marca `REGLA_DISTINTA` en cada nivel que use otra, lo que dispara la corrección (hasta 2 veces) como cualquier otro problema. El respaldo con mapas base no cambia la regla: si la IA insiste en otra, la generación queda `fallida`.
+- Una propuesta sin regla (como las de antes de la HU28) deja que la llamada 2 elija. Una regla que no sea una de las dos hace inválida la respuesta de la IA (502, la solicitud se puede reintentar).
+
+`GeneracionesProcesoTest` (sección HU28, con una IA falsa) comprueba que un tema de patrones da `orden`, que uno de clasificar da `solo_clase` y que el guion cambia de verdad en cada nivel: otra regla, otra barra (una ficha por cada fruta del patrón, o por cada objeto que hay que juntar) y otras trampas (lo que no va en el patrón, o los objetos de la otra clase). No acredita que una IA real elija bien la regla: eso se mira a mano con Groq.

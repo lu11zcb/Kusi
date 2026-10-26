@@ -77,6 +77,62 @@ public final class GuionesDePrueba {
         return respuestaDeLaIa(ejemplo());
     }
 
+    // Una respuesta buena en la que los tres niveles se juegan con la misma regla, cada
+    // una con su barra y sus trampas. Con «orden» el niño sigue un patrón de frutas y las
+    // trampas son lo que no va en el patrón; con «solo_clase» recoge solo una clase
+    // (frutas, verduras, frutas) y las trampas son los objetos de la otra clase.
+    public static ObjectNode respuestaConLaRegla(String regla) throws IOException {
+        ObjectNode respuesta = respuestaBuena();
+        ArrayNode retos = (ArrayNode) respuesta.get("retos");
+        if (CatalogoLaberinto.REGLA_ORDEN.equals(regla)) {
+            // Los niveles 1 y 2 del ejemplo ya son de «orden». El 3 pasa a un patrón de tres
+            // frutas que se repite, con una verdura de trampa.
+            cambiarNivel(retos.get(2), reglaDeLaIa("orden", List.of("fresa", "mango", "pina", "fresa", "mango", "pina"), "", 0),
+                "Sigue el patrón de tres frutas. ¡Después ve a la puerta!",
+                List.of("Mira la fila de arriba. Busca la fruta que sigue.", "Son tres que se repiten. Cuando terminan, empiezan otra vez."),
+                "fresa:1:4", "mango:3:6", "pina:5:11", "fresa:7:9", "mango:1:10", "pina:5:5", "zanahoria:7:3");
+        } else if (CatalogoLaberinto.REGLA_SOLO_CLASE.equals(regla)) {
+            // El nivel 3 del ejemplo ya es de «solo_clase» con frutas. Los niveles 1 y 2 pasan a
+            // recoger tres frutas y tres verduras, cada uno con un objeto de la otra clase de trampa.
+            cambiarNivel(retos.get(0), reglaDeLaIa("solo_clase", List.of(), "fruta", 3),
+                "Recoge tres frutas. Deja las verduras en el camino y busca la puerta.",
+                List.of("Las frutas son dulces y jugosas. Busca solo esas.", "Las verduras crecen en la huerta. Déjalas donde están."),
+                "fresa:1:3", "mango:1:7", "pina:3:7", "zanahoria:5:7");
+            cambiarNivel(retos.get(1), reglaDeLaIa("solo_clase", List.of(), "verdura", 3),
+                "Recoge tres verduras. Deja las frutas en el camino y busca la puerta.",
+                List.of("Las verduras crecen bajo la tierra o en la huerta. Busca solo esas.", "Las frutas son dulces. Déjalas donde están."),
+                "zanahoria:1:4", "papa:1:10", "choclo:3:10", "fresa:5:10");
+        } else {
+            throw new IllegalArgumentException("Regla desconocida: " + regla);
+        }
+        return respuesta;
+    }
+
+    private static ObjectNode reglaDeLaIa(String tipo, List<String> secuencia, String clase, int meta) {
+        ObjectNode regla = JSON.createObjectNode();
+        regla.put("tipo", tipo);
+        ArrayNode lista = regla.putArray("secuencia");
+        secuencia.forEach(lista::add);
+        regla.put("clase", clase);
+        regla.put("meta", meta);
+        return regla;
+    }
+
+    // Cambia la regla, la consigna, las ayudas y los objetos de un nivel, sin tocar su mapa
+    // ni sus enemigos. Cada objeto se escribe «tipo:fila:columna».
+    private static void cambiarNivel(JsonNode nivel, ObjectNode regla, String consigna, List<String> ayudas, String... objetos) {
+        ObjectNode cambiado = (ObjectNode) nivel;
+        cambiado.set("regla", regla);
+        cambiado.put("consigna", consigna);
+        ArrayNode textos = cambiado.putArray("ayudas");
+        ayudas.forEach(textos::add);
+        ArrayNode lista = cambiado.putArray("objetos");
+        for (String objeto : objetos) {
+            String[] partes = objeto.split(":");
+            lista.addObject().put("tipo", partes[0]).put("fila", Integer.parseInt(partes[1])).put("columna", Integer.parseInt(partes[2]));
+        }
+    }
+
     // Igual que la buena, pero un objeto del nivel 2 está sobre un muro: es el defecto
     // que corrige la IA en la segunda vuelta de las pruebas.
     public static ObjectNode respuestaConUnObjetoEnUnMuro() throws IOException {

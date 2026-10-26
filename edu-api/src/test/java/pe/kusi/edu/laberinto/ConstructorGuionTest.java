@@ -69,6 +69,20 @@ class ConstructorGuionTest {
     }
 
     @Test
+    void lasRespuestasDeUnaSolaReglaPasanLasComprobacionesDeEsaReglaYNoLasDeLaOtra() throws Exception {
+        for (String regla : List.of("orden", "solo_clase")) {
+            String otra = regla.equals("orden") ? "solo_clase" : "orden";
+            ObjectNode guion = ConstructorGuion.desdeLaIa(GuionesDePrueba.respuestaConLaRegla(regla), CURSO);
+
+            assertEquals(List.of(), validador.validar(guion, regla), regla);
+            guion.get("retos").forEach(reto -> assertEquals(regla, reto.get("regla").get("tipo").asText()));
+            // Contra la otra regla, cada uno de los tres niveles se señala como distinto.
+            long distintos = validador.validar(guion, otra).stream().filter(problema -> problema.codigo().equals("REGLA_DISTINTA")).count();
+            assertEquals(3, distintos, regla + " contra " + otra);
+        }
+    }
+
+    @Test
     void unaReglaDeTipoDesconocidoSeDejaTalCualParaQueElValidadorLaSenale() throws Exception {
         ObjectNode respuesta = GuionesDePrueba.respuestaBuena();
         ((ObjectNode) respuesta.get("retos").get(0).get("regla")).put("tipo", "mercado");

@@ -188,8 +188,10 @@ public class PropuestasService {
                 int siguiente=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).orElseThrow().getVersion()+1;
                 // El objetivo conserva su origen si no se cambió; si se editó, pasa a ser del docente.
                 String origenObjetivo=r.objetivo().equals(base.getObjetivo()) ? base.getOrigenObjetivo() : "docente";
+                // HU28: el docente edita los textos, no la regla del juego: la versión nueva conserva la de la base.
                 propuestas.saveAndFlush(new Propuesta(id, siguiente, "docente", version, null, r.objetivo(), origenObjetivo, r.historia(),
-                    aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()), null, null));
+                    aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()),
+                    null, null, base.getReglaJuego()));
             });
         } catch (DataIntegrityViolationException carrera) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Se guardó otra versión al mismo tiempo. Revisa la versión actual.");
@@ -227,7 +229,7 @@ public class PropuestasService {
         EntradaGeneracion entrada=entrada(contexto, s, "nueva", null, null);
         try {
             ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada), s.getObjetivoDocente());
-            guardarVersionIa(id, null, null, r);
+            guardarVersionIa(id, null, null, r, null);
             return leer(id, creada);
         } catch (FalloGeneracion fallo) {
             terminarConFallo(id, "fallida", fallo.getMessage());
@@ -248,7 +250,7 @@ public class PropuestasService {
         String objetivoFijo=base.getOrigenObjetivo().equals("docente") ? base.getObjetivo() : null;
         try {
             ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada(contexto, s, tipo, base, observaciones)), objetivoFijo);
-            guardarVersionIa(id, base.getVersion(), observaciones, r);
+            guardarVersionIa(id, base.getVersion(), observaciones, r, base.getReglaJuego());
             return leer(id, false);
         } catch (FalloGeneracion fallo) {
             terminarConFallo(id, "generada", fallo.getMessage());
@@ -265,12 +267,15 @@ public class PropuestasService {
             s.getProposito(), s.getInstrucciones(), tipo, base == null ? null : contenido(base), observaciones);
     }
 
-    private void guardarVersionIa(UUID id, Integer versionBase, String observaciones, ValidadorPropuesta.Resultado r) {
+    // reglaHeredada (HU28): la regla de la versión que se ajusta. Si la IA no vuelve a elegir
+    // una, la nueva versión conserva la de la versión base.
+    private void guardarVersionIa(UUID id, Integer versionBase, String observaciones, ValidadorPropuesta.Resultado r, String reglaHeredada) {
+        String reglaJuego=r.reglaJuego() != null ? r.reglaJuego() : reglaHeredada;
         transaccion.executeWithoutResult(estado -> {
             int version=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).map(p -> p.getVersion()+1).orElse(1);
             propuestas.saveAndFlush(new Propuesta(id, version, "ia", versionBase, observaciones, r.objetivo(), r.origenObjetivo(), r.historia(),
                 aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()),
-                generador.proveedor(), generador.modelo()));
+                generador.proveedor(), generador.modelo(), reglaJuego));
             solicitudes.terminarGeneracion(id, "generada", null, Instant.now());
         });
     }
@@ -318,6 +323,8 @@ public class PropuestasService {
         d.put("acciones", lista(p.getAcciones())); d.put("reglas", lista(p.getReglas()));
         d.put("retos", lista(p.getRetos())); d.put("ayudas", lista(p.getAyudas()));
         d.put("recursos", p.getRecursos() == null ? null : lista(p.getRecursos()));
+        // HU28: "orden", "solo_clase" o null si la propuesta no eligió regla.
+        d.put("regla_juego", p.getReglaJuego());
         return d;
     }
 
