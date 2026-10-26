@@ -333,6 +333,8 @@ class ConstructorGuionTest {
             else regla.put("meta", 10);
             ((ObjectNode) respuesta.path("retos").path(1)).put("consigna", "x".repeat(120));
             ObjectNode guion = ConstructorGuion.conMapasBase(respuesta, CURSO, mapasBase, tipo).orElseThrow();
+            ObjectNode reparaciones = ConstructorGuion.reparacionesDelRespaldo(respuesta, guion);
+            assertEquals(JSON.readTree("{\"regla\":[1],\"textos\":[1,2]}"), reparaciones);
             JsonNode nivel = guion.path("retos").path(0);
             assertEquals(tipo.equals("orden") ? "Sigue el patrón de la barra. Después busca la puerta." : "Recoge 6 frutas. Después busca la puerta.", nivel.path("consigna").asText());
             assertEquals(tipo.equals("orden") ? "Mira la barra. ¿Cuál sigue en el patrón?" : "Recoge solo las del grupo que pide Kusi.", nivel.path("ayudas").path(0).asText());
@@ -342,8 +344,22 @@ class ConstructorGuionTest {
                 assertTrue(ayuda.asText().length() <= 80);
                 assertTrue(ValidadorLaberinto.nombresQueRevela(ayuda.asText()).isEmpty());
             }
+            ConstructorGuion.ponerProcedencia(guion, "proveedor-simulado", "modelo-simulado", 3, true, reparaciones);
+            assertEquals(reparaciones, guion.path("procedencia").path("reparaciones"));
             assertEquals(List.of(), validador.validar(guion, tipo));
         }
+    }
+
+    @Test
+    void sinRespaldoNoSeAnadenReparacionesYUnRespaldoSinCambiosTieneListasVacias() throws Exception {
+        ObjectNode respuesta = GuionesDePrueba.respuestaConMapasRotos();
+        ObjectNode guion = ConstructorGuion.conMapasBase(respuesta, CURSO, mapasBase).orElseThrow();
+        ObjectNode reparaciones = ConstructorGuion.reparacionesDelRespaldo(respuesta, guion);
+        assertEquals(JSON.readTree("{\"regla\":[],\"textos\":[]}"), reparaciones);
+        ConstructorGuion.ponerProcedencia(guion, "proveedor-simulado", "modelo-simulado", 3, true, reparaciones);
+        assertEquals(reparaciones, guion.path("procedencia").path("reparaciones"));
+        ConstructorGuion.ponerProcedencia(guion, "proveedor-simulado", "modelo-simulado", 1, false, reparaciones);
+        assertFalse(guion.path("procedencia").has("reparaciones"));
     }
 
     @Test
@@ -357,6 +373,8 @@ class ConstructorGuionTest {
         assertEquals("openai/gpt-oss-120b", procedencia.get("modelo").asText());
         assertEquals(2, procedencia.get("intentos").asInt());
         assertTrue(procedencia.get("mapa_base").isBoolean() && procedencia.get("mapa_base").asBoolean());
+        assertEquals("laberinto", procedencia.path("catalogo").path("nombre").asText());
+        assertEquals(1, procedencia.path("catalogo").path("version").asInt());
         // El bloque no cuenta como un defecto del guion.
         assertEquals(List.of(), validador.validar(guion));
     }

@@ -2,6 +2,7 @@ package pe.kusi.edu;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -416,6 +417,25 @@ class GeneracionesProcesoTest {
 
         assertTrue(mensajeDeEtapa(respuesta, "comprobacion", "fallida").contains("GUION_INVALIDO: "));
         assertEquals(List.of(), validadorReal.validar(paqueteDe(respuesta)));
+    }
+
+    @Test
+    void hu30_la_procedencia_guarda_reparaciones_estructuradas_solo_con_respaldo() throws Exception {
+        ObjectNode respuestaIa = GuionesDePrueba.respuestaConLaRegla("orden");
+        ((ObjectNode) respuestaIa.path("retos").path(0).path("regla")).putArray("secuencia").add("fresa").add("platano").add("fresa");
+        ((ObjectNode) respuestaIa.path("retos").path(1)).put("consigna", "x".repeat(120));
+        respuestasDeLaIa(respuestaIa);
+        UUID generacion = generacionPendiente();
+        JsonNode respuesta = cuerpo(procesar(generacion, "ses-docente").andExpect(status().isOk())
+                .andExpect(jsonPath("$.generacion.estado").value("lista"))).path("generacion");
+        JsonNode reparaciones = json.readTree("{\"regla\":[1],\"textos\":[1,2]}");
+        assertEquals(reparaciones, respuesta.path("procedencia").path("reparaciones"));
+        assertEquals(reparaciones, paqueteDe(respuesta).path("procedencia").path("reparaciones"));
+        leer("/api/edu/generaciones/" + generacion + "/", "ses-docente").andExpect(status().isOk())
+                .andExpect(jsonPath("$.generacion.procedencia.reparaciones.regla[0]").value(1));
+        respuestasDeLaIa(GuionesDePrueba.respuestaBuena());
+        procesar(generacionPendiente(), "ses-docente").andExpect(status().isOk())
+                .andExpect(jsonPath("$.generacion.procedencia.reparaciones").doesNotExist());
     }
 
     // ---------- Un guion siempre malo: mapas base ----------

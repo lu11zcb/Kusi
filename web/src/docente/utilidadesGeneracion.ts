@@ -1,4 +1,4 @@
-import type { EtapaGeneracion, EstadoEtapa, NombreEtapa } from '../servicios/generaciones'
+import type { EtapaGeneracion, EstadoEtapa, NombreEtapa, ProcedenciaJuego } from '../servicios/generaciones'
 
 export const etiquetaReglaJuego = (regla: 'orden' | 'solo_clase' | null | undefined) => regla === 'orden'
   ? 'Seguir el orden (patrones)' : regla === 'solo_clase' ? 'Solo una clase (clasificar)' : 'Pendiente de elegir'
@@ -49,4 +49,54 @@ export function atenderMensajeJuego(evento: Pick<MessageEvent, 'source' | 'origi
     return { estado: 'error', motivo: datos.motivo }
   }
   return null
+}
+
+// La lista se obtiene del paquete guardado, no del ejemplo ni de todo el catálogo:
+// así la procedencia solo enumera recursos que realmente usa esta generación.
+export function recursosDelPaquete(paquete: string | null): string[] {
+  try {
+    const datos = JSON.parse(paquete || '{}')
+    const tipos = new Set<string>()
+    if (Array.isArray(datos.retos)) for (const nivel of datos.retos) {
+      for (const campo of ['objetos', 'enemigos']) if (Array.isArray(nivel?.[campo])) {
+        for (const elemento of nivel[campo]) if (typeof elemento?.tipo === 'string') tipos.add(elemento.tipo)
+      }
+    }
+    return [...tipos]
+  } catch { return [] }
+}
+
+const enumerarNiveles = (niveles: number[]) => niveles.length === 1 ? String(niveles[0])
+  : niveles.slice(0, -1).join(', ') + ' y ' + niveles[niveles.length - 1]
+const enNiveles = (niveles: number[]) => (niveles.length === 1 ? 'en el nivel ' : 'en los niveles ') + enumerarNiveles(niveles)
+
+// La atribución depende exclusivamente del paquete y de los datos estructurados
+// del servidor. Los mensajes de las etapas son texto para el docente y pueden
+// cambiar de redacción; nunca se usan como un contrato de procedencia.
+export function aportesDelJuego(procedencia: ProcedenciaJuego | null, paquete: string | null) {
+  const aportes: string[] = []
+  const reparaciones: string[] = []
+  let niveles: number[] = []
+  let historia = false
+  try {
+    const datos = JSON.parse(paquete || '{}')
+    historia = typeof datos.historia === 'string' && !!datos.historia.trim()
+    if (Array.isArray(datos.retos)) niveles = datos.retos.map((_: unknown, indice: number) => indice + 1)
+  } catch { /* Los juegos antiguos pueden no conservar el paquete completo. */ }
+  if (!procedencia) return { aportes, reparaciones, nota: 'El servicio no registró qué partes se conservaron de la respuesta.' }
+  if (historia) aportes.push('La historia.')
+  if (!procedencia.mapa_base) {
+    aportes.push('Las reglas, los mapas, las consignas y las ayudas.')
+    return { aportes, reparaciones, nota: null }
+  }
+  if (!procedencia.reparaciones) {
+    return { aportes, reparaciones, nota: 'Este juego anterior no registra qué reglas, consignas o ayudas se conservaron de la respuesta.' }
+  }
+  const conservadas = niveles.filter((nivel) => !procedencia.reparaciones?.regla.includes(nivel))
+  const textosConservados = niveles.filter((nivel) => !procedencia.reparaciones?.textos.includes(nivel))
+  if (conservadas.length) aportes.push('La regla ' + enNiveles(conservadas) + '.')
+  if (textosConservados.length) aportes.push('Las consignas y las ayudas ' + enNiveles(textosConservados) + '.')
+  if (procedencia.reparaciones.regla.length) reparaciones.push('Kusi rehízo la regla ' + enNiveles(procedencia.reparaciones.regla) + '.')
+  if (procedencia.reparaciones.textos.length) reparaciones.push('Kusi rehízo los textos ' + enNiveles(procedencia.reparaciones.textos) + '.')
+  return { aportes, reparaciones, nota: null }
 }

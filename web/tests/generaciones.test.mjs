@@ -214,3 +214,35 @@ test('SIMULADO: un GET lento no se solapa y un error transitorio permite seguir 
   t.mock.timers.tick(2000); await vaciarPromesas(); assert.equal(llamadas, 3)
   controlador.abort()
 })
+
+test('HU29: acepta catálogo con versión y juegos antiguos, rechaza versión inválida', async () => {
+  const { consultarGeneracion } = await import(await cargarModulo(new URL('../src/servicios/generaciones.ts', import.meta.url)))
+  const datos = juegoListo()
+  const original = globalThis.fetch
+  try {
+    for (const catalogo of [undefined, { nombre: 'laberinto', version: 1 }]) {
+      globalThis.fetch = async () => json({ generacion: { ...datos, procedencia: { ...datos.procedencia, ...(catalogo ? { catalogo } : {}) } } })
+      assert.equal((await consultarGeneracion(datos.id)).estado, 'lista')
+    }
+    globalThis.fetch = async () => json({ generacion: { ...datos, procedencia: { ...datos.procedencia, catalogo: { nombre: 'laberinto', version: 0 } } } })
+    await assert.rejects(consultarGeneracion(datos.id))
+  } finally { globalThis.fetch = original }
+})
+
+test('HU30: admite reparaciones estructuradas de respaldo y conserva compatibilidad sin el campo', async (t) => {
+  const datos = juegoListo()
+  let recibida = { ...datos, procedencia: { ...datos.procedencia } }
+  simular(t, () => json({ generacion: recibida }))
+  assert.equal((await consultarGeneracion(datos.id)).procedencia.reparaciones, undefined)
+  for (const reparaciones of [{ regla: [], textos: [] }, { regla: [1], textos: [1, 2, 3] }]) {
+    recibida = { ...datos, procedencia: { ...datos.procedencia, reparaciones } }
+    assert.deepEqual((await consultarGeneracion(datos.id)).procedencia.reparaciones, reparaciones)
+  }
+  for (const reparaciones of [null, [], {}, { regla: [0], textos: [] }, { regla: [6], textos: [] },
+    { regla: ['1'], textos: [] }, { regla: [1.5], textos: [] }, { regla: [1, 1], textos: [] }, { regla: [], textos: '1' }]) {
+    recibida = { ...datos, procedencia: { ...datos.procedencia, reparaciones } }
+    await assert.rejects(consultarGeneracion(datos.id))
+  }
+  recibida = { ...datos, procedencia: { ...datos.procedencia, mapa_base: false, reparaciones: { regla: [1], textos: [1] } } }
+  await assert.rejects(consultarGeneracion(datos.id))
+})

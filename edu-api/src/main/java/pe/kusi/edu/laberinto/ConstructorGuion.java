@@ -214,19 +214,39 @@ public final class ConstructorGuion {
         ayudas.add(orden ? "El patrón se repite. Busca dónde vuelve a empezar." : "Deja los del otro grupo. Puedes mirar antes de elegir.");
     }
 
-    // La etapa explica lo reparado sin atribuirle al proveedor los cambios de Kusi.
-    public static String cambiosDelRespaldo(JsonNode respuesta, ObjectNode guion) {
+    // Se comparan los datos normalizados, no los mensajes de las etapas. Los
+    // niveles son números desde 1 y permiten acreditar qué quedó de la respuesta
+    // y qué tuvo que rehacer Kusi, incluso si cambia la redacción del informe.
+    public static ObjectNode reparacionesDelRespaldo(JsonNode respuesta, ObjectNode guion) {
         ObjectNode original = desdeLaIa(respuesta, null);
-        String mensaje = "Se usaron los mapas base y se recolocaron los objetos.";
+        ObjectNode reparaciones = NODOS.objectNode();
+        ArrayNode reglas = reparaciones.putArray("regla");
+        ArrayNode textos = reparaciones.putArray("textos");
         for (int indice = 0; indice < guion.path("retos").size(); indice++) {
             JsonNode antes = original == null ? NODOS.objectNode() : original.path("retos").path(indice);
             JsonNode despues = guion.path("retos").path(indice);
-            boolean regla = !antes.path("regla").equals(despues.path("regla"));
-            boolean textos = !antes.path("consigna").equals(despues.path("consigna")) || !antes.path("ayudas").equals(despues.path("ayudas"));
+            if (!antes.path("regla").equals(despues.path("regla"))) reglas.add(indice + 1);
+            if (!antes.path("consigna").equals(despues.path("consigna")) || !antes.path("ayudas").equals(despues.path("ayudas"))) textos.add(indice + 1);
+        }
+        return reparaciones;
+    }
+
+    public static String cambiosDelRespaldo(JsonNode respuesta, ObjectNode guion) {
+        JsonNode reparaciones = reparacionesDelRespaldo(respuesta, guion);
+        String mensaje = "Se usaron los mapas base y se recolocaron los objetos.";
+        for (int indice = 0; indice < guion.path("retos").size(); indice++) {
+            JsonNode numero = NODOS.numberNode(indice + 1);
+            boolean regla = contieneNivel(reparaciones.path("regla"), numero);
+            boolean textos = contieneNivel(reparaciones.path("textos"), numero);
             if (regla || textos) mensaje += " Nivel " + (indice + 1) + ": se rehízo "
                     + (regla && textos ? "la regla y los textos." : regla ? "la regla." : "los textos.");
         }
         return mensaje;
+    }
+
+    private static boolean contieneNivel(JsonNode niveles, JsonNode numero) {
+        for (JsonNode nivel : niveles) if (nivel.equals(numero)) return true;
+        return false;
     }
 
     // Pone los objetos de la IA en casillas del mapa base a las que el cuy sí puede
@@ -284,11 +304,19 @@ public final class ConstructorGuion {
     // «procedencia» va junto al guion: quién lo generó, con qué modelo, en cuántos
     // intentos y si hubo que usar los mapas base (para la HU30).
     public static void ponerProcedencia(ObjectNode guion, String proveedor, String modelo, int intentos, boolean mapaBase) {
+        ponerProcedencia(guion, proveedor, modelo, intentos, mapaBase, null);
+    }
+
+    public static void ponerProcedencia(ObjectNode guion, String proveedor, String modelo, int intentos, boolean mapaBase, JsonNode reparaciones) {
         ObjectNode procedencia = guion.putObject("procedencia");
         procedencia.put("proveedor", proveedor);
         procedencia.put("modelo", modelo);
         procedencia.put("intentos", intentos);
         procedencia.put("mapa_base", mapaBase);
+        procedencia.putObject("catalogo").put("nombre", NOMBRE).put("version", VERSION);
+        // Un guion aprobado directamente no tuvo reparaciones de respaldo. Los
+        // juegos anteriores pueden seguir sin este dato; no se inventa un historial.
+        if (mapaBase && reparaciones != null) procedencia.set("reparaciones", reparaciones.deepCopy());
     }
 
     private static String textoOVacio(JsonNode nodo) {

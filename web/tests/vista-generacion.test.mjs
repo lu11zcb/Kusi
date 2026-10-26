@@ -113,3 +113,42 @@ test('cargado y error validan sus datos y también rechazan ventanas y orígenes
     assert.equal(atenderMensajeJuego({ ...evento(datos), origin: 'https://ajeno.example' }, ventana, 'http://127.0.0.1:5174', paquete), null)
   }
 })
+
+test('HU29/HU30: distingue autoría y recursos usados con nombre y versión del catálogo', () => {
+  const datos = juegoListo()
+  datos.procedencia = { ...datos.procedencia, catalogo: { nombre: 'laberinto', version: 1 } }
+  datos.paquete = JSON.stringify({ retos: [{ objetos: [{ tipo: 'fresa' }], enemigos: [{ tipo: 'zorro' }] }] })
+  const html = mostrar(datos)
+  for (const texto of ['Lo que hizo la IA', 'Lo reutilizado del catálogo de Kusi', 'Catálogo laberinto · versión 1', 'fresa, zorro', 'mapas de respaldo']) assert.ok(html.includes(texto), texto)
+})
+
+const paqueteConHistoria = JSON.stringify({ historia: 'Kusi explora los caminos.', retos: [{}, {}, {}] })
+const parteDeLaIa = (html) => html.slice(html.indexOf('<h4>Lo que hizo la IA</h4>'), html.indexOf('<h4>Lo que rehízo Kusi</h4>'))
+
+test('HU30: acredita las reparaciones por nivel y atribuye solo las partes conservadas', () => {
+  const datos = juegoListo()
+  const html = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia, reparaciones: { regla: [1], textos: [2, 3] } } })
+  assert.ok(html.includes('Kusi rehízo la regla en el nivel 1.'))
+  assert.ok(html.includes('Kusi rehízo los textos en los niveles 2 y 3.'))
+  const aportes = parteDeLaIa(html)
+  for (const texto of ['La historia.', 'La regla en los niveles 2 y 3.', 'Las consignas y las ayudas en el nivel 1.']) assert.ok(aportes.includes(texto), texto)
+  assert.ok(!aportes.includes('La regla en el nivel 1.'))
+  assert.ok(!aportes.includes('los mapas'))
+  const completo = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia, reparaciones: { regla: [1, 2, 3], textos: [1, 2, 3] } } })
+  assert.ok(parteDeLaIa(completo).includes('La historia.'))
+  assert.ok(!parteDeLaIa(completo).includes('La regla'))
+  assert.ok(!parteDeLaIa(completo).includes('Las consignas'))
+})
+
+test('HU30: un juego viejo no inventa reparaciones ni conservación a partir de sus etapas', () => {
+  const datos = juegoListo()
+  const sinDatos = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia } })
+  assert.ok(sinDatos.includes('Este juego anterior no registra qué reglas, consignas o ayudas se conservaron de la respuesta.'))
+  assert.ok(!sinDatos.includes('Kusi rehízo la regla en el nivel'))
+  const conDatos = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia, reparaciones: { regla: [], textos: [] } },
+    etapas: [etapa('mapa_base', 'completada', 'Nivel 1: se rehízo la regla y los textos.')] })
+  const aportes = parteDeLaIa(conDatos)
+  assert.ok(aportes.includes('La regla en los niveles 1, 2 y 3.'))
+  assert.ok(aportes.includes('Las consignas y las ayudas en los niveles 1, 2 y 3.'))
+  assert.ok(!conDatos.includes('Kusi rehízo la regla en el nivel 1.'))
+})

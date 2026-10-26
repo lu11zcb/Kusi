@@ -170,12 +170,16 @@ public class ProcesoGeneracionLaberinto {
         }
         etapa(id, ETAPA_MAPA_BASE, COMPLETADA, ConstructorGuion.cambiosDelRespaldo(respuesta, guion.get()));
         etapa(id, ETAPA_COMPROBACION, COMPLETADA, "Con los mapas base: el guion pasó todas las comprobaciones.");
-        return terminar(generacion, guion.get(), intentos, true);
+        return terminar(generacion, guion.get(), intentos, true, ConstructorGuion.reparacionesDelRespaldo(respuesta, guion.get()));
     }
 
     // Guarda el guion con su procedencia y deja la generación «lista».
     private Generacion terminar(Generacion generacion, ObjectNode guion, int intentos, boolean mapaBase) {
-        ConstructorGuion.ponerProcedencia(guion, generador.proveedor(), generador.modelo(), intentos, mapaBase);
+        return terminar(generacion, guion, intentos, mapaBase, null);
+    }
+
+    private Generacion terminar(Generacion generacion, ObjectNode guion, int intentos, boolean mapaBase, JsonNode reparaciones) {
+        ConstructorGuion.ponerProcedencia(guion, generador.proveedor(), generador.modelo(), intentos, mapaBase, reparaciones);
         try {
             generacion.guardarPaquete(json.writeValueAsString(guion));
         } catch (JsonProcessingException e) {

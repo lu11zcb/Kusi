@@ -19,8 +19,10 @@ test('los guiones de patrones y de clasificar son válidos, con o sin el bloque 
   for (const nombre of ['laberinto-orden.json', 'laberinto-solo-clase.json']) {
     const guion = leerGuionDePrueba(nombre)
     assert.deepEqual(validarLaberinto(guion), { valido: true, errores: [] }, nombre)
-    guion.procedencia = { proveedor: 'groq', modelo: 'openai/gpt-oss-120b', intentos: 2, mapa_base: true }
+    guion.procedencia = { proveedor: 'groq', modelo: 'openai/gpt-oss-120b', intentos: 2, mapa_base: true, catalogo: { nombre: 'laberinto', version: 1 } }
     assert.deepEqual(validarLaberinto(guion), { valido: true, errores: [] }, nombre + ' con procedencia')
+    guion.procedencia.reparaciones = { regla: [1], textos: [1, 2] }
+    assert.deepEqual(validarLaberinto(guion), { valido: true, errores: [] }, nombre + ' con reparaciones del respaldo')
   }
   assert.deepEqual(leerGuionDePrueba('laberinto-orden.json').retos.map((reto) => reto.regla.tipo),
     ['orden', 'orden', 'orden'])

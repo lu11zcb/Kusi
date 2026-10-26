@@ -8,7 +8,11 @@ export type EstadoGeneracion = typeof estados[number]
 export type NombreEtapa = 'solicitud' | 'generacion' | 'comprobacion' | 'correccion' | 'mapa_base'
 export type EstadoEtapa = 'en_progreso' | 'completada' | 'fallida'
 export type EtapaGeneracion = { id: string; etapa: NombreEtapa; estado: EstadoEtapa; mensaje: string | null; creado_en: string }
-export type ProcedenciaJuego = { proveedor: string; modelo: string; intentos: number; mapa_base: boolean }
+export type ReparacionesJuego = { regla: number[]; textos: number[] }
+export type ProcedenciaJuego = {
+  proveedor: string; modelo: string; intentos: number; mapa_base: boolean
+  catalogo?: { nombre: string; version: number }; reparaciones?: ReparacionesJuego
+}
 export type ResumenGeneracion = {
   id: string; solicitud_id: string; propuesta_id: string; version_propuesta: number
   estado: EstadoGeneracion; paquete: string | null; procedencia: ProcedenciaJuego | null
@@ -35,8 +39,14 @@ const texto = (valor: unknown): valor is string => typeof valor === 'string' && 
 const identificador = (valor: unknown): valor is string => typeof valor === 'string' && uuid.test(valor)
 const fecha = (valor: unknown): valor is string => typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(valor) && Number.isFinite(Date.parse(valor))
 const enteroPositivo = (valor: unknown): valor is number => Number.isSafeInteger(valor) && Number(valor) > 0
+function nivelesReparadosValidos(valor: unknown): valor is number[] {
+  return Array.isArray(valor) && valor.every((nivel) => enteroPositivo(nivel) && nivel <= 5) && new Set(valor).size === valor.length
+}
 function procedenciaValida(valor: unknown): valor is ProcedenciaJuego {
   return objeto(valor) && texto(valor.proveedor) && texto(valor.modelo) && enteroPositivo(valor.intentos) && typeof valor.mapa_base === 'boolean'
+    && (valor.catalogo === undefined || (objeto(valor.catalogo) && texto(valor.catalogo.nombre) && enteroPositivo(valor.catalogo.version)))
+    && (valor.reparaciones === undefined || (valor.mapa_base && objeto(valor.reparaciones)
+      && nivelesReparadosValidos(valor.reparaciones.regla) && nivelesReparadosValidos(valor.reparaciones.textos)))
 }
 function etapaValida(valor: unknown): valor is EtapaGeneracion {
   return objeto(valor) && identificador(valor.id) && typeof valor.etapa === 'string' && Object.hasOwn(etiquetasEtapas, valor.etapa)

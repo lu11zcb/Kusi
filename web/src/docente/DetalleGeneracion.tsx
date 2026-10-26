@@ -3,7 +3,7 @@ import { etiquetasEstados, etiquetasEtapas, generacionTerminada } from '../servi
 import type { Generacion } from '../servicios/generaciones'
 import { IconoDocente } from './IconoDocente'
 import { MensajeDocente } from './ElementosDocente'
-import { pasosDeGeneracion, problemasDeComprobacion, segundosTranscurridos } from './utilidadesGeneracion'
+import { pasosDeGeneracion, problemasDeComprobacion, segundosTranscurridos, recursosDelPaquete, aportesDelJuego } from './utilidadesGeneracion'
 import { VistaPreviaJuego } from './VistaPreviaJuego'
 
 function RelojGeneracion({ inicio, fin }: { inicio: string; fin: string | null }) {
@@ -18,6 +18,7 @@ function RelojGeneracion({ inicio, fin }: { inicio: string; fin: string | null }
   return <span className="doc-generacion-reloj" aria-live="off"><IconoDocente nombre="reloj" />{segundosTranscurridos(inicio, fin, ahora) + ' s'}</span>
 }
 export function DetalleGeneracion({ generacion }: { generacion: Generacion }) {
+  const autoria = aportesDelJuego(generacion.procedencia, generacion.paquete)
   const terminada = generacionTerminada(generacion.estado)
   const problemas = generacion.etapas.filter((etapa) => problemasDeComprobacion(etapa).length)
   return <>
@@ -36,7 +37,22 @@ export function DetalleGeneracion({ generacion }: { generacion: Generacion }) {
     </MensajeDocente>}
     {generacion.estado === 'fallida' && <MensajeDocente titulo="No se pudo terminar este juego" error><p className="texto-conservado">{generacion.ultimo_error || 'No se recibió un motivo del servicio. Puedes intentar una generación nueva.'}</p></MensajeDocente>}
     {generacion.estado === 'lista' && <>
-      <MensajeDocente titulo="Cómo se hizo este juego">{generacion.procedencia ? <dl className="doc-generacion-procedencia">
+      <MensajeDocente titulo="Cómo se hizo este juego">
+        <h4>Lo que hizo la IA</h4>
+        {!!autoria.aportes.length && <ul>{autoria.aportes.map((aporte) => <li key={aporte}>{aporte}</li>)}</ul>}
+        {autoria.nota && <p>{autoria.nota}</p>}
+        {!autoria.aportes.length && !autoria.nota && <p>No se conservaron partes de la respuesta en la historia, la regla ni los textos.</p>}
+        {generacion.procedencia?.mapa_base && <>
+          <h4>Lo que rehízo Kusi</h4>
+          <p>Se usaron mapas de respaldo.</p>
+          {!!autoria.reparaciones.length && <ul>{autoria.reparaciones.map((reparacion) => <li key={reparacion}>{reparacion}</li>)}</ul>}
+        </>}
+        <h4>Lo reutilizado del catálogo de Kusi</h4>
+        <p>{generacion.procedencia?.catalogo
+          ? 'Catálogo ' + generacion.procedencia.catalogo.nombre + ' · versión ' + generacion.procedencia.catalogo.version
+          : 'Este juego anterior no tiene registrada la versión del catálogo.'}</p>
+        <p>{'Objetos y personajes usados: ' + (recursosDelPaquete(generacion.paquete).join(', ') || 'Sin recursos identificados en el paquete.')}</p>
+        {generacion.procedencia ? <dl className="doc-generacion-procedencia">
         <div><dt>Proveedor</dt><dd>{generacion.procedencia.proveedor}</dd></div>
         <div><dt>Modelo</dt><dd>{generacion.procedencia.modelo}</dd></div>
         <div><dt>Intentos</dt><dd>{generacion.procedencia.intentos}</dd></div>

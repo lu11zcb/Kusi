@@ -12,6 +12,9 @@ import java.util.Map;
 public final class CatalogoLaberinto {
     private CatalogoLaberinto() {}
 
+    public static final String NOMBRE = "laberinto";
+    public static final int VERSION = 1;
+
     public static final String FORMATO = "kusi-paquete/0";
     public static final String FAMILIA = "laberinto";
 
