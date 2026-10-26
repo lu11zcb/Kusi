@@ -6,6 +6,10 @@ export default defineConfig({
   // La lógica de casillas se prueba con node --test, sin abrir un navegador.
   testMatch: '**/*.spec.js',
   timeout: 60_000,
+  // Las pruebas de la capa de vida miden tiempos de animación y sonido. Con varios
+  // navegadores a la vez compiten por el procesador y fallan por unos milisegundos
+  // (una respiración de 2,2 s en vez de 2 s), así que corren de una en una.
+  workers: 1,
   reporter: 'list',
   use: {
     baseURL: 'http://127.0.0.1:5174/',
