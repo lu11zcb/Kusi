@@ -35,7 +35,7 @@ export function validarSpritePersonaje(datos, personaje = 'personaje') {
       exigir(animacion.fotogramas.every((indice) => Number.isInteger(indice) && indice >= 0 && indice < columnas * filas), 'Índice fuera de la hoja en ' + nombre)
       exigir(animacion.repetir === undefined || (Number.isInteger(animacion.repetir) && animacion.repetir >= -1), 'Repetición inválida de ' + nombre)
       exigir(animacion.voltear === undefined || typeof animacion.voltear === 'boolean', 'Volteo inválido de ' + nombre)
-      exigir(!animacion.voltear || direccion === 'izquierda' || direccion === 'derecha', 'No se puede voltear una vista frontal: ' + nombre)
+      exigir(!animacion.voltear || direccion === 'izquierda' || direccion === 'derecha', 'No se puede voltear una vista frontal o de espaldas: ' + nombre)
       exigir(animacion.siguiente === undefined || (typeof animacion.siguiente === 'string' && animaciones[animacion.siguiente] != null), 'Estado siguiente inexistente en ' + nombre)
       exigir(animacion.siguiente === undefined || (animacion.repetir !== undefined && animacion.repetir >= 0), 'El estado siguiente necesita una animación finita en ' + nombre)
     }

@@ -1,5 +1,7 @@
 # HU16–HU25 · Propuestas, revisión y versiones (prueba real de IA pendiente)
 
+**Actualización 26 de octubre (HU28).** Cada versión de la propuesta trae `regla_juego` (`orden`, `solo_clase` o `null`): la regla con la que se juega el laberinto, que la IA elige según el tema y que la generación del guion (HU26) respeta. Se guarda en la columna `propuestas.regla_juego` (migración `V5__regla_del_juego.sql`) y la versión editada por el docente conserva la de su base. La llamada 1 ya no ofrece el mercado ni el juego de ordenar. Ver `edu-api/README.md`.
+
 **Actualización 13 de octubre (HU19–HU25).** La solicitud acepta `proposito` (`preparacion`|`refuerzo`, por defecto `preparacion`) e `instrucciones` (hasta 4000, exactas o null). Cada propuesta es una versión con `version`, `origen` (`ia`|`docente`), `version_base`, `observaciones`, `recursos` (opcional), `estado_revision` (`pendiente`|`aprobada`|`rechazada`), `revisada_en` y `apta_para_juego` (solo la versión vigente y aprobada). Rutas nuevas (todas con sesión docente, asignación vigente y CSRF Spring en escrituras):
 
 | Ruta | HU |
@@ -15,7 +17,7 @@ Migración `V3__revision_y_versiones.sql`. Pruebas: `PropuestasRevisionSimuladaT
 
 ## Estado anterior: HU18 / HU16
 
-**Proveedor elegido (13 de octubre de 2026): Groq.** `GeneradorGroq` se activa con `GROQ_API_KEY` en el `.env` local; sin clave se mantiene `GeneradorNoConfigurado`.
+**Proveedor elegido (13 de octubre de 2026): Groq.** `GeneradorGroq` se activaba con `GROQ_API_KEY` en el `.env` local; sin clave se mantenía `GeneradorNoConfigurado`. Desde la HU26 (26 de octubre de 2026) esas dos clases ya no existen: toda la IA pasa por un solo adaptador, `ClienteIa`, que se activa con `IA_CLAVE` (o `GROQ_API_KEY`) y sirve a cualquier proveedor compatible con OpenAI; sin clave la IA queda no configurada. Ver `edu-api/README.md`.
 
 **Actualización 13 de octubre de 2026.** El backend Spring de este contrato ya está implementado en `edu-api`: migración `V2__solicitudes_propuestas.sql` (tablas `solicitudes_propuesta` y `propuestas` en `edu`), `PropuestasController` (`/api/edu/...`), `PropuestasService`, CSRF propio `CsrfEducativo` (cookie `kusi_edu_csrf` SameSite=Strict + cabecera `X-XSRF-TOKEN`), `ValidadorPropuesta` y la interfaz `GeneradorPropuestas`. Sin proveedor configurado se usa `GeneradorNoConfigurado`: la solicitud queda `pendiente`, sin contenido ficticio, y `/reintentar/` responde 503. Pruebas: `PropuestasSimuladasTest`, 9 casos **SIMULADOS** (Django e IA dobles de prueba; persistencia H2/Flyway) que cubren CSRF, pendiente sin IA, idempotencia/409, entradas inválidas, rol y recurso ajeno, objetivo docente exacto, objetivo sugerido por IA, respuesta incompleta → fallida → reintento, timeout 504, propiedad y asignación retirada. Falta: adaptador real del proveedor (Luis elige proveedor/modelo y configura la clave), prueba real de IA y recorrido conjunto con PostgreSQL. Lo que sigue conserva el contrato original; sus frases sobre «Spring pendiente» quedan superadas por esta nota.
 

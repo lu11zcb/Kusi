@@ -18,19 +18,21 @@ test('el zorro usa su propio manifiesto, caminar continuo y el cuadro quieto cen
   }
 })
 
-test('el contrato rechaza voltear la vista frontal y las transiciones sin destino válido', async () => {
+test('el contrato rechaza voltear frente o espalda y las transiciones sin destino válido', async () => {
   const datos = await leerZorro()
-  const modificar = (animacion) => ({
+  const modificar = (animacion, direccion = 'frente') => ({
     ...datos,
     animaciones: {
       ...datos.animaciones,
-      frente: { ...datos.animaciones.frente, prueba: animacion },
+      [direccion]: { ...datos.animaciones[direccion], prueba: animacion },
     },
   })
   const finita = { fotogramas: [0, 1, 2], fps: 8, repetir: 0, siguiente: 'quieto' }
   expect(validarSpritePersonaje(modificar(finita))).toBeTruthy()
-  expect(() => validarSpritePersonaje(modificar({ ...finita, voltear: true })))
-    .toThrow('No se puede voltear una vista frontal')
+  for (const direccion of ['frente', 'espaldas']) {
+    expect(() => validarSpritePersonaje(modificar({ ...finita, voltear: true }, direccion)))
+      .toThrow('No se puede voltear una vista frontal o de espaldas')
+  }
   expect(() => validarSpritePersonaje(modificar({ ...finita, siguiente: 'inexistente' })))
     .toThrow('Estado siguiente inexistente')
   expect(() => validarSpritePersonaje(modificar({ ...finita, repetir: -1 })))

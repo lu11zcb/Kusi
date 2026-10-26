@@ -1,2 +1,6 @@
 test-results/
 playwright-report/
+# Capturas y mediciones que generan herramientas/capturar_hu46.mjs,
+# herramientas/comparar_efectos.mjs y herramientas/medir_fps_laberinto.mjs.
+# Se rehacen con Vite encendido y no se versionan.
+evidencias/

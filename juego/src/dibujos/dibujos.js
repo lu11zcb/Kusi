@@ -13,6 +13,7 @@ import {
   dibujarProducto, dibujarIcono, dibujarBillete, dibujarMoneda, dibujarCartera, dibujarChoclito,
 } from './productos.js'
 import { dibujarPuesto, dibujarPlaza } from './escenario.js'
+import { dibujarTerrenoLaberinto, dibujarPuertaLaberinto, dibujarClaseLaberinto, dibujarManoLaberinto, dibujarFondoLaberinto } from './laberinto.js'
 
 // Clave del dibujo de cada billete o moneda: 10 → "billete-10", 5 → "moneda-5".
 export function claveDinero(valor) {
@@ -31,6 +32,27 @@ function tamanoMoneda(valor) {
 
 // Todas las claves que usa este paquete, cada una con su tipo (para saber qué figura dibujar).
 export function clavesDelPaquete(paquete) {
+  if (paquete.familia === 'laberinto') {
+    const claves = new Map([
+      ['kusi-frente', 'kusi-frente'],
+      ['fondo-pueblito', 'fondo-laberinto'],
+      ['muro-adobe-1', 'terreno-laberinto'],
+      ['muro-adobe-2', 'terreno-laberinto'],
+      ['piso-tierra', 'terreno-laberinto'],
+      ['puerta-cerrada', 'puerta-laberinto'],
+      ['puerta-abierta', 'puerta-laberinto'],
+      ['mano-deslizar', 'mano-laberinto'],
+    ])
+    for (const reto of paquete.retos) {
+      for (const objeto of reto.objetos) claves.set(objeto.tipo, 'producto')
+      if (reto.regla.tipo === 'orden') {
+        for (const tipo of reto.regla.secuencia) claves.set(tipo, 'producto')
+      } else {
+        claves.set('clase-' + reto.regla.clase, 'clase-laberinto')
+      }
+    }
+    return claves
+  }
   const claves = new Map([
     ['kusi-frente', 'kusi-frente'],
     ['kusi-espaldas', 'kusi-espaldas'],
@@ -48,11 +70,14 @@ export function clavesDelPaquete(paquete) {
   return claves
 }
 
-// Pide al cargador de Phaser el PNG de cada clave. Si falta, no se reintenta.
+// Pide al cargador de Phaser el PNG de cada clave (el fondo del pueblito es un
+// WebP, que pesa mucho menos). Si falta, no se reintenta.
 export function pedirDibujos(escena, claves) {
   escena.load.maxRetries = 0
   escena.load.setPath('dibujos/')
-  for (const clave of claves.keys()) escena.load.image(clave, `${clave}.png`)
+  for (const clave of claves.keys()) {
+    escena.load.image(clave, clave + '.' + (clave === 'fondo-pueblito' ? 'webp' : 'png'))
+  }
   escena.load.setPath('')
 }
 
@@ -105,6 +130,16 @@ function elegirFigura(clave, tipo) {
       return { ancho: 56, alto: 56, dibujar: (lienzo) => dibujarChoclito(lienzo, 56) }
     case 'fondo-plaza':
       return { ancho: plaza.ancho, alto: plaza.alto, dibujar: dibujarPlaza }
+    case 'terreno-laberinto':
+      return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarTerrenoLaberinto(lienzo, clave) }
+    case 'fondo-laberinto':
+      return { ancho: 1280, alto: 720, dibujar: dibujarFondoLaberinto }
+    case 'puerta-laberinto':
+      return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarPuertaLaberinto(lienzo, clave) }
+    case 'clase-laberinto':
+      return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarClaseLaberinto(lienzo, clave) }
+    case 'mano-laberinto':
+      return { ancho: 96, alto: 112, dibujar: dibujarManoLaberinto }
     default:
       return { ancho: 96, alto: 96, dibujar: (lienzo) => dibujarProducto(lienzo, clave) }
   }

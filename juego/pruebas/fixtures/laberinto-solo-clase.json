@@ -1,0 +1,183 @@
+{
+  "formato": "kusi-paquete/0",
+  "titulo": "Los caminos de Kusi",
+  "curso": "Matemática",
+  "familia": "laberinto",
+  "orientacion": "horizontal",
+  "meta": "Sigue los caminos y encuentra las frutas",
+  "consigna": "Ayuda al cuy a recorrer el laberinto",
+  "historia": "Kusi y su amigo cuy recorren los caminos de su comunidad para reunir frutas.",
+  "retos": [
+    {
+      "id": "laberinto-1",
+      "mapa": [
+        "###########",
+        "#C........#",
+        "#.###.###.#",
+        "#...#.....#",
+        "###.#.###.#",
+        "#...#....P#",
+        "###########"
+      ],
+      "regla": {
+        "tipo": "solo_clase",
+        "clase": "fruta",
+        "meta": 3
+      },
+      "objetos": [
+        {
+          "tipo": "fresa",
+          "fila": 1,
+          "columna": 3
+        },
+        {
+          "tipo": "mango",
+          "fila": 1,
+          "columna": 7
+        },
+        {
+          "tipo": "pina",
+          "fila": 3,
+          "columna": 7
+        },
+        {
+          "tipo": "zanahoria",
+          "fila": 5,
+          "columna": 7
+        }
+      ],
+      "enemigos": [],
+      "consigna": "Recoge tres frutas. Deja las verduras en el camino y busca la puerta.",
+      "ayudas": [
+        "Las frutas son dulces y jugosas. Busca solo esas.",
+        "Las verduras crecen en la huerta. Déjalas donde están."
+      ]
+    },
+    {
+      "id": "laberinto-2",
+      "mapa": [
+        "###############",
+        "#C............#",
+        "#.###.###.###.#",
+        "#...#...#.....#",
+        "###.#.#.###.#.#",
+        "#.....#.....#.#",
+        "#.#####.###.#.#",
+        "#...........#P#",
+        "###############"
+      ],
+      "regla": {
+        "tipo": "solo_clase",
+        "clase": "verdura",
+        "meta": 3
+      },
+      "objetos": [
+        {
+          "tipo": "zanahoria",
+          "fila": 1,
+          "columna": 4
+        },
+        {
+          "tipo": "papa",
+          "fila": 1,
+          "columna": 10
+        },
+        {
+          "tipo": "choclo",
+          "fila": 3,
+          "columna": 10
+        },
+        {
+          "tipo": "fresa",
+          "fila": 5,
+          "columna": 10
+        }
+      ],
+      "enemigos": [
+        {
+          "tipo": "zorro",
+          "fila": 7,
+          "columna": 5,
+          "movimiento": "persigue_cerca"
+        }
+      ],
+      "consigna": "Recoge tres verduras. Deja las frutas en el camino y busca la puerta.",
+      "ayudas": [
+        "Las verduras crecen bajo la tierra o en la huerta. Busca solo esas.",
+        "Las frutas son dulces. Déjalas donde están."
+      ]
+    },
+    {
+      "id": "laberinto-3",
+      "mapa": [
+        "###############",
+        "#C............#",
+        "#.###.###.###.#",
+        "#...#...#.....#",
+        "#.#.#.#.#.###.#",
+        "#.#.....#.....#",
+        "#.###.#####.#.#",
+        "#...........#P#",
+        "###############"
+      ],
+      "regla": {
+        "tipo": "solo_clase",
+        "clase": "fruta",
+        "meta": 4
+      },
+      "objetos": [
+        {
+          "tipo": "fresa",
+          "fila": 1,
+          "columna": 4
+        },
+        {
+          "tipo": "mango",
+          "fila": 3,
+          "columna": 6
+        },
+        {
+          "tipo": "mandarina",
+          "fila": 5,
+          "columna": 11
+        },
+        {
+          "tipo": "pina",
+          "fila": 7,
+          "columna": 9
+        },
+        {
+          "tipo": "zanahoria",
+          "fila": 1,
+          "columna": 10
+        },
+        {
+          "tipo": "papa",
+          "fila": 5,
+          "columna": 5
+        },
+        {
+          "tipo": "choclo",
+          "fila": 7,
+          "columna": 3
+        }
+      ],
+      "enemigos": [
+        {
+          "tipo": "zorro",
+          "fila": 3,
+          "columna": 11,
+          "movimiento": "persigue_cerca"
+        }
+      ],
+      "consigna": "Recoge cuatro frutas. Deja las verduras en su lugar y busca la puerta.",
+      "ayudas": [
+        "Las frutas son dulces y jugosas. Busca solo cuatro.",
+        "Las verduras crecen en la huerta. Déjalas en el camino."
+      ]
+    }
+  ],
+  "cierre": {
+    "mensaje": "¡Lo lograste! Gracias por recorrer los caminos con Kusi."
+  }
+}

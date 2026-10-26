@@ -11,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import pe.kusi.edu.model.EtapaGeneracion;
 import pe.kusi.edu.model.Generacion;
 import pe.kusi.edu.model.Propuesta;
@@ -28,23 +31,34 @@ class GeneracionesServiceTest {
     private PropuestaRepository propuestaRepository;
     private GeneracionRepository generacionRepository;
     private EtapaGeneracionRepository etapaRepository;
+    private ProcesoGeneracionLaberinto proceso;
     private GeneracionesService service;
 
     private UUID docenteId;
     private UUID solicitudId;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
         propuestasService = mock(PropuestasService.class);
         propuestaRepository = mock(PropuestaRepository.class);
         generacionRepository = mock(GeneracionRepository.class);
         etapaRepository = mock(EtapaGeneracionRepository.class);
+        proceso = mock(ProcesoGeneracionLaberinto.class);
+
+        // Una transacción de mentira que solo ejecuta lo que se le pide.
+        TransactionTemplate transaccion = mock(TransactionTemplate.class);
+        when(transaccion.execute(any())).thenAnswer(invocacion ->
+            ((TransactionCallback<Object>) invocacion.getArgument(0)).doInTransaction(null));
 
         service = new GeneracionesService(
             propuestasService,
             propuestaRepository,
             generacionRepository,
-            etapaRepository
+            etapaRepository,
+            proceso,
+            transaccion,
+            new ObjectMapper()
         );
 
         docenteId = UUID.randomUUID();
@@ -229,6 +243,100 @@ class GeneracionesServiceTest {
 
         verify(etapaRepository)
             .findAllByGeneracionIdOrderByCreadoEnAsc(generacionId);
+    }
+
+    private Generacion generacionConId(UUID generacionId) {
+        Generacion generacion = new Generacion(solicitudId, UUID.randomUUID(), 2);
+        ReflectionTestUtils.setField(generacion, "id", generacionId);
+        return generacion;
+    }
+
+    @Test
+    void debeTomarYProcesarUnaGeneracionPendiente() {
+        UUID generacionId = UUID.randomUUID();
+        Generacion generacion = generacionConId(generacionId);
+
+        when(generacionRepository.findById(generacionId)).thenReturn(Optional.of(generacion));
+        when(proceso.iaConfigurada()).thenReturn(true);
+        when(generacionRepository.tomarParaProcesar(eq(generacionId), any())).thenReturn(1);
+        when(proceso.procesar(docenteId, generacion)).thenReturn(generacion);
+
+        Generacion resultado = service.procesar(docenteId, generacionId);
+
+        assertSame(generacion, resultado);
+        verify(propuestasService).consultar(docenteId, solicitudId);
+        verify(generacionRepository).tomarParaProcesar(eq(generacionId), any());
+        verify(proceso).procesar(docenteId, generacion);
+    }
+
+    @Test
+    void soloSePuedenProcesarGeneracionesPendientes() {
+        UUID generacionId = UUID.randomUUID();
+        Generacion generacion = generacionConId(generacionId);
+        generacion.registrarEstado("lista", null);
+
+        when(generacionRepository.findById(generacionId)).thenReturn(Optional.of(generacion));
+        when(proceso.iaConfigurada()).thenReturn(true);
+
+        ResponseStatusException error = assertThrows(
+            ResponseStatusException.class,
+            () -> service.procesar(docenteId, generacionId)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(generacionRepository, never()).tomarParaProcesar(any(), any());
+        verify(proceso, never()).procesar(any(), any());
+    }
+
+    @Test
+    void sinIaConfiguradaLaGeneracionSigueAPendienteYNoSeInventaNada() {
+        UUID generacionId = UUID.randomUUID();
+
+        when(generacionRepository.findById(generacionId)).thenReturn(Optional.of(generacionConId(generacionId)));
+        when(proceso.iaConfigurada()).thenReturn(false);
+
+        ResponseStatusException error = assertThrows(
+            ResponseStatusException.class,
+            () -> service.procesar(docenteId, generacionId)
+        );
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, error.getStatusCode());
+        verify(generacionRepository, never()).tomarParaProcesar(any(), any());
+        verify(proceso, never()).procesar(any(), any());
+    }
+
+    @Test
+    void unaGeneracionNoSeProcesaDosVeces() {
+        UUID generacionId = UUID.randomUUID();
+
+        when(generacionRepository.findById(generacionId)).thenReturn(Optional.of(generacionConId(generacionId)));
+        when(proceso.iaConfigurada()).thenReturn(true);
+        // Otro proceso la tomó un instante antes.
+        when(generacionRepository.tomarParaProcesar(eq(generacionId), any())).thenReturn(0);
+
+        ResponseStatusException error = assertThrows(
+            ResponseStatusException.class,
+            () -> service.procesar(docenteId, generacionId)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(proceso, never()).procesar(any(), any());
+    }
+
+    @Test
+    void laProcedenciaSaleDelPaqueteGuardado() {
+        Generacion generacion = generacionConId(UUID.randomUUID());
+        assertNull(service.procedencia(generacion));
+
+        generacion.guardarPaquete("{\"titulo\":\"x\"}");
+        assertNull(service.procedencia(generacion));
+
+        generacion.guardarPaquete("{\"titulo\":\"x\",\"procedencia\":{\"proveedor\":\"groq\",\"intentos\":2,\"mapa_base\":false}}");
+        assertEquals("groq", service.procedencia(generacion).get("proveedor").asText());
+        assertEquals(2, service.procedencia(generacion).get("intentos").asInt());
+
+        generacion.guardarPaquete("esto no es json");
+        assertNull(service.procedencia(generacion));
     }
 
     @Test

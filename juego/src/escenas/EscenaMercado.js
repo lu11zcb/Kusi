@@ -21,6 +21,7 @@ import { Joystick } from '../interfaz/Joystick.js'
 import { Cartel, BORDE_CARTEL } from '../interfaz/Cartel.js'
 import { VentanaPuesto } from '../interfaz/VentanaPuesto.js'
 import { crearBoton, dibujarGlobo, fijarEnPantalla } from '../interfaz/piezas.js'
+import { leerRenderizador } from '../renderizador.js'
 
 const TAMANO_KUSI = { ancho: 124, alto: 140 }
 const FUERZA_MINIMA = 0.15 // al frenar llegando a un punto, nunca va más lento que esto (de la velocidad máxima)
@@ -358,8 +359,8 @@ export class EscenaMercado extends Phaser.Scene {
     this.marca.setVisible(false)
   }
 
-  // El sprite elige el ciclo lateral para los costados cuando está disponible;
-  // las direcciones verticales mantienen el caminar frontal sin voltearlo.
+  // El sprite elige la vista frontal, de espaldas o lateral y conserva esa
+  // dirección al detenerse; únicamente el lateral izquierdo se refleja.
   mirar(vista) {
     this.mirando = vista
   }
@@ -543,6 +544,7 @@ export class EscenaMercado extends Phaser.Scene {
 
   estadoParaPruebas() {
     return {
+      renderizador: leerRenderizador(this.game),
       plata: sumar(this.estado.cartera),
       cartera: [...this.estado.cartera],
       compras: { ...this.estado.compras },

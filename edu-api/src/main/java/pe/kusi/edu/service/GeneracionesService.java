@@ -1,6 +1,7 @@
 
 package pe.kusi.edu.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import pe.kusi.edu.model.EtapaGeneracion;
@@ -9,12 +10,13 @@ import pe.kusi.edu.model.Propuesta;
 import pe.kusi.edu.repository.EtapaGeneracionRepository;
 import pe.kusi.edu.repository.GeneracionRepository;
 import pe.kusi.edu.repository.PropuestaRepository;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,16 +27,25 @@ public class GeneracionesService {
     private final PropuestaRepository propuestaRepository;
     private final GeneracionRepository generacionRepository;
     private final EtapaGeneracionRepository etapaRepository;
+    private final ProcesoGeneracionLaberinto proceso;
+    private final TransactionTemplate transaccion;
+    private final ObjectMapper json;
 
     public GeneracionesService(
             PropuestasService propuestasService,
             PropuestaRepository propuestaRepository,
             GeneracionRepository generacionRepository,
-            EtapaGeneracionRepository etapaRepository) {
+            EtapaGeneracionRepository etapaRepository,
+            ProcesoGeneracionLaberinto proceso,
+            TransactionTemplate transaccion,
+            ObjectMapper json) {
         this.propuestasService = propuestasService;
         this.propuestaRepository = propuestaRepository;
         this.generacionRepository = generacionRepository;
         this.etapaRepository = etapaRepository;
+        this.proceso = proceso;
+        this.transaccion = transaccion;
+        this.json = json;
     }
 
     @Transactional
@@ -80,10 +91,10 @@ public class GeneracionesService {
         return generacion;
     }
 
-    @Transactional
-    public Generacion procesarPaquetePrueba(
-            UUID docenteId, UUID generacionId) {
-
+    // HU26: procesa una generación pendiente con la IA. No es transaccional a
+    // propósito: la llamada a la IA puede tardar y cada paso se guarda por separado
+    // (ver ProcesoGeneracionLaberinto). Devuelve la generación ya «lista» o «fallida».
+    public Generacion procesar(UUID docenteId, UUID generacionId) {
         Generacion generacion = consultar(docenteId, generacionId);
 
         if (!"pendiente".equals(generacion.getEstado())) {
@@ -92,75 +103,39 @@ public class GeneracionesService {
                     "Solo se pueden procesar generaciones pendientes");
         }
 
-        etapaRepository.save(new EtapaGeneracion(
-                generacionId,
-                "generacion",
-                "en_progreso",
-                "Procesando el paquete de prueba"));
+        // Sin IA la generación sigue pendiente: no se inventa ningún juego.
+        if (!proceso.iaConfigurada()) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "La generación con IA aún no está configurada. La generación sigue pendiente para procesarla después.");
+        }
+
+        // Solo un proceso puede tomar la generación: si otro llegó antes, se rechaza.
+        Integer tomada = transaccion.execute(
+                estado -> generacionRepository.tomarParaProcesar(generacionId, Instant.now()));
+        if (tomada == null || tomada == 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Esta generación ya se está procesando");
+        }
+
+        return proceso.procesar(
+                docenteId, generacionRepository.findById(generacionId).orElseThrow());
+    }
+
+    // El bloque «procedencia» del paquete (proveedor, modelo, intentos y si se usó un
+    // mapa base), o null si la generación todavía no tiene paquete.
+    public JsonNode procedencia(Generacion generacion) {
+        if (generacion.getPaquete() == null || generacion.getPaquete().isBlank()) {
+            return null;
+        }
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode paquete;
-
-            try (var entrada = new ClassPathResource(
-                    "paquete-ejemplo.json").getInputStream()) {
-                paquete = mapper.readTree(entrada);
-            }
-
-            validarPaquetePrueba(paquete);
-
-            generacion.guardarPaquete(
-                    mapper.writeValueAsString(paquete));
-            generacion.registrarEstado("completada", null);
-
-            etapaRepository.save(new EtapaGeneracion(
-                    generacionId,
-                    "generacion",
-                    "completada",
-                    "Paquete de prueba generado y validado"));
-
-        } catch (Exception e) {
-            generacion.registrarEstado(
-                    "fallida",
-                    "Error al generar el paquete: " + mensajeError(e));
-
-            etapaRepository.save(new EtapaGeneracion(
-                    generacionId,
-                    "generacion",
-                    "fallida",
-                    "Falló la generación del paquete de prueba"));
+            JsonNode procedencia = json.readTree(generacion.getPaquete()).path("procedencia");
+            return procedencia.isObject() ? procedencia : null;
+        } catch (JsonProcessingException e) {
+            return null;
         }
-
-        return generacionRepository.save(generacion);
-    }
-
-    private void validarPaquetePrueba(JsonNode paquete) {
-        if (paquete == null
-                || !"kusi-paquete/0".equals(
-                        paquete.path("formato").asText())
-                || paquete.path("titulo").asText().isBlank()
-                || paquete.path("historia").asText().isBlank()
-                || !paquete.path("cartera").isArray()
-                || paquete.path("cartera").isEmpty()
-                || !paquete.path("lista").isArray()
-                || paquete.path("lista").isEmpty()
-                || !paquete.path("puestos").isArray()
-                || paquete.path("puestos").isEmpty()) {
-            throw new IllegalArgumentException(
-                    "El paquete no cumple la estructura mínima requerida");
-        }
-    }
-
-    private String mensajeError(Exception e) {
-        String mensaje = e.getMessage();
-
-        if (mensaje == null || mensaje.isBlank()) {
-            mensaje = e.getClass().getSimpleName();
-        }
-
-        return mensaje.length() > 800
-                ? mensaje.substring(0, 800)
-                : mensaje;
     }
 
     @Transactional(readOnly = true)
@@ -193,4 +168,3 @@ public class GeneracionesService {
                 .findAllByGeneracionIdOrderByCreadoEnAsc(generacionId);
     }
 }
-

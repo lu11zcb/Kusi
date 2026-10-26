@@ -20,19 +20,25 @@ async function empezar(pagina) {
   await pagina.waitForFunction(() => window.kusi.estado().puedeMoverse)
 }
 
-test('el manifiesto conserva el frontal y define el lateral con su apoyo central', async () => {
+test('el manifiesto define frente, espalda y lateral con su apoyo central', async () => {
   const datos = validarSpriteCuy(await leerManifiesto())
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 4 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 6 })
   for (const direccion of DIRECCIONES_CUY) {
     const lateral = direccion === 'derecha' || direccion === 'izquierda'
-    // La primera fila conserva la secuencia frontal; el motor selecciona
-    // caminar_lado para los costados y mantiene quieto en esa misma vista.
+    const espaldas = direccion === 'espaldas'
+    const apoyo = lateral ? 4 : espaldas ? 13 : 1
+    // Cada caminar conserva su fila y el reposo usa su cuadro de apoyo central.
     expect(datos.animaciones[direccion].caminar).toMatchObject({
       fotogramas: [0, 1, 2, 1], fps: 8, repetir: -1,
     })
-    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([lateral ? 4 : 1])
-    expect(datos.animaciones[direccion].reposo.fotogramas).toEqual([lateral ? 4 : 1])
+    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([apoyo])
+    expect(datos.animaciones[direccion].reposo.fotogramas).toEqual([apoyo])
+    if (espaldas) {
+      expect(datos.animaciones[direccion].caminar_espalda).toEqual({
+        fotogramas: [12, 13, 14, 13], fps: 8, repetir: -1, voltear: false,
+      })
+    }
     if (lateral) {
       expect(datos.animaciones[direccion].caminar_lado).toEqual({
         fotogramas: [3, 4, 5, 4], fps: 8, repetir: -1, voltear: direccion === 'izquierda',
@@ -58,7 +64,7 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
     const datos = await (await fetch('/dibujos/cuy-nino-animado-v1.json')).json()
     const animaciones = []
     const textura = {
-      getSourceImage: () => ({ width: 768, height: 1024 }),
+      getSourceImage: () => ({ width: 768, height: 1536 }),
       setFilter: () => {},
     }
     registrarAnimacionesCuy({
@@ -81,17 +87,20 @@ test('Phaser registra el cuadro central repetido y mantiene la cadencia al frena
     CuyAnimado.prototype.animarMovimiento.call(cuy, 'frente', 32.5, 0.125, 1125)
     return {
       caminar: animaciones.find((animacion) => animacion.key.endsWith(':frente:caminar')),
+      espalda: animaciones.find((animacion) => animacion.key.endsWith(':espaldas:caminar_espalda')),
       quieto: animaciones.find((animacion) => animacion.key.endsWith(':frente:quieto')),
       intervalos,
     }
   })
   expect(configuracion.caminar.frames.map((cuadro) => cuadro.frame)).toEqual([0, 1, 2, 1])
   expect(configuracion.caminar).toMatchObject({ frameRate: 8, repeat: -1, sortFrames: false })
+  expect(configuracion.espalda.frames.map((cuadro) => cuadro.frame)).toEqual([12, 13, 14, 13])
+  expect(configuracion.espalda).toMatchObject({ frameRate: 8, repeat: -1, sortFrames: false })
   expect(configuracion.quieto.frames.map((cuadro) => cuadro.frame)).toEqual([1])
   expect(configuracion.intervalos).toEqual([125, 125])
 })
 
-test('el cuy usa el lateral para los costados y conserva el frontal sin voltear arriba y abajo', async ({ page: pagina }) => {
+test('el cuy cambia entre espalda, frente y laterales y queda quieto en su última dirección', async ({ page: pagina }) => {
   const datos = await leerManifiesto()
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
@@ -110,7 +119,7 @@ test('el cuy usa el lateral para los costados y conserva el frontal sin voltear 
   await pagina.waitForFunction(() => window.kusi.estado().velocidad === 0)
 
   // El cambio de vista conserva escala y apoyo. Solo el lateral izquierdo se
-  // refleja; arriba y abajo mantienen el dibujo y la mancha del frontal.
+  // refleja; arriba usa espalda y abajo frente, sin voltear esas dos vistas.
   const direcciones = [
     ['ArrowUp', 'espaldas'],
     ['ArrowRight', 'derecha'],
@@ -119,6 +128,10 @@ test('el cuy usa el lateral para los costados y conserva el frontal sin voltear 
   ]
   for (const [tecla, direccion] of direcciones) {
     const lateral = direccion === 'derecha' || direccion === 'izquierda'
+    const espaldas = direccion === 'espaldas'
+    const cuadros = lateral ? [3, 4, 5] : espaldas ? [12, 13, 14] : [0, 1, 2]
+    const caminar = lateral ? 'caminar_lado' : espaldas ? 'caminar_espalda' : 'caminar'
+    const apoyo = lateral ? 4 : espaldas ? 13 : 1
     const volteado = direccion === 'izquierda'
     const antes = await estado(pagina)
     await pagina.keyboard.down(tecla)
@@ -131,8 +144,8 @@ test('el cuy usa el lateral para los costados y conserva el frontal sin voltear 
     await pagina.waitForFunction((previo) => window.kusi.estado().animacionCuy.fotograma !== previo, primerPaso)
     const durante = await estado(pagina)
     await pagina.keyboard.up(tecla)
-    expect(lateral ? [3, 4, 5] : [0, 1, 2]).toContain(durante.animacionCuy.fotograma)
-    expect(durante.animacionCuy.clave).toBe('cuy-nino-animado-v1:' + direccion + ':' + (lateral ? 'caminar_lado' : 'caminar'))
+    expect(cuadros).toContain(durante.animacionCuy.fotograma)
+    expect(durante.animacionCuy.clave).toBe('cuy-nino-animado-v1:' + direccion + ':' + caminar)
     expect(durante.animacionCuy.flipX).toBe(volteado)
     expect(durante.animacionCuy.anclaje).toEqual(datos.anclaje)
     expect(durante.animacionCuy.escala).toBe(datos.escala)
@@ -141,12 +154,60 @@ test('el cuy usa el lateral para los costados y conserva el frontal sin voltear 
       const actual = window.kusi.estado()
       return actual.velocidad === 0 && actual.animacionCuy.estado === 'reposo'
     })
-    const quieto = (await estado(pagina)).animacionCuy
-    expect(quieto.fotograma).toBe(lateral ? 4 : 1)
+    const detenido = await estado(pagina)
+    const quieto = detenido.animacionCuy
+    expect(detenido.mirando).toBe(direccion)
+    expect(quieto.fotograma).toBe(apoyo)
     expect(quieto.clave).toBe('cuy-nino-animado-v1:' + direccion + ':quieto')
     expect(quieto.flipX).toBe(volteado)
+    await pagina.waitForTimeout(300)
+    expect((await estado(pagina)).animacionCuy).toEqual(quieto)
   }
   expect(errores).toEqual([])
+})
+
+test('la espalda real repite 0,1,2,1 a ocho fps y las vistas verticales nunca se reflejan', async ({ page: pagina }) => {
+  await empezar(pagina)
+  const resultado = await pagina.evaluate(async () => {
+    const { CuyAnimado } = await import('/src/dibujos/cuyAnimado.js')
+    // Una actualización entrega el Sprite real, sin exponer métodos de prueba
+    // en el juego. Luego se avanza únicamente su reloj con pasos de 125 ms.
+    const cuy = await new Promise((resolver) => {
+      const animarMovimiento = CuyAnimado.prototype.animarMovimiento
+      CuyAnimado.prototype.animarMovimiento = function (...argumentos) {
+        CuyAnimado.prototype.animarMovimiento = animarMovimiento
+        animarMovimiento.apply(this, argumentos)
+        resolver(this)
+      }
+    })
+    cuy.scene.game.loop.stop()
+    cuy.animarMovimiento('espaldas', 10, 0, 0)
+    const pasos = [cuy.frame.name]
+    for (let paso = 1; paso <= 8; paso += 1) {
+      cuy.animarMovimiento('espaldas', 10, 0.125, paso * 125)
+      pasos.push(cuy.frame.name)
+    }
+    const repetir = cuy.anims.currentAnim.repeat
+    cuy.animarMovimiento('espaldas', 0, 0.125, 1125)
+    const quieto = { fotograma: cuy.frame.name, clave: cuy.anims.currentAnim.key, volteado: cuy.flipX }
+    cuy.animarMovimiento('espaldas', 0, 0.5, 1625)
+    const despues = { fotograma: cuy.frame.name, clave: cuy.anims.currentAnim.key, volteado: cuy.flipX }
+    // Incluso un manifiesto recibido con el volteo incorrecto queda protegido
+    // por el Sprite; este ensayo omite deliberadamente el validador de carga.
+    const volteos = ['frente', 'espaldas'].map((direccion) => {
+      cuy.datosSprite.animaciones[direccion].quieto.voltear = true
+      cuy.reproducirEstado(direccion, 'quieto')
+      return cuy.flipX
+    })
+    return { pasos, repetir, quieto, despues, volteos }
+  })
+  expect(resultado.pasos).toEqual([12, 13, 14, 13, 12, 13, 14, 13, 12])
+  expect(resultado.repetir).toBe(-1)
+  expect(resultado.quieto).toEqual({
+    fotograma: 13, clave: 'cuy-nino-animado-v1:espaldas:quieto', volteado: false,
+  })
+  expect(resultado.despues).toEqual(resultado.quieto)
+  expect(resultado.volteos).toEqual([false, false])
 })
 
 test('al empujar la pileta el jugador queda en reposo y no camina sin avanzar', async ({ page: pagina }) => {
