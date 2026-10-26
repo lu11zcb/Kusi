@@ -8,6 +8,13 @@ export function crearAzarLaberinto(semilla) {
   }
 }
 
+// El título de la barra de arriba. Con «orden» pide seguir el patrón; con «solo_clase»
+// pide buscar solo la clase del nivel (frutas o verduras).
+export function tituloDeBarra(regla) {
+  if (regla.tipo === 'orden') return 'Sigue el orden'
+  return regla.clase === 'verdura' ? 'Busca verduras' : 'Busca frutas'
+}
+
 export function repartirMuros(mapa, semilla) {
   const azar = crearAzarLaberinto(semilla)
   return mapa.flatMap((texto, fila) => [...texto].flatMap((simbolo, columna) =>

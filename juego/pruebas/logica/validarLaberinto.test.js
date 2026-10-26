@@ -9,6 +9,25 @@ const ejemplo = JSON.parse(readFileSync(
 
 const copiarEjemplo = () => structuredClone(ejemplo)
 
+// Los guiones de una sola regla que usan las pruebas del guion por mensaje. Spring genera
+// los mismos con su IA falsa (ConstructorGuionTest comprueba que sigan iguales).
+const leerGuionDePrueba = (nombre) => JSON.parse(readFileSync(
+  new URL('../fixtures/' + nombre, import.meta.url), 'utf8',
+))
+
+test('los guiones de patrones y de clasificar son válidos, con o sin el bloque de procedencia de Spring', () => {
+  for (const nombre of ['laberinto-orden.json', 'laberinto-solo-clase.json']) {
+    const guion = leerGuionDePrueba(nombre)
+    assert.deepEqual(validarLaberinto(guion), { valido: true, errores: [] }, nombre)
+    guion.procedencia = { proveedor: 'groq', modelo: 'openai/gpt-oss-120b', intentos: 2, mapa_base: true }
+    assert.deepEqual(validarLaberinto(guion), { valido: true, errores: [] }, nombre + ' con procedencia')
+  }
+  assert.deepEqual(leerGuionDePrueba('laberinto-orden.json').retos.map((reto) => reto.regla.tipo),
+    ['orden', 'orden', 'orden'])
+  assert.deepEqual(leerGuionDePrueba('laberinto-solo-clase.json').retos.map((reto) => reto.regla.tipo),
+    ['solo_clase', 'solo_clase', 'solo_clase'])
+})
+
 test('el paquete escrito a mano admite los tres niveles previstos', () => {
   assert.deepEqual(validarLaberinto(ejemplo), { valido: true, errores: [] })
   assert.equal(ejemplo.retos.length, 3)

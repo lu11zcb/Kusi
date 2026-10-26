@@ -82,6 +82,16 @@ class ConstructorGuionTest {
         }
     }
 
+    // El juego prueba en el navegador estos mismos guiones (juego/pruebas/fixtures): si Spring
+    // y el juego dejaran de entenderse, esta prueba lo avisa antes de que lo note un niño.
+    @Test
+    void losGuionesDeUnaSolaReglaSonLosQueElJuegoPruebaEnElNavegador() throws Exception {
+        assertEquals(GuionesDePrueba.guionDelJuego("laberinto-orden.json"),
+            ConstructorGuion.desdeLaIa(GuionesDePrueba.respuestaConLaRegla("orden"), CURSO));
+        assertEquals(GuionesDePrueba.guionDelJuego("laberinto-solo-clase.json"),
+            ConstructorGuion.desdeLaIa(GuionesDePrueba.respuestaConLaRegla("solo_clase"), CURSO));
+    }
+
     @Test
     void unaReglaDeTipoDesconocidoSeDejaTalCualParaQueElValidadorLaSenale() throws Exception {
         ObjectNode respuesta = GuionesDePrueba.respuestaBuena();

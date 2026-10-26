@@ -1,6 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { repartirMuros } from '../../src/logica/presentacionLaberinto.js'
+import { repartirMuros, tituloDeBarra } from '../../src/logica/presentacionLaberinto.js'
+
+test('la barra pide seguir el orden, buscar frutas o buscar verduras según la regla del nivel', () => {
+  assert.equal(tituloDeBarra({ tipo: 'orden', secuencia: ['fresa', 'platano'] }), 'Sigue el orden')
+  assert.equal(tituloDeBarra({ tipo: 'solo_clase', clase: 'fruta', meta: 3 }), 'Busca frutas')
+  assert.equal(tituloDeBarra({ tipo: 'solo_clase', clase: 'verdura', meta: 3 }), 'Busca verduras')
+})
 
 test('los adobes dependen solo de su semilla y no alteran las casillas del mapa', () => {
   const mapa = Object.freeze(['#########', '#C.....P#', '#########'])

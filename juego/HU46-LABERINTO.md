@@ -297,6 +297,54 @@ y un `orden` consecutivo. Comer añade `{ objeto, correcto }`; una captura añad
 inicio, cada reto y cierre se notifican una sola vez. `fin` es el último aviso de
 esa partida. La comprobación completa HU31 sigue perteneciendo a Spring.
 
+## Recibir el guion por mensaje (HU26)
+
+El juego puede recibir el guion que generó la IA sin pedirlo a ningún servidor: la
+página que lo contiene (por ejemplo, la vista previa del panel docente, con el juego
+en un iframe) se lo manda con `postMessage`.
+
+- `?paquete=mensaje` abre el laberinto **sin guion** y espera el que le manden.
+- `?paquete=laberinto` abre el ejemplo y también acepta guiones por mensaje.
+- Sin parámetro (el mercado) el juego no escucha mensajes.
+
+Lo que la página le manda al juego:
+
+| Mensaje | Qué hace |
+| --- | --- |
+| `{ "tipo": "paquete", "paquete": … }` | Entrega el guion (`kusi-paquete/0`, familia `laberinto`), como objeto o como texto JSON. El juego lo comprueba, pide los dibujos que le falten y empieza por el primer nivel. Si ya había un juego, lo reemplaza. El bloque `procedencia` que guarda Spring no estorba. |
+| `{ "tipo": "reiniciar" }` | Vuelve al primer nivel del guion que se está jugando, con una partida nueva (igual que «Jugar otra vez»). Antes de recibir un guion no hace nada. |
+
+Lo que el juego le avisa a la página (a `window.parent`):
+
+| Aviso | Cuándo |
+| --- | --- |
+| `{ "tipo": "listo" }` | El juego ya puede recibir un guion. Se avisa una sola vez: la página debe esperarlo antes de mandar el primero. |
+| `{ "tipo": "cargado", "niveles": N }` | El primer nivel del guion está en pantalla (también tras `reiniciar` y «Jugar otra vez»). |
+| `{ "tipo": "error", "motivo": "…" }` | El guion no se puede jugar. El motivo dice qué falló, con «Nivel N:». El niño ve «Este camino no está listo todavía» y un guion nuevo lo reemplaza. |
+
+Desde la página que contiene el juego:
+
+```js
+const juego = document.querySelector('#vista-previa') // el iframe con ?paquete=mensaje
+window.addEventListener('message', (evento) => {
+  if (evento.source !== juego.contentWindow) return
+  if (evento.data.tipo === 'listo') juego.contentWindow.postMessage({ tipo: 'paquete', paquete: guion }, '*')
+})
+```
+
+`guion` es el campo `paquete` de `GET /api/edu/generaciones/{id}/`, que llega como texto
+y sirve tal cual. Sin el panel, abre <http://127.0.0.1:5174/?paquete=mensaje> y pega en la
+consola del navegador `postMessage({ tipo: 'paquete', paquete: <el guion> }, '*')`. El juego solo hace caso a la página que lo contiene (`window.parent`):
+los mensajes de otra ventana o iframe se ignoran. Los avisos no llevan nada privado, así
+que van a cualquier origen. Un mensaje que llega después de que el juego empezó a cargar
+espera su turno aunque todavía no haya dicho `listo`; uno anterior se pierde, por eso la
+página espera el `listo`.
+
+La barra de arriba pide «Sigue el orden», «Busca frutas» o «Busca verduras» según la
+regla del nivel. Las pruebas son `pruebas/mensajes.spec.js` (en el navegador, con los
+guiones de `pruebas/fixtures`, que son los mismos que arma Spring con su IA falsa) y
+`pruebas/logica/puenteGuion.test.js`.
+
 ## Verificación
 
 ```powershell
@@ -306,8 +354,8 @@ npm run build
 .venv/Scripts/python -m unittest discover -s herramientas/animaciones
 ```
 
-Verificado el 25 de octubre de 2026 tras terminar la profundidad del laberinto:
-**148 pruebas de lógica**, **120 pruebas de navegador** y compilación correctas.
+Verificado el 26 de octubre de 2026 tras agregar el guion por mensaje:
+**158 pruebas de lógica**, **130 pruebas de navegador** y compilación correctas.
 La suite completa incluye el mercado y la capa de vida, y corre con un solo
 trabajador (`workers: 1` en `playwright.config.js`): varias pruebas miden tiempos
 de animación y sonido y fallaban por unos milisegundos cuando varios navegadores

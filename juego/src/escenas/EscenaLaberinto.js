@@ -29,9 +29,10 @@ import { PuertaViva } from '../efectos/PuertaViva.js'
 import { leerSilencio, guardarSilencio } from '../efectos/silencio.js'
 import { crearBotonSonido, BOTON_SONIDO } from '../interfaz/BotonSonido.js'
 import { crearAmbienteLaberinto, ajustarAmbienteLaberinto, decorarPradera, cachearAdobes } from '../dibujos/ambienteLaberinto.js'
-import { repartirMuros } from '../logica/presentacionLaberinto.js'
+import { repartirMuros, tituloDeBarra } from '../logica/presentacionLaberinto.js'
 import { calcularDisposicion, distribuirBarra, distribuirGuia } from '../logica/disposicionLaberinto.js'
 import { leerRenderizador } from '../renderizador.js'
+import { leerPuente, MENSAJE_PAQUETE, MENSAJE_REINICIAR, AVISO_CARGADO } from '../mensajes/puenteGuion.js'
 
 // Velocidad en casillas por segundo, independiente del tamaño del dibujo.
 export const CASILLAS_POR_SEGUNDO = 3
@@ -127,12 +128,17 @@ export class EscenaLaberinto extends Phaser.Scene {
       if (fruta) this.mano = crearManoLaberinto(this, this.centroCasilla(fruta.fila, fruta.columna))
     }
     this.exponerParaPruebas()
-    avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
+    const primerAviso = avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
+    this.conectarPuente()
+    // La página que contiene el juego (la vista previa del panel) se entera cuando el
+    // guion ya está en pantalla. Pasa una vez por partida, no en cada nivel.
+    if (primerAviso) this.puente?.avisar({ tipo: AVISO_CARGADO, niveles: this.paquete.retos.length })
     decir(this.reto.consigna)
     // La fanfarria de fin de nivel suena aquí y no en la escena anterior: esa se
     // destruye al reiniciarse y cortaría su propio sonido.
     if (this.anunciarNivel) this.sonidos.reproducir('nivel')
     this.events.once('shutdown', () => {
+      this.puente?.desconectar(this.alRecibirOrden)
       this.sonidos.destruir()
       this.captura.destruir()
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
@@ -143,6 +149,28 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.scale.off('resize', this.alRedimensionar)
       if (window.kusi?.estado === this.leerEstado) delete window.kusi
     })
+  }
+
+  // Si el laberinto se abrió para recibir guiones (?paquete=laberinto o ?paquete=mensaje),
+  // esta escena atiende lo que mande la página que contiene el juego. Cada nivel es
+  // una escena nueva: la anterior suelta su lugar al cerrarse y esta lo toma.
+  conectarPuente() {
+    this.puente = leerPuente(this.game)
+    if (!this.puente) return
+    this.alRecibirOrden = (orden) => this.atenderOrden(orden)
+    this.puente.conectar(this.alRecibirOrden)
+  }
+
+  atenderOrden(orden) {
+    if (orden.tipo === MENSAJE_PAQUETE) {
+      // Un guion nuevo pasa otra vez por la carga: se comprueba, se piden los dibujos
+      // que le falten (por ejemplo, una verdura que el anterior no tenía) y empieza
+      // desde el primer nivel.
+      this.scene.start('carga', { paquete: orden.paquete })
+    } else if (orden.tipo === MENSAJE_REINICIAR) {
+      // Igual que «Jugar otra vez»: el primer nivel del mismo guion, con una partida nueva.
+      this.scene.restart(this.datosParaNivel(0, crearPartidaLaberinto()))
+    }
   }
 
   // EXPAND deja espacio alrededor del mundo de diseño, sin recortar su barra ni
@@ -206,8 +234,8 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cajaBarra = { ...caja }
     this.add.rectangle(caja.x + caja.ancho / 2, caja.y + caja.alto / 2, caja.ancho, caja.alto, NUMERO.papel)
       .setRounded(24).setStrokeStyle(3, 0xd8b990).setDepth(1000)
-    this.add.text(barra.titulo.x, barra.titulo.y, regla.tipo === 'orden' ? 'Sigue el orden' : 'Busca frutas',
-      estiloTexto(30)).setDepth(1001)
+    this.tituloBarra = tituloDeBarra(regla)
+    this.add.text(barra.titulo.x, barra.titulo.y, this.tituloBarra, estiloTexto(30)).setDepth(1001)
     this.add.text(barra.subtitulo.x, barra.subtitulo.y, 'Nivel ' + (this.indiceNivel + 1) + ' de ' + this.paquete.retos.length,
       estiloTexto(23, COLOR.tintaSuave)).setDepth(1001)
 
@@ -823,6 +851,9 @@ export class EscenaLaberinto extends Phaser.Scene {
       ruta: this.ruta.map((paso) => ({ ...paso })),
       marcadorDestino: { visible: this.marcadorDestino.visible, x: this.marcadorDestino.x, y: this.marcadorDestino.y },
       regla: { ...this.regla, objetos: this.regla.objetos.map((objeto) => ({ ...objeto })) },
+      // La regla del nivel tal como la escribe el guion, y lo que muestra la barra de arriba.
+      reglaDelReto: structuredClone(this.reto.regla),
+      barra: { titulo: this.tituloBarra, fichas: this.casilleros.length },
       puertaAbierta: this.regla.completada, terminada: this.terminada, mensajeCierre: this.mensajeCierre,
       manoVisible: Boolean(this.mano?.visible),
       invulnerable: this.segundosInvulnerable > 0, segundosInvulnerable: this.segundosInvulnerable,

@@ -119,6 +119,7 @@ Para probar con Groq de verdad, sin el panel:
 3. Con esa cookie, `GET /api/edu/acceso/csrf/` da el token CSRF; las escrituras llevan la cookie `kusi_edu_csrf` y la cabecera `X-XSRF-TOKEN` con ese mismo valor.
 4. `GET /api/edu/contexto/propuestas/` da el `curso_id` y el `seccion_id`; luego `POST /api/edu/propuestas/solicitudes/` (con un `id_solicitud` nuevo), `POST .../{id}/versiones/1/aprobar/`, `POST .../{id}/versiones/1/generar/` y `POST /api/edu/generaciones/{id}/procesar/`.
 5. `GET /api/edu/generaciones/{id}/` muestra las etapas, la `procedencia` y el `paquete`. Cada generación gasta llamadas reales a la IA.
+6. Para jugar ese `paquete`, con el juego en marcha (`cd juego && npm run dev`), abre <http://127.0.0.1:5174/?paquete=mensaje>, abre la consola del navegador y pega `postMessage({ tipo: 'paquete', paquete: <el valor del campo paquete, con sus comillas> }, '*')`. El juego lo comprueba y empieza por el primer nivel; el protocolo completo está en `juego/HU46-LABERINTO.md`.
 
 ## HU28: la propuesta elige la regla del juego
 Kusi hoy hace un solo juego, el laberinto, con dos reglas: `orden` (patrones que se repiten, de primer grado) y `solo_clase` (solo frutas o solo verduras). La llamada 1 (la propuesta) ya no ofrece el mercado ni el juego de ordenar: usa solo los objetos de la fase 1 (fresa, plátano, mango, mandarina, piña, zanahoria, papa y choclo, con el zorro como único enemigo), **elige la regla según el tema** y la devuelve en `regla_juego`. Si el tema no encaja en ninguna regla, elige la más cercana y lo dice en la historia.

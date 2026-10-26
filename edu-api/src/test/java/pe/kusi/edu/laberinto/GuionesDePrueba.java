@@ -23,21 +23,32 @@ public final class GuionesDePrueba {
     private GuionesDePrueba() {}
 
     // El proyecto es un repositorio con carpetas hermanas: se sube desde la carpeta de
-    // trabajo (edu-api) hasta encontrar juego/. Si no está, la prueba falla con un aviso claro.
-    private static Path buscarEjemplo() {
+    // trabajo (edu-api) hasta encontrar el archivo dentro de juego/. Si no está, la
+    // prueba falla con un aviso claro.
+    private static Path buscarEnJuego(String rutaEnJuego) {
         Path carpeta = Path.of("").toAbsolutePath();
         while (carpeta != null) {
-            Path candidato = carpeta.resolve("juego/public/paquete-laberinto-ejemplo.json");
+            Path candidato = carpeta.resolve("juego/" + rutaEnJuego);
             if (Files.exists(candidato)) return candidato;
             carpeta = carpeta.getParent();
         }
-        throw new IllegalStateException("No se encontró juego/public/paquete-laberinto-ejemplo.json "
-                + "subiendo desde " + Path.of("").toAbsolutePath() + ". Ejecuta las pruebas dentro del repositorio.");
+        throw new IllegalStateException("No se encontró juego/" + rutaEnJuego
+                + " subiendo desde " + Path.of("").toAbsolutePath() + ". Ejecuta las pruebas dentro del repositorio.");
     }
 
     // El guion de ejemplo tal como lo lee el juego. Cada llamada devuelve una copia nueva.
     public static ObjectNode ejemplo() throws IOException {
-        return (ObjectNode) JSON.readTree(Files.readString(buscarEjemplo(), StandardCharsets.UTF_8));
+        return leerEnJuego("public/paquete-laberinto-ejemplo.json");
+    }
+
+    // Un guion de prueba del juego (juego/pruebas/fixtures/<nombre>): el que sus pruebas del
+    // navegador cargan por mensaje. Cada llamada devuelve una copia nueva.
+    public static ObjectNode guionDelJuego(String nombre) throws IOException {
+        return leerEnJuego("pruebas/fixtures/" + nombre);
+    }
+
+    private static ObjectNode leerEnJuego(String rutaEnJuego) throws IOException {
+        return (ObjectNode) JSON.readTree(Files.readString(buscarEnJuego(rutaEnJuego), StandardCharsets.UTF_8));
     }
 
     // Lo que respondería la IA para ese guion: sin las claves que pone el servidor
