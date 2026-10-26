@@ -8,7 +8,7 @@ export const CANTIDAD_ESTRELLITAS = 5
 // desaparecer, en milisegundos.
 const POP = Object.freeze({ escala: 1.45, duracionMs: 220 })
 // Las estrellitas. Las medidas van en casillas para seguir el tamaño del mapa.
-const ESTRELLITAS = Object.freeze({
+export const ESTRELLITAS = Object.freeze({
   radioInterior: 0.07,
   radioExterior: 0.15,
   alcance: 0.65, // casillas que viajan desde la fruta
