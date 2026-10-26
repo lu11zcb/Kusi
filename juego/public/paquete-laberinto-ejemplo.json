@@ -30,7 +30,7 @@
       "consigna": "Busca una fresa, un plátano, otra fresa y otro plátano. ¡Después ve a la puerta!",
       "ayudas": [
         "Mira la fila de frutas de arriba. Busca la que sigue.",
-        "Primero fresa, después plátano. Repite ese orden una vez más."
+        "Fíjate bien: el orden se repite. Haz el mismo orden otra vez."
       ]
     },
     {
@@ -59,7 +59,7 @@
       "consigna": "Busca mango, mandarina, mango y mandarina. ¡Encuentra un camino para pasar al zorro!",
       "ayudas": [
         "Mira qué fruta sigue en la fila de arriba.",
-        "Busca un mango y luego una mandarina. Hazlo dos veces."
+        "Van de dos en dos. Al terminar el par, empieza de nuevo."
       ]
     },
     {
@@ -90,8 +90,8 @@
       ],
       "consigna": "Recoge cuatro frutas. Deja las verduras en su lugar y busca la puerta.",
       "ayudas": [
-        "Busca frutas como la fresa, el mango, la mandarina y la piña.",
-        "La zanahoria, la papa y el choclo son verduras. Déjalos en el camino."
+        "Las frutas son dulces y jugosas. Busca solo cuatro.",
+        "Las verduras crecen en la huerta. Déjalas en el camino."
       ]
     }
   ],

@@ -52,3 +52,16 @@ Rutas del panel docente, accesibles por el proxy de Vite (`/api/edu` → 8080). 
 El proveedor de IA es **Groq** (`GeneradorGroq`). Se activa al poner `GROQ_API_KEY` en el `.env` local (la clave se crea en https://console.groq.com/keys y nunca se sube); `GROQ_MODELO` es opcional (por defecto `openai/gpt-oss-120b`). Sin clave la IA queda **no configurada**: la solicitud se guarda `pendiente` y no se inventa contenido. `GeneradorGroqTest` prueba el adaptador con un Groq simulado. `PropuestasSimuladasTest` usa IA y Django simulados.
 
 HU19–HU25 (propósito, revisión y versiones) y `GET /api/edu/acceso/estudiante/` (HU11, app móvil) se describen en `docs/CONTRATO_PROPUESTAS_IA.md`.
+
+## HU31: comprobaciones del guion del laberinto
+`pe.kusi.edu.laberinto.ValidadorLaberinto` es código puro (sin IA ni base de datos): recibe el guion (`kusi-paquete/0`, familia `laberinto`) como JSON y devuelve la lista de problemas, vacía si está bien. Cada problema trae un `codigo` estable y un `motivo` en español sencillo que empieza con «Nivel N:» cuando es de un nivel. Incluye todo lo que comprueba el juego (`juego/src/datos/validarLaberinto.js`) y además:
+
+| Grupo | Códigos |
+| --- | --- |
+| Formato y niveles | `FORMATO`, `FAMILIA`, `TITULO_FALTA`, `NIVELES_CANTIDAD` (de 3 a 5), `DIFICULTAD_MAPA` (los mapas no se achican), `NIVEL1_ENEMIGOS` |
+| Mapa | `MAPA_FORMA`, `MAPA_FILAS`, `MAPA_SIMBOLO`, `MAPA_INICIO`, `MAPA_PUERTA`, `MAPA_BORDE`, `MAPA_TAMANO` (máximo 9 filas × 15 columnas: casillas de 40 px en un celular de 800 × 360) |
+| Objetos y enemigos | `OBJETOS_FALTAN`, `OBJETO_TIPO`, `OBJETO_POSICION`, `OBJETO_FUERA_DEL_CAMINO`, `OBJETO_INALCANZABLE`, `PUERTA_INALCANZABLE`, `CASILLA_REPETIDA`, `ENEMIGOS_FALTAN`, `ENEMIGO_TIPO`, `ENEMIGO_MOVIMIENTO`, `ENEMIGO_POSICION`, `ENEMIGO_FUERA_DEL_CAMINO`, `ENEMIGO_CERCA` (menos de 3 casillas de camino del cuy) |
+| Reglas | `REGLA_TIPO`, `REGLA_DISTINTA` (cuando la propuesta eligió una regla), `SECUENCIA_LARGO`, `SECUENCIA_TIPO`, `SECUENCIA_NO_PATRON`, `SECUENCIA_FALTAN_OBJETOS`, `CLASE_INVALIDA`, `META_RANGO`, `CLASE_FALTAN_OBJETOS`, `CLASE_SIN_TRAMPA` |
+| Textos | `CONSIGNA_FALTA`, `CONSIGNA_LARGA`, `AYUDAS_CANTIDAD`, `AYUDA_VACIA`, `AYUDA_LARGA`, `AYUDA_REVELA` (una ayuda nombra una fruta o verdura, sin importar tildes, mayúsculas ni plural) |
+
+Los objetos son `fresa`, `platano`, `mango`, `mandarina`, `pina` (frutas) y `zanahoria`, `papa`, `choclo` (verduras); el único enemigo es el `zorro`, con movimiento `patrulla` o `persigue_cerca`. La alcanzabilidad se mide con una búsqueda en anchura que no atraviesa muros ni la puerta. `ValidadorLaberintoTest` usa el paquete de ejemplo del juego como caso bueno y le hace un solo cambio por cada caso malo.
