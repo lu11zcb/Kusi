@@ -23,3 +23,9 @@ licencias; los paquetes enteros se pueden volver a bajar de <https://kenney.nl/>
 La duración y la intensidad se comprobaron decodificando los archivos con Web
 Audio local. El controlador usa volúmenes entre 0,08 y 0,14; los pasos tienen un
 intervalo mínimo compartido y no se superponen. `?vida=0` desactiva esta capa.
+
+## Aviso del zorro
+
+`zorro-alerta.wav`: dos notas sinusoidales (Do5 y Mi5), PCM mono de 22050 Hz,
+con entrada y caída suaves, duración de 0,30 s. Creado para Kusi sin muestras
+externas; se permite su uso, copia, modificación y distribución dentro y fuera de Kusi.

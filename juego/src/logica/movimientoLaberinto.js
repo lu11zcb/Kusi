@@ -25,6 +25,13 @@ function puedeAvanzar(estado, mapa, direccion) {
 // Si todavía no existe una salida en la dirección solicitada, la conservamos:
 // así una flecha temprana sirve para doblar en la próxima esquina.
 function elegirDireccion(estado, mapa) {
+  // Soltar el joystick no frena entre casillas: se termina el tramo que ya
+  // empezó. Este cierre se revisa antes de aceptar cualquier giro guardado.
+  if (estado.detenerAlLlegar) {
+    estado.moviendose = false
+    estado.direccionPendiente = null
+    return false
+  }
   if (puedeAvanzar(estado, mapa, estado.direccionPendiente)) {
     estado.direccion = estado.direccionPendiente
     estado.direccionPendiente = null
@@ -59,7 +66,18 @@ export function crearMovimiento(mapa) {
 
 export function pedirDireccion(estado, direccion) {
   if (Object.hasOwn(DESPLAZAMIENTOS, direccion)) {
+    delete estado.detenerAlLlegar
     estado.direccionPendiente = direccion
+  }
+  return estado
+}
+
+export function detenerEnCentro(estado) {
+  estado.direccionPendiente = null
+  estado.detenerAlLlegar = true
+  if (estado.progreso <= MARGEN_DECIMAL) {
+    estado.progreso = 0
+    estado.moviendose = false
   }
   return estado
 }

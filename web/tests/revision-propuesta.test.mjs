@@ -45,6 +45,22 @@ test('HU27: solo una propuesta aprobada ofrece Generar juego y muestra la regla 
   assert.ok(aprobada.includes('Generar y probar el juego'))
 })
 
+// La propuesta diseña el juego que corresponde al tema. Si es otro juego, el docente lo lee
+// completo, sin una regla de laberinto, y el botón de generar no se activa.
+test('Otro juego: se muestra la propuesta, pero no se puede generar todavía', () => {
+  const otro = { ...solicitud.propuesta, estado_revision: 'aprobada', tipo_juego: 'otro', se_puede_generar: false, regla_juego: null,
+    historia: 'Kusi acompaña al niño a ordenar los días de la creación.' }
+  const html = mostrar({ ...solicitud, propuesta: otro })
+  assert.ok(html.includes('Kusi acompaña al niño a ordenar los días de la creación.'))
+  assert.ok(!html.includes('Regla elegida para el laberinto'))
+  assert.ok(html.includes('Este juego todavía no se puede crear'))
+  assert.ok(html.includes('Por ahora Kusi solo crea juegos de laberinto con frutas y verduras.'))
+  assert.match(html, /<button[^>]*disabled=""[^>]*>.*Generar juego<\/button>/)
+  const laberinto = mostrar({ ...solicitud, propuesta: { ...otro, tipo_juego: 'laberinto', se_puede_generar: true, regla_juego: 'orden' } })
+  assert.ok(!laberinto.includes('Este juego todavía no se puede crear'))
+  assert.ok(laberinto.includes('Seguir el orden (patrones)'))
+})
+
 // El menú conserva las pantallas ocultas. Verificamos que la revisión siga
 // presente para conservar su borrador, pero que se retire todo el seguimiento
 // (cuyos efectos cancelan las consultas al desmontarse) hasta volver a entrar.

@@ -1,0 +1,99 @@
+{
+  "carpeta": "public/dibujos/estilo-final/",
+  "capas": [
+    "cielo",
+    "montanas-nevadas",
+    "casa-izquierda",
+    "casa-derecha",
+    "prado-florido",
+    "arbusto",
+    "cerca-madera",
+    "maceta-flores"
+  ],
+  "sprites": {
+    "nube-0": {
+      "ancho": 256,
+      "alto": 128,
+      "cuadros": 3,
+      "periodo": 0.7
+    },
+    "nube-1": {
+      "ancho": 256,
+      "alto": 128,
+      "cuadros": 3,
+      "periodo": 0.7
+    },
+    "nube-2": {
+      "ancho": 256,
+      "alto": 128,
+      "cuadros": 3,
+      "periodo": 0.7
+    },
+    "pasto-0": {
+      "ancho": 128,
+      "alto": 128,
+      "cuadros": 4,
+      "periodo": 0.4
+    },
+    "pasto-1": {
+      "ancho": 128,
+      "alto": 128,
+      "cuadros": 4,
+      "periodo": 0.4
+    },
+    "pasto-2": {
+      "ancho": 128,
+      "alto": 128,
+      "cuadros": 4,
+      "periodo": 0.4
+    },
+    "flores": {
+      "ancho": 128,
+      "alto": 128,
+      "cuadros": 3,
+      "periodo": 0.5,
+      "secuencia": [
+        0,
+        1,
+        0,
+        2
+      ]
+    },
+    "tejido": {
+      "ancho": 256,
+      "alto": 256,
+      "cuadros": 3,
+      "periodo": 0.5,
+      "secuencia": [
+        0,
+        1,
+        0,
+        2
+      ]
+    },
+    "humo": {
+      "ancho": 128,
+      "alto": 256,
+      "cuadros": 4,
+      "periodo": 0.4
+    },
+    "pajarito": {
+      "ancho": 128,
+      "alto": 128,
+      "cuadros": 4,
+      "periodo": 0.13
+    },
+    "mariposa": {
+      "ancho": 128,
+      "alto": 128,
+      "cuadros": 3,
+      "periodo": 0.15,
+      "secuencia": [
+        0,
+        1,
+        2,
+        1
+      ]
+    }
+  }
+}

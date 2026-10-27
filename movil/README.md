@@ -6,12 +6,9 @@ Actualización del 20 de octubre de 2026, a partir del plan visual que Luis apor
 
 ## Abrir la aplicación
 
-Abrir esta carpeta `movil` en Android Studio y ejecutar debug, o instalar `app/build/outputs/apk/debug/app-debug.apk`. El APK de desarrollo muestra dos accesos:
+Abrir esta carpeta `movil` en Android Studio y ejecutar debug, o instalar `app/build/outputs/apk/debug/app-debug.apk`. El APK abre la app Kusi:
 
-- **Kusi:** acceso real del alumno mediante Django/Spring. Los servidores predeterminados son `http://10.0.2.2:8000` y `http://10.0.2.2:8080`, accesibles desde el emulador. El juego se abre desde `http://10.0.2.2:5174`. Para un celular físico configurar `KUSI_DJANGO_URL`, `KUSI_EDU_URL` y `KUSI_JUEGO_URL` y volver a compilar (con `adb reverse`, las tres apuntan a `localhost`). La biblioteca muestra los juegos «listos» de las secciones del estudiante, como máximo cinco, y al final el ejemplo del laberinto; el juego se abre en un WebView horizontal y habla con la app por `KusiPuente` (HU46 y HU50).
-- **Kusi · presentación:** recorrido visual con datos de ejemplo, sin consultar ni escribir en el servidor. Solo existe en `src/debug`; no forma parte del código de producción. Puede mostrarse sin crear una cuenta real. Una franja visible identifica la demostración en todas sus pantallas.
-
-En presentación: tocar «¡Vamos a entrar!», usar DNI de ejemplo `12345678` y cualquier contraseña, elegir después una nueva de ocho caracteres o más y repetirla. Aparece Mateo con dos aventuras ficticias. Elegir una, escuchar la misión, tocar «¡Jugar!» y usar «Terminar» en la página de prueba para llegar al cierre. No son credenciales ni juegos reales. No se guardan esos resultados.
+- **Kusi:** acceso real del alumno mediante Django/Spring. Los servidores predeterminados son `http://10.0.2.2:8000` y `http://10.0.2.2:8080`, accesibles desde el emulador. El juego se abre desde `http://10.0.2.2:5174`. Para un celular físico configurar `KUSI_DJANGO_URL`, `KUSI_EDU_URL` y `KUSI_JUEGO_URL` y volver a compilar (con `adb reverse`, las tres apuntan a `localhost`). La biblioteca muestra los juegos listos que el docente envió a las secciones del estudiante, como máximo cinco. Si todavía no hay ninguno, muestra «Tu profe te avisará cuando puedas jugar» y el botón «Buscar juegos nuevos»; el juego se abre en un WebView horizontal y habla con la app por `KusiPuente` (HU46 y HU50).
 
 ## Recorrido acordado
 
@@ -27,9 +24,7 @@ Cuatro escenas de bienvenida, feria, jardín de palabras y celebración. La revi
 
 ## Conexión con el juego (cierre del Sprint 2)
 
-`AplicacionInfantil` recibe `EstadoBibliotecaInfantil`, `EstadoCierreInfantil`, reintentos y un bloque `contenidoJuego(aventura, alFinalizar, alVolver)`. Desde el cierre del Sprint 2 esas entradas están conectadas: `AccesoViewModel` carga la biblioteca con `GET /api/edu/estudiante/juegos/`, `JuegoLaberinto.kt` abre el juego en un WebView y `ProtocoloJuego.kt` valida los mensajes de `KusiPuente`. Los avisos de la partida se guardan con `POST /api/edu/partidas/avisos/`, con la sesión del alumno y el CSRF de Spring. Todavía no hay una asignación formal de juegos a estudiantes: la biblioteca muestra los juegos listos de sus secciones. Detalle y pruebas en `docs/INFORME-CIERRE-SPRINT2.md`.
-
-La presentación inyecta una WebView con HTML fijo local y seis botones de avisos. El puente `KusiPuente.emitir` de esa actividad es exclusivo de debug y una prueba de recorrido: no constituye todavía el acuerdo de eventos del juego ni su registro en Spring. La WebView no carga URLs o contenido externo. `juego/` y HU46 no se modifican.
+`AplicacionInfantil` recibe `EstadoBibliotecaInfantil`, `EstadoCierreInfantil`, reintentos y un bloque `contenidoJuego(aventura, alFinalizar, alVolver)`. Desde el cierre del Sprint 2 esas entradas están conectadas: `AccesoViewModel` carga la biblioteca con `GET /api/edu/estudiante/juegos/`, `JuegoLaberinto.kt` abre el juego en un WebView y `ProtocoloJuego.kt` valida los mensajes de `KusiPuente`. Los avisos de la partida se guardan con `POST /api/edu/partidas/avisos/`, con la sesión del alumno y el CSRF de Spring. El docente envía el juego desde la revisión final; la biblioteca filtra los juegos publicados de las secciones vigentes del estudiante. Detalle y pruebas en `docs/INFORME-CIERRE-SPRINT2.md`.
 
 Las ilustraciones creadas con ImageGen son ayuda visual de desarrollo. Esta actualización programa interfaz, animaciones y textos; no genera ni valida contenido educativo mediante IA. La generación de paquetes y sus controles técnicos/educativos y revisión docente siguen siendo necesarios.
 

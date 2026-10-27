@@ -4,8 +4,10 @@
 .env.*
 !.env.example
 .impeccable/review/
-.qa/
 .npm-cache/
+.DS_Store
+CLAUDE.md
+.claude/
 
 # Python / Django
 .venv/
@@ -25,6 +27,7 @@ edu-api/data/
 .gradle/
 build/
 local.properties
+movil/gradle/gradle-daemon-jvm.properties
 
 # Editores
 .idea/
@@ -33,7 +36,3 @@ local.properties
 *.dump
 *.backup.py
 cuentas_0001.sql
-.env
-
-edu-api/target/
-.idea/

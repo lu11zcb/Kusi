@@ -18,6 +18,9 @@ from verificar_hoja import verificar_hoja
 
 
 RAIZ_JUEGO = Path(__file__).resolve().parents[2]
+# Las hojas del cuy anterior se conservan como muestras de las herramientas: ya no las
+# publica el juego, pero sirven para comprobar el armado, la alineación y las vistas previas.
+MUESTRAS = Path(__file__).resolve().parent / "muestras"
 CELDA = (256, 256)
 CUADROS_ESPALDA = [12, 13, 14]
 SECUENCIA_ESPALDA = [12, 13, 14, 13]
@@ -43,9 +46,9 @@ class PruebasEspalda(unittest.TestCase):
         cls.carpeta = Path(cls.temporal.name)
         cls.original = RAIZ_JUEGO / "arte/cuy/origen/cuy-espalda-3-cuadros-v2.png"
         cls.referencia = RAIZ_JUEGO / "arte/cuy/vista-previa/armado.json"
-        cls.base = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v3.png"
-        cls.publicada = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v5.png"
-        cls.manifiesto = RAIZ_JUEGO / "public/dibujos/cuy-nino-animado-v1.json"
+        cls.base = MUESTRAS / "cuy-nino-cuadros-v3.png"
+        cls.publicada = MUESTRAS / "cuy-nino-cuadros-v5.png"
+        cls.manifiesto = MUESTRAS / "cuy-nino-animado-v6.json"
         cls.atlas = cls.carpeta / "cuadros-con-espalda.png"
         cls.informe = armar_hoja(
             cls.original,
@@ -147,7 +150,7 @@ class PruebasEspalda(unittest.TestCase):
         self.assertEqual(datos["fotograma"], {"ancho": 256, "alto": 256})
         self.assertEqual(datos["cuadricula"]["columnas"], 3)
         self.assertGreaterEqual(datos["cuadricula"]["filas"], 5)
-        with Image.open(RAIZ_JUEGO / "public/dibujos" / datos["imagen"]) as activo, Image.open(self.publicada) as espalda:
+        with Image.open(MUESTRAS / datos["imagen"]) as activo, Image.open(self.publicada) as espalda:
             self.assertEqual(
                 activo.convert("RGBA").crop((0, 0, 768, 1280)).tobytes(),
                 espalda.convert("RGBA").tobytes(),

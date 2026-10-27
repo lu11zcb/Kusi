@@ -2,6 +2,18 @@
 
 import { COLOR, NUMERO, estiloTexto } from '../medidas.js'
 
+// Hay botones que reciben el toque en el contenedor y otros en su fondo.
+// El cierre desactiva ambos contratos para que una pieza visual nueva no deje
+// controles activos ni interrumpa la despedida con una propiedad inexistente.
+export function desactivarBotones(botones) {
+  for (const boton of Object.values(botones)) {
+    if (!boton) continue
+    boton.activo = false
+    boton.disableInteractive?.()
+    boton.fondo?.disableInteractive()
+  }
+}
+
 // Botón grande y redondeado, con sombra, que se hunde al tocarlo.
 // La acción ocurre al soltar el dedo sobre el botón. En vez de texto puede llevar
 // un «icono»: un dibujo de Graphics centrado en (0, 0) que se hunde con el botón.

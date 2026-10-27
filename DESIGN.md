@@ -42,7 +42,7 @@ Botón nativo con cara mínima de 60 dp y base fija de 6 dp: se hunde al pulsar 
 
 Flujo Sprint 2: arranque/sesión → bienvenida → ingreso → nueva clave solo si es temporal → aventuras autorizadas → misión → juego → cierre. Misión/juego/cierre solicitan horizontal y se adaptan a tablet. Formularios desplazables con margen de teclado, letra ampliable y áreas del sistema respetadas. Sin pestañas, Cursos/Mi cuy, puntos ni premios de sprints futuros.
 
-La app normal conserva acceso real. Biblioteca, juego y eventos del estudiante siguen pendientes de conexión. **Kusi · presentación** existe solo en debug, identifica datos de ejemplo y recorre WebView local/cierre sin crear cuentas ni guardar resultados. Esa página técnica no es el juego generado.
+La app usa acceso real y biblioteca de juegos enviados por el docente. El laberinto se abre en un WebView horizontal, recibe su guion por el puente y registra los avisos de partida. La actividad de presentación con datos de ejemplo fue retirada. En el juego, Kusi está a la derecha y el joystick a la izquierda; el terreno y los tejados comparten la vista cenital del mapa. Pasto, arbustos y flores cambian de cuadro en hojas de sprites, y las imágenes anteriores se conservan como recursos.
 
 Cuatro escenas de bienvenida, feria, jardín de palabras y celebración, con sus prompts y procedencia. Las imágenes son apoyo visual de desarrollo. La generación educativa real exige contenido/paquete de IA, validación técnica/educativa y revisión docente; ninguna ilustración sustituye esas funciones.
 

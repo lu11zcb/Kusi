@@ -23,6 +23,6 @@ test('los adobes dependen solo de su semilla y no alteran las casillas del mapa'
   assert.equal(new Set(primero.map(({ fila, columna }) => fila + ':' + columna)).size, primero.length)
   for (const { fila, columna, variante } of primero) {
     assert.equal(mapa[fila][columna], '#')
-    assert.ok(['muro-adobe-1', 'muro-adobe-2'].includes(variante))
+    assert.ok(['a', 'b'].includes(variante))
   }
 })

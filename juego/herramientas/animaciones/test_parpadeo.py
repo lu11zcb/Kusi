@@ -18,6 +18,9 @@ from verificar_hoja import verificar_hoja
 
 
 RAIZ_JUEGO = Path(__file__).resolve().parents[2]
+# Las hojas del cuy anterior se conservan como muestras de las herramientas: ya no las
+# publica el juego, pero sirven para comprobar el armado, la alineación y las vistas previas.
+MUESTRAS = Path(__file__).resolve().parent / "muestras"
 CELDA = (256, 256)
 TOLERANCIA = 2
 
@@ -30,8 +33,8 @@ class PruebasParpadeo(unittest.TestCase):
             raise ValueError("La carpeta temporal debe permanecer dentro de juego/")
         cls.addClassCleanup(cls.temporal.cleanup)
         cls.original = RAIZ_JUEGO / "arte/cuy/origen/cuy-parpadeo-3-cuadros.png"
-        cls.publicada = RAIZ_JUEGO / "public/dibujos/cuy-parpadeo-v1.png"
-        cls.manifiesto = json.loads((RAIZ_JUEGO / "public/dibujos/cuy-parpadeo-v1.json").read_text(encoding="utf-8"))
+        cls.publicada = MUESTRAS / "cuy-parpadeo-v1.png"
+        cls.manifiesto = json.loads((MUESTRAS / "cuy-parpadeo-v1.json").read_text(encoding="utf-8"))
         cls.reconstruida = Path(cls.temporal.name) / "parpadeo.png"
         cls.hash_original = hashlib.sha256(cls.original.read_bytes()).hexdigest()
         cls.informe = armar_hoja(
@@ -39,8 +42,8 @@ class PruebasParpadeo(unittest.TestCase):
             referencia=RAIZ_JUEGO / "arte/cuy/vista-previa/referencia-parpadeo.json",
         )
         # La receta del atlas: los mismos tres cuadros añadidos como sexta fila.
-        cls.anterior = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v5.png"
-        cls.atlas = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v6.png"
+        cls.anterior = MUESTRAS / "cuy-nino-cuadros-v5.png"
+        cls.atlas = MUESTRAS / "cuy-nino-cuadros-v6.png"
         cls.atlas_reconstruido = Path(cls.temporal.name) / "atlas-con-parpadeo.png"
         cls.informe_atlas = armar_hoja(
             cls.original, cls.atlas_reconstruido, CELDA,
@@ -62,9 +65,9 @@ class PruebasParpadeo(unittest.TestCase):
     def test_la_altura_la_cabeza_y_los_pies_coinciden_con_quieto_frontal(self):
         # Se mide el PNG activo, sin confiar en los offsets del reporte. El
         # fotograma quieto se busca en el manifiesto para no fijar una versión.
-        datos = json.loads((RAIZ_JUEGO / "public/dibujos/cuy-nino-animado-v1.json").read_text(encoding="utf-8"))
+        datos = json.loads((MUESTRAS / "cuy-nino-animado-v6.json").read_text(encoding="utf-8"))
         indice = datos["animaciones"]["frente"]["quieto"]["fotogramas"][0]
-        with Image.open(RAIZ_JUEGO / "public/dibujos" / datos["imagen"]) as atlas:
+        with Image.open(MUESTRAS / datos["imagen"]) as atlas:
             x = indice % datos["cuadricula"]["columnas"] * CELDA[0]
             y = indice // datos["cuadricula"]["columnas"] * CELDA[1]
             frente = medir_anclas(atlas.convert("RGBA").crop((x, y, x + CELDA[0], y + CELDA[1])))
@@ -102,7 +105,7 @@ class PruebasParpadeo(unittest.TestCase):
         self.assertEqual(self.informe_atlas["escala_uniforme"], self.informe["escala_uniforme"])
 
     def test_los_cuadros_de_parpadeo_del_atlas_coinciden_con_quieto_frontal(self):
-        datos = json.loads((RAIZ_JUEGO / "public/dibujos/cuy-nino-animado-v1.json").read_text(encoding="utf-8"))
+        datos = json.loads((MUESTRAS / "cuy-nino-animado-v6.json").read_text(encoding="utf-8"))
         quieto = datos["animaciones"]["frente"]["quieto"]["fotogramas"][0]
         cuadros = datos["animaciones"]["frente"]["parpadeo"]["fotogramas"]
         alineacion = verificar_hoja(self.atlas, CELDA, tolerancia=TOLERANCIA, cuadros_seleccionados=[quieto, *sorted(set(cuadros))])
@@ -112,7 +115,7 @@ class PruebasParpadeo(unittest.TestCase):
             self.assertGreaterEqual(min(cuadro["margenes"].values()), 8)
 
     def test_el_manifiesto_principal_define_el_parpadeo_solo_de_frente_y_una_vez(self):
-        datos = json.loads((RAIZ_JUEGO / "public/dibujos/cuy-nino-animado-v1.json").read_text(encoding="utf-8"))
+        datos = json.loads((MUESTRAS / "cuy-nino-animado-v6.json").read_text(encoding="utf-8"))
         self.assertEqual(datos["imagen"], self.atlas.name)
         self.assertEqual(datos["cuadricula"], {"columnas": 3, "filas": 6})
         self.assertEqual(datos["animaciones"]["frente"]["parpadeo"], {

@@ -29,6 +29,7 @@ import pe.kusi.edu.laberinto.GuionesDePrueba;
 import pe.kusi.edu.laberinto.MapasBase;
 import pe.kusi.edu.laberinto.ValidadorLaberinto;
 import pe.kusi.edu.model.AsignacionDocente;
+import pe.kusi.edu.model.Generacion;
 import pe.kusi.edu.model.Seccion;
 import pe.kusi.edu.repository.*;
 import pe.kusi.edu.service.DjangoInternoClient;
@@ -778,10 +779,101 @@ class GeneracionesProcesoTest {
             ultima = generar(solicitud);
             procesar(ultima, "ses-docente").andExpect(jsonPath("$.generacion.estado").value("lista"));
         }
+        // Un juego listo no llega al niño hasta que el docente le da el OK.
+        leer("/api/edu/estudiante/juegos/", "ses-alumno-demo").andExpect(status().isOk()).andExpect(jsonPath("$.juegos.length()").value(0));
+        for (Generacion g : generaciones.findAll()) {
+            if (!g.getSolicitudId().equals(solicitud)) continue;
+            escribir("/api/edu/generaciones/" + g.getId() + "/publicar/", "ses-docente", Map.of()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.generacion.publicada").value(true));
+        }
         leer("/api/edu/estudiante/juegos/", "ses-alumno-demo").andExpect(status().isOk())
                 .andExpect(jsonPath("$.juegos.length()").value(5)).andExpect(jsonPath("$.juegos[0].id").value(ultima.toString()))
                 .andExpect(jsonPath("$.juegos[0].titulo").isNotEmpty()).andExpect(jsonPath("$.juegos[0].paquete").isNotEmpty());
         leer("/api/edu/estudiante/juegos/", "ses-alumno-ajeno").andExpect(status().isOk()).andExpect(jsonPath("$.juegos.length()").value(0));
         leer("/api/edu/estudiante/juegos/", "ses-docente").andExpect(status().isForbidden());
+    }
+
+    // El docente elimina una propuesta suya con sus versiones, sus juegos y sus etapas.
+    @Test
+    void el_docente_elimina_una_propuesta_con_sus_juegos() throws Exception {
+        respuestasDeLaIa(GuionesDePrueba.respuestaBuena());
+        UUID solicitud = solicitudAprobada();
+        UUID juego = generar(solicitud);
+        procesar(juego, "ses-docente").andExpect(jsonPath("$.generacion.estado").value("lista"));
+        UUID otra = solicitudAprobada();
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(RUTA_SOLICITUDES + solicitud + "/")
+                .cookie(new Cookie("sessionid", "ses-docente"), new Cookie("kusi_edu_csrf", TOKEN)).header("X-XSRF-TOKEN", TOKEN))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.eliminada").value(true));
+
+        leer(RUTA_SOLICITUDES + solicitud + "/", "ses-docente").andExpect(status().isNotFound());
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.generaciones where solicitud_id = ?", Integer.class, solicitud));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.etapas_generacion where generacion_id = ?", Integer.class, juego));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.propuestas where solicitud_id = ?", Integer.class, solicitud));
+        // La otra propuesta del docente sigue intacta.
+        leer(RUTA_SOLICITUDES + otra + "/", "ses-docente").andExpect(status().isOk());
+    }
+
+    // Solo se envía a los estudiantes un juego listo, y solo lo envía su docente.
+    @Test
+    void solo_se_envia_un_juego_listo_y_solo_lo_envia_su_docente() throws Exception {
+        UUID pendiente = generacionPendiente();
+        escribir("/api/edu/generaciones/" + pendiente + "/publicar/", "ses-docente", Map.of()).andExpect(status().isConflict());
+        respuestasDeLaIa(GuionesDePrueba.respuestaBuena());
+        procesar(pendiente, "ses-docente").andExpect(jsonPath("$.generacion.estado").value("lista"))
+            .andExpect(jsonPath("$.generacion.publicada").value(false));
+        escribir("/api/edu/generaciones/" + pendiente + "/publicar/", "ses-docente", Map.of()).andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.publicada").value(true));
+        // Enviarlo otra vez no falla ni cambia nada.
+        escribir("/api/edu/generaciones/" + pendiente + "/publicar/", "ses-docente", Map.of()).andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.publicada").value(true));
+    }
+
+    // Un tema que pide otro juego (por ejemplo, de Religión): la propuesta lo diseña y queda
+    // guardada, pero Kusi no lo genera, porque hoy solo sabe construir el laberinto.
+    @Test
+    void un_tema_que_pide_otro_juego_tiene_su_propuesta_pero_no_se_genera() throws Exception {
+        Map<String, Object> creacion = new HashMap<>(propuestaValida());
+        creacion.put("tipo_juego", "otro");
+        creacion.put("regla_juego", "ninguna");
+        creacion.put("objetos", List.of("la luz", "el sol y la luna", "los peces y las aves"));
+        when(generadorPropuestas.generar(any())).thenReturn(creacion);
+        UUID solicitud = solicitudAprobada("Los días de la creación");
+
+        leer(RUTA_SOLICITUDES + solicitud + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.propuesta.tipo_juego").value("otro"))
+            .andExpect(jsonPath("$.solicitud.propuesta.se_puede_generar").value(false))
+            .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").isEmpty());
+        escribir(RUTA_SOLICITUDES + solicitud + "/versiones/1/generar/", "ses-docente", Map.of())
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.startsWith("Por ahora Kusi solo crea juegos de laberinto")));
+        assertEquals(0, generaciones.findAll().stream().filter(g -> g.getSolicitudId().equals(solicitud)).count());
+    }
+
+    // Si la IA dice «laberinto» pero sus objetos no son frutas ni verduras, Kusi no se fía:
+    // tampoco lo genera. Un laberinto de frutas sigue generándose como siempre.
+    @Test
+    void kusi_decide_si_puede_construir_el_laberinto_segun_sus_objetos() throws Exception {
+        Map<String, Object> dudosa = new HashMap<>(propuestaValida());
+        dudosa.put("tipo_juego", "laberinto");
+        dudosa.put("regla_juego", "orden");
+        dudosa.put("objetos", List.of("el sol", "la luna"));
+        Map<String, Object> deFrutas = new HashMap<>(dudosa);
+        deFrutas.put("objetos", List.of("fresas", "plátanos"));
+        when(generadorPropuestas.generar(any())).thenReturn(dudosa, deFrutas);
+        respuestasDeLaIa(GuionesDePrueba.respuestaBuena());
+
+        UUID conDibujosNuevos = solicitudAprobada("El día y la noche");
+        leer(RUTA_SOLICITUDES + conDibujosNuevos + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.propuesta.tipo_juego").value("otro"));
+        escribir(RUTA_SOLICITUDES + conDibujosNuevos + "/versiones/1/generar/", "ses-docente", Map.of())
+            .andExpect(status().isConflict());
+
+        UUID deFrutasYVerduras = solicitudAprobada(TEMA_DE_PATRONES);
+        leer(RUTA_SOLICITUDES + deFrutasYVerduras + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.solicitud.propuesta.tipo_juego").value("laberinto"))
+            .andExpect(jsonPath("$.solicitud.propuesta.se_puede_generar").value(true));
+        procesar(generar(deFrutasYVerduras), "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.estado").value("lista"));
     }
 }

@@ -16,8 +16,8 @@ Abre <http://localhost:5174/> (el panel web usa el puerto 5173). El laberinto
 se abre directamente con `public/paquete-laberinto-ejemplo.json`.
 El alias `?paquete=laberinto` sigue funcionando para los enlaces existentes.
 
-- Toca una fruta para caminar hasta ella y recoger solo la elegida. Toca el
-  camino para elegir un destino; otro toque cambia la ruta. Los arrastres se ignoran.
+- Mantén y arrastra el joystick para elegir un rumbo. Al soltar, el cuy termina
+  la casilla y se detiene. Los toques sobre el mapa no eligen un destino.
 - Las flechas mantienen el avance hasta el muro y recogen alimentos al pasar.
 - **Ayuda** muestra las pistas y **Escuchar** repite la consigna.
 - `?nivel=2` y `?nivel=3` abren directamente esos niveles.
@@ -26,8 +26,8 @@ El alias `?paquete=laberinto` sigue funcionando para los enlaces existentes.
 - `?renderizador=auto` permite comparar la elección de Phaser con Canvas,
   que es el renderizador predeterminado.
 
-El lienzo usa `Scale.EXPAND`, con base de 1280 × 720 y disposiciones para
-pantallas clásicas y alargadas. El tamaño de las casillas y los controles se
+El lienzo usa `Scale.EXPAND`, con base de 1280 × 720 y columnas para el
+joystick, el mapa y Kusi. El tamaño de las casillas y los controles se
 ajusta a la ventana.
 
 ## Guiones y mensajes
@@ -45,16 +45,26 @@ Consulta [HU46-LABERINTO.md](HU46-LABERINTO.md) para el protocolo y los niveles.
 
 ## Dibujos, animaciones y sonidos
 
-Los alimentos y el kit están en `public/dibujos/`; el fondo usa WebP y los otros
-recursos PNG. La mano y los iconos de clase se dibujan por código. Si falta una
-imagen del paisaje o un alimento, se conserva su reemplazo con una figura simple.
+Los alimentos, los personajes y el kit están en `public/dibujos/`. El paisaje
+de `public/dibujos/cenital-v1/` comparte la vista desde arriba del mapa y anima
+pasto, arbustos y flores con cuatro cuadros ilustrados por hoja. Los recursos
+anteriores se conservan. Kusi y su globo están a la derecha y el joystick a la
+izquierda. El origen del nuevo arte y su preparación están documentados en
+[arte/fondo-cenital-v1/LEEME.md](arte/fondo-cenital-v1/LEEME.md).
+
+La barra muestra los alimentos reales: en patrones conserva el orden y señala
+el siguiente; en clasificación muestra las frutas o verduras disponibles,
+marca la que se recogió y permite elegir en cualquier orden. El contador indica
+cuántas faltan para la meta, incluso si hay más opciones que las necesarias.
+Los zorros exploran los pasillos desde que aparece el nivel, sin esperar al
+primer movimiento del niño; priorizan las casillas menos visitadas.
 
 El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v6.png`, y
 `zorro-animado-v1.json` usa `zorro-caminar-v1.png`. Los originales y reportes
 necesarios para reproducir las animaciones se conservan en `arte/`.
 Las herramientas están documentadas en
 [herramientas/animaciones/LEEME.md](herramientas/animaciones/LEEME.md).
-El kit del paisaje se prepara con `herramientas/procesar_laberinto.py`.
+El nuevo paisaje se prepara con `herramientas/preparar_fondo_cenital.mjs`.
 
 Los siete sonidos del laberinto y sus licencias están en `public/sonidos/`;
 los originales se conservan en `arte/sonidos/`. El botón de sonido recuerda el silencio.

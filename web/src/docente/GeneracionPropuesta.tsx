@@ -6,8 +6,10 @@ import { IconoDocente } from './IconoDocente'
 import { DetalleGeneracion } from './DetalleGeneracion'
 
 const mensaje = (error: unknown) => error instanceof Error ? error.message : 'No se pudo consultar el juego. Intenta de nuevo.'
-type Propiedades = { solicitud: string; version: number; aprobada: boolean; bloqueada?: boolean }
-export function GeneracionPropuesta({ solicitud, version, aprobada, bloqueada = false }: Propiedades) {
+// «disponible»: Kusi sabe construir el juego que diseñó la propuesta. Si es otro juego, la
+// propuesta queda guardada y el botón de generar no se activa.
+type Propiedades = { solicitud: string; version: number; aprobada: boolean; bloqueada?: boolean; disponible?: boolean }
+export function GeneracionPropuesta({ solicitud, version, aprobada, bloqueada = false, disponible = true }: Propiedades) {
   const [historial, establecerHistorial] = useState<ResumenGeneracion[] | null>(null)
   const [seleccion, establecerSeleccion] = useState<string | null>(null)
   const [generacion, establecerGeneracion] = useState<Generacion | null>(null)
@@ -99,13 +101,14 @@ export function GeneracionPropuesta({ solicitud, version, aprobada, bloqueada = 
   // Solo la última de la versión vigente evita crear otra del mismo contenido.
   const ultimaDeVersion = historial?.find((item) => item.version_propuesta === version)
   const enCurso = ultimaDeVersion && !generacionTerminada(ultimaDeVersion.estado) ? ultimaDeVersion : null
-  const puedeGenerar = aprobada && !bloqueada && historial !== null && !errorHistorial && !enCurso && !iniciando && !procesando
+  const puedeGenerar = aprobada && disponible && !bloqueada && historial !== null && !errorHistorial && !enCurso && !iniciando && !procesando
   const visibles = mostrarTodas ? historial : historial?.slice(0, 5)
   return <section className="doc-generacion" aria-label="Generar y probar el juego">
     <header className="doc-generacion-cabecera"><div><h2>De la propuesta al juego</h2><p>El juego se prepara y se revisa antes de que lo pruebes con tu clase.</p></div>
       {aprobada && <button type="button" className="doc-generar-juego" disabled={!puedeGenerar} onClick={() => void generar()}><IconoDocente nombre={iniciando || procesando ? 'reloj' : 'flecha'} />{iniciando ? 'Registrando el juego…' : actual?.estado === 'fallida' ? 'Intentar de nuevo' : 'Generar juego'}</button>}
     </header>
-    {!aprobada && <p className="doc-ayuda">Aprueba la versión vigente para generar un juego nuevo. Puedes consultar y probar los juegos que ya se guardaron.</p>}
+    {!disponible && <MensajeDocente titulo="Este juego todavía no se puede crear"><p>Por ahora Kusi solo crea juegos de laberinto con frutas y verduras. Esta propuesta queda guardada para cuando Kusi tenga este tipo de juego.</p></MensajeDocente>}
+    {disponible && !aprobada && <p className="doc-ayuda">Aprueba la versión vigente para generar un juego nuevo. Puedes consultar y probar los juegos que ya se guardaron.</p>}
     {bloqueada && aprobada && <p className="doc-ayuda">Termina la edición o el cambio de la propuesta antes de generar su juego.</p>}
     {historial === null && !errorHistorial && <p role="status">Buscando los juegos de esta solicitud…</p>}
     {errorHistorial && <MensajeDocente titulo="No se pudo cargar el historial" error><p>{errorHistorial}</p><button type="button" className="secundario" onClick={() => establecerRecargaHistorial((valor) => valor + 1)}>Volver a cargar juegos</button></MensajeDocente>}

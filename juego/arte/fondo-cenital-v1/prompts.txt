@@ -1,0 +1,21 @@
+Herramienta: image_gen integrada; originales conservados, sin reemplazar imágenes anteriores.
+
+FONDO CENITAL
+Use case: precise-object-edit.
+Asset type: standalone background artwork for an actual 2D children's maze game.
+Input image is the approved Kusi game mockup, used as style and camera reference.
+Generate ONLY its overhead countryside background layer, a landscape approximately 16:9 image. Remove ALL interface and gameplay: no maze, no adobe walls, no sandy rectangle, no food, no guinea pigs, no fox, no joystick, no speech bubbles, no progress bar, no sound/help icons, no letters. Fill the removed central areas with uninterrupted fresh grass. There must be no trace of the game elements.
+Preserve the hand-painted cartoon style, vivid lime and olive green grass, warm dark brown outlines, soft painted texture, top-down terracotta roof tiles at cropped outer corners, a few smooth rounded grey stones, tiny sparse daisies near the edges. All viewed vertically from above, orthographic camera, no horizon or sky or house facades. The image is entirely ground plane.
+Composition: broad empty grassy lawn throughout the central 75% of the width and 80% of the height, and also much of both sides to leave room for game controls. House ROOFS only, partial and cropped: at extreme upper left and extreme lower left corners and extreme upper right corner, each occupies no more than 12% of width and 20% height. A few stones and small sparse flowers along outer rim. NO large shrubs or grass tufts: those will be added as separately animated sprites. Keep the same green ground texture at center and edges. No border or watermark. High quality ready-to-use game background.
+
+HOJA DE VEGETACIÓN
+Use case: stylized-concept.
+Asset type: production sprite sheet for a 2D overhead children's game.
+Create exactly ONE square transparent PNG sprite sheet with 4 columns and 4 rows, sixteen equal square cells, NO visible grid lines, no captions, no numbers. Each row is one object animated through four frames from left to right. Each object centered inside its own cell with at least 15% transparent padding on all sides, no object touches its cell edge. Pure transparent background everywhere except the drawn objects, no checkerboard texture, no grass ground plate.
+Camera: directly above, true top-down orthographic. Style matches the reference image: charming hand-painted cartoon foliage, dark warm brown/green outlines, rounded shapes, lime-green and emerald leaves, subtle highlights, not pixel art, not realistic 3D. Reference image is used for style and foliage palette only, do not draw its maze or UI.
+ROW 1: a small overhead tuft of 7 pointed green grass blades, FOUR subtly DIFFERENT hand-drawn poses in a gentle looping breeze: blades centered, leaning slightly left, centered again with different individual leaf curves, leaning slightly right. Keep the same tuft identity, same number of blades, same scale and stable center.
+ROW 2: one round dense overhead green shrub seen from above, with 12-16 layered oval leaves, FOUR subtly DIFFERENT poses of leaves shifting and turning gently in the breeze. Same round canopy footprint and stable center, do not shift the entire shrub.
+ROW 3: a small cluster of three white daisies with golden centers and a few green leaves, seen from above, FOUR subtly DIFFERENT breeze poses: petal and leaf positions change slightly. Same flowers, size and stable root position.
+ROW 4: a small cluster of orange and pink flowers surrounded by rounded green leaves, seen from above, FOUR subtly DIFFERENT breeze poses. Same flowers and size, stable root positions.
+Animation should be clear but restrained, useful for a loop 0,1,2,3,2,1. All four frames in each row use exactly the same object scale and centered root/canopy anchor. No cast ground shadows, no animals, no houses, no letters, no logos, no watermark. Preserve transparent padding between all 16 cells.
+

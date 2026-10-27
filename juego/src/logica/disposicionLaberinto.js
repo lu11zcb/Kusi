@@ -1,171 +1,54 @@
-// Dónde va cada cosa del laberinto según la forma de la pantalla. Es lógica pura:
-// reparte medidas y no toca Phaser, así que se prueba sin abrir un navegador.
-//
-// Hay dos disposiciones. La clásica es la de siempre: la barra arriba, la columna
-// de Kusi a la izquierda y el mapa a la derecha, todo dentro del mundo de
-// 1280 × 720. La lateral es para celulares alargados: el lienzo se ensancha (el
-// alto base no cambia) y la barra y Kusi se juntan en un panel a la izquierda,
-// de modo que el mapa puede ocupar todo el alto de la pantalla.
-import { ANCHO, ALTO } from '../medidas.js'
+import { CLASES_LABERINTO } from '../datos/validarLaberinto.js'
 
-// Dónde cabe el mapa en la disposición clásica, bajo la barra y a la derecha de Kusi.
-const ZONA_CLASICA = Object.freeze({ x: 218, y: 136, ancho: 1040, alto: 568 })
-// El panel lateral nunca es más angosto que «minimo» ni más ancho que «maximo»;
-// «separacion» lo aparta del mapa. Son unidades del mundo, no píxeles.
-const PANEL = Object.freeze({ minimo: 340, maximo: 420, separacion: 12 })
-// La disposición lateral solo se elige si agranda las casillas al menos un 12 %.
-// En una pantalla de 16:9 la diferencia es mínima y se conserva la clásica.
-const GANANCIA_MINIMA = 1.12
-
-// La columna de Kusi (letrero, globo, Kusi y altavoz) mide lo mismo en las dos
-// disposiciones; solo cambia a qué distancia del borde izquierdo empieza.
-const GUIA = Object.freeze({
-  x: 10, y: 276, ancho: 196, alto: 432,
-  etiqueta: { x: 108, y: 296, ancho: 190, alto: 58 },
-  globo: { x: 108, y: 458, ancho: 196, alto: 220, cola: 28 },
-  kusi: { x: 64, y: 702, ancho: 94, alto: 106 },
-  sombraKusi: { x: 64, y: 701, ancho: 76, alto: 10 },
-  altavoz: { x: 166, y: 674 },
-})
-
-// Flores y piedras, cada una con su lugar relativo. En la disposición clásica van
-// en el pasto que rodea al mapa; en la lateral no sobra pasto junto al mapa y van
-// en el hueco que deja el panel a la derecha del globo.
-const DECORACION_LATERAL = Object.freeze([
-  { x: 270, y: 336, tipo: 'flor' }, { x: 338, y: 440, tipo: 'piedra' },
-  { x: 300, y: 552, tipo: 'flor' }, { x: 252, y: 646, tipo: 'piedra' },
-])
-
-function medirClasica(filas, columnas) {
-  const casilla = Math.floor(Math.min(ZONA_CLASICA.ancho / columnas, ZONA_CLASICA.alto / filas))
-  const origen = {
-    x: ZONA_CLASICA.x + (ZONA_CLASICA.ancho - columnas * casilla) / 2,
-    y: ZONA_CLASICA.y + (ZONA_CLASICA.alto - filas * casilla) / 2,
-  }
-  const mapa = { ...origen, ancho: columnas * casilla, alto: filas * casilla }
-  return {
-    tipo: 'clasica', casilla, origen, mapa, diseno: { ancho: ANCHO, alto: ALTO }, panel: null,
-    decoracion: [
-      { x: mapa.x - 23, y: mapa.y + mapa.alto * 0.18, tipo: 'flor' },
-      { x: mapa.x - 21, y: mapa.y + mapa.alto * 0.51, tipo: 'piedra' },
-      { x: mapa.x + mapa.ancho + 21, y: mapa.y + mapa.alto * 0.33, tipo: 'piedra' },
-      { x: mapa.x + mapa.ancho + 22, y: mapa.y + mapa.alto * 0.72, tipo: 'flor' },
-    ].filter(({ x }) => x > 12 && x < ANCHO - 12),
-  }
+// Mando a la izquierda y Kusi con su consigna a la derecha del mapa.
+export const COLUMNAS = Object.freeze({ izquierda: 200, derecha: 350, barra: 88 })
+export function calcularDisposicion({ ancho, filas, columnas }) {
+  const casilla = Math.max(64, Math.min(90, Math.floor(1050 / columnas), Math.floor(630 / filas)))
+  const mundoAncho = Math.max(1600, ancho, COLUMNAS.izquierda + columnas * casilla + COLUMNAS.derecha)
+  const mundoAlto = Math.max(720, COLUMNAS.barra + filas * casilla + 2)
+  const area = { x: COLUMNAS.izquierda, y: 88, ancho: mundoAncho - 550, alto: mundoAlto - 90 }
+  const origen = { x: area.x + (area.ancho - columnas * casilla) / 2,
+    y: area.y + (area.alto - filas * casilla) / 2 }
+  return { tipo: 'columnas', casilla, origen, mapa: { ...origen, ancho: columnas * casilla, alto: filas * casilla },
+    diseno: { ancho: mundoAncho, alto: mundoAlto }, panel: { x: 0, y: 88, ancho: 200, alto: mundoAlto - 88 },
+    columnaDerecha: { x: mundoAncho - 350, y: 88, ancho: 350, alto: mundoAlto - 88 }, decoracion: [] }
 }
 
-function medirLateral(ancho, alto, filas, columnas) {
-  const casilla = Math.floor(Math.min(alto / filas, (ancho - PANEL.minimo - PANEL.separacion) / columnas))
-  if (casilla < 1) return null
-  const mapaAncho = columnas * casilla
-  const mapaAlto = filas * casilla
-  const panelAncho = Math.min(PANEL.maximo, ancho - mapaAncho - PANEL.separacion)
-  // El conjunto panel + mapa queda centrado; lo que sobra se reparte a los lados.
-  const izquierda = (ancho - (panelAncho + PANEL.separacion + mapaAncho)) / 2
-  const origen = { x: izquierda + panelAncho + PANEL.separacion, y: (alto - mapaAlto) / 2 }
-  return {
-    tipo: 'lateral', casilla, origen, mapa: { ...origen, ancho: mapaAncho, alto: mapaAlto },
-    diseno: { ancho, alto }, panel: { x: izquierda, y: 0, ancho: panelAncho, alto },
-    decoracion: DECORACION_LATERAL.map((lugar) => ({ ...lugar, x: lugar.x + izquierda })),
-  }
+export function distribuirBarra(disposicion, regla, objetos = []) {
+  const mundo = disposicion.diseno.ancho
+  const caja = { x: mundo / 2 - 380, y: 4, ancho: 760, alto: 78 }
+  const orden = regla.tipo === 'orden'
+  // Una ficha por alimento real, incluidos los repetidos. En clasificación no
+  // se inventa una secuencia ni se sustituye toda la clase por fresas.
+  const objetivos = orden ? regla.secuencia.map(tipo => ({ tipo }))
+    : objetos.flatMap((objeto, indiceObjeto) => CLASES_LABERINTO[regla.clase].includes(objeto.tipo)
+      ? [{ tipo: objeto.tipo, indiceObjeto }] : [])
+  const cantidad = objetivos.length
+  const espacio = Math.min(178, (caja.ancho - 40) / cantidad)
+  const lado = Math.min(46, espacio - 14)
+  const inicio = caja.x + caja.ancho / 2 - cantidad * espacio / 2 + espacio / 2
+  const fichas = Array.from({ length: cantidad }, (_, indice) => ({
+    ...objetivos[indice],
+    x: inicio + indice * espacio, y: 54, ancho: lado, alto: lado,
+    imagen: { x: inicio + indice * espacio, y: 54, lado },
+    marca: { x: inicio + indice * espacio + lado * .3, y: 62 },
+  }))
+  return { caja, titulo: { x: caja.x + caja.ancho / 2, y: 7 }, fichas, icono: null,
+    botones: { escuchar: { x: mundo - 206, y: 45, ancho: 74, alto: 74 },
+      ayuda: { x: mundo - 123, y: 45, ancho: 74, alto: 74 } } }
 }
 
-// «ancho» y «alto» son el tamaño del lienzo en unidades del juego; con EXPAND el
-// alto es siempre el base (720) cuando la pantalla es más ancha que 16:9.
-export function calcularDisposicion({ ancho, alto, filas, columnas }) {
-  const clasica = medirClasica(filas, columnas)
-  const lateral = alto <= ALTO + 0.5 ? medirLateral(ancho, alto, filas, columnas) : null
-  return lateral && lateral.casilla >= clasica.casilla * GANANCIA_MINIMA ? lateral : clasica
+export function distribuirGuia(disposicion, texto = '') {
+  const x = disposicion.diseno.ancho - COLUMNAS.derecha
+  const h = texto.length > 65 ? 232 : 180
+  const globo = { x: x + 14, y: 446 - h, ancho: 322, alto: h, altoMaximo: 304, bordeInferior: 446 }
+  return { caja: { x: x + 8, y: 122, ancho: 332, alto: 592 }, franja: globo, globo,
+    kusi: { x: x + 50, y: 464, ancho: 250, alto: 250 },
+    etiqueta: { x: x + 175, y: 704, ancho: 322, alto: 0 },
+    joystick: { x: 100, y: 616, radio: 92, radioPerilla: 44 } }
 }
 
-// Los textos y botones de la barra de progreso. En la clásica es una tira ancha
-// arriba; en la lateral es una tarjeta alta dentro del panel. Devuelve la caja de
-// la tarjeta y la posición de cada pieza, sin dibujar nada.
-export function distribuirBarra(disposicion, regla) {
-  return disposicion.tipo === 'lateral' ? barraLateral(disposicion.panel, regla) : barraClasica(regla)
-}
-
-function barraClasica(regla) {
-  const barra = {
-    caja: { x: 20, y: 12, ancho: ANCHO - 40, alto: 104 },
-    titulo: { x: 48, y: 24 }, subtitulo: { x: 48, y: 68 }, icono: null,
-    botones: {
-      escuchar: { x: 1030, y: 62, ancho: 138, alto: 72, tamano: 27 },
-      ayuda: { x: 1184, y: 62, ancho: 118, alto: 72, tamano: 28 },
-    },
-  }
-  if (regla.tipo === 'orden') {
-    const espacio = Math.min(110, 600 / regla.secuencia.length)
-    const lado = Math.min(78, espacio - 10)
-    barra.fichas = regla.secuencia.map((_, indice) => {
-      const x = 346 + indice * espacio
-      return {
-        x, y: 64, ancho: lado, alto: lado,
-        imagen: { x, y: 63, lado: lado - 10 }, marca: { x: x + lado * 0.34, y: 64 + lado * 0.34 },
-      }
-    })
-    return barra
-  }
-  barra.icono = { x: 344, y: 64, lado: 78 }
-  const espacio = Math.min(70, 480 / regla.meta)
-  barra.fichas = Array.from({ length: regla.meta }, (_, indice) => {
-    const x = 432 + indice * espacio
-    return { x, y: 65, ancho: espacio - 12, alto: 58, imagen: null, marca: { x, y: 65 } }
-  })
-  return barra
-}
-
-function barraLateral(panel, regla) {
-  const caja = { x: panel.x + 12, y: 10, ancho: panel.ancho - 24, alto: 254 }
-  const centro = caja.x + caja.ancho / 2
-  const interior = caja.ancho - 32
-  const fila = 128
-  const botonEscuchar = { ancho: 150, alto: 84 }
-  const botonAyuda = { ancho: 124, alto: 84 }
-  const separacion = 14
-  const inicio = centro - (botonEscuchar.ancho + separacion + botonAyuda.ancho) / 2
-  const barra = {
-    caja, titulo: { x: caja.x + 24, y: 14 }, subtitulo: { x: caja.x + 24, y: 52 }, icono: null,
-    botones: {
-      escuchar: { x: inicio + botonEscuchar.ancho / 2, y: 214, ...botonEscuchar, tamano: 27 },
-      ayuda: { x: inicio + botonEscuchar.ancho + separacion + botonAyuda.ancho / 2, y: 214, ...botonAyuda, tamano: 28 },
-    },
-  }
-  if (regla.tipo === 'orden') {
-    const cantidad = regla.secuencia.length
-    const espacio = Math.min(84, interior / cantidad)
-    const lado = Math.min(66, espacio - 8)
-    const primero = centro - (cantidad * espacio) / 2 + espacio / 2
-    barra.fichas = regla.secuencia.map((_, indice) => {
-      const x = primero + indice * espacio
-      return {
-        x, y: fila, ancho: lado, alto: lado,
-        imagen: { x, y: fila - 1, lado: lado - 10 }, marca: { x: x + lado * 0.34, y: fila + lado * 0.34 },
-      }
-    })
-    return barra
-  }
-  // La clase de la meta (fruta, verdura) va como dibujo a la izquierda de las casillas.
-  const lado = 64
-  barra.icono = { x: caja.x + 16 + lado / 2, y: fila, lado }
-  const espacio = Math.min(64, (interior - lado - 8) / regla.meta)
-  const primero = caja.x + 16 + lado + 8 + espacio / 2
-  barra.fichas = Array.from({ length: regla.meta }, (_, indice) => {
-    const x = primero + indice * espacio
-    const ladoCasilla = Math.min(58, espacio - 10)
-    return { x, y: fila, ancho: ladoCasilla, alto: ladoCasilla, imagen: null, marca: { x, y: fila } }
-  })
-  return barra
-}
-
-// La columna de Kusi: el letrero que explica cómo moverse, el globo con la
-// consigna, Kusi con su sombrita y el altavoz. En la lateral se corre al panel.
-export function distribuirGuia(disposicion) {
-  const dx = disposicion.panel ? disposicion.panel.x : 0
-  const mover = (pieza) => ({ ...pieza, x: pieza.x + dx })
-  return {
-    caja: { x: GUIA.x + dx, y: GUIA.y, ancho: GUIA.ancho, alto: GUIA.alto },
-    etiqueta: mover(GUIA.etiqueta), globo: mover(GUIA.globo), kusi: mover(GUIA.kusi),
-    sombraKusi: mover(GUIA.sombraKusi), altavoz: mover(GUIA.altavoz),
-  }
+// Comparte la fila del altavoz y Ayuda, también al alejar la cámara.
+export function ubicarSonidoSuperior({ mundoAncho, ancho, scrollX = 0 }, boton) {
+  return { x: (mundoAncho ?? ancho + scrollX * 2) - 52.5, y: 28 + boton.alto / 2 }
 }

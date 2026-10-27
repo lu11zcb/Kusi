@@ -76,6 +76,15 @@ public class GeneracionesService {
                     "La propuesta debe estar aprobada antes de generar el juego");
         }
 
+        // La propuesta diseña el juego que corresponde al tema, pero hoy Kusi solo sabe
+        // construir el laberinto. Otro juego queda guardado y no se genera.
+        if (!ultima.sePuedeGenerar()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Por ahora Kusi solo crea juegos de laberinto con frutas y verduras. "
+                            + "Esta propuesta queda guardada para cuando Kusi tenga este tipo de juego.");
+        }
+
         Generacion generacion = generacionRepository.save(
                 new Generacion(
                         solicitudId,
@@ -150,6 +159,19 @@ public class GeneracionesService {
                 docenteId, generacion.getSolicitudId());
 
         return generacion;
+    }
+
+    // El docente probó el juego y le da el OK: desde ahora aparece en la app de los
+    // estudiantes de la sección. Solo se envía un juego «lista».
+    public Generacion publicar(UUID docenteId, UUID generacionId) {
+        Generacion generacion = consultar(docenteId, generacionId);
+        if (!"lista".equals(generacion.getEstado())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Solo se puede enviar a los estudiantes un juego listo");
+        }
+        generacion.publicar();
+        return generacionRepository.save(generacion);
     }
 
     @Transactional(readOnly = true)

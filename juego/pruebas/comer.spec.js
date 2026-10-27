@@ -106,32 +106,17 @@ const leerSacudida = (e) => ({
   moviendose: e.movimiento.moviendose, fruta: e.vida.frutas[3], casilla: e.casilla,
 })
 
-test('al comer mal la fruta rebota como antes y el cuy se sacude un poquito sin dejar de caminar', async ({ page: pagina }) => {
+test('al comer mal la fruta rebota y el cuy sigue con su sprite sin deformarse', async ({ page: pagina }) => {
   const inicial = await abrir(pagina)
   const base = inicial.vida.frutas[3]
   await caminarHastaElError(pagina)
   const muestras = await muestrear(pagina, 600, leerSacudida)
 
-  // Comer bien no sacude: las dos primeras frutas fueron correctas y solo hay una sacudida.
-  for (const m of muestras) expect(m.sacudidas).toBe(1)
-  // Un poquito: unos píxeles de lado a lado, sin subir, bajar, ensanchar ni girar.
-  const lados = muestras.map((m) => m.dx)
-  expect(Math.max(...lados.map(Math.abs))).toBeGreaterThan(1)
-  expect(Math.max(...lados.map(Math.abs))).toBeLessThan(inicial.casilla * 0.08)
-  expect(lados.some((dx) => dx > 0.3) && lados.some((dx) => dx < -0.3)).toBe(true)
-  for (const m of muestras) {
-    // La sacudida no sube ni baja al cuy: lo único vertical es el rebote normal de
-    // sus pasos, que nunca pasa de 0,06 casillas. Tampoco lo ensancha ni lo gira.
-    expect(m.dy).toBeLessThanOrEqual(0)
-    expect(-m.dy).toBeLessThan(inicial.casilla * 0.07)
-    expect(m.rotacion).toBe(0)
+  for(const m of muestras){
+    expect(m.sacudidas).toBe(0);expect(m.sacudiendo).toBe(false)
+    expect(m.dx).toBe(0);expect(m.dy).toBe(0);expect(m.rotacion).toBe(0)
+    expect(m.escalaX).toBe(m.escalaBaseX)
   }
-  // Se apaga sola en menos de medio segundo.
-  const quieta = muestras.find((m) => !m.sacudiendo)
-  expect(quieta).toBeDefined()
-  expect(quieta.t - muestras[0].t).toBeLessThan(450)
-  expect(muestras.at(-1).dx).toBe(0)
-  // El cuy sigue su camino mientras se sacude.
   expect(muestras[0].moviendose).toBe(true)
 
   // La fruta equivocada rebota como siempre: sube y vuelve a su casilla, sin desaparecer.

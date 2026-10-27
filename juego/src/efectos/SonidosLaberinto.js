@@ -8,6 +8,7 @@ export const SONIDOS_LABERINTO = Object.freeze({
   captura: { archivo: 'cuy-ay.ogg', volumen: 0.08, espera: 400 },
   puerta: { archivo: 'puerta.ogg', volumen: 0.1, espera: 250 },
   nivel: { archivo: 'nivel-fanfarria.ogg', volumen: 0.08, espera: 400 },
+  alerta: { archivo: 'zorro-alerta.wav', volumen: 0.06, espera: 650 },
 })
 const PREFIJO_CLAVE = 'laberinto-sonido-'
 const CARPETA_SONIDOS = 'sonidos/'

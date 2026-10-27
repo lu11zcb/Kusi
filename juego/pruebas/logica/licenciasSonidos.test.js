@@ -15,10 +15,13 @@ const PAQUETES = [
   { licencia: 'LICENCIA-KENNEY-INTERFACE.txt', original: 'kenney_interface-sounds/License.txt', nombre: 'Interface Sounds' },
 ]
 
-test('public/sonidos tiene los siete archivos de audio que usa el controlador', async () => {
+test('public/sonidos tiene los ocho archivos de audio que usa el controlador', async () => {
   const archivos = Object.values(SONIDOS_LABERINTO).map((sonido) => sonido.archivo)
-  assert.equal(archivos.length, 7)
+  assert.equal(archivos.length, 8)
   for (const archivo of archivos) assert.equal(await existe(new URL(archivo, PUBLICOS)), true, archivo)
+  const alerta = await readFile(new URL('zorro-alerta.wav', PUBLICOS))
+  assert.equal(alerta.toString('ascii', 0, 4), 'RIFF')
+  assert.equal(alerta.toString('ascii', 8, 12), 'WAVE')
 })
 
 test('cada paquete de Kenney conserva su licencia CC0, idéntica a la original', async () => {

@@ -16,6 +16,9 @@ from verificar_hoja import verificar_hoja
 
 
 RAIZ_JUEGO = Path(__file__).resolve().parents[2]
+# Las hojas del cuy anterior se conservan como muestras de las herramientas: ya no las
+# publica el juego, pero sirven para comprobar el armado, la alineación y las vistas previas.
+MUESTRAS = Path(__file__).resolve().parent / "muestras"
 CELDA = (256, 256)
 CUADROS_FELIZ = [9, 10, 11]
 CUADROS_APOYADOS = [9, 11]
@@ -33,7 +36,7 @@ class PruebasSalto(unittest.TestCase):
         cls.addClassCleanup(cls.temporal.cleanup)
         cls.carpeta = Path(cls.temporal.name)
         cls.original = RAIZ_JUEGO / "arte/cuy/origen/cuy-feliz-3-cuadros.png"
-        cls.base = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v2.png"
+        cls.base = MUESTRAS / "cuy-nino-cuadros-v2.png"
         cls.atlas = cls.carpeta / "cuadros-con-salto.png"
         cls.informe = armar_hoja(
             cls.original,
@@ -64,7 +67,7 @@ class PruebasSalto(unittest.TestCase):
             self.assertEqual(reconstruida.size, (768, 1024))
             self.assertEqual(base.size, (768, 768))
             self.assertEqual(reconstruida.crop((0, 0, 768, 768)).tobytes(), base.convert("RGBA").tobytes())
-            with Image.open(RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v3.png") as publicada:
+            with Image.open(MUESTRAS / "cuy-nino-cuadros-v3.png") as publicada:
                 self.assertEqual(reconstruida.size, publicada.size)
                 self.assertEqual(reconstruida.tobytes(), publicada.convert("RGBA").tobytes())
 

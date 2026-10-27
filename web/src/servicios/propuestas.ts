@@ -1,5 +1,5 @@
 import { ErrorApi } from './django'
-import { solicitar } from './http'
+import { enviar, solicitar } from './http'
 
 const raiz = '/api/edu/'
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -22,6 +22,9 @@ export type Propuesta = {
   version?: number; origen?: 'ia' | 'docente'; version_base?: number | null; observaciones?: string | null
   recursos?: string[] | null; estado_revision?: 'pendiente' | 'aprobada' | 'rechazada'
   regla_juego?: 'orden' | 'solo_clase' | null
+  // El juego que diseñó la propuesta: «laberinto» (Kusi ya sabe construirlo) u «otro»
+  // (se guarda, pero todavía no se genera). Null en las propuestas anteriores.
+  tipo_juego?: 'laberinto' | 'otro' | null; se_puede_generar?: boolean
   apta_para_juego?: boolean; revisada_en?: string | null; creado_en?: string
 }
 export type SolicitudPropuesta = {
@@ -46,6 +49,8 @@ function propuestaValida(valor: unknown): valor is Propuesta {
   return objeto(valor) && identificador(valor.id) && texto(valor.objetivo, 4000)
     && (valor.origen_objetivo === 'docente' || valor.origen_objetivo === 'ia')
     && (valor.regla_juego === undefined || valor.regla_juego === null || valor.regla_juego === 'orden' || valor.regla_juego === 'solo_clase')
+    && (valor.tipo_juego === undefined || valor.tipo_juego === null || valor.tipo_juego === 'laberinto' || valor.tipo_juego === 'otro')
+    && (valor.se_puede_generar === undefined || typeof valor.se_puede_generar === 'boolean')
     && texto(valor.historia, 10000) && lista(valor.acciones) && lista(valor.reglas) && lista(valor.retos) && lista(valor.ayudas)
 }
 
@@ -172,6 +177,12 @@ const rutaVersion = (id: string, version: number) => {
   return rutaSolicitud(id) + 'versiones/' + version + '/'
 }
 
+// El docente elimina una propuesta suya, con sus versiones y sus juegos. No se puede deshacer.
+export async function eliminarSolicitud(id: string): Promise<void> {
+  if (!identificador(id)) throw new ErrorApi('Identificador de propuesta no válido.', 400)
+  const datos = await enviar<unknown>(raiz + 'propuestas/solicitudes/' + id + '/', {}, 'DELETE')
+  if (!objeto(datos) || datos.eliminada !== true) throw new ErrorApi('No se pudo confirmar que la propuesta se eliminó.', 502)
+}
 export async function listarSolicitudes(): Promise<SolicitudPropuesta[]> {
   const datos = await solicitar<unknown>(raiz + 'propuestas/solicitudes/')
   if (!objeto(datos) || !Array.isArray(datos.solicitudes)) throw new ErrorApi('No se pudieron cargar tus propuestas.', 502)

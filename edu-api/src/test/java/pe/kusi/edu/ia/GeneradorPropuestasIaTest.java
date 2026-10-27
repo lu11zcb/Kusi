@@ -73,7 +73,7 @@ class GeneradorPropuestasIaTest {
         assertTrue(formato.path("json_schema").path("strict").asBoolean());
         var esquema = formato.path("json_schema").path("schema");
         assertFalse(esquema.path("additionalProperties").asBoolean());
-        assertEquals(8, esquema.path("required").size());
+        assertEquals(10, esquema.path("required").size());
         assertEquals("string", esquema.path("properties").path("historia").path("type").asText());
         assertEquals("array", esquema.path("properties").path("acciones").path("type").asText());
         assertEquals("string", esquema.path("properties").path("acciones").path("items").path("type").asText());
@@ -88,29 +88,35 @@ class GeneradorPropuestasIaTest {
         return textos;
     }
 
-    // HU28: la propuesta elige la regla del juego, y la elige antes de escribir el resto.
-    @Test void elEsquemaPideLaReglaDelJuegoComoUnaDeLasDosYLaPoneAntesQueElResto() throws Exception {
+    // HU28: la propuesta elige el tipo de juego y la regla antes de escribir el resto. «objetos»
+    // es interno: con él Kusi comprueba si puede construir el juego.
+    @Test void elEsquemaPideElTipoDeJuegoYLaReglaAntesQueElResto() throws Exception {
         JsonNode esquema = json.valueToTree(GeneradorPropuestasIa.esquema());
 
-        assertEquals(List.of("regla_juego", "objetivo", "historia", "acciones", "reglas", "retos", "ayudas", "recursos"),
-            textos(esquema.get("required")));
+        assertEquals(List.of("tipo_juego", "regla_juego", "objetivo", "historia", "acciones", "reglas", "retos", "ayudas",
+            "recursos", "objetos"), textos(esquema.get("required")));
+        assertEquals(List.of("laberinto", "otro"), textos(esquema.at("/properties/tipo_juego/enum")));
         assertEquals("string", esquema.at("/properties/regla_juego/type").asText());
-        assertEquals(List.of("orden", "solo_clase"), textos(esquema.at("/properties/regla_juego/enum")));
+        assertEquals(List.of("orden", "solo_clase", "ninguna"), textos(esquema.at("/properties/regla_juego/enum")));
         assertFalse(esquema.toString().contains("anyOf"));
     }
 
-    @Test void lasInstruccionesOfrecenSoloElLaberintoConSusDosReglasYSusObjetos() throws Exception {
+    @Test void lasInstruccionesPidenElJuegoDelTemaYOfrecenElLaberintoConSusDosReglasYSusObjetos() throws Exception {
         AtomicReference<String> recibido = new AtomicReference<>();
         String propuesta = json.writeValueAsString(Map.of("regla_juego", "orden", "objetivo", "Sumar", "historia", "Kusi cuenta."));
 
         generador(200, respuestaConContenido(propuesta), recibido).generar(entrada);
 
         String instrucciones = json.readTree(recibido.get().split("\n", 2)[1]).path("messages").get(0).path("content").asText();
-        // El laberinto con sus dos reglas, y la IA elige según el tema; si no encaja, lo dice.
+        // La IA diseña el juego que corresponde al tema: el laberinto con sus dos reglas si
+        // encaja, u otro juego si el tema lo pide, sin meterlo a la fuerza en el laberinto.
         for (String texto : List.of("laberinto", "\"orden\"", "\"solo_clase\"", "patrones", "clasificar", "\"regla_juego\"",
-                "Si el tema no encaja", "dilo con claridad en la historia")) {
+                "\"tipo_juego\"", "\"otro\"", "\"ninguna\"", "No metas el tema a la fuerza", "\"objetos\"")) {
             assertTrue(instrucciones.contains(texto), "Las instrucciones deben decir: " + texto);
         }
+        // El docente lee el juego como debe ser: sin hablar de lo que la app tiene ni de lo que falta.
+        assertTrue(instrucciones.contains("no hables de lo que la app tiene o no tiene, ni de dibujos que falten"));
+        assertFalse(instrucciones.contains("Falta dibujar"));
         // Solo los objetos de la fase 1, con el zorro como único enemigo.
         for (String objeto : List.of("fresa", "plátano", "mango", "mandarina", "piña", "zanahoria", "papa", "choclo", "zorro", "cuy")) {
             assertTrue(instrucciones.contains(objeto), "Falta el objeto: " + objeto);
@@ -131,7 +137,7 @@ class GeneradorPropuestasIaTest {
 
         String pedido = json.readTree(recibido.get().split("\n", 2)[1]).path("messages").get(1).path("content").asText();
         assertTrue(pedido.contains("\"regla_juego\":\"solo_clase\""));
-        assertTrue(pedido.contains("conserva en «regla_juego» la que ya tiene"));
+        assertTrue(pedido.contains("conserva «tipo_juego» y «regla_juego» como están"));
         assertTrue(pedido.contains("Más corto, por favor"));
     }
 

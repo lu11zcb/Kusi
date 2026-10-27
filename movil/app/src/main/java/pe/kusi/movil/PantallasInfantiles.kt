@@ -172,10 +172,12 @@ private fun InicioAventurasInfantil(cuenta: Cuenta, estado: EstadoEntradaKusi, b
                 Spacer(Modifier.height(20.dp)); Text("Tu próxima aventura\nestá por llegar", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 Text("Tu profe te avisará cuando puedas jugar.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp))
                 BotonKusi("Escuchar a Kusi", { voz.hablar("Todavía no tienes juegos. Tu profe te avisará cuando tu aventura esté lista.") }, Modifier.fillMaxWidth(), icono = R.drawable.ic_speaker_high)
+                // La biblioteca se carga al entrar. Si el profe genera un juego después,
+                // este botón la vuelve a pedir sin tener que salir y entrar otra vez.
+                if (recargar != null) BotonKusi("Buscar juegos nuevos", recargar, Modifier.fillMaxWidth().padding(top = 12.dp))
             }
         }
-        // El ejemplo sigue al final incluso si falla la consulta de la biblioteca.
-        // Conserva la autorización de estudiante, pero no depende de una generación.
+        // Solo los juegos de la sección del estudiante; si no hay, se ve el aviso de arriba.
         if (biblioteca.aventuras.isNotEmpty()) items(biblioteca.aventuras.size, key = { biblioteca.aventuras[it].id }) { indice ->
             val aventura = biblioteca.aventuras[indice]
             AventuraTarjeta(aventura, indice, estado.validado && !estado.ocupado) { elegir(aventura) }

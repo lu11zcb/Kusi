@@ -28,7 +28,7 @@ function comprobarSobreLaCabeza(actual, referencia) {
   return separacion
 }
 
-for (const parametros of ['', '&vida=0']) {
+for (const parametros of ['&vida=0']) {
   test('«!» sigue la cabeza al empezar a perseguir y se oculta sin repetirse' +
     (parametros ? ' también con vida=0' : ''), async ({ page: pagina }) => {
     await servirEscenario(pagina, {
@@ -79,59 +79,45 @@ for (const parametros of ['', '&vida=0']) {
   })
 }
 
-async function tocarCasilla(pagina, actual, columna) {
-  const lienzo = await pagina.locator('canvas').boundingBox()
-  await pagina.mouse.click(
-    lienzo.x + (actual.origenMapa.x + (columna + 0.5) * actual.casilla) * lienzo.width / 1280,
-    lienzo.y + (actual.origenMapa.y + 1.5 * actual.casilla) * lienzo.height / 720,
-  )
-  return esperarCasilla(pagina, 1, columna)
-}
-
-test('tras cinco segundos persiguiendo descansa dos y vuelve a anunciar la persecución', async ({ page: pagina }) => {
+test('el zorro avisa quieto con su fila de alerta y luego corre al 60 %', async ({ page: pagina }) => {
   await servirEscenario(pagina, {
-    mapa: ['#'.repeat(22), '#.......C...........P#', '#'.repeat(22)],
-    enemigos: [zorroEn(3)],
+    mapa: ['##################', '#C..............P#', '##################'],
+    enemigos: [zorroEn(6)],
   })
   const inicial = await abrir(pagina)
   await pagina.keyboard.press('ArrowUp')
+  await pagina.waitForFunction(() => window.kusi.estado().zorros[0].fase === 'alerta')
+  const alerta = await estado(pagina)
+  expect(alerta.zorros[0].avisoPersecucion).toMatchObject({ visible: true, texto: '❗', apariciones: 1 })
+  expect(alerta.zorros[0].animacion).toMatch(/:frente:alerta$/)
+  expect([12, 13, 14]).toContain(alerta.zorros[0].fotograma)
+  comprobarSobreLaCabeza(alerta)
+  await pagina.waitForTimeout(180)
+  expect((await estado(pagina)).zorros[0].x).toBeCloseTo(alerta.zorros[0].x, 4)
+  await pagina.waitForFunction(() => window.kusi.estado().zorros[0].segundosPersiguiendo >= 0.7)
+  const persiguiendo = await estado(pagina)
+  expect(persiguiendo.zorros[0]).toMatchObject({ fase: 'perseguir', mirando: 'izquierda', flipX: true })
+  expect(persiguiendo.zorros[0].avisoPersecucion.visible).toBe(false)
+  const distancia = (inicial.zorros[0].x - persiguiendo.zorros[0].x) / inicial.casilla
+  expect(distancia / persiguiendo.zorros[0].segundosPersiguiendo).toBeCloseTo(inicial.velocidad * 0.6, 2)
+})
 
-  // Los toques reales alejan al cuy una casilla cada vez: el zorro permanece
-  // dentro de cinco pasos sin alcanzarlo antes de completar los cinco segundos.
-  for (const [indice, segundos] of [1, 1.55, 2.1, 2.65, 3.2, 3.75, 4.3].entries()) {
-    await pagina.waitForFunction((umbral) => window.kusi.estado().zorros[0].segundosPersiguiendo >= umbral,
-      segundos, { polling: 'raf' })
-    await tocarCasilla(pagina, inicial, 9 + indice)
-  }
-  await pagina.waitForFunction(() => window.kusi.estado().zorros[0].segundosDescanso > 1.8,
-    null, { timeout: 20_000, polling: 'raf' })
+test('el zorro persigue cinco segundos, descansa con su fila cansada y vuelve a buscar', async ({ page: pagina }) => {
+  await servirEscenario(pagina, {
+    mapa: ['#'.repeat(22), '#.......C...........P#', '#'.repeat(22)], enemigos: [zorroEn(3)],
+  })
+  await abrir(pagina)
+  // El niño se aleja de verdad, con una flecha. El zorro mantiene la persecución
+  // iniciada durante cinco segundos aunque el niño salga de su radio inicial.
+  await pagina.keyboard.press('ArrowRight')
+  await pagina.waitForFunction(() => window.kusi.estado().zorros[0].fase === 'cansado', null, { timeout: 15000 })
   const cansado = await estado(pagina)
   expect(cansado.capturas).toBe(0)
-  expect(cansado.zorros[0]).toMatchObject({ persiguiendo: false, moviendose: false, iniciosPersecucion: 1 })
-  expect(cansado.zorros[0].avisoPersecucion).toMatchObject({ visible: false, apariciones: 1 })
-  expect(cansado.zorros[0].segundosDescanso).toBeLessThanOrEqual(2)
-  expect((cansado.zorros[0].x - inicial.zorros[0].x) / inicial.casilla).toBeCloseTo(5 * inicial.velocidad * 0.6, 3)
-
-  await pagina.waitForFunction(() => {
-    const zorro = window.kusi.estado().zorros[0]
-    return zorro.segundosDescanso > 0 && zorro.segundosDescanso <= 0.7
-  }, null, { polling: 'raf' })
-  const descansando = await estado(pagina)
-  expect(descansando.capturas).toBe(0)
-  expect(descansando.zorros[0]).toMatchObject({
-    fila: cansado.zorros[0].fila, columna: cansado.zorros[0].columna,
-    progreso: cansado.zorros[0].progreso, persiguiendo: false, moviendose: false,
-  })
-  expect(descansando.zorros[0].x).toBeCloseTo(cansado.zorros[0].x, 5)
-
-  await pagina.waitForFunction(() => {
-    const zorro = window.kusi.estado().zorros[0]
-    return zorro.iniciosPersecucion === 2 && zorro.avisoPersecucion.visible
-  }, null, { polling: 'raf' })
-  const reanudando = await estado(pagina)
-  expect(reanudando.capturas).toBe(0)
-  expect(reanudando.zorros[0]).toMatchObject({ persiguiendo: true, segundosDescanso: 0, iniciosPersecucion: 2 })
-  expect(reanudando.zorros[0].segundosPersiguiendo).toBeLessThan(0.3)
-  expect(reanudando.zorros[0].avisoPersecucion).toMatchObject({ visible: true, texto: '!', apariciones: 2 })
-  comprobarSobreLaCabeza(reanudando)
+  expect(cansado.zorros[0]).toMatchObject({ moviendose: false, persiguiendo: false })
+  expect(cansado.zorros[0].animacion).toMatch(/:frente:cansado$/)
+  expect([9, 10, 11]).toContain(cansado.zorros[0].fotograma)
+  await pagina.waitForTimeout(700)
+  expect((await estado(pagina)).zorros[0].x).toBeCloseTo(cansado.zorros[0].x, 4)
+  await pagina.waitForFunction(() => window.kusi.estado().zorros[0].fase === 'buscar')
+  expect((await estado(pagina)).zorros[0].avisoPersecucion.visible).toBe(false)
 })

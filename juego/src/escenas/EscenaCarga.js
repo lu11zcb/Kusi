@@ -1,5 +1,5 @@
 // Primera escena: valida y prepara el paquete del juego antes de cargar sus dibujos.
-// Si falta algún dibujo, se reemplaza por una figura simple.
+// Cada ilustración requerida debe estar disponible antes de abrir el nivel.
 
 import * as Phaser from 'phaser'
 import { ANCHO, ALTO, COLOR, estiloTexto } from '../medidas.js'
@@ -16,6 +16,8 @@ import { leerPuente, MENSAJE_PAQUETE, AVISO_ERROR } from '../mensajes/puenteGuio
 import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
 import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
+import { pedirKitFinal } from '../dibujos/kitFinal.js'
+import { pedirEstiloFinal } from '../dibujos/estiloFinal.js'
 import { vidaActiva } from '../efectos/vida.js'
 import { pedirSonidosLaberinto } from '../efectos/SonidosLaberinto.js'
 import {
@@ -92,6 +94,8 @@ export class EscenaCarga extends Phaser.Scene {
       // Carga el paisaje, los alimentos del guion y las animaciones de los personajes.
       const claves = clavesDelPaquete(paquete)
       pedirDibujos(this, claves)
+      pedirKitFinal(this)
+      pedirEstiloFinal(this)
       pedirHojaCuy(this, cuyAnimado)
       pedirHojaZorro(this, zorroAnimado)
       // Los sonidos solo pertenecen al laberinto. Con ?vida=0 ni siquiera se
@@ -100,13 +104,7 @@ export class EscenaCarga extends Phaser.Scene {
 
       this.load.once('complete', () => {
         try {
-          const dibujadas = completarConFiguras(this, claves)
-
-          if (dibujadas.length > 0) {
-            console.info(
-              `[dibujos] ${dibujadas.length} figuras simples creadas como reemplazo`,
-            )
-          }
+          completarConFiguras(this, claves)
 
           // Abre el laberinto usando el guion y las animaciones preparados.
           registrarAnimacionesCuy(this, cuyAnimado)

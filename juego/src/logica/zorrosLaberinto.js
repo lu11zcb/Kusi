@@ -8,6 +8,7 @@ import { avanzarMovimiento, pedirDireccion } from './movimientoLaberinto.js'
 export const DISTANCIA_PERSECUCION = 5
 export const SEGUNDOS_PERSECUCION = 5
 export const SEGUNDOS_DESCANSO = 2
+export const SEGUNDOS_ALERTA = 0.6
 
 const PASOS = {
   derecha: { fila: 0, columna: 1 },
@@ -67,13 +68,13 @@ export function buscarCamino(mapa, origen, destino, maximo = Infinity) {
   return null
 }
 
-export function crearZorro(enemigo, mapa) {
+export function crearZorro(enemigo, mapa, { vivo = false, semilla = 1 } = {}) {
   const posicion = { fila: enemigo.fila, columna: enemigo.columna }
   // El paquete no exige una orientación. Se prefiere el eje horizontal; si el
   // zorro nace en un pasillo vertical, el primer rumbo posible lo respeta.
   const direccion = Object.keys(PASOS).find((rumbo) => puedeAvanzar(posicion, mapa, rumbo)) ?? 'derecha'
   const moviendose = puedeAvanzar(posicion, mapa, direccion)
-  return {
+  const estado = {
     ...posicion,
     direccion,
     direccionPendiente: null,
@@ -86,6 +87,14 @@ export function crearZorro(enemigo, mapa) {
     iniciosPersecucion: 0,
     inicio: { ...posicion, direccion, moviendose },
   }
+  // Ambos tipos exploran el mapa. Solo persigue_cerca cambia de búsqueda a
+  // persecución cuando detecta al jugador; patrulla sigue su recorrido.
+  if (vivo) Object.assign(estado, {
+    vivo: true, fase: 'buscar', segundosAlerta: 0, tramoPreparado: false,
+    semillaInicial: (semilla >>> 0) || 1, semilla: (semilla >>> 0) || 1,
+    visitas: { [claveCasilla(posicion.fila, posicion.columna)]: 1 },
+  })
+  return estado
 }
 
 // Restablecer la patrulla no toca el estado de los objetos recogidos por el cuy.
@@ -98,6 +107,10 @@ export function restablecerZorro(estado) {
     segundosPersiguiendo: 0,
     segundosDescanso: 0,
     iniciosPersecucion: 0,
+  })
+  if (estado.vivo) Object.assign(estado, {
+    fase: 'buscar', segundosAlerta: 0, tramoPreparado: false, semilla: estado.semillaInicial,
+    visitas: { [claveCasilla(estado.fila, estado.columna)]: 1 },
   })
   return estado
 }
@@ -163,6 +176,7 @@ export function avanzarZorro(estado, mapa, cuy, segundos, casillasPorSegundo = 1
   if (!Number.isFinite(segundos) || segundos <= 0 ||
       !Number.isFinite(casillasPorSegundo) || casillasPorSegundo <= 0) return estado
   if (!Number.isFinite(segundos * casillasPorSegundo)) return estado
+  if (estado.vivo) return avanzarZorroVivo(estado, mapa, cuy, segundos, casillasPorSegundo)
   let restante = segundos
 
   while (restante > 0) {
@@ -200,6 +214,115 @@ export function avanzarZorro(estado, mapa, cuy, segundos, casillasPorSegundo = 1
       // Reflejamos la entrada o salida del radio incluso si el delta acaba justo
       // al llegar. El próximo giro seguirá resolviéndose siempre en el centro.
       actualizarPersecucion(estado, mapa, cuy)
+    }
+  }
+  return estado
+}
+
+// Generador congruente de 32 bits: una misma semilla y los mismos giros producen
+// el mismo paseo. La escena nunca usa Math.random para decidir por dónde va.
+function sortearSalida(estado, cantidad) {
+  estado.semilla = (Math.imul(1664525, estado.semilla) + 1013904223) >>> 0
+  return Math.floor(estado.semilla / 4294967296 * cantidad)
+}
+
+export function elegirCaminoDeBusqueda(estado, mapa) {
+  // Busca el pasillo menos visitado que esté más cerca. Así recorre también
+  // ramales y callejones, en lugar de repetir al azar un pequeño circuito.
+  const cola = [{ fila: estado.fila, columna: estado.columna, distancia: 0 }]
+  const vistas = new Set([claveCasilla(estado.fila, estado.columna)])
+  let candidatas = [], menosVisitas = Infinity, distancia = Infinity
+  for (let i = 0; i < cola.length; i += 1) {
+    const actual = cola[i]
+    for (const [direccion, paso] of Object.entries(PASOS)) {
+      const fila = actual.fila + paso.fila, columna = actual.columna + paso.columna
+      const clave = claveCasilla(fila, columna)
+      if (!esCamino(mapa, fila, columna) || vistas.has(clave)) continue
+      vistas.add(clave)
+      const siguiente = { fila, columna, distancia: actual.distancia + 1, rumbo: actual.rumbo ?? direccion }
+      cola.push(siguiente)
+      const visitas = estado.visitas?.[clave] ?? 0
+      if (visitas < menosVisitas || visitas === menosVisitas && siguiente.distancia < distancia) {
+        menosVisitas = visitas; distancia = siguiente.distancia; candidatas = []
+      }
+      if (visitas === menosVisitas && siguiente.distancia === distancia) candidatas.push(siguiente.rumbo)
+    }
+  }
+  const sinVolver = candidatas.filter(direccion => direccion !== CONTRARIAS[estado.direccion])
+  const rumbos = sinVolver.length ? sinVolver : candidatas
+  return rumbos.length ? rumbos[sortearSalida(estado, rumbos.length)] : null
+}
+
+function entrarEnAlerta(estado) {
+  estado.fase = 'alerta'
+  estado.segundosAlerta = SEGUNDOS_ALERTA
+  estado.moviendose = false
+  estado.direccionPendiente = null
+  estado.iniciosPersecucion += 1
+}
+
+function prepararTramoVivo(estado, mapa, camino, velocidad) {
+  if (estado.progreso > 0) { estado.moviendose = true; return }
+  if (estado.tramoPreparado) return
+  const direccion = estado.fase === 'perseguir' ? camino?.[0] : elegirCaminoDeBusqueda(estado, mapa)
+  estado.tramoPreparado = true
+  estado.direccionPendiente = null
+  if (!direccion) { estado.moviendose = false; return }
+  pedirDireccion(estado, direccion)
+  avanzarMovimiento(estado, mapa, 0, velocidad)
+}
+
+// Buscar, alerta, perseguir y cansado son estados exclusivos. Los temporizadores
+// se consumen en segundos reales; un cuadro largo puede atravesar varios estados
+// y cada llegada a un centro permite decidir otro giro sin cruzar un muro.
+function avanzarZorroVivo(estado, mapa, cuy, segundos, velocidad) {
+  let restante = segundos
+  while (restante > MARGEN_DECIMAL) {
+    if (estado.fase === 'alerta' || estado.fase === 'cansado') {
+      const campo = estado.fase === 'alerta' ? 'segundosAlerta' : 'segundosDescanso'
+      const paso = Math.min(restante, estado[campo])
+      estado[campo] = Math.max(0, estado[campo] - paso)
+      restante = Math.max(0, restante - paso)
+      estado.moviendose = false
+      if (estado[campo] > MARGEN_DECIMAL) break
+      estado[campo] = 0
+      estado.fase = estado.fase === 'alerta' ? 'perseguir' : 'buscar'
+      estado.persiguiendo = estado.fase === 'perseguir'
+      estado.segundosPersiguiendo = 0
+      estado.tramoPreparado = false
+      continue
+    }
+
+    if (estado.fase === 'buscar' && estado.movimiento === 'persigue_cerca' &&
+        buscarCamino(mapa, estado, cuy, DISTANCIA_PERSECUCION) !== null) {
+      entrarEnAlerta(estado)
+      continue
+    }
+    const camino = estado.fase === 'perseguir' ? buscarCamino(mapa, estado, cuy) : null
+    if (estado.fase === 'perseguir' && camino === null) {
+      estado.fase = 'buscar'
+      estado.persiguiendo = false
+      estado.segundosPersiguiendo = 0
+      estado.tramoPreparado = false
+    }
+    prepararTramoVivo(estado, mapa, camino, velocidad)
+    if (!estado.moviendose && estado.fase === 'buscar') break
+    const hastaCentro = estado.moviendose ? (1 - estado.progreso) / velocidad : Infinity
+    const hastaCansancio = estado.fase === 'perseguir' ? SEGUNDOS_PERSECUCION - estado.segundosPersiguiendo : Infinity
+    const paso = Math.min(restante, hastaCentro, hastaCansancio)
+    if (estado.moviendose) avanzarMovimiento(estado, mapa, paso, velocidad, () => {
+      estado.tramoPreparado = false
+      const clave = claveCasilla(estado.fila, estado.columna)
+      estado.visitas[clave] = (estado.visitas[clave] ?? 0) + 1
+      // El giro lo decide este módulo en la próxima iteración del mismo delta.
+      return false
+    })
+    if (estado.fase === 'perseguir') estado.segundosPersiguiendo += paso
+    restante = Math.max(0, restante - paso)
+    if (estado.fase === 'perseguir' && estado.segundosPersiguiendo >= SEGUNDOS_PERSECUCION - MARGEN_DECIMAL) {
+      iniciarDescanso(estado)
+      estado.fase = 'cansado'
+      estado.tramoPreparado = false
     }
   }
   return estado

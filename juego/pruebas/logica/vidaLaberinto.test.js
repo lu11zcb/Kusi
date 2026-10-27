@@ -204,7 +204,7 @@ test('silenciar detiene lo que suena y impide nuevos sonidos; destruir libera to
 test('los volúmenes se quedan bajos para un juego de niños y cada sonido tiene su archivo', () => {
   for (const [tipo, datos] of Object.entries(SONIDOS_LABERINTO)) {
     assert.ok(datos.volumen > 0 && datos.volumen <= 0.15, tipo + ' debe sonar bajo')
-    assert.match(datos.archivo, /^[a-z0-9-]+\.ogg$/, tipo + ' debe apuntar a un .ogg de public/sonidos')
+    assert.match(datos.archivo, /^[a-z0-9-]+\.(ogg|wav)$/, tipo + ' debe apuntar a audio de public/sonidos')
     assert.ok(datos.espera >= 0, tipo + ' necesita una espera válida')
   }
 })

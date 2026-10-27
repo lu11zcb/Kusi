@@ -15,6 +15,7 @@ import pe.kusi.edu.model.EtapaGeneracion;
 import pe.kusi.edu.service.DjangoInternoClient;
 import pe.kusi.edu.service.PropuestasService;
 import pe.kusi.edu.service.GeneracionesService;
+import pe.kusi.edu.service.EliminacionPropuestas;
 
 import java.util.*;
 
@@ -25,14 +26,26 @@ public class PropuestasController {
     private final PropuestasService servicio;
     private final DjangoInternoClient django;
     private final GeneracionesService generacionesService;
+    private final EliminacionPropuestas eliminacion;
 
     public PropuestasController(
             PropuestasService servicio,
             DjangoInternoClient django,
-            GeneracionesService generacionesService) {
+            GeneracionesService generacionesService,
+            EliminacionPropuestas eliminacion) {
         this.servicio = servicio;
         this.django = django;
         this.generacionesService = generacionesService;
+        this.eliminacion = eliminacion;
+    }
+
+    // El docente elimina una propuesta suya, con sus versiones y sus juegos.
+    @DeleteMapping("/propuestas/solicitudes/{id}/")
+    public ResponseEntity<Map<String, Object>> eliminarPropuesta(
+            @CookieValue(value = "sessionid", required = false) String sesion,
+            @PathVariable UUID id) {
+        eliminacion.eliminar(docente(sesion), id);
+        return sinCache(200, Map.of("eliminada", true));
     }
 
     @GetMapping("/acceso/csrf/")
@@ -223,6 +236,20 @@ public class PropuestasController {
                 Map.of("generacion", dtoGeneracion(generacion, true)));
     }
 
+    // El docente le da el OK al juego y lo envía a la app de sus estudiantes.
+    @PostMapping("/generaciones/{id}/publicar/")
+    public ResponseEntity<Map<String, Object>> publicarGeneracion(
+            @CookieValue(value = "sessionid", required = false) String sesion,
+            @PathVariable UUID id) {
+        UUID docenteId = docente(sesion);
+
+        Generacion generacion =
+                generacionesService.publicar(docenteId, id);
+
+        return sinCache(200,
+                Map.of("generacion", dtoGeneracion(generacion, true)));
+    }
+
     // HU27: historial de generaciones de una solicitud.
     @GetMapping("/propuestas/solicitudes/{id}/generaciones/")
     public ResponseEntity<Map<String, Object>> listarGeneraciones(
@@ -251,6 +278,7 @@ public class PropuestasController {
         datos.put("paquete", g.getPaquete());
         datos.put("procedencia", generacionesService.procedencia(g));
         datos.put("ultimo_error", g.getUltimoError());
+        datos.put("publicada", g.isPublicada());
         datos.put("creado_en", g.getCreadoEn());
         datos.put("actualizado_en", g.getActualizadoEn());
 

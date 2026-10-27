@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
 const RUTA_PAQUETE = new URL('../public/paquete-laberinto-ejemplo.json', import.meta.url)
-const SONIDOS_DEL_PAQUETE = 7
+const SONIDOS_DEL_PAQUETE = 8
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))
 
@@ -109,10 +109,10 @@ test('?vida=0 apaga sombras, sonidos y parpadeo sin cambiar cómo se juega', asy
   expect(jugando.vida.parpadeos).toBe(0)
 })
 
-test('los siete sonidos se descargan solo con la vida encendida', async ({ page: pagina }) => {
+test('los ocho sonidos se descargan solo con la vida encendida', async ({ page: pagina }) => {
   const peticionesDeSonido = []
   pagina.on('request', (peticion) => {
-    if (peticion.url().includes('/sonidos/') && peticion.url().endsWith('.ogg')) {
+    if (peticion.url().includes('/sonidos/') && /\.(ogg|wav)$/.test(peticion.url())) {
       peticionesDeSonido.push(peticion.url())
     }
   })

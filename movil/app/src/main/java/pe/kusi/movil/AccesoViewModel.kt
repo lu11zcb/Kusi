@@ -11,7 +11,9 @@ import kotlinx.coroutines.withContext
 class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
     // HU13: la sesión se recuerda en el celular hasta cerrar sesión o que caduque.
     private val api = AccesoApi(BuildConfig.DJANGO_URL, BuildConfig.EDU_URL, AlmacenPreferencias(aplicacion))
-    var biblioteca by mutableStateOf(EstadoBibliotecaInfantil(listOf(aventuraLaberintoEjemplo()))); private set
+    // Solo los juegos «listos» de la sección del estudiante. Sin juegos, la pantalla
+    // dice «Tu profe te avisará» y ofrece buscar de nuevo: no hay un juego de ejemplo.
+    var biblioteca by mutableStateOf(EstadoBibliotecaInfantil()); private set
     var cierre by mutableStateOf(EstadoCierreInfantil()); private set
     private val registroJuego = RegistroAvisosJuego()
     private var propietarioBiblioteca: String? = null
@@ -47,7 +49,7 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                 ocupado = false
                 val id = cuenta?.id
                 if (validado && id != null && propietarioBiblioteca != id) cargarBiblioteca()
-                if (id == null) { propietarioBiblioteca = null; biblioteca = EstadoBibliotecaInfantil(listOf(aventuraLaberintoEjemplo())); registroJuego.limpiar(); partidaActual = null; cierre = EstadoCierreInfantil() }
+                if (id == null) { propietarioBiblioteca = null; biblioteca = EstadoBibliotecaInfantil(); registroJuego.limpiar(); partidaActual = null; cierre = EstadoCierreInfantil() }
             }
         }
     }
@@ -82,9 +84,9 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                 val juegos = withContext(Dispatchers.IO) { api.juegosDePrueba() }
                 if (cuenta?.id == propietario) biblioteca = EstadoBibliotecaInfantil(juegos.map {
                     AventuraInfantil(it.id, it.titulo, "Juego de tu clase", "Practica con Kusi.", "Escucha la consigna al entrar.", paquete = it.paquete)
-                } + aventuraLaberintoEjemplo())
+                })
             } catch (_: Exception) {
-                if (cuenta?.id == propietario) biblioteca = EstadoBibliotecaInfantil(listOf(aventuraLaberintoEjemplo()), error = "No se pudieron cargar los juegos de tu clase. Puedes abrir el ejemplo o intentar otra vez.")
+                if (cuenta?.id == propietario) biblioteca = EstadoBibliotecaInfantil(error = "No se pudieron cargar los juegos de tu clase. Vuelve a intentarlo.")
             }
         }
     }

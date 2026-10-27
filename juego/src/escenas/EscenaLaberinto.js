@@ -4,7 +4,10 @@ import { ANCHO, COLOR, NUMERO, estiloTexto } from '../medidas.js'
 import { ajustarATamano } from '../dibujos/dibujos.js'
 import { CuyAnimado } from '../dibujos/cuyAnimado.js'
 import { ZorroAnimado } from '../dibujos/zorroAnimado.js'
-import { crearBoton, dibujarGlobo } from '../interfaz/piezas.js'
+import { crearBoton, desactivarBotones } from '../interfaz/piezas.js'
+import { encajarTextoKusi } from '../interfaz/textoKusi.js'
+import { JoystickLaberinto } from '../interfaz/JoystickLaberinto.js'
+import { BarraFrutas } from '../interfaz/BarraFrutas.js'
 import { crearManoLaberinto } from '../interfaz/ManoLaberinto.js'
 import { avisos } from '../logica/avisos.js'
 import { avisarPartida, crearPartidaLaberinto } from '../logica/partidaLaberinto.js'
@@ -13,10 +16,10 @@ import {
   crearZorro, avanzarZorro, restablecerZorro, posicionEnCasillas, seAtrapan,
 } from '../logica/zorrosLaberinto.js'
 import { decir } from '../logica/voz.js'
+import { crearHablaKusi, avanzarHablaKusi, iniciarHablaKusi } from '../logica/hablaKusi.js'
 import {
-  crearMovimiento, pedirDireccion, avanzarMovimiento, iniciarRecorrido,
+  crearMovimiento, pedirDireccion, avanzarMovimiento, detenerEnCentro,
 } from '../logica/movimientoLaberinto.js'
-import { planearRuta } from '../logica/rutaLaberinto.js'
 import { vidaActiva } from '../efectos/vida.js'
 import { SonidosLaberinto, esCuadroDePisada } from '../efectos/SonidosLaberinto.js'
 import { ParpadeoCuy } from '../efectos/ParpadeoCuy.js'
@@ -25,12 +28,14 @@ import { Polvito } from '../efectos/Polvito.js'
 import { PopFruta } from '../efectos/PopFruta.js'
 import { FrutasVivas } from '../efectos/FrutasVivas.js'
 import { CapturaLaberinto } from '../efectos/CapturaLaberinto.js'
-import { PuertaViva } from '../efectos/PuertaViva.js'
+import { VidaChacra } from '../efectos/VidaChacra.js'
+import { PortalVivo } from '../efectos/PortalVivo.js'
+import { crearPatio } from '../dibujos/patioChacra.js'
 import { leerSilencio, guardarSilencio } from '../efectos/silencio.js'
 import { crearBotonSonido, BOTON_SONIDO } from '../interfaz/BotonSonido.js'
-import { crearAmbienteLaberinto, ajustarAmbienteLaberinto, decorarPradera, cachearAdobes } from '../dibujos/ambienteLaberinto.js'
+import { crearAmbienteLaberinto, ajustarAmbienteLaberinto, cachearAdobes } from '../dibujos/ambienteLaberinto.js'
 import { repartirMuros, tituloDeBarra } from '../logica/presentacionLaberinto.js'
-import { calcularDisposicion, distribuirBarra, distribuirGuia } from '../logica/disposicionLaberinto.js'
+import { calcularDisposicion, distribuirGuia, ubicarSonidoSuperior } from '../logica/disposicionLaberinto.js'
 import { leerRenderizador } from '../renderizador.js'
 import { leerPuente, MENSAJE_PAQUETE, MENSAJE_REINICIAR, AVISO_CARGADO } from '../mensajes/puenteGuion.js'
 
@@ -60,7 +65,6 @@ const SOMBRA = {
 }
 
 const VISTAS = { arriba: 'espaldas', abajo: 'frente', izquierda: 'izquierda', derecha: 'derecha' }
-const TOQUE = { tolerancia: 12, radioDestino: 0.22, grosorDestino: 4, colorDestino: 0xb4611f, profundidad: 4 }
 const AVISO_PERSECUCION = {
   segundos: 0.8,
   radio: 0.24,
@@ -89,10 +93,12 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.indiceNivel = indiceNivel
     this.reto = paquete.retos[this.indiceNivel]
     this.indiceAyuda = 0
+    this.botones = {}
     this.movimiento = crearMovimiento(this.reto.mapa)
     this.regla = crearRegla(this.reto)
-    this.zorros = this.reto.enemigos.map((enemigo) => crearZorro(enemigo, this.reto.mapa))
-    this.nivelIniciado = false
+    this.zorros = this.reto.enemigos.map((enemigo, indice) => crearZorro(enemigo, this.reto.mapa, {
+      vivo: true, semilla: 307 + this.indiceNivel * 97 + indice * 65537,
+    }))
     this.segundosInvulnerable = 0
     this.capturas = 0
     this.multiplicador = new URLSearchParams(window.location.search).get('rapido') === '1' ? 4 : 1
@@ -101,21 +107,16 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.cambiandoNivel = false
     this.mensajeCierre = ''
     this.mano = null
-    this.iniciosToque = new Map()
     this.modoControl = 'teclado'
-    this.destino = null
-    this.ruta = []
-    this.frutaObjetivo = null
   }
 
   create() {
     this.cameras.main.setBackgroundColor(COLOR.crema)
     document.title = 'Kusi · El laberinto'
-    crearAmbienteLaberinto(this)
-    // La disposición se elige una vez por nivel, según la forma de la pantalla.
     this.calcularCuadricula()
+    crearAmbienteLaberinto(this)
     this.actualizarEncuadre()
-    this.alRedimensionar = () => this.actualizarEncuadre()
+    this.alRedimensionar = () => { this.soltarJoystick(); this.actualizarEncuadre() }
     this.scale.on('resize', this.alRedimensionar)
     this.crearBarra()
     this.crearMapa()
@@ -123,17 +124,13 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.crearPersonajes()
     this.crearVida()
     this.crearControles()
-    if (this.indiceNivel === 0) {
-      const fruta = this.reto.objetos[0]
-      if (fruta) this.mano = crearManoLaberinto(this, this.centroCasilla(fruta.fila, fruta.columna))
-    }
     this.exponerParaPruebas()
     const primerAviso = avisarPartida(this.partida, 'listo', { familia: 'laberinto', nivel: this.indiceNivel + 1 })
     this.conectarPuente()
     // La página que contiene el juego (la vista previa del panel) se entera cuando el
     // guion ya está en pantalla. Pasa una vez por partida, no en cada nivel.
     if (primerAviso) this.puente?.avisar({ tipo: AVISO_CARGADO, niveles: this.paquete.retos.length })
-    decir(this.reto.consigna)
+    this.hablarKusi(this.reto.consigna)
     // La fanfarria de fin de nivel suena aquí y no en la escena anterior: esa se
     // destruye al reiniciarse y cortaría su propio sonido.
     if (this.anunciarNivel) this.sonidos.reproducir('nivel')
@@ -144,8 +141,9 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.input.keyboard.off('keydown', this.alPulsarFlecha)
       this.input.off('pointerdown', this.alIniciarToque)
       this.input.off('pointerup', this.alTerminarToque)
-      this.input.off('pointerupoutside', this.alCancelarToque)
-      this.iniciosToque.clear()
+      this.input.off('pointerupoutside', this.alTerminarToque)
+      this.input.off('pointermove', this.alMoverToque)
+      this.game.events.off('blur', this.alPerderFoco)
       this.scale.off('resize', this.alRedimensionar)
       if (window.kusi?.estado === this.leerEstado) delete window.kusi
     })
@@ -186,6 +184,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.desplazamientoPantalla = { x: (diseno.ancho - width) / 2, y: (diseno.alto - height) / 2 }
     this.encuadrarCamara()
     ajustarAmbienteLaberinto(this)
+    this.ajustarBotonSonido()
   }
 
   encuadrarCamara() {
@@ -225,96 +224,51 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   // La barra de progreso y los botones de Escuchar y Ayuda. Dónde va cada pieza
-  // lo decide la disposición: una tira arriba o una tarjeta en el panel lateral.
+  // lo decide la disposición de la fila superior.
   crearBarra() {
-    this.casilleros = []
-    const regla = this.reto.regla
-    const barra = distribuirBarra(this.disposicion, regla)
-    const { caja } = barra
-    this.cajaBarra = { ...caja }
-    this.add.rectangle(caja.x + caja.ancho / 2, caja.y + caja.alto / 2, caja.ancho, caja.alto, NUMERO.papel)
-      .setRounded(24).setStrokeStyle(3, 0xd8b990).setDepth(1000)
-    this.tituloBarra = tituloDeBarra(regla)
-    this.add.text(barra.titulo.x, barra.titulo.y, this.tituloBarra, estiloTexto(30)).setDepth(1001)
-    this.add.text(barra.subtitulo.x, barra.subtitulo.y, 'Nivel ' + (this.indiceNivel + 1) + ' de ' + this.paquete.retos.length,
-      estiloTexto(23, COLOR.tintaSuave)).setDepth(1001)
-
-    if (regla.tipo === 'orden') {
-      barra.fichas.forEach((ficha, indice) => {
-        const fondo = this.add.rectangle(ficha.x, ficha.y, ficha.ancho, ficha.alto, indice === 0 ? 0xffe0a3 : 0xf6ebd8)
-          .setRounded(16).setStrokeStyle(indice === 0 ? 4 : 2, indice === 0 ? 0xb4611f : 0xd8b990)
-          .setDepth(1001)
-        ajustarATamano(this.add.image(ficha.imagen.x, ficha.imagen.y, regla.secuencia[indice]),
-          ficha.imagen.lado, ficha.imagen.lado).setDepth(1002)
-        this.casilleros.push({ fondo, marca: this.crearMarca(ficha.marca.x, ficha.marca.y) })
-      })
-    } else {
-      ajustarATamano(this.add.image(barra.icono.x, barra.icono.y, 'clase-' + regla.clase),
-        barra.icono.lado, barra.icono.lado).setDepth(1002)
-      barra.fichas.forEach((ficha) => {
-        const fondo = this.add.rectangle(ficha.x, ficha.y, ficha.ancho, ficha.alto, 0xf6ebd8)
-          .setRounded(12).setStrokeStyle(3, 0xb99a70).setDepth(1001)
-        this.casilleros.push({ fondo, marca: this.crearMarca(ficha.marca.x, ficha.marca.y) })
-      })
-    }
-
-    const { escuchar, ayuda } = barra.botones
+    this.barraFrutas = new BarraFrutas(this, this.disposicion, this.reto.regla,
+      { activo: this.vida, objetos: this.reto.objetos })
+    this.casilleros = this.barraFrutas.fichas
+    this.cajaBarra = { ...this.barraFrutas.caja }
+    this.tituloBarra = tituloDeBarra(this.reto.regla)
+    const { escuchar, ayuda } = this.barraFrutas.datos.botones
     this.botones = {
-      sonido: crearBoton(this, escuchar.x, escuchar.y, {
-        ancho: escuchar.ancho, alto: escuchar.alto, texto: 'Escuchar', tamano: escuchar.tamano,
-        alTocar: () => {
-          decir(this.reto.consigna)
-        },
-      }).setDepth(1003),
-      ayuda: crearBoton(this, ayuda.x, ayuda.y, {
-        ancho: ayuda.ancho, alto: ayuda.alto, texto: 'Ayuda', tamano: ayuda.tamano,
-        alTocar: () => {
-          this.mostrarAyuda()
-        },
-      }).setDepth(1003),
+      sonido: this.crearBotonPanel(escuchar, 'boton-voz', () => this.hablarKusi(this.reto.consigna)),
+      ayuda: this.crearBotonPanel(ayuda, 'boton-ayuda', () => this.mostrarAyuda()),
     }
   }
 
-  crearMarca(x, y) {
-    const marca = this.add.graphics().setPosition(x, y).setDepth(1004).setVisible(false)
-    marca.fillStyle(0x326b39).fillCircle(0, 0, 13)
-    marca.lineStyle(4, 0xffffff).beginPath().moveTo(-7, 0).lineTo(-2, 5).lineTo(7, -6).strokePath()
-    return marca
+  crearBotonPanel(caja, textura, accion) {
+    const boton = this.add.image(caja.x, caja.y, textura).setDisplaySize(caja.ancho, caja.alto)
+      .setDepth(1003).setInteractive({ useHandCursor: true })
+    boton.on('pointerdown', (puntero, x, y, evento) => { evento.stopPropagation(); accion() })
+    return boton
   }
 
   actualizarBarra() {
-    this.casilleros.forEach(({ fondo, marca }, indice) => {
-      const recogido = indice < this.regla.recogidos
-      const siguiente = !this.regla.completada && indice === this.regla.recogidos
-      fondo.setFillStyle(recogido ? 0xdceac4 : siguiente ? 0xffe0a3 : 0xf6ebd8)
-        .setStrokeStyle(siguiente ? 4 : 2, siguiente ? 0xb4611f : 0xb99a70)
-      marca.setVisible(recogido)
-    })
+    if (this.frutasVivas) this.frutasVivas.siguiente = this.reto.regla.tipo === 'orden' && !this.regla.completada
+      ? this.reto.regla.secuencia[this.regla.recogidos] : null
+    this.barraFrutas.actualizar(this.regla.recogidos, this.regla.objetos)
   }
 
   crearMapa() {
     const { mapa } = this.reto
     const { ancho, alto } = this.cajaMapa
-    // Una sola superficie continua: la textura no vuelve a empezar en cada casilla.
-    this.piso = this.add.tileSprite(this.origenMapa.x, this.origenMapa.y, ancho, alto, 'piso-tierra')
-      .setOrigin(0).setDepth(1)
-    this.piso.setTileScale(this.casilla * 5 / this.textures.get('piso-tierra').getSourceImage().width)
-    decorarPradera(this, this.disposicion.decoracion)
+    this.piso = crearPatio(this)
     this.semillaMuros = this.paquete.titulo + ':' + (this.reto.id ?? this.indiceNivel)
     this.muros = repartirMuros(mapa, this.semillaMuros)
     this.sombrasMuros = []
     this.muros.forEach((muro) => {
       const punto = this.centroCasilla(muro.fila, muro.columna)
-      this.crearSombraMuro(punto)
-      muro.dibujo = this.crearBloque(punto, muro.variante, muro.fila)
+      muro.dibujo = this.crearBloque(punto, muro.textura, muro.fila)
     })
     mapa.forEach((filaTexto, fila) => {
       for (let columna = 0; columna < filaTexto.length; columna += 1) {
         const simbolo = filaTexto[columna]
         const punto = this.centroCasilla(fila, columna)
         if (simbolo === 'P') {
-          this.crearSombraMuro(punto)
-          this.puerta = this.crearBloque(punto, 'puerta-cerrada', fila)
+          this.puerta = this.add.image(punto.x, punto.y, 'portal-cerrado')
+            .setDisplaySize(this.casilla, this.casilla).setDepth(2.7)
         }
         if (simbolo === 'C') this.inicio = { fila, columna }
       }
@@ -324,46 +278,64 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.dibujosObjetos = this.reto.objetos.map((objeto) => {
       const punto = this.centroCasilla(objeto.fila, objeto.columna)
       // Este apoyo de contraste pertenece al arte, también cuando vida=0.
-      this.apoyosFrutas.push(this.add.ellipse(punto.x, punto.y + this.casilla * 0.13,
-        this.casilla * 0.78, this.casilla * 0.50, 0xfffcf0, 0.55).setDepth(2.8))
-      return ajustarATamano(this.add.image(punto.x, punto.y, objeto.tipo),
-        this.casilla * 0.82, this.casilla * 0.82).setDepth(3)
+      this.apoyosFrutas.push(this.add.image(punto.x, punto.y, 'destellos-siguiente', 0)
+        .setDisplaySize(this.casilla * 1.1, this.casilla * 1.1).setAlpha(0).setDepth(2.8))
+      return this.add.image(punto.x, punto.y, objeto.tipo)
+        .setDisplaySize(this.casilla * 1.05, this.casilla * 1.05).setDepth(3).setData('tipo', objeto.tipo)
     })
-    this.marcadorDestino = this.add.circle(0, 0, this.casilla * TOQUE.radioDestino, 0, 0)
-      .setStrokeStyle(TOQUE.grosorDestino, TOQUE.colorDestino).setDepth(TOQUE.profundidad).setVisible(false)
   }
 
   crearBloque(punto, textura, fila) {
     // La cara del frente cae un poco sobre la siguiente fila del piso.
-    return this.add.image(punto.x, punto.y + this.casilla * 0.02, textura)
-      .setDisplaySize(this.casilla * 1.02, this.casilla * 1.18)
+    return this.add.image(punto.x, punto.y, textura)
+      .setDisplaySize(this.casilla, this.casilla)
       .setDepth(2 + fila / (this.reto.mapa.length + 1) * 0.5)
   }
 
-  crearSombraMuro(punto) {
-    this.sombrasMuros.push(this.add.image(punto.x + this.casilla * 0.075,
-      punto.y + this.casilla * 0.10, 'sombra-adobe')
-      .setDisplaySize(this.casilla * 1.08, this.casilla * 1.08).setDepth(1.5))
-  }
-
-  // La columna de Kusi: cómo moverse, la consigna en un globo y Kusi abajo a la
-  // izquierda. En la disposición lateral se corre junto con el panel.
+  // Kusi de cuerpo entero y el globo ocupan su columna. El texto del guion
+  // determina la altura de la pieza ilustrada, que crece hacia arriba.
   crearGuia() {
-    this.guia = distribuirGuia(this.disposicion)
+    this.guia = distribuirGuia(this.disposicion, this.reto.consigna)
     const { guia } = this
     this.cajaGuia = { ...guia.caja }
-    // Un fondo claro y suave detrás del letrero: sobre el follaje del pueblito el
-    // texto oscuro se perdía.
-    this.add.rectangle(guia.etiqueta.x, guia.etiqueta.y, guia.etiqueta.ancho, guia.etiqueta.alto,
-      NUMERO.crema, 0.8).setRounded(18)
-    this.add.text(guia.etiqueta.x, guia.etiqueta.y, 'Toca un lugar\no usa las flechas', estiloTexto(22)).setOrigin(0.5)
-    const globo = dibujarGlobo(this.add.graphics(), guia.globo.ancho, guia.globo.alto)
-    globo.setPosition(guia.globo.x, guia.globo.y)
-    this.textoGlobo = this.add.text(guia.globo.x, guia.globo.y, this.reto.consigna,
-      estiloTexto(22, COLOR.tinta, { wordWrap: { width: 172 }, lineSpacing: 1 })).setOrigin(0.5)
-    this.add.ellipse(guia.sombraKusi.x, guia.sombraKusi.y, guia.sombraKusi.ancho, guia.sombraKusi.alto, 0x4b211b, 0.12)
-    this.dibujoKusi = ajustarATamano(this.add.image(guia.kusi.x, guia.kusi.y, 'kusi-frente').setOrigin(0.5, 1),
-      guia.kusi.ancho, guia.kusi.alto)
+    this.dibujoFranja = this.add.image(guia.globo.x, guia.globo.y, 'globo-dialogo-232').setOrigin(0).setFlipX(true)
+    this.dibujoKusi = this.add.image(guia.kusi.x, guia.kusi.y, 'kusi-animado', 9).setOrigin(0)
+      .setDisplaySize(guia.kusi.ancho, guia.kusi.alto)
+    this.textoGlobo = this.add.text(guia.globo.x + 32, guia.globo.y + 24, this.reto.consigna,
+      estiloTexto(24, '#4b210e', { align: 'left', wordWrap: { width: 266 } }))
+    this.panelKusi = this.add.container(0, 0, [this.dibujoFranja, this.dibujoKusi, this.textoGlobo]).setDepth(1010)
+    this.hablaKusi = crearHablaKusi(this.vida)
+    this.ajustarTextoKusi()
+  }
+
+  ajustarTextoKusi() {
+    const globo = this.guia.globo
+    this.ajusteTextoKusi = encajarTextoKusi(this.textoGlobo, globo)
+    globo.y = this.ajusteTextoKusi.y; globo.alto = this.ajusteTextoKusi.alto
+    this.dibujoFranja.setTexture('globo-dialogo-' + globo.alto).setPosition(globo.x, globo.y)
+  }
+
+  hablarKusi(texto) {
+    this.textoGlobo.setText(texto)
+    this.ajustarTextoKusi()
+    iniciarHablaKusi(this.hablaKusi, texto)
+    const turno = this.turnoVoz = (this.turnoVoz ?? 0) + 1
+    decir(texto, { alEmpezar: () => {
+        if (this.turnoVoz !== turno) return
+        iniciarHablaKusi(this.hablaKusi, texto)
+        // La voz web informa su final. El puente Android conserva su duración estimada.
+        this.hablaKusi.vozActiva = typeof window.KusiPuente?.decir !== 'function'
+      },
+      alTerminar: () => {
+        if (this.turnoVoz !== turno) return
+        this.hablaKusi.vozActiva = false
+        this.hablaKusi.restante = 0
+      } })
+  }
+
+  actualizarKusi(segundos) {
+    const gesto = avanzarHablaKusi(this.hablaKusi, segundos)
+    this.dibujoKusi.setFrame(gesto.cuadro)
   }
 
   mostrarAyuda(numero = null) {
@@ -372,7 +344,7 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.textoGlobo.setText(this.reto.ayudas[indice])
     this.indiceAyuda += 1
     avisarPartida(this.partida, 'ayuda', { nivel: this.indiceNivel + 1, ayuda: indice + 1 })
-    decir(this.textoGlobo.text)
+    this.hablarKusi(this.textoGlobo.text)
   }
 
   crearPersonajes() {
@@ -402,8 +374,8 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.avisosPersecucion = this.zorros.map(() => {
       const fondo = this.add.circle(0, 0, this.casilla * AVISO_PERSECUCION.radio, AVISO_PERSECUCION.relleno)
         .setStrokeStyle(AVISO_PERSECUCION.grosorBorde, AVISO_PERSECUCION.borde)
-      const texto = this.add.text(0, 0, '!', estiloTexto(
-        Math.max(AVISO_PERSECUCION.tamanoMinimo, this.casilla * AVISO_PERSECUCION.tamanoTexto),
+      const texto = this.add.text(0, 0, this.vida ? '❗' : '!', estiloTexto(
+        Math.max(AVISO_PERSECUCION.tamanoMinimo, this.casilla * AVISO_PERSECUCION.tamanoTexto) * (this.vida ? 1.3 : 1),
       )).setOrigin(0.5)
       return {
         dibujo: this.add.container(0, 0, [fondo, texto]).setDepth(AVISO_PERSECUCION.profundidad).setVisible(false),
@@ -416,16 +388,20 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.zorros.forEach((zorro, indice) => {
       const aviso = this.avisosPersecucion[indice]
       if (zorro.iniciosPersecucion > aviso.ultimoInicio) {
-        aviso.restante = AVISO_PERSECUCION.segundos
+        aviso.restante = this.vida ? zorro.segundosAlerta : AVISO_PERSECUCION.segundos
+        if (this.vida) this.sonidos.reproducir('alerta')
         aviso.apariciones += 1
       } else {
         aviso.restante = Math.max(0, aviso.restante - segundos)
       }
       aviso.ultimoInicio = zorro.iniciosPersecucion
-      if (!zorro.persiguiendo) aviso.restante = 0
+      if (this.vida) aviso.restante = zorro.fase === 'alerta' ? zorro.segundosAlerta : 0
+      else if (!zorro.persiguiendo) aviso.restante = 0
+      const salto = this.vida && aviso.restante > 0
+        ? Math.sin((0.6 - aviso.restante) / 0.6 * Math.PI) * this.casilla * 0.22 : 0
       const cuerpo = this.dibujosZorros[indice]
       aviso.dibujo.setPosition(cuerpo.x,
-        cuerpo.y - this.casilla * ALTURA_CUY * PROPORCION_ZORRO - AVISO_PERSECUCION.separacionCabeza)
+        cuerpo.y - this.casilla * ALTURA_CUY * PROPORCION_ZORRO - AVISO_PERSECUCION.separacionCabeza - salto)
         .setVisible(aviso.restante > 0)
     })
   }
@@ -447,27 +423,28 @@ export class EscenaLaberinto extends Phaser.Scene {
   // Efectos que viven encima de las animaciones por cuadros. Con ?vida=0 se crean
   // apagados: la escena sigue llamándolos igual, pero no hacen nada.
   crearVida() {
+    this.vidaChacra = new VidaChacra(this, { activo: this.vida })
     // El silencio que se eligió antes, en este nivel o en otro, se conserva.
     this.sonidos = new SonidosLaberinto(this, { activo: this.vida, silenciado: leerSilencio() })
     this.parpadeo = new ParpadeoCuy(this.cuy, { activo: this.vida })
-    // El cuerpo guarda la escala que la escena ya fijó a cada sprite y le suma
-    // el rebote de cada paso; el zorro usa un perfil más pesado.
-    this.cuerpoCuy = new CuerpoVivo(this.cuy, PERFIL_CUY, { casilla: this.casilla, activo: this.vida })
+    // Conserva la geometría fija de las poses ilustradas; el cuerpo no las deforma.
+    this.cuerpoCuy = new CuerpoVivo(this.cuy, PERFIL_CUY, { casilla: this.casilla, activo: false })
     this.cuerposZorros = this.dibujosZorros.map((dibujo) =>
-      new CuerpoVivo(dibujo, PERFIL_ZORRO, { casilla: this.casilla, activo: this.vida }))
+      new CuerpoVivo(dibujo, PERFIL_ZORRO, { casilla: this.casilla, activo: false }))
     this.polvito = new Polvito(this, { casilla: this.casilla, activo: this.vida })
     this.popFruta = new PopFruta(this, { casilla: this.casilla, activo: this.vida })
     // Cada fruta flota alrededor del centro de su casilla, con su propio desfase.
     const basesDeLasFrutas = this.reto.objetos.map((objeto) => this.centroCasilla(objeto.fila, objeto.columna))
     this.frutasVivas = new FrutasVivas(this, this.dibujosObjetos, basesDeLasFrutas,
-      { casilla: this.casilla, activo: this.vida })
+      { casilla: this.casilla, activo: this.vida, brillos: this.apoyosFrutas })
+    this.actualizarBarra()
     // Al ser atrapado, los zorros se detienen junto con todo lo demás.
     this.captura = new CapturaLaberinto(this, {
       ancho: ANCHO, congelables: this.dibujosZorros, activo: this.vida,
       // El temblor se suma al encuadre de la pantalla y vuelve a él al apagarse.
       desfase: () => this.desplazamientoPantalla,
     })
-    this.puertaViva = new PuertaViva(this, this.puerta, { casilla: this.casilla, activo: this.vida })
+    this.puertaViva = new PortalVivo(this, this.puerta, { casilla: this.casilla, activo: this.vida })
     this.ultimosCuadros = new Map()
     // Sin vida no hay sonidos que apagar y tampoco botón.
     if (this.vida) {
@@ -476,7 +453,8 @@ export class EscenaLaberinto extends Phaser.Scene {
         alTocar: () => {
           this.alternarSonido()
         },
-      }).setPosition(this.guia.altavoz.x, this.guia.altavoz.y)
+      })
+      this.ajustarBotonSonido()
     }
   }
 
@@ -486,6 +464,12 @@ export class EscenaLaberinto extends Phaser.Scene {
     const silenciado = this.sonidos.cambiarSilencio()
     guardarSilencio(silenciado)
     this.botones.altavoz.mostrar(silenciado)
+  }
+
+  ajustarBotonSonido() {
+    if (!this.botones?.altavoz) return
+    const punto = ubicarSonidoSuperior({ mundoAncho: this.disposicion.diseno.ancho }, BOTON_SONIDO)
+    this.botones.altavoz.setPosition(punto.x, punto.y)
   }
 
   // ¿Se apoyó un pie en este cuadro? El ciclo de caminar apoya un pie en el primer
@@ -503,9 +487,9 @@ export class EscenaLaberinto extends Phaser.Scene {
   // Cada pisada suena y, cada dos pasos, levanta una nubecita de polvo detrás de
   // los pies. «centro» es el centro de la casilla que pisa el personaje; el
   // polvo sale de su línea de apoyo, sin el rebote del cuerpo.
-  alPisar(clave, sonido, centro, direccion, tamano) {
+  alPisar(clave, sonido, centro, direccion, tamano, polvo = true) {
     this.sonidos.reproducir(sonido)
-    this.polvito.alPisar(clave, centro.x, centro.y + this.casilla * DESFASE_PIES, direccion, tamano)
+    if (polvo) this.polvito.alPisar(clave, centro.x, centro.y + this.casilla * DESFASE_PIES, direccion, tamano)
   }
 
   // Una pulsación elige el rumbo y no exige sostener la tecla. Ignorar la
@@ -523,29 +507,30 @@ export class EscenaLaberinto extends Phaser.Scene {
     }
     this.input.keyboard.on('keydown', this.alPulsarFlecha)
 
-    // Cada dedo conserva su propio toque. Un arrastre se ignora: no se interpreta
-    // como rumbo ni como destino. Los botones tampoco envían al cuy al mapa.
-    this.alIniciarToque = (puntero, objetosTocados) => {
-      this.iniciosToque.set(puntero.id, {
-        ...this.puntoEnPantalla(puntero), sobreControl: objetosTocados.length > 0,
-      })
+    this.joystick = new JoystickLaberinto(this)
+    this.mano = crearManoLaberinto(this, this.guia.joystick)
+    this.alIniciarToque = (puntero, objetosTocados = []) => {
+      if (objetosTocados.length || this.terminada || this.cambiandoNivel || this.captura.congelado) return
+      if (!this.joystick.iniciar(puntero)) return
+      this.modoControl = 'joystick'
+      detenerEnCentro(this.movimiento)
+      this.alMoverToque(puntero)
     }
-    this.alTerminarToque = (puntero, objetosTocados) => {
-      const inicio = this.iniciosToque.get(puntero.id)
-      this.iniciosToque.delete(puntero.id)
-      if (!inicio || inicio.sobreControl || objetosTocados.length > 0) return
-      const fin = this.puntoEnPantalla(puntero)
-      if (Math.hypot(fin.x - inicio.x, fin.y - inicio.y) > TOQUE.tolerancia) return
-      const mundo = this.cameras.main.getWorldPoint(puntero.x, puntero.y)
-      this.caminarHasta({
-        fila: (mundo.y - this.origenMapa.y) / this.casilla - 0.5,
-        columna: (mundo.x - this.origenMapa.x) / this.casilla - 0.5,
-      })
+    this.alMoverToque = (puntero) => {
+      const gesto = this.joystick.mover(puntero)
+      if (!gesto) return
+      if (gesto.direccion) {
+        pedirDireccion(this.movimiento, gesto.direccion)
+        this.iniciarNivel()
+      } else detenerEnCentro(this.movimiento)
     }
-    this.alCancelarToque = (puntero) => this.iniciosToque.delete(puntero.id)
+    this.alTerminarToque = (puntero) => this.soltarJoystick(puntero)
+    this.alPerderFoco = () => this.soltarJoystick()
+    this.game.events.on('blur', this.alPerderFoco)
     this.input.on('pointerdown', this.alIniciarToque)
+    this.input.on('pointermove', this.alMoverToque)
     this.input.on('pointerup', this.alTerminarToque)
-    this.input.on('pointerupoutside', this.alCancelarToque)
+    this.input.on('pointerupoutside', this.alTerminarToque)
   }
 
   puntoEnPantalla(puntero) {
@@ -553,16 +538,13 @@ export class EscenaLaberinto extends Phaser.Scene {
     return { x: puntero.x * lienzo.width / this.scale.width, y: puntero.y * lienzo.height / this.scale.height }
   }
 
-  cancelarDestino() {
-    this.destino = null
-    this.ruta = []
-    this.frutaObjetivo = null
-    this.marcadorDestino?.setVisible(false)
+  soltarJoystick(puntero = null) {
+    if (this.joystick?.soltar(puntero)) detenerEnCentro(this.movimiento)
   }
 
   elegirRumbo(direccion) {
     if (this.terminada || this.cambiandoNivel || this.captura.congelado) return
-    this.cancelarDestino()
+    this.soltarJoystick()
     this.modoControl = 'teclado'
     pedirDireccion(this.movimiento, direccion)
     this.iniciarNivel()
@@ -570,54 +552,15 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   iniciarNivel() {
     this.mano?.ocultar()
-    this.nivelIniciado = true
     if (!this.iniciada) {
       this.iniciada = true
       avisarPartida(this.partida, 'inicio', { nivel: this.indiceNivel + 1 })
     }
   }
 
-  caminarHasta(toque) {
-    if (this.terminada || this.cambiandoNivel || this.captura.congelado) return
-    const plan = planearRuta(this.reto.mapa, this.movimiento, toque, this.regla.objetos)
-    if (!plan.destino) return
-    this.modoControl = 'toque'
-    this.destino = plan.destino
-    this.ruta = plan.pasos
-    this.frutaObjetivo = plan.frutaObjetivo
-    const punto = this.centroCasilla(this.destino.fila, this.destino.columna)
-    this.marcadorDestino.setPosition(punto.x, punto.y).setVisible(true)
-    this.iniciarNivel()
-    iniciarRecorrido(this.movimiento, this.ruta)
-    // Tocar la fruta bajo los pies también es una decisión, aunque el recorrido
-    // tenga cero pasos. No hace falta alejarse y volver para recogerla.
-    if (this.movimiento.progreso === 0 && this.ruta.length === 0) this.procesarCasilla(this.movimiento)
-  }
-
-  continuarRecorrido(fila, columna) {
-    if (this.modoControl !== 'toque' || !this.destino) return true
-    if (fila === this.destino.fila && columna === this.destino.columna) {
-      this.cancelarDestino()
-      return false
-    }
-    // Al cambiar de destino entre centros puede llegar primero al origen del
-    // nuevo plan. Solo se consume un paso si coincide con la casilla alcanzada.
-    if (this.ruta[0]?.fila === fila && this.ruta[0]?.columna === columna) this.ruta.shift()
-    if (this.ruta.length === 0) {
-      this.cancelarDestino()
-      return false
-    }
-    pedirDireccion(this.movimiento, this.ruta[0].direccion)
-    return true
-  }
-
   procesarCasilla({ fila, columna }) {
-    // Las flechas conservan la recolección al pasar. Con toques solo cuenta el
-    // objeto elegido; las frutas de paso no producen errores, ayudas ni avisos.
-    const objetoElegido = this.regla.objetos[this.frutaObjetivo]
-    const puedeComer = this.modoControl === 'teclado' || (objetoElegido
-      && objetoElegido.fila === fila && objetoElegido.columna === columna)
-    const resultado = puedeComer ? comerEnCasilla(this.regla, this.reto.regla, fila, columna) : null
+    // Joystick y flechas usan la misma regla al entrar en cada casilla.
+    const resultado = comerEnCasilla(this.regla, this.reto.regla, fila, columna)
     if (resultado) {
       avisarPartida(this.partida, 'accion', {
         nivel: this.indiceNivel + 1, objeto: resultado.objeto, correcto: resultado.correcto,
@@ -631,7 +574,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         this.cuy.mostrarEstado('feliz', 'frente')
         this.sonidos.reproducir('comer')
         if (this.regla.completada) {
-          this.puerta.setTexture('puerta-abierta')
+          this.puerta.setTexture('portal-abierto')
           this.sonidos.reproducir('puerta')
           // Con vida la puerta además rebota y suelta confeti.
           this.puertaViva.abrir()
@@ -646,8 +589,6 @@ export class EscenaLaberinto extends Phaser.Scene {
         this.tweens.add({ targets: dibujo, y: base.y - this.casilla * 0.2,
           duration: 110, yoyo: true, ease: 'Sine.easeOut' })
         this.sonidos.reproducir('error')
-        // Además del rebote de la fruta, el cuy se sacude un poquito de lado a lado.
-        this.cuerpoCuy.sacudir()
         this.mostrarAyuda(resultado.ayuda)
       }
     }
@@ -655,7 +596,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.completarNivel()
       return false
     }
-    return this.continuarRecorrido(fila, columna)
+    return true
   }
 
   datosParaNivel(indiceNivel, partida = this.partida) {
@@ -667,7 +608,10 @@ export class EscenaLaberinto extends Phaser.Scene {
 
   completarNivel() {
     if (this.cambiandoNivel || this.terminada) return
-    this.cancelarDestino()
+    this.soltarJoystick()
+    // El cierre se observa en este mismo cuadro, antes de que el callback de
+    // movimiento termine. No puede quedar una dirección activa bajo la cortina.
+    detenerEnCentro(this.movimiento)
     avisarPartida(this.partida, 'reto_completado', { nivel: this.indiceNivel + 1 })
     if (this.indiceNivel + 1 < this.paquete.retos.length) {
       this.cambiandoNivel = true
@@ -685,14 +629,12 @@ export class EscenaLaberinto extends Phaser.Scene {
   mostrarCierre() {
     // Los controles cubiertos por el cierre dejan de recibir toques. El último
     // aviso de la partida es fin; Jugar otra vez crea un identificador nuevo.
-    this.botones.sonido.fondo.disableInteractive()
-    this.botones.ayuda.fondo.disableInteractive()
-    this.botones.altavoz?.fondo.disableInteractive()
+    desactivarBotones(this.botones)
     // La cortina es mucho más grande que el mundo: también tapa las franjas que
     // EXPAND añade en una pantalla alargada, y la despedida queda centrada.
     const centro = { x: this.disposicion.diseno.ancho / 2, y: this.disposicion.diseno.alto / 2 }
-    this.add.rectangle(centro.x, centro.y, 8000, 6000, NUMERO.crema, 0.97).setDepth(2000)
-    ajustarATamano(this.add.image(centro.x, 300, 'kusi-frente').setOrigin(0.5, 1), 180, 204).setDepth(2001)
+    this.add.rectangle(centro.x, centro.y, 8000, 6000, NUMERO.crema, 1).setDepth(2000)
+    ajustarATamano(this.add.image(centro.x, 300, 'kusi-animado', 9).setOrigin(0.5, 1), 180, 204).setDepth(2001)
     this.add.text(centro.x, 386, this.mensajeCierre, estiloTexto(40, COLOR.tinta, {
       wordWrap: { width: 820 }, lineSpacing: 8,
     })).setOrigin(0.5).setDepth(2001)
@@ -708,7 +650,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   }
 
   capturarCuy() {
-    this.cancelarDestino()
+    this.soltarJoystick()
     this.movimiento = crearMovimiento(this.reto.mapa)
     this.zorros.forEach(restablecerZorro)
     this.avisosPersecucion.forEach((aviso) => {
@@ -729,7 +671,7 @@ export class EscenaLaberinto extends Phaser.Scene {
   // inicio y asustarse) se aplica al terminar ese instante. Sin vida ocurre de
   // golpe, como antes de la capa de vida.
   alTocarElZorro() {
-    this.cancelarDestino()
+    this.soltarJoystick()
     this.sonidos.reproducir('captura')
     if (!this.captura.iniciar()) this.capturarCuy()
   }
@@ -744,7 +686,8 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.segundosInvulnerable = Math.max(0, this.segundosInvulnerable - paso)
       avanzarMovimiento(this.movimiento, this.reto.mapa, paso, CASILLAS_POR_SEGUNDO * this.multiplicador,
         (casilla) => this.procesarCasilla(casilla))
-      if (this.terminada || this.cambiandoNivel || !this.nivelIniciado) continue
+      // El zorro explora desde que aparece el nivel, aunque el niño esté quieto.
+      if (this.terminada || this.cambiandoNivel) continue
       for (const zorro of this.zorros) {
         avanzarZorro(zorro, this.reto.mapa, this.movimiento, paso,
           CASILLAS_POR_SEGUNDO * PROPORCION_VELOCIDAD_ZORRO * this.multiplicador)
@@ -793,15 +736,25 @@ export class EscenaLaberinto extends Phaser.Scene {
       const distanciaZorro = Math.hypot(posicion.fila - anteriorZorro.fila, posicion.columna - anteriorZorro.columna)
       const dibujoZorro = this.dibujosZorros[indice]
       dibujoZorro.setPosition(centro.x, centro.y + this.casilla * DESFASE_PIES)
-        .animarMovimiento('frente', distanciaZorro * this.casilla, segundos, tiempo)
+      if (this.vida && (zorro.fase === 'alerta' || zorro.fase === 'cansado')) {
+        // Estos ciclos mandan mientras el zorro está detenido. No se pasa por
+        // quieto en cada cuadro: así la expresión puede avanzar sin reiniciarse.
+        dibujoZorro.estadoMovimiento = 'reposo'
+        dibujoZorro.mostrarEstado(zorro.fase, 'frente')
+      } else dibujoZorro.animarMovimiento(VISTAS[zorro.direccion], distanciaZorro * this.casilla, segundos, tiempo)
       if (this.sombrasZorros[indice]) this.colocarSombra(this.sombrasZorros[indice], centro)
       if (this.detectarPisada(dibujoZorro)) {
-        this.alPisar('zorro' + indice, 'paso_zorro', centro, zorro.direccion, PROPORCION_ZORRO)
+        this.alPisar('zorro' + indice, 'paso_zorro', centro, zorro.direccion, PROPORCION_ZORRO, zorro.fase === 'perseguir')
       }
       this.cuerposZorros[indice].actualizar(segundos)
     })
     this.actualizarAvisosPersecucion(segundos)
+    this.vidaChacra.actualizar(segundos)
+    this.actualizarKusi(segundos)
+    this.barraFrutas.animar(segundos)
+    this.mano?.actualizar(segundos)
     this.frutasVivas.actualizar(segundos)
+    this.puertaViva.actualizar(segundos)
   }
 
   leerSombra(sombra) {
@@ -826,45 +779,47 @@ export class EscenaLaberinto extends Phaser.Scene {
       },
       presentacion: {
         fondo: {
-          x: this.fondoPueblito.x - this.fondoPueblito.displayWidth / 2 + this.cameras.main.scrollX,
-          y: this.fondoPueblito.y - this.fondoPueblito.displayHeight / 2 + this.cameras.main.scrollY,
+          x: this.fondoPueblito.x,
+          y: this.fondoPueblito.y,
           ancho: this.fondoPueblito.displayWidth, alto: this.fondoPueblito.displayHeight,
         },
         disposicion: this.disposicion.tipo, zoom: this.cameras.main.zoom,
         barra: { ...this.cajaBarra }, mapa: { ...this.cajaMapa }, guia: { ...this.cajaGuia },
         // El globo con su colita, que sobresale por debajo.
-        globo: { x: this.guia.globo.x - this.guia.globo.ancho / 2, y: this.guia.globo.y - this.guia.globo.alto / 2,
-          ancho: this.guia.globo.ancho, alto: this.guia.globo.alto + this.guia.globo.cola },
-        kusi: { x: this.dibujoKusi.x - this.dibujoKusi.displayWidth / 2,
-          y: this.dibujoKusi.y - this.dibujoKusi.displayHeight,
+        globo: { x: this.guia.globo.x, y: this.guia.globo.y, ancho: this.guia.globo.ancho, alto: this.guia.globo.alto },
+        kusi: { x: this.dibujoKusi.x,
+          y: this.dibujoKusi.y,
           ancho: this.dibujoKusi.displayWidth, alto: this.dibujoKusi.displayHeight },
         piso: { tipo: this.piso.type, cantidad: 1, textura: this.piso.texture.key },
         semillaMuros: this.semillaMuros,
-        muros: this.muros.map(({ fila, columna, variante, dibujo }) => ({ fila, columna, variante, profundidad: dibujo.depth })),
-        sombrasMuros: this.sombrasMuros.length, vineta: this.vineta.visible,
+        muros: this.muros.map(({ fila, columna, variante, dibujo, matas }) => ({ fila, columna, variante, textura: dibujo.texture.key, matas: Boolean(matas), profundidad: dibujo.depth })),
+        sombrasMuros: this.sombrasMuros.length, vineta: Boolean(this.vineta?.visible),
         puerta: this.puerta.texture.key,
+        textoKusi: this.ajusteTextoKusi,
       },
       casilla: this.casilla, origenMapa: { ...this.origenMapa },
       inicio: { ...this.inicio }, consigna: this.textoGlobo.text,
       movimiento: { ...this.movimiento }, velocidad: CASILLAS_POR_SEGUNDO * this.multiplicador,
-      modoControl: this.modoControl, destino: this.destino ? { ...this.destino } : null,
-      ruta: this.ruta.map((paso) => ({ ...paso })),
-      marcadorDestino: { visible: this.marcadorDestino.visible, x: this.marcadorDestino.x, y: this.marcadorDestino.y },
+      modoControl: this.modoControl, joystick: this.joystick.estado(),
       regla: { ...this.regla, objetos: this.regla.objetos.map((objeto) => ({ ...objeto })) },
       // La regla del nivel tal como la escribe el guion, y lo que muestra la barra de arriba.
       reglaDelReto: structuredClone(this.reto.regla),
-      barra: { titulo: this.tituloBarra, fichas: this.casilleros.length },
+      barra: { titulo: this.tituloBarra, indicacion: this.barraFrutas.etiqueta.text,
+        fichas: this.casilleros.length, estados: this.barraFrutas.estado() },
+      kusiAnimado: { cuadro: this.dibujoKusi.frame.name, animacion: this.hablaKusi.animacion, hablando: this.hablaKusi.restante > 0 },
       puertaAbierta: this.regla.completada, terminada: this.terminada, mensajeCierre: this.mensajeCierre,
       manoVisible: Boolean(this.mano?.visible),
       invulnerable: this.segundosInvulnerable > 0, segundosInvulnerable: this.segundosInvulnerable,
       capturas: this.capturas,
       zorros: this.zorros.map((zorro, indice) => ({
-        ...zorro, inicio: { ...zorro.inicio }, mirando: this.dibujosZorros[indice].direccionAnimada,
+        ...zorro, inicio: { ...zorro.inicio }, visitas: { ...zorro.visitas },
+        mirando: this.dibujosZorros[indice].direccionAnimada,
         avisoPersecucion: {
           visible: this.avisosPersecucion[indice].dibujo.visible,
           x: this.avisosPersecucion[indice].dibujo.x, y: this.avisosPersecucion[indice].dibujo.y,
-          texto: '!', apariciones: this.avisosPersecucion[indice].apariciones,
+          texto: this.vida ? '❗' : '!', apariciones: this.avisosPersecucion[indice].apariciones,
         },
+        animacion: this.dibujosZorros[indice].anims.currentAnim?.key,
         flipX: this.dibujosZorros[indice].flipX, fotograma: this.dibujosZorros[indice].frame.name,
         // Posición real del zorro, sin el rebote de sus pasos.
         x: this.dibujosZorros[indice].x - this.cuerposZorros[indice].desplazamiento.x,
@@ -883,6 +838,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         pop: this.popFruta.estado(),
         frutasVivas: this.frutasVivas.estado(),
         puerta: this.puertaViva.estado(),
+        chacra: this.vidaChacra.estado(),
         botonSonido: this.botones.altavoz ? {
           x: this.botones.altavoz.x, y: this.botones.altavoz.y, ancho: BOTON_SONIDO.ancho, alto: BOTON_SONIDO.alto,
           silenciado: this.botones.altavoz.silenciado,
@@ -896,6 +852,7 @@ export class EscenaLaberinto extends Phaser.Scene {
         },
         frutas: this.dibujosObjetos.map((dibujo) => ({
           x: dibujo.x, y: dibujo.y, visible: dibujo.visible, alpha: dibujo.alpha,
+          textura: dibujo.texture.key, cuadro: dibujo.frame.name,
           escalaX: dibujo.scaleX, escalaY: dibujo.scaleY,
         })),
         parpadeos: this.parpadeo.parpadeos,

@@ -18,6 +18,9 @@ from verificar_hoja import verificar_hoja
 
 
 RAIZ_JUEGO = Path(__file__).resolve().parents[2]
+# Las hojas del cuy anterior se conservan como muestras de las herramientas: ya no las
+# publica el juego, pero sirven para comprobar el armado, la alineación y las vistas previas.
+MUESTRAS = Path(__file__).resolve().parent / "muestras"
 CELDA = (256, 256)
 COLOR_PASTO = (90, 160, 74)
 
@@ -36,7 +39,7 @@ class PruebasAnimaciones(unittest.TestCase):
         cls.addClassCleanup(cls.temporal.cleanup)
         cls.carpeta = Path(cls.temporal.name)
         cls.referencia = RAIZ_JUEGO / "arte/cuy/vista-previa/armado.json"
-        cls.frontal = RAIZ_JUEGO / "public/dibujos/cuy-nino-caminar-v1.png"
+        cls.frontal = MUESTRAS / "cuy-nino-caminar-v1.png"
         cls.lateral = RAIZ_JUEGO / "arte/cuy/origen/cuy-lado-3-cuadros.png"
         cls.atlas = cls.carpeta / "cuadros.png"
         cls.informe = armar_hoja(
@@ -82,7 +85,7 @@ class PruebasAnimaciones(unittest.TestCase):
                 reconstruida.crop((0, 0, 768, 256)).tobytes(),
                 frontal.convert("RGBA").tobytes(),
             )
-            publicada = RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v1.png"
+            publicada = MUESTRAS / "cuy-nino-cuadros-v1.png"
             if publicada.exists():
                 with Image.open(publicada) as atlas_publicado:
                     self.assertEqual(reconstruida.size, atlas_publicado.size)
@@ -168,9 +171,9 @@ class PruebasAnimaciones(unittest.TestCase):
         # Añadir una expresión no debe filtrar de nuevo las filas que ya están
         # verificadas. También se inspecciona el GIF entregado, no solo uno de
         # prueba, para comprobar la secuencia finita publicada sobre el pasto.
-        with Image.open(RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v2.png") as atlas:
+        with Image.open(MUESTRAS / "cuy-nino-cuadros-v2.png") as atlas:
             self.assertEqual(atlas.size, (768, 768))
-            with Image.open(RAIZ_JUEGO / "public/dibujos/cuy-nino-cuadros-v1.png") as anterior:
+            with Image.open(MUESTRAS / "cuy-nino-cuadros-v1.png") as anterior:
                 self.assertEqual(atlas.crop((0, 0, 768, 512)).tobytes(), anterior.convert("RGBA").tobytes())
         cuadros, duraciones, bucle = self.leer_gif(RAIZ_JUEGO / "arte/cuy/vista-previa/asustado.gif")
         self.assertEqual(len(cuadros), 5)

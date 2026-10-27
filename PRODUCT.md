@@ -1,6 +1,6 @@
 # Kusi · producto y alcance vigente
 
-20 de octubre de 2026 · lui11zcb · luiscb.once@gmail.com.
+Actualizado el 27 de octubre de 2026 · lu11zcb · luiscb.once@gmail.com.
 
 Kusi prepara experiencias educativas de juego para primero de primaria en Perú. La intervención real de IA en su creación es un objetivo central; no se reduce a dibujar pantallas. Los beneficios educativos son objetivos que requieren evaluación, no resultados demostrados por el diseño.
 
@@ -13,12 +13,12 @@ Kusi prepara experiencias educativas de juego para primero de primaria en Perú.
 
 ## IA y juego
 
-El adaptador Groq crea propuestas textuales. El equipo programa el reproductor, controles y validadores. El nivel garantizado previsto para Sprint 2 es N1: IA produce contenido y paquetes dentro del kit del equipo. N3, programación del juego por IA mediante un kit, sigue como objetivo/experimento posterior; no se presenta N1 como N3.
+El adaptador configurable de IA crea propuestas y guiones de laberinto. El equipo programa el reproductor, los controles y los validadores. La IA produce contenido y paquetes dentro del kit del equipo (N1). La programación del juego por IA mediante un kit (N3) sigue como objetivo posterior.
 
-Procesar el JSON de ejemplo en Spring es una simulación identificada, no una llamada al generador de paquetes. Las cuatro ilustraciones móviles son recursos de diseño con procedencia. Biblioteca autorizada, WebView de juego y registro real de eventos todavía deben conectarse; las dos aventuras de la actividad debug no se muestran como datos del alumno en la app normal.
+El docente revisa y aprueba la propuesta antes de generar el guion. Spring comprueba el paquete y puede pedir correcciones o aplicar mapas de respaldo; el panel conserva la procedencia y los problemas encontrados. El docente prueba y envía el juego. Android consulta la biblioteca autorizada, abre el laberinto en WebView y registra los avisos de partida. El JSON de demostración y las pruebas simuladas se mantienen para desarrollo; la actividad Android de presentación fue retirada.
 
 ## Incremento actual
 
-Administración y docencia rediseñadas e integradas. Android implementa el recorrido visual de Sprint 2 con estados, iconos, letra local y botones táctiles; cuenta con un modo de presentación claramente identificado. Para el avance de hoy se muestran estas partes y las correcciones de Sprint 1, con los límites registrados. HU46 queda fuera del avance por indicación de Luis y se retoma el viernes 23; el burndown se omite en esta revisión por su indicación posterior.
+Administración, docencia y el recorrido del estudiante están integrados. El laberinto admite patrones y clasificación de frutas o verduras, ayudas, voz, enemigos y cierre. El fondo comparte la vista desde arriba del mapa y anima vegetación mediante sprites. Los controles, la barra de objetivos y la exploración del zorro se describen en la [guía del juego](juego/README.md).
 
-El avance del 20 no acredita cierre del Sprint 2 del 27. [Diseño](DESIGN.md), [avance](docs/AVANCE_20_OCTUBRE.md), [verificación](docs/VERIFICACION_20_OCTUBRE.md).
+El [informe de cierre del Sprint 2](docs/INFORME-CIERRE-SPRINT2.md) reúne las comprobaciones de integración. El [avance del 20](docs/AVANCE_20_OCTUBRE.md) y su [verificación](docs/VERIFICACION_20_OCTUBRE.md) se conservan como documentos históricos.

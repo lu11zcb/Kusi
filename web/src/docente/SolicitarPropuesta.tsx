@@ -8,9 +8,10 @@ import { CabeceraDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
 
 export type BorradorPropuesta = { seleccion: string; tema: string; objetivo: string; proposito: Proposito; instrucciones: string }
-type Propiedades = { borrador: BorradorPropuesta; alCambiarBorrador: (valor: BorradorPropuesta) => void; alOcupar: (valor: boolean) => void; activo?: boolean }
+// «alSalir»: volver al inicio del panel cuando el docente termina con esta propuesta.
+type Propiedades = { borrador: BorradorPropuesta; alCambiarBorrador: (valor: BorradorPropuesta) => void; alOcupar: (valor: boolean) => void; activo?: boolean; alSalir?: () => void }
 
-export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, activo = true }: Propiedades) {
+export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, activo = true, alSalir }: Propiedades) {
   const { seleccion, tema, objetivo, proposito, instrucciones } = borrador
   const [contextos, establecerContextos] = useState<ContextosPropuestas | null>(null)
   const [cargando, establecerCargando] = useState(true)
@@ -46,6 +47,14 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
   function recargar() { establecerCargando(true); establecerErrorContexto(''); establecerRecarga((valor) => valor + 1) }
   function cambiar<K extends keyof BorradorPropuesta>(campo: K, valor: BorradorPropuesta[K]) { alCambiarBorrador({ ...borrador, [campo]: valor }); establecerError('') }
   function ocuparRevision(valor: boolean) { establecerRevisando(valor); alOcupar(valor) }
+  // Empezar otra propuesta: se limpia el tema y se conserva el curso elegido. La propuesta
+  // anterior y su juego ya quedaron guardados.
+  function nuevaPropuesta() {
+    establecerResultado(null); establecerError(''); establecerIntentoPara('')
+    alCambiarBorrador({ ...borrador, tema: '', objetivo: '', instrucciones: '' })
+    window.scrollTo({ top: 0 })
+  }
+  function salir() { nuevaPropuesta(); alSalir?.() }
   async function enviar(evento: FormEvent) {
     evento.preventDefault()
     if (bloqueo.current || revisando) return
@@ -84,6 +93,11 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
     {solicitud?.propuesta ? <details className="doc-solicitud-datos"><summary>Ver los datos de esta solicitud</summary>{formulario}</details> : formulario}
     <p className="doc-nota"><IconoDocente nombre="check" />Tu borrador se conserva al cambiar entre estas secciones. Recargar la página, cerrar sesión o cambiar de panel borra lo que aún no guardaste. Cambiar una solicitud guardada creará otra.</p>
     {solicitud && !solicitud.propuesta && <MensajeDocente titulo="Solicitud guardada"><p>{solicitud.estado === 'pendiente' ? 'Quedó pendiente de generación. Puedes consultar su estado y reintentar después.' : solicitud.estado === 'generando' ? 'La generación sigue en curso. Consulta su estado antes de enviar otra solicitud.' : solicitud.estado === 'fallida' ? 'La IA no pudo preparar el contenido. Tus datos se conservan para reintentar.' : 'Consulta el estado para recuperar la propuesta.'}</p></MensajeDocente>}
+    {solicitud?.propuesta && <div className="doc-formulario-pie" role="group" aria-label="Terminar con esta propuesta">
+      <p><IconoDocente nombre="info" />Cuando termines con este juego, puedes crear otra propuesta o salir.</p>
+      <button type="button" disabled={revisando} onClick={nuevaPropuesta}><IconoDocente nombre="editar" />Nueva propuesta</button>
+      <button type="button" className="secundario" disabled={revisando} onClick={salir}>Salir</button>
+    </div>}
     {solicitud?.propuesta && <RevisionPropuesta key={solicitud.id_solicitud} solicitud={solicitud} alCambiar={(valor) => establecerResultado({ huella, solicitud: valor })} alOcupar={ocuparRevision} activo={activo} />}
   </section>
 }

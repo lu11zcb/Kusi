@@ -34,6 +34,13 @@ public class Generacion {
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
 
+    // El docente le dio el OK: el juego aparece en la app de sus estudiantes.
+    @Column(name = "publicada", nullable = false)
+    private boolean publicada;
+
+    @Column(name = "publicada_en")
+    private Instant publicadaEn;
+
     @Column(name = "actualizado_en", nullable = false)
     private Instant actualizadoEn;
 
@@ -67,5 +74,16 @@ public class Generacion {
     public void guardarPaquete(String paquete) {
         this.paquete = paquete;
         this.actualizadoEn = Instant.now();
+    }
+
+    public boolean isPublicada() { return publicada; }
+    public Instant getPublicadaEn() { return publicadaEn; }
+
+    // Enviar el juego a los estudiantes. Volver a enviarlo no cambia la fecha del primer envío.
+    public void publicar() {
+        if (publicada) return;
+        this.publicada = true;
+        this.publicadaEn = Instant.now();
+        this.actualizadoEn = this.publicadaEn;
     }
 }

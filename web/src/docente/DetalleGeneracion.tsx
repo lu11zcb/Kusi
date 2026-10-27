@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { etiquetasEstados, etiquetasEtapas, generacionTerminada } from '../servicios/generaciones'
+import { etiquetasEstados, etiquetasEtapas, generacionTerminada, publicarGeneracion } from '../servicios/generaciones'
 import type { Generacion } from '../servicios/generaciones'
 import { IconoDocente } from './IconoDocente'
 import { MensajeDocente } from './ElementosDocente'
@@ -17,6 +17,26 @@ function RelojGeneracion({ inicio, fin }: { inicio: string; fin: string | null }
   // de las etapas que sí anuncia la región aria-live del recorrido.
   return <span className="doc-generacion-reloj" aria-live="off"><IconoDocente nombre="reloj" />{segundosTranscurridos(inicio, fin, ahora) + ' s'}</span>
 }
+// El docente prueba el juego y, cuando le da el OK, lo envía a la app de sus estudiantes.
+// Hasta entonces, el juego no aparece en el celular del niño.
+function EnvioAEstudiantes({ generacion }: { generacion: Generacion }) {
+  const [enviada, establecerEnviada] = useState(generacion.publicada === true)
+  const [enviando, establecerEnviando] = useState(false)
+  const [error, establecerError] = useState('')
+  async function enviar() {
+    establecerEnviando(true); establecerError('')
+    try { establecerEnviada((await publicarGeneracion(generacion.id)).publicada === true) }
+    catch (fallo) { establecerError(fallo instanceof Error ? fallo.message : 'No se pudo enviar el juego. Intenta de nuevo.') }
+    finally { establecerEnviando(false) }
+  }
+  if (enviada) return <div className="doc-confirmacion" role="status"><IconoDocente nombre="check" /><span>Enviado a tus estudiantes: ya aparece en su app.</span></div>
+  return <MensajeDocente titulo="¿Le das el OK a este juego?">
+    <p>Pruébalo abajo. Cuando estés conforme, envíalo: aparecerá en el celular de tus estudiantes.</p>
+    {error && <p className="texto-conservado">{error}</p>}
+    <button type="button" className="doc-generar-juego" disabled={enviando} onClick={() => void enviar()}><IconoDocente nombre="check" />{enviando ? 'Enviando…' : 'Dar el OK y enviar a mis estudiantes'}</button>
+  </MensajeDocente>
+}
+
 export function DetalleGeneracion({ generacion }: { generacion: Generacion }) {
   const autoria = aportesDelJuego(generacion.procedencia, generacion.paquete)
   const terminada = generacionTerminada(generacion.estado)
@@ -37,6 +57,7 @@ export function DetalleGeneracion({ generacion }: { generacion: Generacion }) {
     </MensajeDocente>}
     {generacion.estado === 'fallida' && <MensajeDocente titulo="No se pudo terminar este juego" error><p className="texto-conservado">{generacion.ultimo_error || 'No se recibió un motivo del servicio. Puedes intentar una generación nueva.'}</p></MensajeDocente>}
     {generacion.estado === 'lista' && <>
+      <EnvioAEstudiantes key={generacion.id} generacion={generacion} />
       <MensajeDocente titulo="Cómo se hizo este juego">
         <h4>Lo que hizo la IA</h4>
         {!!autoria.aportes.length && <ul>{autoria.aportes.map((aporte) => <li key={aporte}>{aporte}</li>)}</ul>}

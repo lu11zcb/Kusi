@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { abrir, estado, servirPasillo } from './ayudas/laberinto.js'
 import { ESTRELLITAS } from '../src/efectos/PopFruta.js'
-import { CONFETI } from '../src/efectos/PuertaViva.js'
 
 // El laberinto dibuja con Canvas. Estas pruebas leen los puntos del lienzo tal
 // como se ven y comprueban que la capa de vida de verdad se pinta en él, no solo
 // que su estado cambie. Con 1280 × 720 un punto del mundo es un punto del lienzo.
+test.use({ viewport: { width: 1600, height: 720 } })
 const TOLERANCIA = 6
 
 // Cuenta los puntos de la región cuyo color está cerca de alguno de «colores»
 // (números 0xRRGGBB). Se ejecuta en la página; devuelve el total.
-function contarColores({ region, colores, tolerancia }) {
+function contarColores({ region, colores, tolerancia, fondo = null }) {
   const lienzo = document.querySelector('canvas')
   const x = Math.max(0, Math.round(region.x))
   const y = Math.max(0, Math.round(region.y))
@@ -19,6 +19,9 @@ function contarColores({ region, colores, tolerancia }) {
   const { data } = lienzo.getContext('2d').getImageData(x, y, ancho, alto)
   let cuenta = 0
   for (let punto = 0; punto < data.length; punto += 4) {
+    // Una flor del paisaje ya estaba en el fondo: solo se cuentan píxeles
+    // nuevos del color de las estrellas, no el amarillo estático de la chacra.
+    if (fondo && [0, 1, 2].every(canal => Math.abs(data[punto + canal] - fondo[punto + canal]) <= tolerancia)) continue
     for (const color of colores) {
       if (Math.abs(data[punto] - ((color >> 16) & 255)) <= tolerancia &&
         Math.abs(data[punto + 1] - ((color >> 8) & 255)) <= tolerancia &&
@@ -45,11 +48,11 @@ const contar = (pagina, region, colores) => pagina.evaluate(contarColores, { reg
 
 // Espera a que, en algún cuadro, la región tenga al menos «minimo» puntos de esos
 // colores, y devuelve cuántos tenía.
-async function esperarColores(pagina, region, colores, minimo) {
+async function esperarColores(pagina, region, colores, minimo, fondo = null) {
   const total = await pagina.waitForFunction(({ funcion, argumentos, minimo }) => {
     const cuenta = new Function('argumentos', 'return (' + funcion + ')(argumentos)')(argumentos)
     return cuenta >= minimo ? cuenta : false
-  }, { funcion: contarColores.toString(), argumentos: { region, colores, tolerancia: TOLERANCIA }, minimo },
+  }, { funcion: contarColores.toString(), argumentos: { region, colores, tolerancia: TOLERANCIA, fondo }, minimo },
   { polling: 'raf', timeout: 8000 })
   return total.jsonValue()
 }
@@ -77,26 +80,25 @@ test('al comer bien, las estrellitas se pintan en el lienzo', async ({ page: pag
   const inicial = await abrir(pagina)
   const fruta = inicial.vida.frutas[0]
   const region = { x: fruta.x - 130, y: fruta.y - 120, ancho: 260, alto: 240 }
-  expect(await contar(pagina, region, ESTRELLITAS.colores)).toBeLessThan(5)
+  expect(inicial.vida.pop.estrellitasVivas).toBe(0)
+  const fondo = await pagina.evaluate(({ x, y, ancho, alto }) => Array.from(document.querySelector('canvas')
+    .getContext('2d').getImageData(Math.round(x), Math.round(y), ancho, alto).data), region)
   await pagina.keyboard.press('ArrowRight')
-  const pintados = await esperarColores(pagina, region, ESTRELLITAS.colores, 60)
+  const pintados = await esperarColores(pagina, region, ESTRELLITAS.colores, 60, fondo)
   expect(pintados).toBeGreaterThanOrEqual(60)
   expect((await estado(pagina)).vida.pop.estrellitasVivas).toBeGreaterThan(0)
 })
 
-test('al abrirse la puerta, el confeti se pinta en el lienzo', async ({ page: pagina }) => {
+test('el portal abre en el suelo y enciende su luz en Canvas', async ({ page: pagina }) => {
   await servirPasillo(pagina, {
     objetos: [{ tipo: 'fresa', fila: 1, columna: 3 }], regla: { tipo: 'orden', secuencia: ['fresa'] },
   })
   const inicial = await abrir(pagina)
-  const base = inicial.vida.puerta.base
-  const region = { x: base.x - 130, y: base.y - 260, ancho: 260, alto: 300 }
-  // Rosa, celeste y verde: colores que no tiene el piso, el adobe ni la puerta.
-  const colores = [0xf28ab2, 0x8fd0ef, 0x5aa04a]
-  const antes = await contar(pagina, region, colores)
+  expect(inicial.presentacion.puerta).toBe('portal-cerrado')
   await pagina.keyboard.press('ArrowRight')
-  const pintados = await esperarColores(pagina, region, colores, antes + 30)
-  expect(pintados).toBeGreaterThanOrEqual(antes + 30)
-  expect((await estado(pagina)).vida.puerta.confetiVivo).toBeGreaterThan(0)
-  expect(CONFETI.colores).toContain(0xf28ab2)
+  await pagina.waitForFunction(() => window.kusi.estado().puertaAbierta)
+  const actual = await estado(pagina)
+  expect(actual.presentacion.puerta).toBe('portal-abierto')
+  expect(actual.vida.puerta.puerta.y).toBe(inicial.vida.puerta.base.y)
+  await expect.poll(async () => (await estado(pagina)).vida.puerta.brillo).toBeGreaterThan(.02)
 })

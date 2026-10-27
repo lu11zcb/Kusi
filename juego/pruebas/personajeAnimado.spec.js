@@ -9,12 +9,15 @@ const leerZorro = async () => JSON.parse(await readFile(
 test('el zorro usa su propio manifiesto, caminar continuo y el cuadro quieto central', async () => {
   const datos = validarSpritePersonaje(await leerZorro(), 'zorro')
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 1 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 5 })
   for (const direccion of DIRECCIONES_PERSONAJE) {
+    const inicio = { frente: 0, derecha: 3, izquierda: 3, espaldas: 6 }[direccion]
     expect(datos.animaciones[direccion].caminar).toMatchObject({
-      fotogramas: [0, 1, 2, 1], fps: 8, repetir: -1,
+      fotogramas: [inicio, inicio + 1, inicio + 2, inicio + 1], fps: 8, repetir: -1,
     })
-    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([1])
+    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([inicio + 1])
+    expect(datos.animaciones[direccion].caminar.voltear === true).toBe(direccion === 'izquierda')
+    expect(datos.animaciones[direccion].cansado.fotogramas).toEqual([9, 10, 11, 10])
   }
 })
 

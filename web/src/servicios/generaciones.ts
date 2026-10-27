@@ -17,6 +17,8 @@ export type ResumenGeneracion = {
   id: string; solicitud_id: string; propuesta_id: string; version_propuesta: number
   estado: EstadoGeneracion; paquete: string | null; procedencia: ProcedenciaJuego | null
   ultimo_error: string | null; creado_en: string; actualizado_en: string
+  // El docente le dio el OK: el juego aparece en la app de sus estudiantes.
+  publicada?: boolean
 }
 export type Generacion = ResumenGeneracion & { etapas: EtapaGeneracion[] }
 
@@ -57,7 +59,8 @@ function resumenValido(valor: unknown): valor is ResumenGeneracion {
   if (!objeto(valor) || !identificador(valor.id) || !identificador(valor.solicitud_id) || !identificador(valor.propuesta_id)
     || !enteroPositivo(valor.version_propuesta) || typeof valor.estado !== 'string' || !estados.includes(valor.estado as EstadoGeneracion)
     || !(valor.paquete === null || texto(valor.paquete)) || !(valor.procedencia === null || procedenciaValida(valor.procedencia))
-    || !(valor.ultimo_error === null || typeof valor.ultimo_error === 'string') || !fecha(valor.creado_en) || !fecha(valor.actualizado_en)) return false
+    || !(valor.ultimo_error === null || typeof valor.ultimo_error === 'string') || !fecha(valor.creado_en) || !fecha(valor.actualizado_en)
+    || !(valor.publicada === undefined || typeof valor.publicada === 'boolean')) return false
   // Solo se comprueba el sobre que necesita el iframe. Los caminos y las reglas
   // ya los validó HU31 en Spring; no duplicamos su validación pedagógica aquí.
   if (valor.estado === 'lista') {
@@ -85,6 +88,11 @@ export async function generarJuego(solicitud: string, version: number): Promise<
   if (!enteroPositivo(version)) throw new ErrorApi('Versión no válida para generar el juego.', 400)
   return leerGeneracion(await enviar<unknown>(raiz + 'propuestas/solicitudes/' + solicitud + '/versiones/' + version + '/generar/', {}),
     (generacion) => generacion.solicitud_id === solicitud && generacion.version_propuesta === version)
+}
+// El docente le da el OK al juego y lo envía a la app de sus estudiantes.
+export async function publicarGeneracion(id: string): Promise<Generacion> {
+  return leerGeneracion(await enviar<unknown>(raiz + 'generaciones/' + comprobarId(id) + '/publicar/', {}),
+    (generacion) => generacion.id === id && generacion.publicada === true)
 }
 export async function procesarGeneracion(id: string): Promise<Generacion> {
   // No hay un timeout corto ni reintentos automáticos del POST: Spring puede

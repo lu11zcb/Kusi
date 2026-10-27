@@ -18,8 +18,9 @@ public interface GeneracionRepository extends JpaRepository<Generacion, UUID> {
     Optional<Generacion> findByIdAndSolicitudId(UUID id, UUID solicitudId);
 
     // La sección se resuelve en el servidor a partir de vínculos vigentes. No se
-    // acepta una lista de secciones enviada por la app ni una generación ajena.
-    @Query("select g from Generacion g where g.estado = 'lista' and exists ("
+    // acepta una lista de secciones enviada por la app ni una generación ajena. Solo
+    // aparecen los juegos que el docente envió a sus estudiantes.
+    @Query("select g from Generacion g where g.estado = 'lista' and g.publicada = true and exists ("
             + "select s.id from SolicitudPropuesta s where s.id = g.solicitudId and exists ("
             + "select v.id from VinculoEstudiante v where v.estudianteId = :estudiante "
             + "and v.seccion.id = s.seccionId and v.anioEscolar = v.seccion.anioEscolar)) "

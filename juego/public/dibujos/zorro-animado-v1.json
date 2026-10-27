@@ -1,31 +1,207 @@
 {
   "formato": "kusi-sprite/1",
-  "imagen": "zorro-caminar-v1.png",
-  "fotograma": { "ancho": 256, "alto": 256 },
-  "cuadricula": { "columnas": 3, "filas": 1 },
-  "anclaje": { "x": 128, "y": 244 },
+  "imagen": "zorro-cuadros-v2.png",
+  "fotograma": {
+    "ancho": 256,
+    "alto": 256
+  },
+  "cuadricula": {
+    "columnas": 3,
+    "filas": 5
+  },
+  "anclaje": {
+    "x": 128,
+    "y": 244
+  },
   "escala": 0.6556,
   "velocidadReferencia": 260,
   "animaciones": {
     "frente": {
-      "reposo": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "quieto": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "caminar": { "fotogramas": [0, 1, 2, 1], "fps": 8, "repetir": -1 }
+      "reposo": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          0,
+          1,
+          2,
+          1
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "cansado": {
+        "fotogramas": [
+          9,
+          10,
+          11,
+          10
+        ],
+        "fps": 5,
+        "repetir": -1
+      },
+      "alerta": {
+        "fotogramas": [
+          12,
+          13,
+          14,
+          13
+        ],
+        "fps": 7,
+        "repetir": -1
+      }
     },
     "espaldas": {
-      "reposo": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "quieto": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "caminar": { "fotogramas": [0, 1, 2, 1], "fps": 8, "repetir": -1 }
+      "reposo": {
+        "fotogramas": [
+          7
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          7
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          6,
+          7,
+          8,
+          7
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "cansado": {
+        "fotogramas": [
+          9,
+          10,
+          11,
+          10
+        ],
+        "fps": 5,
+        "repetir": -1
+      },
+      "alerta": {
+        "fotogramas": [
+          12,
+          13,
+          14,
+          13
+        ],
+        "fps": 7,
+        "repetir": -1
+      }
     },
     "derecha": {
-      "reposo": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "quieto": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "caminar": { "fotogramas": [0, 1, 2, 1], "fps": 8, "repetir": -1 }
+      "reposo": {
+        "fotogramas": [
+          4
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "quieto": {
+        "fotogramas": [
+          4
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "caminar": {
+        "fotogramas": [
+          3,
+          4,
+          5,
+          4
+        ],
+        "fps": 8,
+        "repetir": -1
+      },
+      "cansado": {
+        "fotogramas": [
+          9,
+          10,
+          11,
+          10
+        ],
+        "fps": 5,
+        "repetir": -1
+      },
+      "alerta": {
+        "fotogramas": [
+          12,
+          13,
+          14,
+          13
+        ],
+        "fps": 7,
+        "repetir": -1
+      }
     },
     "izquierda": {
-      "reposo": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "quieto": { "fotogramas": [1], "fps": 8, "repetir": -1 },
-      "caminar": { "fotogramas": [0, 1, 2, 1], "fps": 8, "repetir": -1 }
+      "reposo": {
+        "fotogramas": [
+          4
+        ],
+        "fps": 8,
+        "repetir": -1,
+        "voltear": true
+      },
+      "quieto": {
+        "fotogramas": [
+          4
+        ],
+        "fps": 8,
+        "repetir": -1,
+        "voltear": true
+      },
+      "caminar": {
+        "fotogramas": [
+          3,
+          4,
+          5,
+          4
+        ],
+        "fps": 8,
+        "repetir": -1,
+        "voltear": true
+      },
+      "cansado": {
+        "fotogramas": [
+          9,
+          10,
+          11,
+          10
+        ],
+        "fps": 5,
+        "repetir": -1
+      },
+      "alerta": {
+        "fotogramas": [
+          12,
+          13,
+          14,
+          13
+        ],
+        "fps": 7,
+        "repetir": -1
+      }
     }
   }
 }

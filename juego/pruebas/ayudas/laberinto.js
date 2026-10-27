@@ -37,21 +37,43 @@ export async function esperarCasilla(pagina, fila, columna) {
   return estado(pagina)
 }
 
+// Mantiene un rumbo real con el ratón y suelta dentro del último tramo. La
+// prueba decide cada segmento; no se añade ningún atajo al control del juego.
+export async function avanzarConJoystick(pagina, direccion, casillas = 1) {
+  const inicial = await estado(pagina)
+  const inicio = inicial.movimiento
+  const punto = await pagina.evaluate(() => { const c=window.kusi.estado().joystick.centro; return window.kusi.proyectar(c.x,c.y) })
+  const pasos = { derecha: [0, 1], izquierda: [0, -1], abajo: [1, 0], arriba: [-1, 0] }
+  const [fila, columna] = pasos[direccion]
+  await pagina.mouse.move(punto.x, punto.y)
+  await pagina.mouse.down()
+  await pagina.mouse.move(punto.x + columna * 45, punto.y + fila * 45)
+  try {
+    await pagina.waitForFunction(({ inicio, fila, columna, casillas }) => {
+      const m = window.kusi.estado().movimiento
+      const avance = (m.fila - inicio.fila) * fila + (m.columna - inicio.columna) * columna + m.progreso
+      return avance >= casillas - 0.7
+    }, { inicio, fila, columna, casillas })
+  } finally {
+    await pagina.mouse.up()
+  }
+  return esperarCasilla(pagina, inicio.fila + fila * casillas, inicio.columna + columna * casillas)
+}
+
 export async function servirPaquete(pagina, paquete) {
   await pagina.route('**/paquete-laberinto-ejemplo.json', (ruta) => ruta.fulfill({ json: paquete }))
 }
 
 // Un pasillo recto con una fresa, un plátano y la puerta al final. Con «zorros»
-// se añaden zorros que patrullan; el zorro no se mueve hasta que el niño elige
-// su primer rumbo.
-export async function servirPasillo(pagina, { zorros = [], objetos, regla, mapa } = {}) {
+// se añaden zorros que patrullan desde que el nivel aparece.
+export async function servirPasillo(pagina, { zorros = [], objetos, regla, mapa, movimientoZorro = 'patrulla' } = {}) {
   const paquete = await leerPaquete()
   paquete.retos = [{
     ...paquete.retos[0],
     mapa: mapa ?? ['#############', '#C.........P#', '#############'],
     regla: regla ?? { tipo: 'orden', secuencia: ['fresa', 'platano'] },
     objetos: objetos ?? [{ tipo: 'fresa', fila: 1, columna: 2 }, { tipo: 'platano', fila: 1, columna: 10 }],
-    enemigos: zorros.map((columna) => ({ tipo: 'zorro', fila: 1, columna, movimiento: 'patrulla' })),
+    enemigos: zorros.map((columna) => ({ tipo: 'zorro', fila: 1, columna, movimiento: movimientoZorro })),
   }]
   await servirPaquete(pagina, paquete)
   return paquete
