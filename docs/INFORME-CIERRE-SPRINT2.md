@@ -2,7 +2,7 @@
 
 ## Estado verificable
 
-Las fases 1–4 están confirmadas en cuatro commits separados y en el orden autorizado. El usuario confirmó **«pasaron»** después de repetir Maven y Gradle con los arreglos. La ejecución previa de Android había pasado 11/11 y compilado; la de Java había pasado 175/178 y motivó las correcciones. **Maven y Gradle quedan registrados como aprobados en la Terminal del usuario tras las correcciones**, sin inventar un total nuevo de pruebas de Java que no se comunicó. En este entorno pasaron 83 pruebas del panel, lint y build, además de 161 pruebas de lógica del juego y su build. La fase 5 anterior está confirmada en `23fa13c`; este informe se confirma por separado con el mensaje de resultados solicitado.
+Las fases 1–4 están confirmadas en cuatro commits separados y en el orden autorizado. La primera ejecución en la Mac dio Android 11/11 y Java 175/178; las tres fallas de Java motivaron las correcciones descritas más abajo. **Resultado final en la Mac, con las correcciones: Java 182/182 (`mvn test`), Android 11/11 y `assembleDebug` compilado, panel 83/83 con lint y build, y juego 161/161 con build.** Además, cada uno de los cuatro commits se probó por separado, en una copia aparte del repositorio, y todos compilan y pasan sus pruebas (ver «Verificación de cada commit»). La fase 5 anterior está confirmada en `23fa13c`; este informe se confirma por separado.
 
 No se leyó ni modificó `.env`. No se cambió el arte, el diseño visual del laberinto, las migraciones V1–V5 ni una sola comprobación de `ValidadorLaberinto`. El archivo `movil/gradle/gradle-daemon-jvm.properties` continúa excluido. No se hizo push.
 
@@ -16,7 +16,7 @@ No se leyó ni modificó `.env`. No se cambió el arte, el diseño visual del la
 - Si se rehace la regla o HU31 rechaza la consigna o las ayudas, se ponen textos sencillos de hasta 80 caracteres, sin revelar objetos en las ayudas. Las etapas indican en qué niveles se repararon regla y textos.
 - Se añadieron casos de secuencias de 3 y 9, AAAA, ABCD, tipos desconocidos, meta 10, falta de objetos, consigna larga, ayuda que revela la respuesta, falta de ayudas y solo dos niveles, con ambas reglas. Se actualizaron los casos de proceso que antes esperaban fallo de un respaldo incompleto.
 
-**Pruebas:** Maven aprobado en la Terminal del usuario, confirmado después de los arreglos. HU31 sigue validando todo el resultado antes de guardarlo como listo.
+**Pruebas:** Java 177/177 en el commit de esta fase y 182/182 al final. HU31 sigue validando todo el resultado antes de guardarlo como listo.
 
 Mensaje autorizado: `fix(HU26): el respaldo de mapas base también rehace la regla, los objetos y los textos`
 
@@ -28,7 +28,7 @@ Mensaje autorizado: `fix(HU26): el respaldo de mapas base también rehace la reg
 - «Cómo se hizo este juego» distingue la propuesta de la IA de objetos y personajes reutilizados; enumera los recursos del paquete guardado. Cuando hay respaldo se explican sus reparaciones y no se le atribuyen esos mapas a la IA.
 - La comprobación `OBJETO_TIPO` ya tenía pruebas de tipos desconocidos y se conserva. El juego prueba que el campo nuevo no impide abrir el guion.
 
-**Pruebas:** panel 77/77, lint y build aprobados durante la implementación inicial; juego 158/158 y build aprobados en ese punto. La revisión final amplió la cobertura a 83/83 en el panel y 161/161 en el juego. Maven aprobado según la confirmación del usuario.
+**Pruebas:** panel 77/77, lint y build aprobados durante la implementación inicial; juego 158/158 y build aprobados en ese punto. En el commit de esta fase: Java 179/179, panel 80/80 y juego 158/158. La revisión final amplió la cobertura a 83/83 en el panel y 161/161 en el juego.
 
 Mensaje autorizado: `feat(HU29): el catálogo de objetos tiene versión y el panel distingue lo de la IA de lo reutilizado`
 
@@ -41,7 +41,7 @@ Mensaje autorizado: `feat(HU29): el catálogo de objetos tiene versión y el pan
 - El panel acepta avisos solo del origen y la ventana de su iframe, los encola y muestra el resumen confirmado por Spring. Si se pierde una respuesta permite reenviar el aviso original. No hace retroceder contadores por una confirmación antigua.
 - Se añadieron pruebas de persistencia, aislamiento entre usuarios, CSRF, validación, reenvío, cola y salidas web/nativa.
 
-**Pruebas actuales:** panel 83/83, lint y build aprobados; juego 161/161 y build aprobados. Persistencia y rutas de Spring incluidas en el Maven aprobado por el usuario tras los arreglos.
+**Pruebas:** Java 181/181 en el commit de esta fase, con la persistencia y las rutas de Spring; panel 83/83, lint y build aprobados; juego 161/161 y build aprobados.
 
 Mensaje autorizado: `feat(HU48): registrar las ayudas y el avance de cada partida (HU49)`
 
@@ -56,7 +56,7 @@ Mensaje autorizado: `feat(HU48): registrar las ayudas y el avance de cada partid
 - Las peticiones de eventos usan sesión del alumno, GET del CSRF de Spring y `X-XSRF-TOKEN`. Las operaciones de Django conservan su cabecera anterior.
 - Se añadieron pruebas puras de protocolo, escape del paquete, navegación, cola sin duplicados y transporte HTTP con cookies/CSRF simulado.
 
-**Pruebas:** el usuario informó 11/11 aprobadas y compilación correcta en su Terminal, y confirmó que las comprobaciones pasaron de nuevo al autorizar los commits. El intento local de Gradle no encontró Java en esta caja. No se instaló el APK ni se probó el Moto G15 aquí; sigue pendiente el recorrido Android de extremo a extremo.
+**Pruebas:** Android 11/11 y `assembleDebug` compilado; Java 182/182 en el commit de esta fase. En la Mac, Gradle necesita el Java de Android Studio (ver «Bloqueos locales»). No se instaló el APK ni se probó el Moto G15; sigue pendiente el recorrido Android de extremo a extremo.
 
 Mensaje autorizado: `feat(HU46): la app abre el laberinto y habla con el juego por KusiPuente (cierre de HU50)`
 
@@ -79,7 +79,7 @@ Mensaje autorizado: `chore: DJANGO_DEBUG=1 en el ejemplo, .mailmap e informe del
 | Barra sin posición fija | La consigna de orden dice «Sigue el patrón de la barra. Después busca la puerta.»; las ayudas ya no dicen arriba ni figura. Las de clasificación siguen los textos solicitados y no nombran objetos. | 1 |
 | Atribución verificable | El servidor calcula las reparaciones por nivel sobre la respuesta normalizada y el guion final y las guarda en procedencia solo con respaldo. Se añadieron pruebas de datos guardados y consultados, ausencia sin respaldo, listas vacías, atribución parcial o completa y compatibilidad antigua. El juego acepta el campo nuevo. | 2 |
 
-Comprobaciones de esta corrección: **83 pruebas del panel, lint y build aprobados; 161 pruebas de lógica del juego y build aprobados**. `git diff --check` pasa. El usuario confirmó la aprobación de Maven y Gradle tras los arreglos. Los resultados anteriores de 175/178 y 11/11 se conservan como antecedentes; no se atribuye al entorno una ejecución que realizó el usuario ni se inventa un total final de Maven.
+Comprobaciones de esta corrección: **83 pruebas del panel, lint y build aprobados; 161 pruebas de lógica del juego y build aprobados**. `git diff --check` pasa. Después de las correcciones, Maven dio 182/182 y Gradle 11/11 con `assembleDebug` compilado. Los resultados anteriores de 175/178 y 11/11 se conservan como antecedentes.
 
 Con la confirmación del usuario se separaron los archivos compartidos por fases mediante `git add -p`, editando los bloques mezclados solo en el índice. Antes de cada commit se revisaron `git diff --cached --stat`, la lista de rutas y los errores de espacios. Se comprobó que los 36 archivos de código finales son idénticos, byte por byte, a los archivos validados antes de separar las fases.
 
@@ -92,21 +92,31 @@ Con la confirmación del usuario se separaron los archivos compartidos por fases
 
 Autor y committer de los cuatro commits: `lu11zcb <luiscb.once@gmail.com>`. El commit adicional `docs: resultados de las pruebas del cierre del Sprint 2` contiene únicamente este informe. No se añadieron el archivo de Gradle excluido, `.env`, `CLAUDE.md` ni `.claude/`; no se cambió la configuración global de Git y no se hizo push.
 
+## Verificación de cada commit
+
+Cada commit se extrajo con `git archive` en una carpeta aparte, sin tocar el repositorio, y se probó solo. Así, quien abra cualquiera de ellos encuentra un proyecto que compila.
+
+| Commit | Java | Panel | Juego | Android |
+| --- | --- | --- | --- | --- |
+| `1e90871` fase 1 | 177/177 | sin cambios | sin cambios | sin cambios |
+| `ebc1f9c` fase 2 | 179/179 | 80/80 | 158/158 | sin cambios |
+| `6ed343b` fase 3 | 181/181 | 83/83 | 161/161 | sin cambios |
+| `5f4771c` fase 4 | 182/182 | 83/83 | 161/161 | 11/11 y APK |
+
 ## Bloqueos locales anteriores y comandos para reproducir la validación
 
 Maven falló antes de compilar con `Could not open file channel` bajo `/Users/luis/.m2/repository/.locks/`. Comando intentado desde `edu-api/`: `mvn -o test`.
 
 Gradle terminó sin iniciar las tareas: `Unable to locate a Java Runtime`. Comando intentado desde la raíz: `./movil/gradlew --offline -p movil :app:testDebugUnitTest :app:assembleDebug`.
 
-Ejecuta primero, con Java 21 disponible en tu Terminal:
+La causa de Gradle no es exclusiva de esa caja: en esta Mac el comando `java` del sistema no tiene un Java registrado. Maven funciona porque Homebrew le pasa su propio Java; Gradle no. La solución es indicarle el Java que trae Android Studio (versión 25, la que pide `gradle-daemon-jvm.properties`) con `JAVA_HOME`. Así se ejecutaron las pruebas de Android de este informe.
 
 ```bash
 cd ~/Desktop/Kusi/Kusi/edu-api
-mvn -o test
-# Si tu caché no tiene las dependencias, en tu Terminal con red:
 mvn test
 
 cd ~/Desktop/Kusi/Kusi/movil
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew --offline :app:testDebugUnitTest :app:assembleDebug
 # Si faltan dependencias en tu caché:
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
@@ -157,6 +167,7 @@ adb reverse tcp:5174 tcp:5174
 adb reverse --list
 
 cd ~/Desktop/Kusi/Kusi/movil
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./gradlew :app:assembleDebug \
   -PKUSI_DJANGO_URL=http://localhost:8000 \
   -PKUSI_EDU_URL=http://localhost:8080 \
@@ -169,7 +180,7 @@ La variante debug permite HTTP local. Usa el icono **Kusi**, no la actividad ant
 
 ## Cómo probar mañana
 
-1. Maven y Gradle ya fueron aprobados por el usuario y los commits están separados con los mensajes indicados. Si cambias código antes de la revisión, repite las comprobaciones de arriba. La prueba en el dispositivo sigue siendo necesaria para comprobar el recorrido completo.
+1. Maven y Gradle ya pasaron en la Mac y los commits están separados con los mensajes indicados. Reinicia Spring antes de la demo para que aplique V6. Si cambias código antes de la revisión, repite las comprobaciones de arriba. La prueba en el dispositivo sigue siendo necesaria para comprobar el recorrido completo.
 2. Abre el panel docente con `cd ~/Desktop/Kusi/Kusi/web && npm run dev`. Desde una propuesta aprobada genera un juego. Si la IA da mapas o reglas malos, revisa los tres intentos y las reparaciones de respaldo; el resultado debe pasar HU31. Mira catálogo, versión, recursos y procedencia.
 3. Abre el iframe, pide las dos ayudas y termina un nivel. «Lo que Kusi registró en esta prueba» debe actualizarse con valores confirmados. Reinicia: la nueva partida debe tener sus propios contadores. Reenvía un aviso guardado y comprueba que no aumenta el contador. Otra sesión no debe consultar esa partida.
 4. Desde administración vincula la cuenta estudiantil de prueba a la sección de esa solicitud. En el Moto inicia sesión con su DNI. La biblioteca debe mostrar como máximo cinco juegos generados y, al final, el ejemplo. Un estudiante de otra sección no debe ver los juegos ajenos.
