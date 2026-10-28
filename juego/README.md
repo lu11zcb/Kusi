@@ -59,9 +59,13 @@ cuántas faltan para la meta, incluso si hay más opciones que las necesarias.
 Los zorros exploran los pasillos desde que aparece el nivel, sin esperar al
 primer movimiento del niño; priorizan las casillas menos visitadas.
 
-El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v6.png`, y
-`zorro-animado-v1.json` usa `zorro-caminar-v1.png`. Los originales y reportes
-necesarios para reproducir las animaciones se conservan en `arte/`.
+El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v9.png`, y
+`zorro-animado-v1.json` usa `zorro-cuadros-v4.png`. El cuy mantiene pelaje liso
+en todas sus vistas y el zorro lleva la cola centrada de espalda. Las otras
+poses conservan sus píxeles originales. Los originales,
+reportes y versiones anteriores permanecen en `arte/` y `public/dibujos/`.
+La [comparación animada](arte/espaldas-v3/revision.html) muestra las vistas del
+cuy y la cola corregida; [origen y preparación](arte/espaldas-v3/LEEME.md).
 Las herramientas están documentadas en
 [herramientas/animaciones/LEEME.md](herramientas/animaciones/LEEME.md).
 El nuevo paisaje se prepara con `herramientas/preparar_fondo_cenital.mjs`.

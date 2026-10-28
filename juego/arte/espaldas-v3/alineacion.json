@@ -1,0 +1,62 @@
+[
+  {
+    "nombre": "cuy",
+    "base": "cuy-nino-cuadros-v8.png",
+    "salida": "cuy-nino-cuadros-v9.png",
+    "fila_reemplazada": 4,
+    "cuadros": [
+      {
+        "minX": 55,
+        "minY": 23,
+        "maxX": 207,
+        "maxY": 244,
+        "centroCabeza": 128
+      },
+      {
+        "minX": 51,
+        "minY": 23,
+        "maxX": 205,
+        "maxY": 244,
+        "centroCabeza": 128
+      },
+      {
+        "minX": 49,
+        "minY": 23,
+        "maxX": 202,
+        "maxY": 244,
+        "centroCabeza": 128.5
+      }
+    ],
+    "otras_filas_identicas": true
+  },
+  {
+    "nombre": "zorro",
+    "base": "zorro-cuadros-v3.png",
+    "salida": "zorro-cuadros-v4.png",
+    "fila_reemplazada": 2,
+    "cuadros": [
+      {
+        "minX": 55,
+        "minY": 23,
+        "maxX": 201,
+        "maxY": 244,
+        "centroCabeza": 128
+      },
+      {
+        "minX": 55,
+        "minY": 23,
+        "maxX": 202,
+        "maxY": 244,
+        "centroCabeza": 128.5
+      },
+      {
+        "minX": 56,
+        "minY": 23,
+        "maxX": 201,
+        "maxY": 244,
+        "centroCabeza": 128.5
+      }
+    ],
+    "otras_filas_identicas": true
+  }
+]

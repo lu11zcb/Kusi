@@ -1,0 +1,32 @@
+Herramienta: image_gen integrada. Referencias, fuentes y versiones anteriores conservadas.
+
+CUY: PELAJE LISO COHERENTE EN TODAS LAS VISTAS
+Use case: precise-object-edit.
+Asset type: final polished rear-walk sprite strip for the guinea pig in an existing children's game.
+Input 1 is the CURRENT rear walk strip to edit. The rear anatomy, red collar, and three step poses are approved, but the fur is mistakenly jagged and shaggy.
+Input 2 is the approved FRONT walk strip; Input 3 is the approved SIDE walk strip. These two are the authority for this guinea pig's short smooth coat, clean round curves, simple sharply defined cream/brown patches, proportions, colors and outline style.
+
+Change ONLY the coat treatment and its patch edges in Input 1 so the rear view looks like the SAME SHORT-HAIRED SMOOTH guinea pig from Inputs 2 and 3, with a carefully finished, consistent character design.
+Mandatory corrections in ALL THREE rear poses:
+1. Remove EVERY extra triangular fur wisp and zigzag along the cream nape patch. Replace that jagged white/cream streak with one smooth clearly defined cream stripe, with gently curved continuous edges, tapering to a soft round end above the red neck band. It must NOT look like a feather, a leaf, a pointed beard or hanging fur.
+2. Remove the little cream fur tuft hanging BELOW the red neck band; the brown back below the collar should be clean, plain and smooth.
+3. Smooth the outer contours of shoulders, arms, lower back, haunches and rump. No serrated fur, spikes, tufts or stray hair on the sides or hips. Smooth rounded silhouette just like the front and side.
+4. The cream shoulder/upper-arm patches have simple curved clean boundaries, not ragged frayed ends. Keep warm brown dorsal fur and the character's existing cream head markings. Do not invent new texture.
+5. Keep only the same small original sculpted TOP-OF-HEAD hair curl/tuft that exists in the front and side reference as part of its identity; do not add new tufts anywhere else. Match the line thickness and simple cel-like soft shading of the front and side, not a textured furry rendering.
+
+Keep the correct back anatomy: rear-facing brown outer ears without visible pink interiors, no face, no muzzle, narrow plain red band around back of neck with no knot or scarf ends behind, backs of arms/hands, no visible tail, no hat or poncho. Do not turn the back into a front-facing character with facial features removed. Same three poses: left hind foot raised / neutral support / right hind foot raised, opposing small arm swing.
+Preserve pose layout, fixed head/neck/hip center, scale and planted-foot baseline across all three. Do not mirror any frame.
+Output only a transparent PNG strip in a 3:1 landscape canvas, exactly 3 equal square cells in ONE row, full-body poses centered with ample transparent padding. No words, labels, grid, ground, shadows or other elements. This is a focused final cleanup, not a character redesign.
+
+ZORRO: COLA CENTRADA EN LOS TRES CUADROS
+Use case: precise-object-edit.
+Asset type: corrected three-frame rear walking fox sprite strip for a children's 2D game.
+Input 1 is the CURRENT rear walking fox strip, the edit target. Input 2 is its front-view identity/style reference. Keep the exact orange fox, head, ears, blue overalls, brown paws, line weight, colors, three rear walking poses, scale and ground line.
+
+Make ONE essential anatomical correction: move the ENTIRE TAIL to the MIDDLE of the rear view in EVERY frame. The old tail is visibly off on the viewer's left; completely remove that side tail and redraw it centrally. Do not keep any large tail lobe sticking out to either side.
+A vertical line through the center of the head, spine and pelvis is the tail's center axis. The tail root emerges from the CENTER of the rear pelvis/lower back, immediately below the rear waistband, not from a side seam or a hip. Its bushy orange body hangs naturally DOWNWARD along that same central axis, over the middle of the rear trousers and BETWEEN the two hind legs, with a creamy ivory terminal tip at the LOWER end. The whole brush, including its ivory tip, must visibly be centered behind the fox; it is NOT enough to attach its root centrally while the rest of it curves to one side. Do not sweep the tail left or right, do not curl it around a hip, do not point its ivory tip sideways. It is a soft full-volume fox tail, not a tiny bobtail or rigid stick.
+Keep the tail length and full bushy volume appropriate to this fox. It can cover the middle of the rear shorts, with both legs and both feet still readable to the sides. Its tip stays slightly ABOVE the planted-foot baseline, never dragging on the floor. Preserve a clean distinct root, the orange/ivory patch boundary and a coherent silhouette. The base stays fixed on the same central pelvis point; between frames allow ONLY a very slight natural flex, no more than 2% of cell width, around the central vertical axis. The ivory tip stays centered in all three frames. No mirroring, no swapping sides, no melting or volume changes.
+
+Keep the poses from the target: frame 1 one hind foot raised, frame 2 neutral support, frame 3 opposite hind foot raised, with opposing small arm swings. Stable head, ear locations, neck, shoulders, pelvis and body proportions. Show genuine rear overalls with two straps and rear waistband, no front chest bib or buttons. Show rear orange ear surfaces, no white ear interiors, face or muzzle.
+Output a transparent PNG, horizontal 3:1 canvas with exactly THREE equal square cells in one row, full body centered with generous padding in every cell, no grid lines. These three poses play 1,2,3,2 at 8 frames/sec. No ground, shadows, labels, numbers, watermarks, scenery or extra characters.
+

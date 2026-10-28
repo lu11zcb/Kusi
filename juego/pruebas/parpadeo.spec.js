@@ -26,7 +26,7 @@ async function encontrarCuy(pagina) {
 
 test('el manifiesto define el parpadeo una sola vez, solo de frente, y cabe en la hoja', async () => {
   const datos = validarSpriteCuy(await leerManifiesto())
-  expect(datos.imagen).toBe('cuy-nino-cuadros-v7.png')
+  expect(datos.imagen).toBe('cuy-nino-cuadros-v9.png')
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
   expect(datos.cuadricula).toEqual({ columnas: 3, filas: 6 })
   expect(datos.animaciones.frente.parpadeo).toEqual({

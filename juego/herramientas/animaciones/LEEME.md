@@ -148,6 +148,12 @@ juego/.venv/Scripts/python -m unittest discover -s juego/herramientas/animacione
 
 ## Caminar de espaldas del cuy
 
+Actualización vigente del 28 de octubre: las hojas activas son
+`cuy-nino-cuadros-v9.png` y `zorro-cuadros-v4.png`. Las nuevas vistas traseras,
+sus fuentes y la integración que conserva las otras filas están documentadas
+en [../../arte/espaldas-v3/LEEME.md](../../arte/espaldas-v3/LEEME.md).
+La receta que sigue se conserva como referencia de la versión anterior.
+
 ```powershell
 juego/.venv/Scripts/python juego/herramientas/animaciones/armar_hoja.py juego/arte/cuy/origen/cuy-espalda-3-cuadros-v2.png --celda 256x256 --margen 7 --referencia juego/arte/cuy/vista-previa/armado.json --hoja-base juego/public/dibujos/cuy-nino-cuadros-v3.png --salida juego/public/dibujos/cuy-nino-cuadros-v5.png --reporte juego/arte/cuy/vista-previa/armado-caminar-espalda.json
 juego/.venv/Scripts/python juego/herramientas/animaciones/verificar_hoja.py juego/public/dibujos/cuy-nino-cuadros-v5.png --celda 256x256 --cuadros 0,1,2,3,4,5,12,13,14 --tolerancia 2 --reporte juego/arte/cuy/vista-previa/alineacion-caminar-espalda.json

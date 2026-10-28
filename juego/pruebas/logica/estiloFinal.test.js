@@ -16,7 +16,7 @@ function anclas(im,c,f){
  for(let y=miny;y<end;y++)for(let x=0;x<256;x++)if(im.pixel(c*256+x,f*256+y)[3]>=32){hx=Math.min(hx,x);hX=Math.max(hX,x)}
  return{centro:(hx+hX)/2,cima:miny,pies:maxy,minx,maxx}
 }
-for(const [archivo,filas]of[['cuy-nino-cuadros-v7.png',6],['zorro-cuadros-v2.png',5],['estilo-final/kusi-cuadros-v1.png',4]]){
+for(const [archivo,filas]of[['cuy-nino-cuadros-v9.png',6],['zorro-cuadros-v4.png',5],['estilo-final/kusi-cuadros-v1.png',4]]){
  test(archivo+': todas las filas tienen tres poses dibujadas y anclas medidas a 2 px',()=>{
   const im=leerPng(new URL(archivo,carpeta));assert.deepEqual([im.ancho,im.alto],[768,256*filas])
   for(let f=0;f<filas;f++){
@@ -31,7 +31,7 @@ for(const [archivo,filas]of[['cuy-nino-cuadros-v7.png',6],['zorro-cuadros-v2.png
 test('el manifiesto del niño solo cambia el nombre de su imagen',()=>{
  const antes=JSON.parse(readFileSync(new URL('../fixtures/cuy-manifiesto-base.json',import.meta.url)))
  const ahora=JSON.parse(readFileSync(new URL('cuy-nino-animado-v1.json',carpeta)))
- antes.imagen='cuy-nino-cuadros-v7.png';assert.deepEqual(ahora,antes)
+ antes.imagen='cuy-nino-cuadros-v9.png';assert.deepEqual(ahora,antes)
 })
 test('las once tiras del fondo tienen el número de celdas de su contrato',()=>{
  assert.equal(Object.keys(SPRITES_FONDO).length,11)

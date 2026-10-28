@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espaldas corregidas · Kusi</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:28px;background:#fff7e8;color:#4b211b;font:17px system-ui;--duracion:.5s}main{max-width:1120px;margin:auto}h1{margin:0 0 8px}p{line-height:1.5}header{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:20px 0}button,select{font:inherit;border:2px solid #754b29;border-radius:12px;padding:10px 16px;background:#ffdc79;color:#4b211b;cursor:pointer}.pares{display:grid;grid-template-columns:1fr 1fr;gap:18px}.par{background:#fffdf6;border:2px solid #ead8b4;border-radius:20px;padding:18px}.comparacion{display:flex;justify-content:space-around;gap:10px;flex-wrap:wrap}figure{margin:0;text-align:center}figcaption{margin-top:8px;font-weight:700}.sprite{width:256px;height:256px;background-repeat:no-repeat;background-size:768px 256px;animation:pasos var(--duracion) steps(1,end) infinite;border-radius:12px}.antes{background-color:#ece5d8}.ahora{background-color:#dcebad}.cuy.antes{background-image:url(referencias/cuy-espalda-anterior.png)}.cuy.ahora{background-image:url(cuy-espalda-256.png)}.zorro.antes{background-image:url(referencias/zorro-espalda-anterior.png)}.zorro.ahora{background-image:url(zorro-espalda-256.png)}[data-pausa] .sprite{animation-play-state:paused}.tira{display:block;max-width:100%;margin:14px auto;background:#dcebad;border-radius:12px}@keyframes pasos{0%,100%{background-position:0 0}25%,75%{background-position:-256px 0}50%{background-position:-512px 0}}@media(max-width:1000px){.pares{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){.sprite{animation-play-state:paused}}
+</style>
+<main>
+<p>Versión anterior. <a href="../espaldas-v3/revision.html">Ver pelaje liso y cola centrada en la revisión actual.</a></p>
+<h1>Espaldas corregidas</h1><p>Comparación del ciclo anterior con las poses nuevas, a la cadencia del juego.</p>
+<header><button id="pausa" aria-pressed="false">Pausar</button><label>Velocidad <select id="velocidad"><option value=".5">Normal · 8 cuadros/s</option><option value="1">Mitad de velocidad</option></select></label></header>
+<div class="pares">
+<section class="par"><h2>Cuy</h2><div class="comparacion"><figure><div class="sprite cuy antes"></div><figcaption>Antes</figcaption></figure><figure><div class="sprite cuy ahora"></div><figcaption>Corregido</figcaption></figure></div><p>Nuca y orejas traseras, dorso marrón y cinta del pañuelo sin el nudo frontal.</p></section>
+<section class="par"><h2>Zorro</h2><div class="comparacion"><figure><div class="sprite zorro antes"></div><figcaption>Antes</figcaption></figure><figure><div class="sprite zorro ahora"></div><figcaption>Corregido</figcaption></figure></div><p>Cola al mismo lado y unida a la cadera; tirantes y cintura vistos por detrás.</p></section>
+</div>
+<h2>Cuadros integrados</h2><img class="tira" src="cuy-espalda-256.png" alt="Tres poses nuevas de espalda del cuy"><img class="tira" src="zorro-espalda-256.png" alt="Tres poses nuevas de espalda del zorro">
+<p>Las vistas de frente y de lado y las expresiones conservan sus píxeles originales.</p>
+</main>
+<script>
+document.querySelector('#pausa').onclick=function(){const pausa=document.body.toggleAttribute('data-pausa');this.textContent=pausa?'Reanudar':'Pausar';this.setAttribute('aria-pressed',String(pausa))}
+document.querySelector('#velocidad').onchange=function(){document.body.style.setProperty('--duracion',this.value+'s')}
+</script>
+</html>
