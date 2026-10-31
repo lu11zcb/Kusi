@@ -1,0 +1,25 @@
+[
+  {
+    "imagen": "cuy-nino-cuadros-v9.png",
+    "ancho": 768,
+    "alto": 1536,
+    "filas": {
+      "0": "51a3513f5a3b1ea2bb2de4d32d235b078395b015e75ce3d00987b2ebe2d08a8a",
+      "1": "32912e300314478e00a52ee035ff6893413c8be64b1b7ddaa6d42ccd926188c8",
+      "2": "6829863491284a51d5ce6e32dbb28177917a263ac6710df8e11802134b5d2e0e",
+      "3": "3c8f45411e1acbcd937d96463f19686e93a7b8387311bc2c0de33069c25e14ef",
+      "5": "33d3db8989d4ffc638123668642cd3211f0d6a16436d73f4a2fb35bf40b32469"
+    }
+  },
+  {
+    "imagen": "zorro-cuadros-v4.png",
+    "ancho": 768,
+    "alto": 1280,
+    "filas": {
+      "0": "5678cf6997be933ec27cf5fa8aaefa8efbd3a6f7efc06fa3ee1652f0e585c48e",
+      "1": "06b6b0708ab816c1139156dd7eb5e7bfc8418563dc5c843a53327f3e293cf170",
+      "3": "1bb8061e888992c3f08bdf9e1f4274f8319c4f0126cf984770ff57d566d2c321",
+      "4": "d9e280526c12f63abbb6dc73864afa0d41b959d6feb5b206fbd0ec967b6bc65d"
+    }
+  }
+]

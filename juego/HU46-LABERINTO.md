@@ -54,11 +54,8 @@ Se reutilizan los dos cuyes, el zorro, los ocho alimentos y el kit de adobe de
 textura; las dos variantes se eligen con una semilla estable por nivel. El patio
 ilustrado cubre el mapa y el portal tiene estados cerrado y abierto.
 
-Las imágenes de versiones anteriores se conservan en sus rutas originales o en
-las carpetas de muestras. Las frutas previas y el inventario de los originales
-recuperados están en [arte/version-anterior/](arte/version-anterior/LEEME.md).
-El archivo `arte/estilo-anterior.json` documenta las hojas anteriores sin
-mantener su cargador en el código del juego.
+Las imágenes del laberinto anterior, los atlas intermedios y las muestras de
+animación obsoletas se retiraron; siguen disponibles en el historial de Git.
 
 El lienzo usa `Scale.EXPAND`. El mundo reserva columnas para los controles y la
 guía; la cámara se ajusta para mantener visibles mapa, barra y consigna al cambiar

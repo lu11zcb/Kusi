@@ -11,17 +11,9 @@
       "origen": "juego/public/dibujos/cuy-nino-frente.png",
       "transformacion": "Copia sin cambios de contenido"
     },
-    "paisaje_kusi": {
-      "origen": "web/src/assets/kusi/paisaje-andes.webp",
-      "transformacion": "Copia sin cambios de contenido"
-    },
     "fuentes": {
       "origen": "https://github.com/google/fonts",
       "licencia": "OFL-1.1"
-    },
-    "plaza_aventura": {
-      "origen": "juego/public/dibujos/fondo-plaza.png",
-      "transformacion": "Reducción proporcional, sin cambios de contenido"
     }
   },
   "actualizacion": [
@@ -52,20 +44,6 @@
         675
       ],
       "sha256": "34bda189b623a14358254847949ab5230ffe8769cb0962128639ab3e0e3395da"
-    },
-    {
-      "recurso": "kusi_palabras_v2.png",
-      "autor_actualizacion": "lui11zcb",
-      "herramienta": "ImageGen integrado",
-      "fecha": "2026-10-20",
-      "referencia_personaje": "kusi_guia.png",
-      "prompt": "palabras",
-      "original": "kusi_palabras_original.png",
-      "dimensiones": [
-        1200,
-        675
-      ],
-      "sha256": "6031c132029a93ccd1dd349e0d32f1449fc0af5ba56b50c7873099ad04154ce3"
     },
     {
       "recurso": "kusi_celebracion_v2.png",

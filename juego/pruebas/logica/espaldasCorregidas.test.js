@@ -1,19 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { leerRgba, recortar } from '../../herramientas/animaciones/png_rgba.mjs'
 
 const carpeta = new URL('../../public/dibujos/', import.meta.url)
-const versiones = [
-  ['cuy-nino-cuadros-v8.png', 'cuy-nino-cuadros-v9.png', 4],
-  ['zorro-cuadros-v3.png', 'zorro-cuadros-v4.png', 2],
-]
-for (const [antes, ahora, espalda] of versiones) {
-  test(ahora + ': solo cambia la fila de espalda, las otras poses y los originales se conservan', () => {
-    const base = leerRgba(new URL(antes, carpeta)), nueva = leerRgba(new URL(ahora, carpeta))
-    assert.deepEqual([nueva.ancho, nueva.alto], [base.ancho, base.alto])
-    for (let fila = 0; fila < nueva.alto / 256; fila++) {
-      const a = recortar(base, 0, fila * 256, 768, 256), b = recortar(nueva, 0, fila * 256, 768, 256)
-      assert.equal(a.datos.equals(b.datos), fila !== espalda, 'fila ' + fila)
+// Huellas de los píxeles aprobados antes de retirar los atlas intermedios.
+const referencias = JSON.parse(readFileSync(new URL('../fixtures/filas-personajes-aprobadas.json', import.meta.url)))
+for (const { imagen, ancho, alto, filas } of referencias) {
+  test(imagen + ': conserva los píxeles aprobados de frente, laterales y expresiones', () => {
+    const actual = leerRgba(new URL(imagen, carpeta))
+    assert.deepEqual([actual.ancho, actual.alto], [ancho, alto])
+    for (const [fila, esperada] of Object.entries(filas)) {
+      const datos = recortar(actual, 0, Number(fila) * 256, 768, 256).datos
+      assert.equal(createHash('sha256').update(datos).digest('hex'), esperada, 'fila ' + fila)
     }
   })
 }

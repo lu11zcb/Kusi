@@ -1,6 +1,6 @@
 # Contratos Django, Spring y clientes
 
-Actualizado el 12 de octubre de 2026. Django/web y el servicio Spring de secciones, vínculos y asignaciones están implementados en este repositorio. Luis delegó también la creación de las estructuras; su reserva anterior queda sustituida. El acceso móvil y el backend de propuestas IA aún no están publicados aquí. La revisión aislada no acredita integración completa entre servicios con PostgreSQL; véase [ESTADO_SPRINT1.md](ESTADO_SPRINT1.md).
+Actualizado el 12 de octubre de 2026. Django/web y el servicio Spring de secciones, vínculos y asignaciones están implementados en este repositorio. Luis delegó también la creación de las estructuras; su reserva anterior queda sustituida. El acceso móvil y el backend de propuestas IA aún no están publicados aquí. La revisión aislada no acredita integración completa entre servicios con PostgreSQL; véase [ESTADO_SPRINT1.md](historial/sprint-1/ESTADO_SPRINT1.md).
 
 ## Identidad y sesión · HU11
 
@@ -61,11 +61,11 @@ Todas estas rutas Django exigen administrador activo con contraseña definitiva.
 
 ## Secciones y propuestas IA
 
-El adaptador administrativo de secciones delega la persistencia en Spring. El servicio implementa secciones, vínculos y asignaciones con restricciones únicas y autorización en servidor. Se comprobaron migraciones/HTTP/persistencia en H2 aislada y el transporte Django mediante simulaciones; la ejecución conjunta con PostgreSQL sigue pendiente. [HU06_REVISION.md](HU06_REVISION.md) conserva el contrato y evidencia anterior.
+El adaptador administrativo de secciones delega la persistencia en Spring. El servicio implementa secciones, vínculos y asignaciones con restricciones únicas y autorización en servidor. Se comprobaron migraciones/HTTP/persistencia en H2 aislada y el transporte Django mediante simulaciones; la ejecución conjunta con PostgreSQL sigue pendiente. [HU06_REVISION.md](historial/sprint-1/HU06_REVISION.md) conserva el contrato y evidencia anterior.
 
 El cliente de propuestas espera las rutas Spring de contexto, CSRF y solicitudes definidas en [CONTRATO_PROPUESTAS_IA.md](CONTRATO_PROPUESTAS_IA.md); ese backend todavía no está publicado. HU08 ya permite consultar las asignaciones propias, pero no sustituye el contexto completo ni la persistencia de propuestas IA. No otorgar permisos generales ni presentar datos simulados como producto real.
 
-**Prueba real de IA aplazada por Luis hasta configurar su API key**. Las simulaciones están solo en pruebas. El proveedor/modelo no está elegido y su ausencia no bloquea implementación ni simulación. Spring ya existe; móvil y backend IA siguen pendientes en GitHub. El [aviso del domingo para Jesús](AVISO_JESUS_DOMINGO.md) es histórico: no refleja sus commits HU05/HU15/HU07/HU08 incorporados después. No se enviaron mensajes automáticamente.
+**Prueba real de IA aplazada por Luis hasta configurar su API key**. Las simulaciones están solo en pruebas. El proveedor/modelo no está elegido y su ausencia no bloquea implementación ni simulación. Spring ya existe; móvil y backend IA siguen pendientes en GitHub. El aviso del domingo para Jesús es histórico: no refleja sus commits HU05/HU15/HU07/HU08 incorporados después. No se enviaron mensajes automáticamente.
 
 ## HU12/HU13 · Ingreso del estudiante con DNI (13/10)
 

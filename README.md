@@ -20,18 +20,16 @@ La base existente y sus migraciones se conservan; revisar la configuración ante
 
 El APK de desarrollo se genera en `movil/app/build/outputs/apk/debug/app-debug.apk`. Abre Kusi con acceso real del estudiante, biblioteca de juegos enviados por su docente, laberinto en WebView y cierre de la partida. La actividad de presentación con cuentas de ejemplo fue retirada. [Configuración y recorrido](movil/README.md).
 
-El juego está en `juego/`, servido en <http://127.0.0.1:5174/>. Reutiliza los personajes y el kit de adobe, con fondo cenital, vegetación animada por sprites, Kusi a la derecha y joystick a la izquierda. La barra representa los alimentos reales y los zorros exploran desde que aparece el nivel. Las imágenes anteriores se conservan; [guía del juego](juego/README.md) y [archivo de ilustraciones](juego/arte/version-anterior/LEEME.md).
-
-![Diseño Android actual](docs/vista-app-infantil.png)
+El juego está en `juego/`, servido en <http://127.0.0.1:5174/>. Reutiliza los personajes y el kit de adobe, con fondo cenital, vegetación animada por sprites, Kusi a la derecha y joystick a la izquierda. La barra representa los alimentos reales y los zorros exploran desde que aparece el nivel. [Guía del juego](juego/README.md).
 
 ## Estado y diseño
 
-- [Avance del martes 20 de octubre](docs/AVANCE_20_OCTUBRE.md).
-- [Verificaciones y límites](docs/VERIFICACION_20_OCTUBRE.md).
+- [Avance del martes 20 de octubre](docs/historial/sprint-2/AVANCE_20_OCTUBRE.md).
+- [Verificaciones y límites](docs/historial/sprint-2/VERIFICACION_20_OCTUBRE.md).
 - [Diseño vigente de administración, docente y Android](DESIGN.md).
 - [Alcance de producto](PRODUCT.md) y [autoría](AUTORIA.md).
 
-La propuesta aprobada puede generar un guion de laberinto mediante IA, pasar las comprobaciones técnicas y enviarse a los estudiantes desde el panel docente. Android integra biblioteca, juego y avisos de partida. El [informe del Sprint 2](docs/INFORME-CIERRE-SPRINT2.md) detalla las comprobaciones y los límites; las pruebas técnicas no demuestran eficacia educativa.
+La propuesta aprobada puede generar un guion de laberinto mediante IA, pasar las comprobaciones técnicas y enviarse a los estudiantes desde el panel docente. Android integra biblioteca, juego y avisos de partida. El [informe del Sprint 2](docs/historial/sprint-2/INFORME-CIERRE-SPRINT2.md) detalla las comprobaciones y los límites; las pruebas técnicas no demuestran eficacia educativa.
 
 ## Instalar en macOS
 

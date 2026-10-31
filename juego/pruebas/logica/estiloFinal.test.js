@@ -3,12 +3,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { leerPng } from '../ayudas/png.js'
-import { pedirEstiloFinal, cuadroIlustrado } from '../../src/dibujos/estiloFinal.js'
+import { pedirEstiloFinal, cuadroIlustrado, SPRITES_CENITALES } from '../../src/dibujos/estiloFinal.js'
 import { BarraFrutas } from '../../src/interfaz/BarraFrutas.js'
 import { OBJETOS_KIT } from '../../src/dibujos/kitFinal.js'
 import { calcularDisposicion } from '../../src/logica/disposicionLaberinto.js'
 const carpeta=new URL('../../public/dibujos/',import.meta.url)
-const {capas:CAPAS_FONDO,sprites:SPRITES_FONDO}=JSON.parse(readFileSync(new URL('../../arte/estilo-anterior.json',import.meta.url),'utf8'))
 function anclas(im,c,f){
  let minx=256,miny=256,maxx=-1,maxy=-1
  for(let y=0;y<256;y++)for(let x=0;x<256;x++)if(im.pixel(c*256+x,f*256+y)[3]>=32){minx=Math.min(minx,x);miny=Math.min(miny,y);maxx=Math.max(maxx,x);maxy=Math.max(maxy,y)}
@@ -28,19 +27,21 @@ for(const [archivo,filas]of[['cuy-nino-cuadros-v9.png',6],['zorro-cuadros-v4.png
   }
  })
 }
-test('el manifiesto del niño solo cambia el nombre de su imagen',()=>{
+test('el manifiesto del niño conserva el contrato aprobado',()=>{
  const antes=JSON.parse(readFileSync(new URL('../fixtures/cuy-manifiesto-base.json',import.meta.url)))
  const ahora=JSON.parse(readFileSync(new URL('cuy-nino-animado-v1.json',carpeta)))
- antes.imagen='cuy-nino-cuadros-v9.png';assert.deepEqual(ahora,antes)
+ assert.deepEqual(ahora,antes)
 })
-test('las once tiras del fondo tienen el número de celdas de su contrato',()=>{
- assert.equal(Object.keys(SPRITES_FONDO).length,11)
- for(const [clave,d]of Object.entries(SPRITES_FONDO)){
-  const im=leerPng(new URL('estilo-final/'+clave+'.png',carpeta));assert.deepEqual([im.ancho,im.alto],[d.ancho*d.cuadros,d.alto])
+// El fondo vigente es el cenital: cuatro tiras (pasto, arbusto, margaritas y flores)
+// con cuatro cuadros cada una. Cada archivo pedido por el cargador debe existir.
+test('las cuatro tiras del fondo cenital tienen el número de cuadros de su contrato',()=>{
+ assert.equal(Object.keys(SPRITES_CENITALES).length,4)
+ for(const [clave,d]of Object.entries(SPRITES_CENITALES)){
+  const im=leerPng(new URL('cenital-v1/'+clave.replace('cenital-','')+'.png',carpeta));assert.deepEqual([im.ancho,im.alto],[d.ancho*d.cuadros,d.alto])
   for(let t=0;t<20;t+=.043){const f=cuadroIlustrado(t,d);assert.ok(Number.isInteger(f)&&f>=0&&f<d.cuadros)}
  }
  const pedidos=[];pedirEstiloFinal({load:{image:(k,r)=>pedidos.push(r),spritesheet:(k,r)=>pedidos.push(r)}})
- assert.ok(CAPAS_FONDO.length>=8);assert.equal(pedidos.filter(r=>r.includes('alimentos-nuevos')).length,0)
+ assert.equal(pedidos.filter(r=>r.includes('alimentos-nuevos')).length,0)
  for(const ruta of pedidos)assert.ok(readFileSync(new URL('../../public/'+ruta,import.meta.url)).length>100)
 })
 function mockImagen(x,y,key,frame=0){return{x,y,key,texture:{key},frame:{name:frame},visible:true,setOrigin(){return this},setDepth(){return this},setDisplaySize(w,h){this.w=w;this.h=h;return this},setVisible(v){this.visible=v;return this},setFrame(f){this.frame.name=f;return this},setTexture(key){this.texture.key=key;return this},setText(t){this.text=t;return this}}}

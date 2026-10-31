@@ -6,15 +6,12 @@ import { fileURLToPath } from 'node:url'
 import { leerRgba, recortar, medirSilueta, guardarPng } from './png_rgba.mjs'
 
 const raiz = new URL('../../', import.meta.url)
-// Un contrato nuevo permite conservar la receta y los atlas anteriores.
-const ajustes = process.argv[2] ? JSON.parse(readFileSync(new URL(process.argv[2], raiz), 'utf8')) : null
-const carpeta = new URL(ajustes?.carpeta ?? 'arte/espaldas-v2/', raiz)
+// La receta vigente reutiliza las filas aprobadas del atlas actual.
+const ajustes = JSON.parse(readFileSync(new URL(process.argv[2] ?? 'arte/espaldas-v3/preparacion.json', raiz), 'utf8'))
+const carpeta = new URL(ajustes.carpeta, raiz)
 const trabajo = new URL('preparacion/', carpeta)
 mkdirSync(trabajo, { recursive: true })
-const contratos = ajustes?.personajes ?? [
-  { nombre: 'cuy', base: 'cuy-nino-cuadros-v7.png', salida: 'cuy-nino-cuadros-v8.png', fila: 4 },
-  { nombre: 'zorro', base: 'zorro-cuadros-v2.png', salida: 'zorro-cuadros-v3.png', fila: 2 },
-]
+const contratos = ajustes.personajes
 const informe = []
 for (const contrato of contratos) {
   const { nombre, base, salida, fila } = contrato

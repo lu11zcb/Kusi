@@ -47,8 +47,7 @@ Consulta [HU46-LABERINTO.md](HU46-LABERINTO.md) para el protocolo y los niveles.
 
 Los alimentos, los personajes y el kit están en `public/dibujos/`. El paisaje
 de `public/dibujos/cenital-v1/` comparte la vista desde arriba del mapa y anima
-pasto, arbustos y flores con cuatro cuadros ilustrados por hoja. Los recursos
-anteriores se conservan. Kusi y su globo están a la derecha y el joystick a la
+pasto, arbustos y flores con cuatro cuadros ilustrados por hoja. Kusi y su globo están a la derecha y el joystick a la
 izquierda. El origen del nuevo arte y su preparación están documentados en
 [arte/fondo-cenital-v1/LEEME.md](arte/fondo-cenital-v1/LEEME.md).
 
@@ -62,8 +61,9 @@ primer movimiento del niño; priorizan las casillas menos visitadas.
 El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v9.png`, y
 `zorro-animado-v1.json` usa `zorro-cuadros-v4.png`. El cuy mantiene pelaje liso
 en todas sus vistas y el zorro lleva la cola centrada de espalda. Las otras
-poses conservan sus píxeles originales. Los originales,
-reportes y versiones anteriores permanecen en `arte/` y `public/dibujos/`.
+poses conservan sus píxeles originales. Las fuentes actuales y sus reportes
+permanecen en `arte/`. Se retiraron los atlas intermedios, las muestras
+obsoletas y las imágenes del laberinto anterior.
 La [comparación animada](arte/espaldas-v3/revision.html) muestra las vistas del
 cuy y la cola corregida; [origen y preparación](arte/espaldas-v3/LEEME.md).
 Las herramientas están documentadas en

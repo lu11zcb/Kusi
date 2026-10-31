@@ -1,7 +1,7 @@
 [
   {
     "nombre": "cuy",
-    "base": "cuy-nino-cuadros-v8.png",
+    "base": "cuy-nino-cuadros-v9.png",
     "salida": "cuy-nino-cuadros-v9.png",
     "fila_reemplazada": 4,
     "cuadros": [
@@ -31,7 +31,7 @@
   },
   {
     "nombre": "zorro",
-    "base": "zorro-cuadros-v3.png",
+    "base": "zorro-cuadros-v4.png",
     "salida": "zorro-cuadros-v4.png",
     "fila_reemplazada": 2,
     "cuadros": [

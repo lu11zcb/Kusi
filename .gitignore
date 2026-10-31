@@ -6,8 +6,6 @@
 .impeccable/review/
 .npm-cache/
 .DS_Store
-CLAUDE.md
-.claude/
 
 # Python / Django
 .venv/

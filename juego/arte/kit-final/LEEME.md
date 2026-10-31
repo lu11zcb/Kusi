@@ -3,8 +3,6 @@
 Las piezas que usa el reproductor están en `public/dibujos/kit-final/`:
 32 bloques de adobe (16 códigos de vecinos y dos variantes), suelo, borde de
 pasto, portal abierto/cerrado, barra, globos, botones, joystick y marcas.
-Los originales de las entregas anteriores se conservan, incluidas las fuentes
-de `arte/laberinto/origen/` recuperadas de Git.
 
 `src/dibujos/kitFinal.js` carga el kit y selecciona los bloques según los vecinos
 arriba, derecha, abajo e izquierda. `patioChacra.js` coloca suelo y borde.
@@ -16,7 +14,7 @@ con el texto real de Phaser. Las ocho siluetas de alimentos siguen guardadas,
 aunque los objetivos actuales se muestran a color.
 
 El kit fue preparado a partir de las ilustraciones aprobadas de la entrega
-anterior. Los recursos originales y sus licencias se conservan. El paisaje
+anterior. El paisaje
 vigente y sus hojas de animación están documentados por separado en
 [../fondo-cenital-v1/LEEME.md](../fondo-cenital-v1/LEEME.md).
 
