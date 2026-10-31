@@ -1,6 +1,6 @@
 # Kusi
 
-Responsable de esta actualización visual: **lui11zcb**.
+Responsable de esta actualización visual: **lu11zcb**.
 
 Contacto: **luiscb.once@gmail.com**.
 

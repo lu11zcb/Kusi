@@ -51,7 +51,6 @@ Rutas del panel docente, accesibles por el proxy de Vite (`/api/edu` → 8080). 
 
 La IA se configura en la sección «Configurar la IA» (más abajo en este archivo). Sin clave la IA queda **no configurada**: la solicitud se guarda `pendiente` y no se inventa contenido. `GeneradorPropuestasIaTest` prueba la llamada 1 con una IA simulada en un servidor local. `PropuestasSimuladasTest` usa IA y Django simulados.
 
-HU19–HU25 (propósito, revisión y versiones) y `GET /api/edu/acceso/estudiante/` (HU11, app móvil) se describen en `docs/CONTRATO_PROPUESTAS_IA.md`.
 
 ## HU31: comprobaciones del guion del laberinto
 `pe.kusi.edu.laberinto.ValidadorLaberinto` es código puro (sin IA ni base de datos): recibe el guion (`kusi-paquete/0`, familia `laberinto`) como JSON y devuelve la lista de problemas, vacía si está bien. Cada problema trae un `codigo` estable y un `motivo` en español sencillo que empieza con «Nivel N:» cuando es de un nivel. Incluye todo lo que comprueba el juego (`juego/src/datos/validarLaberinto.js`) y además:

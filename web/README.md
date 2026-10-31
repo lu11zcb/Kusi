@@ -41,7 +41,6 @@ npm test
 
 Las pruebas usan Node y TypeScript ya presentes, sin añadir dependencias. Las 15 pruebas originales cubren acceso/registro; las 15 de `tests/propuestas.test.mjs` simulan Spring e IA para comprobar validación, origen del objetivo, CSRF, errores y reintentos seguros. No acreditan persistencia Spring ni generación real. El recorrido visual se comprueba aparte.
 
-Estado por historia y comprobaciones: [ESTADO_SPRINT1.md](../docs/historial/sprint-1/ESTADO_SPRINT1.md). Identidad/sesión: [CONTRATOS_SERVICIOS.md](../docs/CONTRATOS_SERVICIOS.md). Secciones: [HU06_REVISION.md](../docs/historial/sprint-1/HU06_REVISION.md). IA pendiente: [CONTRATO_PROPUESTAS_IA.md](../docs/CONTRATO_PROPUESTAS_IA.md).
 
 ## Login con el cuy (Rive) y paneles
 

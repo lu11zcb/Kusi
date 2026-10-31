@@ -30,7 +30,7 @@ La contraseña temporal se muestra una sola vez, con cierre expreso; el secreto 
 
 **Docente:** Inicio, Mis cursos, Mis estudiantes, Crear propuesta y Mis propuestas. Búsqueda por nombre/DNI, filtro por sección y listado adaptable. La propuesta muestra objetivo, historia, acciones, reglas, retos, ayudas y recursos; incluye edición, observaciones, alternativas, aprobación/rechazo y versiones. Tema/objetivo/propósito/instrucciones y filtros se conservan al navegar; se bloquea navegación al guardar. La propuesta textual y la generación posterior del paquete son etapas distintas.
 
-El menú se pliega en móvil; expresa `aria-expanded` y `aria-controls`. Escape lo cierra y devuelve el foco. Cambiar de sección lleva el foco al contenido. Texto y fichas se apilan sin perder acciones. Se respeta `prefers-reduced-motion`. La captura de referencia del panel de administración está en [docs/vista-administracion.png](docs/vista-administracion.png).
+El menú se pliega en móvil; expresa `aria-expanded` y `aria-controls`. Escape lo cierra y devuelve el foco. Cambiar de sección lleva el foco al contenido. Texto y fichas se apilan sin perder acciones. Se respeta `prefers-reduced-motion`.
 
 ## App infantil Android
 
@@ -48,4 +48,4 @@ Cuatro escenas de bienvenida, feria, jardín de palabras y celebración, con sus
 
 ## Verificación y entrega
 
-Consultar [avance del 20](docs/historial/sprint-2/AVANCE_20_OCTUBRE.md), [resumen de verificaciones](docs/historial/sprint-2/VERIFICACION_20_OCTUBRE.md) e [instrucciones](README.md). Compilar y recorrer ejemplos no acredita resultados de aprendizaje, accesibilidad completa o preferencia de niños/docentes. Mantener los contratos existentes al integrar biblioteca y eventos.
+Compilar y recorrer ejemplos no acredita resultados de aprendizaje, accesibilidad completa o preferencia de niños/docentes. Mantener los contratos existentes al integrar biblioteca y eventos.

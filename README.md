@@ -24,12 +24,10 @@ El juego está en `juego/`, servido en <http://127.0.0.1:5174/>. Reutiliza los p
 
 ## Estado y diseño
 
-- [Avance del martes 20 de octubre](docs/historial/sprint-2/AVANCE_20_OCTUBRE.md).
-- [Verificaciones y límites](docs/historial/sprint-2/VERIFICACION_20_OCTUBRE.md).
 - [Diseño vigente de administración, docente y Android](DESIGN.md).
 - [Alcance de producto](PRODUCT.md) y [autoría](AUTORIA.md).
 
-La propuesta aprobada puede generar un guion de laberinto mediante IA, pasar las comprobaciones técnicas y enviarse a los estudiantes desde el panel docente. Android integra biblioteca, juego y avisos de partida. El [informe del Sprint 2](docs/historial/sprint-2/INFORME-CIERRE-SPRINT2.md) detalla las comprobaciones y los límites; las pruebas técnicas no demuestran eficacia educativa.
+La propuesta aprobada puede generar un guion de laberinto mediante IA, pasar las comprobaciones técnicas y enviarse a los estudiantes desde el panel docente. Android integra biblioteca, juego y avisos de partida.
 
 ## Instalar en macOS
 

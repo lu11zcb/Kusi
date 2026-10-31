@@ -21,4 +21,3 @@ El docente revisa y aprueba la propuesta antes de generar el guion. Spring compr
 
 Administración, docencia y el recorrido del estudiante están integrados. El laberinto admite patrones y clasificación de frutas o verduras, ayudas, voz, enemigos y cierre. El fondo comparte la vista desde arriba del mapa y anima vegetación mediante sprites. Los controles, la barra de objetivos y la exploración del zorro se describen en la [guía del juego](juego/README.md).
 
-El [informe de cierre del Sprint 2](docs/historial/sprint-2/INFORME-CIERRE-SPRINT2.md) reúne las comprobaciones de integración. El [avance del 20](docs/historial/sprint-2/AVANCE_20_OCTUBRE.md) y su [verificación](docs/historial/sprint-2/VERIFICACION_20_OCTUBRE.md) se conservan como documentos históricos.
