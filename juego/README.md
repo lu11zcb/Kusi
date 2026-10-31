@@ -4,6 +4,14 @@ Juego de Kusi hecho con Phaser 4.2.1 y Vite. El cuy recorre tres niveles,
 recoge alimentos siguiendo patrones o clasificándolos, abre la puerta y evita
 al zorro. Kusi acompaña con consignas, dos ayudas y voz del navegador.
 
+## Carpetas
+
+- [`kit/`](kit/LEEME.md): lo que la IA usa para armar un juego, con su catálogo.
+- [`juegos/`](juegos/LEEME.md): la biblioteca de juegos de ejemplo; hoy, el laberinto.
+- [`taller/`](taller/LEEME.md): cómo la IA crea un juego nuevo (Sprint 3).
+- `src/`, `public/`, `arte/`, `herramientas/` y `pruebas/`: el código, los dibujos, los
+  originales, las herramientas y las pruebas del juego.
+
 ## Abrirlo
 
 ```bash

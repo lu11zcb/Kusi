@@ -1,0 +1,185 @@
+{
+  "formato": "kusi-kit/0",
+  "descripcion": "Piezas que la IA puede usar para armar un juego. Las rutas son las que sirve el reproductor (carpeta public/).",
+  "motor": {
+    "nombre": "Phaser",
+    "version": "4.2.1"
+  },
+  "personajes": [
+    {
+      "id": "cuy",
+      "nombre": "Cuy del niño",
+      "manifiesto": "dibujos/cuy-nino-animado-v1.json",
+      "imagen": "dibujos/cuy-nino-cuadros-v9.png",
+      "vistas": [
+        "frente",
+        "espaldas",
+        "derecha",
+        "izquierda"
+      ],
+      "estados": [
+        "reposo",
+        "quieto",
+        "caminar",
+        "asustado",
+        "feliz",
+        "parpadeo"
+      ]
+    },
+    {
+      "id": "zorro",
+      "nombre": "Zorro",
+      "manifiesto": "dibujos/zorro-animado-v1.json",
+      "imagen": "dibujos/zorro-cuadros-v4.png",
+      "vistas": [
+        "frente",
+        "espaldas",
+        "derecha",
+        "izquierda"
+      ],
+      "estados": [
+        "reposo",
+        "quieto",
+        "caminar",
+        "cansado",
+        "alerta"
+      ]
+    },
+    {
+      "id": "kusi",
+      "nombre": "Kusi, el guía",
+      "imagen": "dibujos/estilo-final/kusi-cuadros-v1.png",
+      "estados": [
+        "hablar",
+        "saludar",
+        "parpadear",
+        "respirar"
+      ]
+    }
+  ],
+  "objetos": [
+    {
+      "id": "fresa",
+      "nombre": "fresa",
+      "clase": "fruta",
+      "imagen": "dibujos/fresa.png"
+    },
+    {
+      "id": "platano",
+      "nombre": "plátano",
+      "clase": "fruta",
+      "imagen": "dibujos/platano.png"
+    },
+    {
+      "id": "mango",
+      "nombre": "mango",
+      "clase": "fruta",
+      "imagen": "dibujos/mango.png"
+    },
+    {
+      "id": "mandarina",
+      "nombre": "mandarina",
+      "clase": "fruta",
+      "imagen": "dibujos/mandarina.png"
+    },
+    {
+      "id": "pina",
+      "nombre": "piña",
+      "clase": "fruta",
+      "imagen": "dibujos/pina.png"
+    },
+    {
+      "id": "zanahoria",
+      "nombre": "zanahoria",
+      "clase": "verdura",
+      "imagen": "dibujos/zanahoria.png"
+    },
+    {
+      "id": "papa",
+      "nombre": "papa",
+      "clase": "verdura",
+      "imagen": "dibujos/papa.png"
+    },
+    {
+      "id": "choclo",
+      "nombre": "choclo",
+      "clase": "verdura",
+      "imagen": "dibujos/choclo.png"
+    }
+  ],
+  "mundos": [
+    {
+      "id": "patio-andino",
+      "nombre": "Patio andino visto desde arriba",
+      "fondo": "dibujos/cenital-v1/fondo.png",
+      "vegetacion": [
+        "dibujos/cenital-v1/pasto.png",
+        "dibujos/cenital-v1/arbusto.png",
+        "dibujos/cenital-v1/margaritas.png",
+        "dibujos/cenital-v1/flores.png"
+      ],
+      "suelo": "dibujos/kit-final/tierra-patio.png",
+      "borde": "dibujos/kit-final/borde-pasto.png",
+      "muro": "dibujos/kit-final/muro-0000-a.png",
+      "salida": [
+        "dibujos/kit-final/portal-cerrado.png",
+        "dibujos/kit-final/portal-abierto.png"
+      ]
+    }
+  ],
+  "interfaz": {
+    "barra": "dibujos/kit-final/barra-frutas.png",
+    "marca": "dibujos/kit-final/check-fruta.png",
+    "globos": [
+      "dibujos/kit-final/globo-dialogo-160.png",
+      "dibujos/kit-final/globo-dialogo-232.png",
+      "dibujos/kit-final/globo-dialogo-304.png"
+    ],
+    "botones": [
+      "dibujos/kit-final/boton-voz.png",
+      "dibujos/kit-final/boton-ayuda.png",
+      "dibujos/kit-final/boton-sonido.png",
+      "dibujos/kit-final/boton-silencio.png"
+    ],
+    "joystick": [
+      "dibujos/kit-final/joystick-base.png",
+      "dibujos/kit-final/joystick-perilla.png"
+    ],
+    "mano": "dibujos/estilo-final/mano-tutorial.png",
+    "destellos": "dibujos/estilo-final/destellos-siguiente.png"
+  },
+  "sonidos": [
+    {
+      "id": "paso_cuy",
+      "archivo": "sonidos/paso-cuy.ogg"
+    },
+    {
+      "id": "paso_zorro",
+      "archivo": "sonidos/paso-zorro.ogg"
+    },
+    {
+      "id": "comer",
+      "archivo": "sonidos/fruta-pop.ogg"
+    },
+    {
+      "id": "error",
+      "archivo": "sonidos/fruta-boing.ogg"
+    },
+    {
+      "id": "captura",
+      "archivo": "sonidos/cuy-ay.ogg"
+    },
+    {
+      "id": "puerta",
+      "archivo": "sonidos/puerta.ogg"
+    },
+    {
+      "id": "nivel",
+      "archivo": "sonidos/nivel-fanfarria.ogg"
+    },
+    {
+      "id": "alerta",
+      "archivo": "sonidos/zorro-alerta.wav"
+    }
+  ]
+}
