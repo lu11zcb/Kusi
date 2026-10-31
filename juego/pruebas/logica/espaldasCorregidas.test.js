@@ -2,9 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { leerRgba, recortar } from '../../herramientas/animaciones/png_rgba.mjs'
+import { leerRgba, recortar } from '../../kit/herramientas/animaciones/png_rgba.mjs'
 
-const carpeta = new URL('../../public/dibujos/', import.meta.url)
+const carpeta = new URL('../../kit/recursos/dibujos/', import.meta.url)
 // Huellas de los píxeles aprobados antes de retirar los atlas intermedios.
 const referencias = JSON.parse(readFileSync(new URL('../fixtures/filas-personajes-aprobadas.json', import.meta.url)))
 for (const { imagen, ancho, alto, filas } of referencias) {

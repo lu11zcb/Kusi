@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { estado, esperarCasilla, leerPaquete, servirPaquete } from './ayudas/laberinto.js'
-import { DIRECCIONES_CUY, validarSpriteCuy } from '../src/datos/validarSpriteCuy.js'
+import { DIRECCIONES_CUY, validarSpriteCuy } from '../kit/reproductor/datos/validarSpriteCuy.js'
 
 const leerManifiesto = async () => JSON.parse(await readFile(
-  new URL('../public/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
+  new URL('../kit/recursos/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
 ))
 
 async function empezar(pagina) {
@@ -52,7 +52,7 @@ test('el contrato acepta un nombre PNG y rechaza rutas o extensiones distintas',
 test('Phaser registra el cuadro central repetido y mantiene la cadencia al frenar', async ({ page: pagina }) => {
   await empezar(pagina)
   const configuracion = await pagina.evaluate(async () => {
-    const { registrarAnimacionesCuy, CuyAnimado } = await import('/src/dibujos/cuyAnimado.js')
+    const { registrarAnimacionesCuy, CuyAnimado } = await import('/kit/reproductor/dibujos/cuyAnimado.js')
     const datos = await (await fetch('/dibujos/cuy-nino-animado-v1.json')).json()
     const animaciones = []
     const textura = {
@@ -136,7 +136,7 @@ test('el cuy cambia entre espalda, frente y laterales y queda quieto en su últi
 test('la espalda real repite 0,1,2,1 a ocho fps y las vistas verticales nunca se reflejan', async ({ page: pagina }) => {
   await empezar(pagina)
   const resultado = await pagina.evaluate(async () => {
-    const { CuyAnimado } = await import('/src/dibujos/cuyAnimado.js')
+    const { CuyAnimado } = await import('/kit/reproductor/dibujos/cuyAnimado.js')
     // Una actualización entrega el Sprite real, sin exponer métodos de prueba
     // en el juego. Luego se avanza únicamente su reloj con pasos de 125 ms.
     const cuy = await new Promise((resolver) => {

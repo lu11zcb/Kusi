@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { elegirRenderizador, nivelPedido } from '../../src/logica/parametrosLaberinto.js'
+import { elegirRenderizador, nivelPedido } from '../../juegos/laberinto/logica/parametrosLaberinto.js'
 
 test('el laberinto dibuja con Canvas salvo que se pida ?renderizador=auto', () => {
   assert.equal(elegirRenderizador(''), 'canvas')

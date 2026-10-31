@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { CONGELADO, TEMBLOR } from '../src/efectos/CapturaLaberinto.js'
+import { CONGELADO, TEMBLOR } from '../juegos/laberinto/efectos/CapturaLaberinto.js'
 import { abrir, muestrear, servirPasillo } from './ayudas/laberinto.js'
 
 // Un zorro pegado al cuy en un pasillo: al elegir un rumbo lo alcanza en un instante.

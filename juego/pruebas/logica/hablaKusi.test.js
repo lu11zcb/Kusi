@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { crearHablaKusi, iniciarHablaKusi, avanzarHablaKusi, terminarHablaKusi } from '../../src/logica/hablaKusi.js'
-import { calcularDisposicion, distribuirBarra, distribuirGuia } from '../../src/logica/disposicionLaberinto.js'
+import { crearHablaKusi, iniciarHablaKusi, avanzarHablaKusi, terminarHablaKusi } from '../../kit/reproductor/logica/hablaKusi.js'
+import { calcularDisposicion, distribuirBarra, distribuirGuia } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
 test('Kusi saluda, habla, parpadea y respira mediante sus cuatro filas dibujadas',()=>{
  const e=crearHablaKusi(),vistos=new Set()
  for(let i=0;i<80;i++){const g=avanzarHablaKusi(e,.02);vistos.add(g.animacion);assert.equal(g.entrada,0);assert.equal(g.rebote,0)}

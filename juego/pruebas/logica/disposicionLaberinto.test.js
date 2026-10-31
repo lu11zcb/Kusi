@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularDisposicion, distribuirBarra, distribuirGuia } from '../../src/logica/disposicionLaberinto.js'
+import { calcularDisposicion, distribuirBarra, distribuirGuia } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
 const chocan = (a,b) => a.x < b.x+b.ancho && a.x+a.ancho>b.x && a.y<b.y+b.alto && a.y+a.alto>b.y
 
 test('las tres bases dejan columnas libres y nunca bajan de 64 unidades', () => {

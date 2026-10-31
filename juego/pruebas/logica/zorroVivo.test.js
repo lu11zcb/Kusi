@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { crearZorro, avanzarZorro, restablecerZorro, elegirCaminoDeBusqueda, posicionEnCasillas } from '../../src/logica/zorrosLaberinto.js'
+import { crearZorro, avanzarZorro, restablecerZorro, elegirCaminoDeBusqueda, posicionEnCasillas } from '../../juegos/laberinto/logica/zorrosLaberinto.js'
 
 const MAPA = ['#############', '#C.........P#', '#...........#', '#...........#', '#############']
 const crear = (fila = 1, columna = 6, semilla = 37) => crearZorro(
@@ -79,15 +79,15 @@ test('un cuadro largo y muchos pequeños recorren los mismos estados y posicione
 })
 
 test('la hoja tiene alerta en la quinta fila y el primer nivel sigue sin zorro', async () => {
-  const datos = JSON.parse(await readFile(new URL('../../public/dibujos/zorro-animado-v1.json', import.meta.url)))
+  const datos = JSON.parse(await readFile(new URL('../../kit/recursos/dibujos/zorro-animado-v1.json', import.meta.url)))
   assert.equal(datos.cuadricula.filas, 5)
   assert.deepEqual(datos.animaciones.frente.alerta.fotogramas, [12, 13, 14, 13])
-  const paquete = JSON.parse(await readFile(new URL('../../public/paquete-laberinto-ejemplo.json', import.meta.url)))
+  const paquete = JSON.parse(await readFile(new URL('../../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url)))
   assert.deepEqual(paquete.retos[0].enemigos, [])
 })
 
 test('la búsqueda visita todos los pasillos y ramales aunque el jugador no se mueva', async () => {
-  const paquete=JSON.parse(await readFile(new URL('../../public/paquete-laberinto-ejemplo.json',import.meta.url)))
+  const paquete=JSON.parse(await readFile(new URL('../../kit/recursos/paquete-laberinto-ejemplo.json',import.meta.url)))
   for(const reto of paquete.retos.slice(1)){
     const zorro=crearZorro(reto.enemigos[0],reto.mapa,{vivo:true,semilla:307})
     let cantidad=0

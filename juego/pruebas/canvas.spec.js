@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { abrir, estado, servirPasillo } from './ayudas/laberinto.js'
-import { ESTRELLITAS } from '../src/efectos/PopFruta.js'
+import { ESTRELLITAS } from '../kit/reproductor/efectos/PopFruta.js'
 
 // El laberinto dibuja con Canvas. Estas pruebas leen los puntos del lienzo tal
 // como se ven y comprueban que la capa de vida de verdad se pinta en él, no solo

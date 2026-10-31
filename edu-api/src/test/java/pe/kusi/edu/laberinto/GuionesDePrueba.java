@@ -13,7 +13,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 // Los guiones que usan las pruebas de la generación. El caso bueno es el paquete de
-// ejemplo del juego (juego/public/paquete-laberinto-ejemplo.json); de él salen las
+// ejemplo del juego (juego/kit/recursos/paquete-laberinto-ejemplo.json); de él salen las
 // «respuestas de la IA» (con la forma que pide el esquema estricto de la llamada 2) y
 // las versiones dañadas, cada una con un solo defecto para saber qué debe señalar el
 // validador.
@@ -38,7 +38,7 @@ public final class GuionesDePrueba {
 
     // El guion de ejemplo tal como lo lee el juego. Cada llamada devuelve una copia nueva.
     public static ObjectNode ejemplo() throws IOException {
-        return leerEnJuego("public/paquete-laberinto-ejemplo.json");
+        return leerEnJuego("kit/recursos/paquete-laberinto-ejemplo.json");
     }
 
     // Un guion de prueba del juego (juego/pruebas/fixtures/<nombre>): el que sus pruebas del

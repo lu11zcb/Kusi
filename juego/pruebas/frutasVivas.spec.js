@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { FLOTAR } from '../src/efectos/FrutasVivas.js'
+import { FLOTAR } from '../kit/reproductor/efectos/FrutasVivas.js'
 import { abrir, esperarCasilla, estado, muestrear } from './ayudas/laberinto.js'
 
 // El tiempo del navegador y lo que se alejó cada fruta de su casilla, en píxeles.

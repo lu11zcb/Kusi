@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calcularDisposicion } from '../../src/logica/disposicionLaberinto.js'
-import { PortalVivo, pulsoPortal } from '../../src/efectos/PortalVivo.js'
+import { calcularDisposicion } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
+import { PortalVivo, pulsoPortal } from '../../juegos/laberinto/efectos/PortalVivo.js'
 
 test('el nivel 2 llena la altura bajo la barra y el nivel 1 crece centrado', () => {
   const medir = (filas, columnas) => calcularDisposicion({ ancho: 1600, alto: 720, filas, columnas })

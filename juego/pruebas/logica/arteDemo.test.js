@@ -3,11 +3,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { leerPng } from '../ayudas/png.js'
-import { PIEZAS_MURO } from '../../src/dibujos/kitFinal.js'
-import { crearPatio } from '../../src/dibujos/patioChacra.js'
-import { encajarTextoKusi } from '../../src/interfaz/textoKusi.js'
-import { ubicarSonidoSuperior } from '../../src/logica/disposicionLaberinto.js'
-const folder=new URL('../../public/dibujos/kit-final/',import.meta.url)
+import { PIEZAS_MURO } from '../../kit/reproductor/dibujos/kitFinal.js'
+import { crearPatio } from '../../juegos/laberinto/dibujos/patioChacra.js'
+import { encajarTextoKusi } from '../../kit/reproductor/interfaz/textoKusi.js'
+import { ubicarSonidoSuperior } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
+const folder=new URL('../../kit/recursos/dibujos/kit-final/',import.meta.url)
 const aprobados=JSON.parse(readFileSync(new URL('../fixtures/adobe-aprobado.json',import.meta.url)))
 
 test('los 32 cubos coinciden exactamente con el arte aprobado y toda su huella es opaca',()=>{

@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { desactivarBotones } from '../../src/interfaz/piezas.js'
-import { crearMovimiento, pedirDireccion, avanzarMovimiento, detenerEnCentro } from '../../src/logica/movimientoLaberinto.js'
-import { crearZorro, avanzarZorro, posicionEnCasillas } from '../../src/logica/zorrosLaberinto.js'
-import { PortalVivo } from '../../src/efectos/PortalVivo.js'
+import { desactivarBotones } from '../../kit/reproductor/interfaz/piezas.js'
+import { crearMovimiento, pedirDireccion, avanzarMovimiento, detenerEnCentro } from '../../juegos/laberinto/logica/movimientoLaberinto.js'
+import { crearZorro, avanzarZorro, posicionEnCasillas } from '../../juegos/laberinto/logica/zorrosLaberinto.js'
+import { PortalVivo } from '../../juegos/laberinto/efectos/PortalVivo.js'
 
 const PASILLO = ['#############', '#C.........P#', '#############']
 

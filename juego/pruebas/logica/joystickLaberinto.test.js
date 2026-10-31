@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { leerGestoJoystick } from '../../src/logica/joystickLaberinto.js'
-import { crearMovimiento, pedirDireccion, avanzarMovimiento, detenerEnCentro } from '../../src/logica/movimientoLaberinto.js'
+import { leerGestoJoystick } from '../../juegos/laberinto/logica/joystickLaberinto.js'
+import { crearMovimiento, pedirDireccion, avanzarMovimiento, detenerEnCentro } from '../../juegos/laberinto/logica/movimientoLaberinto.js'
 
 const INICIO = { x: 100, y: 100 }
 const MAPA = ['#######', '#C....#', '####.##', '####P##', '#######']

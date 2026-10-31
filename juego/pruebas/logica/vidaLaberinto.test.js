@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vidaActiva } from '../../src/efectos/vida.js'
-import { ParpadeoCuy, ESPERA_MINIMA, ESPERA_MAXIMA } from '../../src/efectos/ParpadeoCuy.js'
-import { SonidosLaberinto, SONIDOS_LABERINTO, esCuadroDePisada } from '../../src/efectos/SonidosLaberinto.js'
+import { vidaActiva } from '../../kit/reproductor/efectos/vida.js'
+import { ParpadeoCuy, ESPERA_MINIMA, ESPERA_MAXIMA } from '../../kit/reproductor/efectos/ParpadeoCuy.js'
+import { SonidosLaberinto, SONIDOS_LABERINTO, esCuadroDePisada } from '../../kit/reproductor/efectos/SonidosLaberinto.js'
 
 // Un cuy de mentira con la misma interfaz que usa el parpadeo: dónde mira, si
 // tiene una expresión en curso y las dos operaciones que el efecto le pide.

@@ -2,7 +2,7 @@
 // las flechas, el ratón y la lectura del estado, igual que un niño jugando.
 import { readFile } from 'node:fs/promises'
 
-const RUTA_PAQUETE = new URL('../../public/paquete-laberinto-ejemplo.json', import.meta.url)
+const RUTA_PAQUETE = new URL('../../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url)
 export const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))
 export const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 

@@ -1,0 +1,7 @@
+{
+  "carpeta": "kit/arte/espaldas-v3/",
+  "personajes": [
+    { "nombre": "cuy", "base": "cuy-nino-cuadros-v9.png", "salida": "cuy-nino-cuadros-v9.png", "fila": 4 },
+    { "nombre": "zorro", "base": "zorro-cuadros-v4.png", "salida": "zorro-cuadros-v4.png", "fila": 2 }
+  ]
+}

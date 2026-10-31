@@ -1,12 +1,16 @@
 # Biblioteca de juegos
 
-Juegos hechos con el kit. Cuando un docente pide un tema, la IA puede reusar
-un juego de esta biblioteca (escribiendo un guion nuevo) o tomarlo de modelo
-para crear otro en el [taller](../taller/LEEME.md).
+Juegos hechos con el [kit](../kit/LEEME.md). Cuando un docente pide un tema, la
+IA puede reusar un juego de esta biblioteca (escribiendo un guion nuevo) o
+tomarlo de modelo para crear otro en el [taller](../taller/LEEME.md).
 
-| Juego | Reglas | Guía |
+| Juego | Reglas | Carpeta |
 | --- | --- | --- |
-| [El laberinto de Kusi](laberinto/LEEME.md) | `orden` (patrones) y `solo_clase` (clasificar) | [HU46-LABERINTO.md](../HU46-LABERINTO.md) |
+| El laberinto de Kusi | `orden` (patrones) y `solo_clase` (clasificar) | [`laberinto/`](laberinto/LEEME.md) |
+
+Cada juego tiene su propia carpeta con su código, su guía y lo que necesita
+del kit. Lo que comparten todos los juegos (personajes, voz, puente con la
+app, dibujos y sonidos) está en el kit, no aquí.
 
 ## Dónde se guardan los juegos que crea la IA
 

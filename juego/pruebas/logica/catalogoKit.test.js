@@ -23,7 +23,7 @@ test('cada archivo del catálogo del kit existe en public/', () => {
   const rutas = rutasDelCatalogo(catalogo)
   assert.ok(rutas.length > 30, 'el catálogo debería nombrar más de 30 archivos')
   for (const ruta of rutas) {
-    assert.ok(existsSync(new URL('../../public/' + ruta, import.meta.url)), 'falta ' + ruta)
+    assert.ok(existsSync(new URL('../../kit/recursos/' + ruta, import.meta.url)), 'falta ' + ruta)
   }
 })
 

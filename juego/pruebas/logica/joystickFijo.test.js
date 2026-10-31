@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { JoystickLaberinto } from '../../src/interfaz/JoystickLaberinto.js'
+import { JoystickLaberinto } from '../../juegos/laberinto/interfaz/JoystickLaberinto.js'
 test('la base no sigue al dedo ni desaparece y otro puntero no roba el control', () => {
   const imagen=(x,y)=>({x,y,setDisplaySize(){return this},setDepth(){return this},setPosition(x,y){this.x=x;this.y=y;return this}})
   const escena={guia:{joystick:{x:186,y:591}},add:{image:imagen},

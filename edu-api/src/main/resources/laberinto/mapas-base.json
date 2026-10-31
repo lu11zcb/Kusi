@@ -1,5 +1,5 @@
 {
-  "comentario": "Los tres mapas base de respaldo: los mismos de juego/public/paquete-laberinto-ejemplo.json. Si la IA no logra un mapa que pase las comprobaciones, el guion usa estos y conserva de la IA la regla, los objetos, las consignas y las ayudas. MapasBaseTest comprueba que sigan siendo iguales a los del ejemplo.",
+  "comentario": "Los tres mapas base de respaldo: los mismos de juego/kit/recursos/paquete-laberinto-ejemplo.json. Si la IA no logra un mapa que pase las comprobaciones, el guion usa estos y conserva de la IA la regla, los objetos, las consignas y las ayudas. MapasBaseTest comprueba que sigan siendo iguales a los del ejemplo.",
   "niveles": [
     {
       "mapa": [

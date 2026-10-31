@@ -37,7 +37,7 @@ Todo el proyecto corre en macOS (Apple Silicon o Intel). Los comandos son para l
 | --- | --- | --- | --- |
 | Git | cualquiera reciente | todo | `brew install git` |
 | Node.js | 22.12 o más (se probó con 24.19; Vite 8 pide 20.19 o más, o 22.12 o más) | `juego/` (Phaser, Playwright) y `web/` (React) | `brew install node@24` |
-| Python | 3.12 o más (se probó con 3.14) | `admin-api/` (Django 6.1) y las herramientas de `juego/herramientas` | `brew install python@3.14` |
+| Python | 3.12 o más (se probó con 3.14) | `admin-api/` (Django 6.1) y las herramientas de `juego/kit/herramientas` | `brew install python@3.14` |
 | Java | 21 (Temurin) | `edu-api/` (Spring Boot 3.5.6) y `movil/` | `brew install --cask temurin@21` |
 | PostgreSQL | 16 | base compartida: Django usa el esquema `admin` y Spring, el `edu` | `brew install postgresql@16` |
 | Android Studio y adb | SDK de Android 37 (`minSdk` 26) | `movil/` y probar en un celular | `brew install --cask android-studio`; adb sale de Platform-Tools (`brew install --cask android-platform-tools`) |

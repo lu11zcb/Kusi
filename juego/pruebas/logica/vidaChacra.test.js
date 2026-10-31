@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { VidaChacra, distribuirVegetacion } from '../../src/efectos/VidaChacra.js'
-import { SPRITES_CENITALES } from '../../src/dibujos/estiloFinal.js'
-import { calcularDisposicion } from '../../src/logica/disposicionLaberinto.js'
+import { VidaChacra, distribuirVegetacion } from '../../juegos/laberinto/efectos/VidaChacra.js'
+import { SPRITES_CENITALES } from '../../kit/reproductor/dibujos/estiloFinal.js'
+import { calcularDisposicion } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
 import { leerPng } from '../ayudas/png.js'
 import { createHash } from 'node:crypto'
 const escena=()=>({disposicion:calcularDisposicion({ancho:1600,filas:9,columnas:15}),add:{image:(x,y,key,frame)=>({x,y,key,frame:{name:frame},visible:true,
@@ -30,7 +30,7 @@ test('el jardín deja libres todos los pasillos en pantallas y mapas de distinto
 
 test('cada hoja nueva tiene cuatro poses distintas, alfa transparente y anclas alineadas',()=>{
  for(const [clave,d]of Object.entries(SPRITES_CENITALES)){
-  const im=leerPng(new URL('../../public/dibujos/cenital-v1/'+clave.replace('cenital-','')+'.png',import.meta.url))
+  const im=leerPng(new URL('../../kit/recursos/dibujos/cenital-v1/'+clave.replace('cenital-','')+'.png',import.meta.url))
   assert.deepEqual([im.ancho,im.alto],[d.ancho*4,d.alto])
   const hashes=[]
   for(let f=0;f<4;f++){

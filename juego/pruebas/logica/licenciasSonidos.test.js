@@ -1,10 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile, access } from 'node:fs/promises'
-import { SONIDOS_LABERINTO } from '../../src/efectos/SonidosLaberinto.js'
+import { SONIDOS_LABERINTO } from '../../kit/reproductor/efectos/SonidosLaberinto.js'
 
-const PUBLICOS = new URL('../../public/sonidos/', import.meta.url)
-const ORIGINALES = new URL('../../arte/sonidos/origen/', import.meta.url)
+const PUBLICOS = new URL('../../kit/recursos/sonidos/', import.meta.url)
+const ORIGINALES = new URL('../../kit/arte/sonidos/origen/', import.meta.url)
 const leer = async (url) => (await readFile(url, 'utf8')).replace(/\r/g, '')
 const existe = async (url) => access(url).then(() => true, () => false)
 
@@ -15,7 +15,7 @@ const PAQUETES = [
   { licencia: 'LICENCIA-KENNEY-INTERFACE.txt', original: 'kenney_interface-sounds/License.txt', nombre: 'Interface Sounds' },
 ]
 
-test('public/sonidos tiene los ocho archivos de audio que usa el controlador', async () => {
+test('kit/recursos/sonidos tiene los ocho archivos de audio que usa el controlador', async () => {
   const archivos = Object.values(SONIDOS_LABERINTO).map((sonido) => sonido.archivo)
   assert.equal(archivos.length, 8)
   for (const archivo of archivos) assert.equal(await existe(new URL(archivo, PUBLICOS)), true, archivo)

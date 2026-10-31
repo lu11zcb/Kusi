@@ -3,11 +3,11 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { leerPng } from '../ayudas/png.js'
-import { pedirEstiloFinal, cuadroIlustrado, SPRITES_CENITALES } from '../../src/dibujos/estiloFinal.js'
-import { BarraFrutas } from '../../src/interfaz/BarraFrutas.js'
-import { OBJETOS_KIT } from '../../src/dibujos/kitFinal.js'
-import { calcularDisposicion } from '../../src/logica/disposicionLaberinto.js'
-const carpeta=new URL('../../public/dibujos/',import.meta.url)
+import { pedirEstiloFinal, cuadroIlustrado, SPRITES_CENITALES } from '../../kit/reproductor/dibujos/estiloFinal.js'
+import { BarraFrutas } from '../../juegos/laberinto/interfaz/BarraFrutas.js'
+import { OBJETOS_KIT } from '../../kit/reproductor/dibujos/kitFinal.js'
+import { calcularDisposicion } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
+const carpeta=new URL('../../kit/recursos/dibujos/',import.meta.url)
 function anclas(im,c,f){
  let minx=256,miny=256,maxx=-1,maxy=-1
  for(let y=0;y<256;y++)for(let x=0;x<256;x++)if(im.pixel(c*256+x,f*256+y)[3]>=32){minx=Math.min(minx,x);miny=Math.min(miny,y);maxx=Math.max(maxx,x);maxy=Math.max(maxy,y)}
@@ -42,7 +42,7 @@ test('las cuatro tiras del fondo cenital tienen el número de cuadros de su cont
  }
  const pedidos=[];pedirEstiloFinal({load:{image:(k,r)=>pedidos.push(r),spritesheet:(k,r)=>pedidos.push(r)}})
  assert.equal(pedidos.filter(r=>r.includes('alimentos-nuevos')).length,0)
- for(const ruta of pedidos)assert.ok(readFileSync(new URL('../../public/'+ruta,import.meta.url)).length>100)
+ for(const ruta of pedidos)assert.ok(readFileSync(new URL('../../kit/recursos/'+ruta,import.meta.url)).length>100)
 })
 function mockImagen(x,y,key,frame=0){return{x,y,key,texture:{key},frame:{name:frame},visible:true,setOrigin(){return this},setDepth(){return this},setDisplaySize(w,h){this.w=w;this.h=h;return this},setVisible(v){this.visible=v;return this},setFrame(f){this.frame.name=f;return this},setTexture(key){this.texture.key=key;return this},setText(t){this.text=t;return this}}}
 test('la barra representa recogida, siguiente y pendiente con check y destellos de sprite',()=>{

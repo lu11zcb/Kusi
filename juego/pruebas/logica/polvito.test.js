@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   Polvito, PASOS_POR_NUBE, PARTICULAS_MINIMAS, PARTICULAS_MAXIMAS, DURACION_MS,
-} from '../../src/efectos/Polvito.js'
+} from '../../kit/reproductor/efectos/Polvito.js'
 
 const CASILLA = 60
 

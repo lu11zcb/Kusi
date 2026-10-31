@@ -17,6 +17,9 @@ Es el trabajo del Sprint 3.
    estudiantes.
 5. A la IA nunca se le mandan nombres, credenciales ni datos de los niños.
 
+Cada juego nuevo va en su propia carpeta dentro de `juegos/`, igual que el
+laberinto, y usa el reproductor del kit.
+
 ## Lo que falta definir
 
 - Qué archivos entrega la IA por cada juego nuevo.

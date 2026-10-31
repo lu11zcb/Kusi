@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { IMAGENES_KIT, OBJETOS_KIT, PIEZAS_MURO, vecinosMuro, texturaMuro } from '../../src/dibujos/kitFinal.js'
-const folder=new URL('../../public/dibujos/',import.meta.url)
+import { IMAGENES_KIT, OBJETOS_KIT, PIEZAS_MURO, vecinosMuro, texturaMuro } from '../../kit/reproductor/dibujos/kitFinal.js'
+const folder=new URL('../../kit/recursos/dibujos/',import.meta.url)
 function medidas(ruta){const p=readFileSync(new URL(ruta,folder));assert.equal(p.toString('ascii',1,4),'PNG');return{ancho:p.readUInt32BE(16),alto:p.readUInt32BE(20),tipo:p[25]}}
 test('el kit contiene las 32 claves de cubo y los ocho alimentos sin cara',()=>{
  assert.equal(new Set(PIEZAS_MURO).size,32)

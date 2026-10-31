@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { validarSpritePersonaje } from '../../src/datos/validarSpritePersonaje.js'
+import { validarSpritePersonaje } from '../../kit/reproductor/datos/validarSpritePersonaje.js'
 
 test('el zorro conserva una fila por vista y solo voltea el lado izquierdo', async () => {
   const datos = validarSpritePersonaje(JSON.parse(await readFile(
-    new URL('../../public/dibujos/zorro-animado-v1.json', import.meta.url), 'utf8',
+    new URL('../../kit/recursos/dibujos/zorro-animado-v1.json', import.meta.url), 'utf8',
   )), 'zorro')
   assert.equal(datos.imagen, 'zorro-cuadros-v4.png')
   const inicios = { frente: 0, derecha: 3, izquierda: 3, espaldas: 6 }

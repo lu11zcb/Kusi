@@ -53,7 +53,7 @@ La IA se configura en la sección «Configurar la IA» (más abajo en este archi
 
 
 ## HU31: comprobaciones del guion del laberinto
-`pe.kusi.edu.laberinto.ValidadorLaberinto` es código puro (sin IA ni base de datos): recibe el guion (`kusi-paquete/0`, familia `laberinto`) como JSON y devuelve la lista de problemas, vacía si está bien. Cada problema trae un `codigo` estable y un `motivo` en español sencillo que empieza con «Nivel N:» cuando es de un nivel. Incluye todo lo que comprueba el juego (`juego/src/datos/validarLaberinto.js`) y además:
+`pe.kusi.edu.laberinto.ValidadorLaberinto` es código puro (sin IA ni base de datos): recibe el guion (`kusi-paquete/0`, familia `laberinto`) como JSON y devuelve la lista de problemas, vacía si está bien. Cada problema trae un `codigo` estable y un `motivo` en español sencillo que empieza con «Nivel N:» cuando es de un nivel. Incluye todo lo que comprueba el juego (`juego/juegos/laberinto/datos/validarLaberinto.js`) y además:
 
 | Grupo | Códigos |
 | --- | --- |

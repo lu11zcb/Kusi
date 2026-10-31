@@ -6,8 +6,8 @@ import {
   iniciarRecorrido,
   avanzarMovimiento,
   direccionDelDeslizamiento,
-} from '../../src/logica/movimientoLaberinto.js'
-import { posicionEnCasillas } from '../../src/logica/zorrosLaberinto.js'
+} from '../../juegos/laberinto/logica/movimientoLaberinto.js'
+import { posicionEnCasillas } from '../../juegos/laberinto/logica/zorrosLaberinto.js'
 
 const PASILLO = [
   '########',

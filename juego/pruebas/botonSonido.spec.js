@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { BOTON_SONIDO } from '../src/interfaz/BotonSonido.js'
+import { BOTON_SONIDO } from '../kit/reproductor/interfaz/BotonSonido.js'
 import { abrir, estado, servirPaquete, servirPasillo, leerPaquete, puntoEnLienzo, seSuperponen } from './ayudas/laberinto.js'
 
 async function tocarAltavoz(pagina) {

@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { DIRECCIONES_CUY, validarSpriteCuy } from '../src/datos/validarSpriteCuy.js'
+import { DIRECCIONES_CUY, validarSpriteCuy } from '../kit/reproductor/datos/validarSpriteCuy.js'
 
 const leerManifiesto = async () => JSON.parse(await readFile(
-  new URL('../public/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
+  new URL('../kit/recursos/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
 ))
 
 async function encontrarCuy(pagina) {
   await pagina.goto('/')
   await pagina.waitForFunction(() => window.kusi?.listo)
   await pagina.evaluate(async () => {
-    const { CuyAnimado } = await import('/src/dibujos/cuyAnimado.js')
+    const { CuyAnimado } = await import('/kit/reproductor/dibujos/cuyAnimado.js')
     // Se captura el jugador real durante una sola actualización y se restaura
     // enseguida el método, igual que en las pruebas de feliz y asustado.
     window.cuyAnimacionDePrueba = await new Promise((resolver) => {

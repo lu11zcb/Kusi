@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
-const RUTA_PAQUETE = new URL('../public/paquete-laberinto-ejemplo.json', import.meta.url)
+const RUTA_PAQUETE = new URL('../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url)
 const CLAVE_MANO = 'kusi-laberinto-tocar-v1'
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))

@@ -117,7 +117,7 @@ test('Escuchar y Ayuda se pueden tocar sin elegir una dirección', async ({ page
 
 test('un mapa inválido avisa el fallo y permite volver a pedir el paquete corregido', async ({ page: pagina }) => {
   const paquete = JSON.parse(await readFile(
-    new URL('../public/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
+    new URL('../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
   ))
   const paqueteValido = structuredClone(paquete)
   paquete.retos[0].mapa[2] += '#'

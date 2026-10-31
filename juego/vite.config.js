@@ -6,6 +6,9 @@ export default defineConfig({
   // Sin el modo SPA, un dibujo que falta responde 404 en vez de index.html,
   // y el juego dibuja su figura simple.
   appType: 'mpa',
+  // Los dibujos, los sonidos y el guion de ejemplo están en el kit y se sirven
+  // desde la raíz, igual que antes (por ejemplo, dibujos/fresa.png).
+  publicDir: 'kit/recursos',
   server: {
     host: '127.0.0.1',
     // El panel web ya usa el 5173.

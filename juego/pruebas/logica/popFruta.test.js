@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { PopFruta, CANTIDAD_ESTRELLITAS } from '../../src/efectos/PopFruta.js'
+import { PopFruta, CANTIDAD_ESTRELLITAS } from '../../kit/reproductor/efectos/PopFruta.js'
 
 const CASILLA = 60
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { repartirMuros, tituloDeBarra } from '../../src/logica/presentacionLaberinto.js'
+import { repartirMuros, tituloDeBarra } from '../../juegos/laberinto/logica/presentacionLaberinto.js'
 
 test('la barra pide seguir el orden, buscar frutas o buscar verduras según la regla del nivel', () => {
   assert.equal(tituloDeBarra({ tipo: 'orden', secuencia: ['fresa', 'platano'] }), 'Sigue el orden')

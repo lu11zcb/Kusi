@@ -20,7 +20,7 @@ import static pe.kusi.edu.laberinto.CatalogoLaberinto.*;
 // de datos: recibe el guion como JSON y devuelve la lista de problemas (vacía si el
 // guion está bien), cada uno con un código estable y un motivo en español sencillo.
 //
-// Incluye todo lo que comprueba el juego (juego/src/datos/validarLaberinto.js) para
+// Incluye todo lo que comprueba el juego (juego/juegos/laberinto/datos/validarLaberinto.js) para
 // que nunca se contradigan: lo que Spring aprueba el juego lo puede abrir. Además
 // comprueba lo que el juego no mira: caminos, dificultad, reglas y textos.
 @Component

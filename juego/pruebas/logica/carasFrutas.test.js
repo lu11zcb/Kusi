@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { OBJETOS_KIT } from '../../src/dibujos/kitFinal.js'
-import { clavesDelPaquete, pedirDibujos, completarConFiguras } from '../../src/dibujos/dibujos.js'
-import { FrutasVivas } from '../../src/efectos/FrutasVivas.js'
+import { OBJETOS_KIT } from '../../kit/reproductor/dibujos/kitFinal.js'
+import { clavesDelPaquete, pedirDibujos, completarConFiguras } from '../../kit/reproductor/dibujos/dibujos.js'
+import { FrutasVivas } from '../../kit/reproductor/efectos/FrutasVivas.js'
 test('se cargan exactamente los ocho alimentos actuales como imágenes independientes sin cara',()=>{
  assert.deepEqual(OBJETOS_KIT,['fresa','platano','mango','mandarina','pina','zanahoria','papa','choclo'])
  const claves=clavesDelPaquete({retos:[]}),pedidos=[]
@@ -11,7 +11,7 @@ test('se cargan exactamente los ocho alimentos actuales como imágenes independi
  assert.equal(pedidos.length,8)
  for(const [tipo,ruta] of pedidos){
   assert.equal(ruta,'dibujos/'+tipo+'.png');assert.ok(!ruta.includes('-cara'))
-  const p=readFileSync(new URL('../../public/'+ruta,import.meta.url));assert.equal(p.readUInt32BE(16),256);assert.equal(p.readUInt32BE(20),256)
+  const p=readFileSync(new URL('../../kit/recursos/'+ruta,import.meta.url));assert.equal(p.readUInt32BE(16),256);assert.equal(p.readUInt32BE(20),256)
  }
  assert.throws(()=>completarConFiguras({textures:{exists:()=>false}},claves),/Faltan ilustraciones/)
 })
