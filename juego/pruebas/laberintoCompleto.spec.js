@@ -140,11 +140,12 @@ test('la voz dice la consigna al entrar y Escuchar la repite después de una ayu
   expect(await pagina.evaluate(() => window.frasesKusi.every((frase) => frase.idioma.startsWith('es')))).toBe(true)
 })
 
-test('el joystick derecho permanece visible y la mano tutorial aparece una sola vez', async ({ page: pagina }) => {
+test('el joystick izquierdo permanece visible y la mano tutorial aparece una sola vez', async ({ page: pagina }) => {
   await abrirLaberinto(pagina)
   const inicial = await estado(pagina)
   expect(inicial.manoVisible).toBe(true)
-  expect(inicial.joystick.centro.x-inicial.joystick.radio).toBeGreaterThan(inicial.presentacion.mapa.x+inicial.presentacion.mapa.ancho)
+  // Desde el 27 de octubre el joystick está a la izquierda del mapa.
+  expect(inicial.joystick.centro.x).toBeLessThan(inicial.presentacion.mapa.x)
   expect(inicial.joystick.visible).toBe(true)
   await pagina.reload()
   await pagina.waitForFunction(() => window.kusi?.listo)

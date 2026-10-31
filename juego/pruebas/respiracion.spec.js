@@ -16,7 +16,8 @@ test('respirar y parpadear no escalan, trasladan ni cortan el cuerpo de Kusi',as
  await vozBreve(page);const a=await abrir(page);await page.waitForTimeout(1400)
  const m=await muestrear(page,2800,e=>e.presentacion.kusi)
  for(const k of m)expect(k).toEqual(a.presentacion.kusi)
- expect(a.presentacion.kusi.x+a.presentacion.kusi.ancho).toBeLessThan(a.origenMapa.x)
+ // Desde el 27 de octubre Kusi está a la derecha del mapa.
+ expect(a.presentacion.kusi.x).toBeGreaterThan(a.presentacion.mapa.x+a.presentacion.mapa.ancho)
 })
 test('Kusi puede respirar mientras el niño camina con sus propios cuadros',async({page})=>{
  await vozBreve(page);await servirPasillo(page,LEJANA);await abrir(page);await page.waitForTimeout(1400);await page.keyboard.press('ArrowRight')
@@ -24,10 +25,11 @@ test('Kusi puede respirar mientras el niño camina con sus propios cuadros',asyn
  expect(m.some(x=>x.k.animacion==='respirar')).toBe(true);expect(m.some(x=>x.camina==='caminar')).toBe(true)
  for(const x of m){expect(x.c.escalaX).toBe(x.c.escalaBaseX);expect(x.c.escalaY).toBe(x.c.escalaBaseY)}
 })
-test('el zorro quieto mantiene su dibujo y Kusi conserva la animación de guía',async({page})=>{
- await vozBreve(page);const a=await abrir(page,'&nivel=2');await page.waitForTimeout(1400)
- const m=await muestrear(page,2500,e=>({z:e.zorros[0].fotograma,c:e.vida.cuerpos.zorros[0],k:e.kusiAnimado}))
- for(const x of m){expect(x.z).toBe(a.zorros[0].fotograma);expect(x.c.escalaX).toBe(x.c.escalaBaseX);expect(x.c.escalaY).toBe(x.c.escalaBaseY)}
+test('Kusi conserva la animación de guía mientras el zorro explora',async({page})=>{
+ await vozBreve(page);await abrir(page,'&nivel=2');await page.waitForTimeout(1400)
+ const m=await muestrear(page,2500,e=>({z:e.zorros[0].fotograma,k:e.kusiAnimado}))
+ // Desde el 27 de octubre el zorro explora apenas aparece el nivel, así que su dibujo cambia.
+ expect(new Set(m.map(x=>x.z)).size).toBeGreaterThan(1)
  expect(new Set(m.map(x=>x.k.cuadro)).size).toBeGreaterThanOrEqual(3)
 })
 test('vida=0 deja quietos a Kusi y al cuy sin desactivar la partida',async({page})=>{

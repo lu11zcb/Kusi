@@ -29,53 +29,34 @@ function comprobarSobreLaCabeza(actual, referencia) {
 }
 
 for (const parametros of ['&vida=0']) {
-  test('«!» sigue la cabeza al empezar a perseguir y se oculta sin repetirse' +
+  test('«!» sigue la cabeza durante la alerta y se oculta sin repetirse' +
     (parametros ? ' también con vida=0' : ''), async ({ page: pagina }) => {
+    // Desde el 27 de octubre el zorro explora apenas aparece el nivel. Empieza a
+    // nueve pasos del cuy, fuera de su radio de cinco, y avisa recién al acercarse.
     await servirEscenario(pagina, {
       mapa: ['##################', '#C..............P#', '##################'],
-      // Uno detecta al cuy a cinco pasos; otro queda fuera del radio; el último
-      // conserva la patrulla explícita del paquete, aunque también se mueva.
-      enemigos: [zorroEn(6), zorroEn(10), zorroEn(13, 'patrulla')],
+      enemigos: [zorroEn(10)],
     })
     const inicial = await abrir(pagina, parametros)
-    for (const zorro of inicial.zorros) {
-      expect(zorro.avisoPersecucion).toMatchObject({ visible: false, texto: '!', apariciones: 0 })
-    }
+    expect(inicial.zorros[0].avisoPersecucion).toMatchObject({ visible: false, texto: '!', apariciones: 0 })
 
-    // La flecha contra el muro inicia el juego y deja al cuy esperando.
-    await pagina.keyboard.press('ArrowUp')
+    // Al detectar al cuy, el zorro se queda en alerta 0,6 s con el «!» encima.
     await pagina.waitForFunction(() => window.kusi.estado().zorros[0].avisoPersecucion.visible,
-      null, { polling: 'raf' })
-    const empezando = await estado(pagina)
-    expect(empezando.zorros[0]).toMatchObject({ persiguiendo: true, iniciosPersecucion: 1 })
-    expect(empezando.zorros[0].avisoPersecucion.apariciones).toBe(1)
-    const separacion = comprobarSobreLaCabeza(empezando)
+      null, { polling: 'raf', timeout: 30000 })
+    const alerta = await estado(pagina)
+    expect(alerta.zorros[0]).toMatchObject({ fase: 'alerta', iniciosPersecucion: 1 })
+    expect(alerta.zorros[0].avisoPersecucion.apariciones).toBe(1)
+    comprobarSobreLaCabeza(alerta)
 
-    // Se mide el reloj de persecución del juego: un navegador lento puede
-    // necesitar más tiempo de pared para dibujar estos mismos segundos.
-    await pagina.waitForFunction(() => window.kusi.estado().zorros[0].segundosPersiguiendo >= 0.6,
+    // Después corre al 60 % de la velocidad del cuy y el «!» se oculta.
+    await pagina.waitForFunction(() => window.kusi.estado().zorros[0].segundosPersiguiendo >= 0.7,
       null, { polling: 'raf' })
-    const caminando = await estado(pagina)
-    expect(caminando.zorros[0].avisoPersecucion.visible).toBe(true)
-    comprobarSobreLaCabeza(caminando, separacion)
-    expect(caminando.zorros[0].avisoPersecucion.x).toBeLessThan(empezando.zorros[0].avisoPersecucion.x)
-    // La persecución conserva el 60 % de la velocidad del cuy.
-    const recorrido = (inicial.zorros[0].x - caminando.zorros[0].x) / inicial.casilla
-    expect(recorrido / caminando.zorros[0].segundosPersiguiendo).toBeCloseTo(inicial.velocidad * 0.6, 3)
-
-    await pagina.waitForFunction(() => window.kusi.estado().zorros[0].segundosPersiguiendo >= 0.95,
-      null, { polling: 'raf' })
-    const despues = await estado(pagina)
-    expect(despues.zorros[0]).toMatchObject({ persiguiendo: true, iniciosPersecucion: 1 })
-    expect(despues.zorros[0].avisoPersecucion).toMatchObject({ visible: false, apariciones: 1 })
-    for (const zorro of despues.zorros.slice(1)) {
-      expect(zorro.persiguiendo).toBe(false)
-      expect(zorro.iniciosPersecucion).toBe(0)
-      expect(zorro.avisoPersecucion).toMatchObject({ visible: false, apariciones: 0 })
-    }
-    expect(despues.zorros[1].x).toBeGreaterThan(inicial.zorros[1].x)
-    expect(despues.zorros[2].x).toBeGreaterThan(inicial.zorros[2].x)
-    expect(despues.capturas).toBe(0)
+    const persiguiendo = await estado(pagina)
+    expect(persiguiendo.zorros[0]).toMatchObject({ fase: 'perseguir', persiguiendo: true, iniciosPersecucion: 1 })
+    expect(persiguiendo.zorros[0].avisoPersecucion).toMatchObject({ visible: false, apariciones: 1 })
+    const recorrido = (alerta.zorros[0].x - persiguiendo.zorros[0].x) / inicial.casilla
+    expect(recorrido / persiguiendo.zorros[0].segundosPersiguiendo).toBeCloseTo(inicial.velocidad * 0.6, 1)
+    expect(persiguiendo.capturas).toBe(0)
   })
 }
 

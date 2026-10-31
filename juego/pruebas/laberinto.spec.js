@@ -141,8 +141,11 @@ test('un mapa inválido avisa el fallo y permite volver a pedir el paquete corre
 
   // El botón real debe volver a descargar el JSON: reiniciar la escena con
   // el paquete inválido todavía en caché repetiría el mismo fallo para siempre.
+  // Phaser activa los toques de un botón nuevo en el cuadro siguiente al que lo
+  // crea. Se esperan dos cuadros para que el clic no llegue antes y se pierda.
+  await pagina.evaluate(() => new Promise((listo) => requestAnimationFrame(() => requestAnimationFrame(listo))))
   const reintentar = await puntoEnLienzo(pagina, 640, 460)
-  await pagina.mouse.click(reintentar.x, reintentar.y)
+  await pagina.mouse.click(reintentar.x, reintentar.y, { delay: 50 })
   await pagina.waitForFunction(() => window.kusi?.listo && window.kusi.estado().familia === 'laberinto')
   expect(peticiones).toBe(2)
   expect((await estado(pagina)).nivel).toBe(1)

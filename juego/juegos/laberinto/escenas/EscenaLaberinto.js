@@ -395,8 +395,9 @@ export class EscenaLaberinto extends Phaser.Scene {
         aviso.restante = Math.max(0, aviso.restante - segundos)
       }
       aviso.ultimoInicio = zorro.iniciosPersecucion
-      if (this.vida) aviso.restante = zorro.fase === 'alerta' ? zorro.segundosAlerta : 0
-      else if (!zorro.persiguiendo) aviso.restante = 0
+      // El «!» se ve mientras el zorro está en alerta, con o sin vida. Con vida=0
+      // solo se apagan el saltito y el sonido, no el aviso para el niño.
+      aviso.restante = zorro.fase === 'alerta' ? zorro.segundosAlerta : 0
       const salto = this.vida && aviso.restante > 0
         ? Math.sin((0.6 - aviso.restante) / 0.6 * Math.PI) * this.casilla * 0.22 : 0
       const cuerpo = this.dibujosZorros[indice]
