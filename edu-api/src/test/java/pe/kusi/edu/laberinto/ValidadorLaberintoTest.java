@@ -12,7 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 // HU31: casos buenos y malos del validador del guion. El caso bueno es el paquete de
-// ejemplo del juego (juego/public/paquete-laberinto-ejemplo.json); cada caso malo es
+// ejemplo del juego (juego/kit/recursos/paquete-laberinto-ejemplo.json); cada caso malo es
 // ese mismo guion con un solo cambio, así que el código que aparece es el del cambio.
 class ValidadorLaberintoTest {
     private static final ObjectMapper JSON = new ObjectMapper();

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { crearPartidaLaberinto, avisarPartida } from '../../src/logica/partidaLaberinto.js'
-import { avisos } from '../../src/logica/avisos.js'
+import { crearPartidaLaberinto, avisarPartida } from '../../juegos/laberinto/logica/partidaLaberinto.js'
+import { avisos } from '../../kit/reproductor/logica/avisos.js'
 
 // Cada prueba conserva los avisos anteriores y observa solamente los suyos.
 // El mock de consola pertenece al contexto de la prueba y Node lo restaura al

@@ -1,0 +1,166 @@
+/* Lenguaje visual común: el Inicio de administración es la referencia.
+   Los controles de acceso y la app infantil conservan sus propios estilos.
+   Las medidas y distribuciones de cada pantalla siguen en sus módulos. */
+:is(.panel-administracion, .panel-docente) {
+  --doc-papel: var(--crema-2);
+  --doc-linea: var(--borde);
+  --doc-suave: var(--texto-suave);
+  --panel-relieve: 0 5px 0 var(--borde);
+  --panel-gradiente: linear-gradient(180deg, #f9bd47, #df851c);
+}
+:is(.panel-administracion, .panel-docente) .tablero-lateral { background: #fffbf5; }
+:is(.panel-administracion, .panel-docente) .tarjeta-promo { background: linear-gradient(160deg, #fff4dc, #fde2b0); border: 2px solid #f4d08f; }
+:is(.panel-administracion, .panel-docente) .icono,
+:is(.panel-administracion, .panel-docente) .doc-icono { flex: none; vertical-align: middle; }
+
+/* Un mismo botón dorado con relieve para las acciones principales. */
+.panel-administracion .admin-superficie button,
+.panel-docente .doc-pagina button {
+  font-family: var(--letra); font-size: 15px; font-weight: 900;
+  min-height: 46px; padding: .7rem 1.25rem; border: 0; border-radius: 999px;
+  color: #fff; text-shadow: 0 1px 0 rgba(150, 70, 10, .45);
+  background: linear-gradient(180deg, #f9bd47 0%, #efa12d 48%, var(--dorado-2) 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 236, 170, .75), var(--sombra-boton);
+  transition: transform .12s, filter .2s, box-shadow .12s;
+}
+.panel-administracion .admin-superficie button:hover:not(:disabled),
+.panel-docente .doc-pagina button:hover:not(:disabled) { filter: brightness(1.04); }
+.panel-administracion .admin-superficie button:active:not(:disabled),
+.panel-docente .doc-pagina button:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 2px 0 rgba(255, 236, 170, .75), 0 2px 0 #b66619; }
+.panel-administracion .admin-superficie button.secundario,
+.panel-docente .doc-pagina button.secundario {
+  color: var(--vino); text-shadow: none; background: var(--crema-2);
+  border: 2px solid var(--borde); box-shadow: 0 3px 0 var(--borde);
+}
+.panel-administracion .admin-superficie button.secundario:hover:not(:disabled),
+.panel-docente .doc-pagina button.secundario:hover:not(:disabled) { background: #fff7e8; border-color: var(--dorado); filter: none; }
+.panel-administracion .admin-superficie button.secundario:active:not(:disabled),
+.panel-docente .doc-pagina button.secundario:active:not(:disabled) { box-shadow: 0 1px 0 var(--borde); }
+.panel-docente .doc-pagina button.doc-texto-boton { padding: .45rem .9rem; min-height: 40px; text-decoration: none; }
+.panel-docente .doc-pagina button.doc-boton-curso { width: 100%; justify-content: center; border-radius: 999px; }
+.panel-docente .doc-pagina button.doc-eliminar { color: #982f1e; }
+.panel-docente .doc-filtros-estado button[aria-pressed='true'] { background: #fde7b8; border-color: var(--dorado); box-shadow: 0 3px 0 #e4bd7c; }
+.panel-administracion .admin-superficie button:disabled,
+.panel-docente .doc-pagina button:disabled { cursor: not-allowed; }
+
+/* Las tarjetas grandes, las fichas y los formularios comparten papel y borde. */
+.panel-administracion .admin-superficie,
+.panel-docente .doc-formulario, .panel-docente .doc-revision-lectura,
+.panel-docente .doc-juego-listo, .panel-docente .doc-chat,
+.panel-docente .doc-listado, .panel-docente .doc-idea-resumen {
+  background: var(--crema-2); border: 2px solid var(--borde);
+  border-radius: 26px; box-shadow: var(--sombra);
+}
+.panel-docente .doc-cabecera { margin: 0 0 26px; }
+.panel-docente .doc-pagina { max-width: none; margin: 0; }
+.panel-docente .doc-cabecera h1 { font-size: clamp(1.9rem, 3vw, 2.5rem); }
+.panel-docente .doc-cabecera p, .panel-administracion .admin-encabezado p { font-weight: 700; }
+.panel-administracion .admin-datos, .panel-administracion .admin-filtros,
+.panel-administracion .admin-secciones form { background: var(--crema-3); border: 2px solid var(--borde); border-radius: 22px; }
+.panel-docente .doc-curso, .panel-administracion .admin-curso {
+  background: var(--crema-2); border: 2px solid var(--borde);
+  border-radius: 22px; box-shadow: var(--panel-relieve);
+}
+.panel-administracion .admin-curso h2 { color: var(--vino); }
+.panel-docente .doc-propuestas > li { border: 2px solid var(--borde); border-radius: 24px; box-shadow: var(--panel-relieve); }
+.panel-docente .doc-propuestas > li + li { border-top: 2px solid var(--borde); }
+.panel-docente .doc-juego-acciones { border-top: 2px solid var(--borde); }
+.panel-administracion .admin-personas { border: 2px solid var(--borde); border-radius: 22px; box-shadow: var(--panel-relieve); }
+.panel-administracion .admin-personas li { background: var(--crema-2); border-bottom: 2px solid var(--borde); }
+.panel-administracion .admin-personas li:last-child { border-bottom: 0; }
+.panel-administracion .admin-grupos li,
+.panel-administracion .admin-relacion form,
+.panel-administracion .admin-relacion .lista-gestion li { background: var(--crema-2); border: 2px solid var(--borde); border-radius: 22px; box-shadow: 0 3px 0 var(--borde); }
+.panel-docente .doc-mensaje, .panel-docente .doc-espera { border: 2px solid var(--borde); border-radius: 24px; background: var(--crema-2); box-shadow: 0 4px 0 var(--borde); }
+.panel-docente .doc-mensaje-error { border-color: #efc0ae; background: #fff3ed; box-shadow: 0 4px 0 #efc0ae; }
+.panel-docente .doc-siguiente { border: 2px solid #f4d08f; border-radius: 24px; background: linear-gradient(160deg, #fff4dc, #fde2b0); }
+.panel-docente .doc-confirmacion, .panel-administracion .admin-exito { border: 2px solid #b7e2c6; background: #e6f6ec; border-radius: 20px; }
+.panel-docente .doc-burbuja { border: 2px solid var(--borde); border-radius: 20px; }
+.panel-docente .doc-burbuja-profe { border-color: #f4d08f; background: #fff0d1; }
+.panel-docente .doc-estado, .panel-administracion .admin-estado, .panel-administracion .admin-etiqueta { border-radius: 999px; }
+.panel-docente .doc-tabla thead th { background: var(--crema-3); }
+
+/* Iconos blancos de línea dentro de bloques con los colores del Inicio. */
+:is(.panel-administracion, .panel-docente) .icono-grande { display: inline-grid; place-items: center; width: 52px; height: 52px; flex: none; border-radius: 16px; color: #fff; }
+:is(.panel-administracion, .panel-docente) .icono-grande .icono,
+:is(.panel-administracion, .panel-docente) .icono-grande .doc-icono { width: 27px; height: 27px; }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-cielo, [data-tono='cielo']) { --panel-gradiente: linear-gradient(180deg, #6db7ea, #3a86c4); }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-terracota, [data-tono='terracota']) { --panel-gradiente: linear-gradient(180deg, #e2683d, #b9381a); }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-dorado, [data-tono='dorado']) { --panel-gradiente: linear-gradient(180deg, #f9bd47, #df851c); }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-verde, [data-tono='verde']) { --panel-gradiente: linear-gradient(180deg, #5cc58b, #2f9d62); }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-rosa, [data-tono='rosa']) { --panel-gradiente: linear-gradient(180deg, #f08aa8, #d0577c); }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-morado, [data-tono='morado']) { --panel-gradiente: linear-gradient(180deg, #a57bd8, #7448b0); }
+:is(.panel-administracion, .panel-docente) :is(.doc-tono-vino, [data-tono='vino']) { --panel-gradiente: linear-gradient(180deg, #8d3a2c, #5a1c15); }
+.panel-docente .doc-icono-curso { width: 52px; height: 52px; border-radius: 16px; background: var(--panel-gradiente); color: #fff; box-shadow: inset 0 1px 0 #ffffff55; }
+.panel-docente .doc-icono-curso .doc-icono { width: 28px; height: 28px; }
+.panel-administracion .admin-curso > .doc-icono { width: 60px; height: 60px; padding: 14px; border-radius: 18px; color: #fff; background: var(--panel-gradiente); }
+.panel-administracion .admin-ilustracion-icono { color: #fff; background: var(--panel-gradiente); transform: none; box-shadow: 0 5px 0 #e8c88c; }
+.panel-administracion .admin-grupos .doc-icono { width: 52px; height: 52px; padding: 12px; color: #fff; border-radius: 16px; background: linear-gradient(180deg, #5cc58b, #2f9d62); }
+.panel-administracion .admin-superficie .admin-rol { background: var(--crema-2); border: 2px solid var(--borde); border-radius: 22px; color: var(--vino); text-shadow: none; box-shadow: var(--panel-relieve); }
+.panel-administracion .admin-superficie .admin-rol:hover:not(:disabled) { border-color: var(--dorado); filter: none; }
+.panel-administracion .admin-superficie .admin-rol.elegido { border-color: var(--dorado); background: #fff3d6; box-shadow: 0 5px 0 #e4bd7c; }
+.panel-administracion .admin-rol .doc-icono { width: 56px; height: 56px; padding: 12px; color: #fff; border-radius: 16px; background: var(--panel-gradiente); }
+.panel-administracion .admin-rol[data-rol='estudiante'] { --panel-gradiente: linear-gradient(180deg, #e2683d, #b9381a); }
+.panel-administracion .admin-rol[data-rol='docente'] { --panel-gradiente: linear-gradient(180deg, #5cc58b, #2f9d62); }
+.panel-administracion .admin-rol[data-rol='administrador'] { --panel-gradiente: linear-gradient(180deg, #a57bd8, #7448b0); }
+.panel-administracion .admin-avatar, .panel-docente .doc-avatar { background: linear-gradient(180deg, #e2683d, #b9381a); color: #fff; }
+.panel-administracion .admin-avatar.docente { background: linear-gradient(180deg, #5cc58b, #2f9d62); color: #fff; }
+.panel-docente .doc-mensaje > .doc-icono { width: 38px; height: 38px; padding: 8px; color: #fff; border-radius: 12px; background: var(--panel-gradiente); }
+.panel-docente .doc-mensaje-error > .doc-icono { background: linear-gradient(180deg, #e2683d, #b9381a); }
+.panel-docente .doc-parte dt .doc-icono { width: 34px; height: 34px; padding: 7px; border-radius: 11px; color: #fff; background: linear-gradient(180deg, #f9bd47, #df851c); }
+
+/* Las tarjetas de Inicio son controles especiales, no botones dorados. */
+.panel-docente .doc-pagina button.estadistica,
+.panel-docente .doc-pagina button.mosaico { color: var(--texto); text-shadow: none; background: var(--crema-2); border: 2px solid var(--borde); border-radius: 22px; text-align: left; justify-content: flex-start; }
+.panel-docente .doc-pagina button.estadistica { padding: 1rem; box-shadow: var(--sombra); min-height: 0; }
+.panel-docente .doc-pagina button.mosaico { padding: .9rem 1rem; min-height: 92px; box-shadow: 0 5px 0 var(--borde); }
+.panel-docente .doc-pagina button.estadistica:hover:not(:disabled),
+.panel-docente .doc-pagina button.mosaico:hover:not(:disabled) { border-color: var(--dorado); filter: none; transform: translateY(-2px); }
+.panel-docente .doc-pagina button.estadistica:active:not(:disabled),
+.panel-docente .doc-pagina button.mosaico:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 var(--borde); }
+.panel-docente .doc-pagina button.boton-icono { width: 40px; min-height: 40px; padding: 0; border: 0; background: transparent; color: var(--vino); text-shadow: none; box-shadow: none; }
+.panel-docente .doc-pagina button.boton-icono:hover:not(:disabled) { background: var(--crema-3); }
+.panel-docente .doc-inicio .hero h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); }
+:is(.panel-administracion, .panel-docente) .hero { min-height: 280px; }
+:is(.panel-administracion, .panel-docente) .hero-imagen { background-position: center; min-height: 280px; }
+:is(.panel-administracion, .panel-docente) .tarjeta-premio > .icono-grande { margin-bottom: 14px; }
+:is(.panel-administracion, .panel-docente) .primeros-pasos-descripcion { font-size: 14px; margin: 0 0 18px; }
+:is(.panel-administracion, .panel-docente) .primeros-pasos .puesto .icono { width: 19px; height: 19px; }
+.panel-docente .doc-inicio .contenido-con-lateral { margin-top: 22px; }
+
+/* Los formularios también mantienen el borde y foco del diseño de referencia. */
+.panel-administracion .admin-superficie :is(input, select, textarea),
+.panel-docente .doc-pagina :is(input, select, textarea) { border: 2px solid var(--borde); border-radius: 16px; background: var(--crema-2); font-family: var(--letra); font-size: 16px; font-weight: 700; min-height: 50px; }
+.panel-administracion .admin-superficie :is(input, select, textarea):focus,
+.panel-docente .doc-pagina :is(input, select, textarea):focus { border-color: var(--dorado); outline: none; box-shadow: 0 0 0 4px rgba(248, 183, 62, .28); }
+.panel-administracion .admin-superficie :is(input, select, textarea)[aria-invalid='true'],
+.panel-docente .doc-pagina :is(input, select, textarea)[aria-invalid='true'] { border-color: var(--error); }
+.panel-administracion .admin-superficie input:is([type='radio'], [type='checkbox']),
+.panel-docente .doc-pagina input:is([type='radio'], [type='checkbox']) { width: 20px; height: 20px; min-height: 20px; box-shadow: none; accent-color: var(--rojo); }
+@media (max-width: 860px) {
+  :is(.panel-administracion, .panel-docente) .hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  :is(.panel-administracion, .panel-docente) .hero-texto { padding: 22px; }
+  :is(.panel-administracion, .panel-docente) .hero-imagen { min-height: 250px; mask-image: linear-gradient(90deg, transparent 0, #000 18%); }
+}
+@media (max-width: 600px) {
+  :is(.panel-administracion, .panel-docente) .hero { grid-template-columns: minmax(0, 1fr); }
+  :is(.panel-administracion, .panel-docente) .hero-imagen { min-height: 230px; background-position: center 40%; mask-image: linear-gradient(180deg, transparent 0, #000 18%); }
+  :is(.panel-administracion, .panel-docente) .estadistica { align-items: flex-start; }
+  .panel-docente .doc-pagina button.estadistica { gap: 12px; }
+  .panel-administracion .admin-superficie .admin-rol { grid-template-columns: 56px minmax(0, 1fr); }
+  .panel-administracion .admin-ilustracion-icono { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-administracion .admin-superficie button,
+  .panel-docente .doc-pagina button { transition: none; }
+  .panel-administracion .admin-superficie button:active:not(:disabled),
+  .panel-docente .doc-pagina button:active:not(:disabled) { transform: none; }
+}
+.panel-docente .doc-cabecera-titulo { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.panel-docente .doc-cabecera-titulo > .icono-grande { width: 64px; height: 64px; border-radius: 20px; }
+.panel-docente .doc-cabecera-titulo > .icono-grande .doc-icono { width: 32px; height: 32px; }
+@media (max-width: 600px) {
+  .panel-docente .doc-cabecera-titulo { align-items: flex-start; gap: 12px; }
+  .panel-docente .doc-cabecera-titulo > .icono-grande { width: 48px; height: 48px; border-radius: 15px; }
+  .panel-docente .doc-cabecera-titulo > .icono-grande .doc-icono { width: 26px; height: 26px; }
+}

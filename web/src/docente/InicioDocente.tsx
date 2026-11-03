@@ -1,156 +1,68 @@
 import { useEffect, useState } from 'react'
-import heroDocente from '../assets/kusi/hero-docente.webp'
+import imagenDocente from '../assets/kusi/hero-docente-v2.webp'
+import { primerNombre, saludo } from '../componentes/apariencia'
 import { Icono } from '../componentes/Icono'
-import { aparienciaCurso, colorPara, primerNombre, saludo } from '../componentes/apariencia'
+import { PrimerosPasos } from '../componentes/PrimerosPasos'
 import { misEstudiantesDocente } from '../servicios/educacion'
 import type { VinculoEstudiante } from '../servicios/educacion'
-import { listarSolicitudes } from '../servicios/propuestas'
-import type { ContextosPropuestas, SolicitudPropuesta } from '../servicios/propuestas'
+import type { ContextosPropuestas } from '../servicios/propuestas'
+import { cargarTrabajos, estadoTrabajo } from './trabajosDocente'
+import type { TrabajoDocente } from './trabajosDocente'
+import { IconoDocente } from './IconoDocente'
+import { CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 
-type Propiedades = {
-  nombre: string
-  contextos: ContextosPropuestas | null
-  ir: (seccion: string, curso?: string) => void
-}
-
-// Avance de una propuesta para la barra de progreso de "Continúa donde te quedaste".
-function avance(solicitud: SolicitudPropuesta) {
-  const revision = solicitud.propuesta?.estado_revision
-  if (revision === 'aprobada') return { porcentaje: 100, texto: 'Aprobada: lista para el juego' }
-  if (revision === 'rechazada') return { porcentaje: 60, texto: 'Rechazada: pide otra alternativa' }
-  if (solicitud.estado === 'generada') return { porcentaje: 75, texto: 'Lista para que la revises' }
-  if (solicitud.estado === 'generando') return { porcentaje: 50, texto: 'La IA la está preparando' }
-  if (solicitud.estado === 'fallida') return { porcentaje: 35, texto: 'No se pudo generar: reinténtala' }
-  return { porcentaje: 25, texto: 'Guardada: esperando a la IA' }
-}
-
-export function InicioDocente({ nombre, contextos, ir }: Propiedades) {
+type Propiedades = { nombre: string; contextos: ContextosPropuestas | null; ir: (seccion: string, curso?: string, juego?: string) => void; errorCursos?: string; recargarCursos?: () => void }
+export function InicioDocente({ nombre, contextos, ir, errorCursos = '', recargarCursos }: Propiedades) {
   const [estudiantes, establecerEstudiantes] = useState<VinculoEstudiante[] | null>(null)
-  const [solicitudes, establecerSolicitudes] = useState<SolicitudPropuesta[] | null>(null)
-
+  const [trabajos, establecerTrabajos] = useState<TrabajoDocente[] | null>(null)
+  const [errorEstudiantes, establecerErrorEstudiantes] = useState('')
+  const [errorJuegos, establecerErrorJuegos] = useState('')
+  const error = errorEstudiantes || errorJuegos || errorCursos
+  const [recarga, establecerRecarga] = useState(0)
   useEffect(() => {
     let vigente = true
-    // Cada dato se muestra en cuanto llega; un fallo no oculta el resto del inicio.
-    misEstudiantesDocente().then((r) => { if (vigente) establecerEstudiantes(r.estudiantes) }).catch(() => { if (vigente) establecerEstudiantes([]) })
-    listarSolicitudes().then((r) => { if (vigente) establecerSolicitudes(r) }).catch(() => { if (vigente) establecerSolicitudes([]) })
+    misEstudiantesDocente().then((r) => { if (vigente) { establecerEstudiantes(r.estudiantes); establecerErrorEstudiantes('') } }).catch(() => { if (vigente) establecerErrorEstudiantes('No pudimos actualizar todos tus datos. Intenta otra vez.') })
+    cargarTrabajos().then((r) => { if (vigente) { establecerTrabajos(r); establecerErrorJuegos('') } }).catch(() => { if (vigente) establecerErrorJuegos('No pudimos actualizar tus juegos. Intenta otra vez.') })
     return () => { vigente = false }
-  }, [])
-
+  }, [recarga])
   const cursos = contextos?.contextos ?? []
-  const nombreCurso = (id: string) => cursos.find((c) => c.curso_id === id)?.curso_nombre ?? 'Curso'
-  const totalEstudiantes = new Set((estudiantes ?? []).map((e) => e.estudiante_id)).size
-  const porRevisar = (solicitudes ?? []).filter((s) => s.propuesta?.estado_revision === 'pendiente').length
-  const aprobadas = (solicitudes ?? []).filter((s) => s.propuesta?.estado_revision === 'aprobada').length
-  const total = solicitudes?.length ?? 0
-  const ultima = solicitudes?.[0]
-
-  // Estudiantes por sección, de la más numerosa a la menos.
-  const porSeccion = new Map<string, number>()
-  for (const e of estudiantes ?? []) porSeccion.set(e.seccion.nombre, (porSeccion.get(e.seccion.nombre) ?? 0) + 1)
-  const secciones = [...porSeccion.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
-
-  const radio = 46
-  const circunferencia = 2 * Math.PI * radio
-  const proporcion = total ? aprobadas / total : 0
-
-  return <>
-    <section className="hero" aria-labelledby="saludo-docente">
-      <div className="hero-texto">
-        <h1 id="saludo-docente">¡{saludo()},<br /><span>profe {primerNombre(nombre)}!</span> 👋</h1>
-        <p>Un juego más cerca de que tus estudiantes aprendan jugando.</p>
-        <button type="button" onClick={() => ir('solicitar')}>Crear propuesta <Icono nombre="flecha" /></button>
-      </div>
-      <div className="hero-imagen" style={{ backgroundImage: 'url(' + heroDocente + ')' }} role="img" aria-label="Kusi, el cuy, saludando desde su escritorio" />
-    </section>
-
+  const nombreCurso = (id: string) => cursos.find((c) => c.curso_id === id)?.curso_nombre ?? 'Tu clase'
+  const ultima = trabajos?.[0]
+  const cantidades = (clave: string) => trabajos ? trabajos.filter((item) => estadoTrabajo(item).clave === clave).length : '…'
+  const secciones = [...new Map(cursos.flatMap((curso) => curso.seccion_id ? [[curso.seccion_id, curso.seccion_nombre] as const] : [])).entries()]
+  const cantidadSeccion = (id: string) => {
+    if (!estudiantes) return '…'
+    const cantidad = new Set(estudiantes.filter((estudiante) => estudiante.seccion.id === id).map((estudiante) => estudiante.estudiante_id)).size
+    return cantidad + (cantidad === 1 ? ' estudiante' : ' estudiantes')
+  }
+  const pasos = [
+    { texto: 'Crear tu primera idea', hecho: !!trabajos?.length, destino: 'solicitar' },
+    { texto: 'Preparar un juego', hecho: !!trabajos?.some((trabajo) => trabajo.preparadoAlgunaVez), destino: 'propuestas' },
+    { texto: 'Enviar a tu clase', hecho: !!trabajos?.some((trabajo) => trabajo.enviadoAlgunaVez), destino: 'propuestas' },
+  ]
+  return <section className="doc-pagina doc-inicio" aria-label="Inicio del docente">
+    <section className="hero paisaje" aria-labelledby="saludo-docente"><div className="hero-texto"><h1 id="saludo-docente">¡{saludo()},<br /><span>profe {primerNombre(nombre)}!</span></h1><p>Prepara un juego para lo que tu clase necesita aprender.</p><button type="button" onClick={() => ir('solicitar')}>Crear propuesta<Icono nombre="flecha" /></button></div><div className="hero-imagen hero-docente" style={{ backgroundImage: 'url(' + imagenDocente + ')' }} role="img" aria-label="Kusi prepara una actividad de patrones con tarjetas de frutas en el aula" /></section>
+    {error && <MensajeDocente titulo="Vamos a actualizar tu inicio"><p>{error}</p><button type="button" className="secundario" onClick={() => { establecerRecarga((n) => n + 1); recargarCursos?.() }}>Volver a cargar</button></MensajeDocente>}
     <div className="estadisticas">
-      <button type="button" className="estadistica" onClick={() => ir('cursos')}>
-        <span className="icono-grande c-cielo"><Icono nombre="libro" /></span>
-        <span><strong>{contextos ? cursos.length : '…'}</strong><small>Cursos asignados</small></span>
-      </button>
-      <button type="button" className="estadistica" onClick={() => ir('estudiantes')}>
-        <span className="icono-grande c-verde"><Icono nombre="estudiantes" /></span>
-        <span><strong>{estudiantes ? totalEstudiantes : '…'}</strong><small>Estudiantes</small></span>
-      </button>
-      <button type="button" className="estadistica" onClick={() => ir('propuestas')}>
-        <span className="icono-grande c-dorado"><Icono nombre="chispa" /></span>
-        <span><strong>{solicitudes ? porRevisar : '…'}</strong><small>Por revisar</small></span>
-      </button>
-      <button type="button" className="estadistica" onClick={() => ir('propuestas')}>
-        <span className="icono-grande c-rojo"><Icono nombre="carpeta" /></span>
-        <span><strong>{solicitudes ? aprobadas : '…'}</strong><small>Aprobadas</small></span>
-      </button>
+      <button className="estadistica" type="button" onClick={() => ir('cursos')}><span className="icono-grande c-cielo"><Icono nombre="libro" /></span><span><strong>{contextos ? new Set(cursos.map((c) => c.curso_id)).size : '…'}</strong><small>Mis cursos</small></span></button>
+      <button className="estadistica" type="button" onClick={() => ir('estudiantes')}><span className="icono-grande c-rojo"><Icono nombre="usuarios" /></span><span><strong>{estudiantes ? new Set(estudiantes.map((e) => e.estudiante_id)).size : '…'}</strong><small>Estudiantes</small></span></button>
+      <button className="estadistica" type="button" onClick={() => ir('propuestas')}><span className="icono-grande c-morado"><Icono nombre="varita" /></span><span><strong>{cantidades('probar')}</strong><small>Juegos para probar</small></span></button>
+      <button className="estadistica" type="button" onClick={() => ir('propuestas')}><span className="icono-grande c-verde"><Icono nombre="pizarra" /></span><span><strong>{cantidades('enviado')}</strong><small>Enviados a mi clase</small></span></button>
     </div>
-
-    <div className="contenido-con-lateral">
-      <div>
-        <div className="encabezado-seccion"><h2>Continúa donde te quedaste</h2>
-          <button type="button" className="secundario" onClick={() => ir('propuestas')}>Ver todas</button></div>
-        <div className="tarjeta">
-          {solicitudes === null ? <p role="status">Cargando tus propuestas…</p> : ultima ? (() => {
-            const curso = aparienciaCurso(nombreCurso(ultima.curso_id))
-            const estado = avance(ultima)
-            return <div className="continuar">
-              <span className={'portada ' + curso.color} aria-hidden="true">{curso.emoji}</span>
-              <div className="datos">
-                <strong>{ultima.tema}</strong>
-                <small>{nombreCurso(ultima.curso_id)} · {estado.texto}</small>
-                <div className="barra-progreso" role="progressbar" aria-valuenow={estado.porcentaje} aria-valuemin={0} aria-valuemax={100} aria-label="Avance de la propuesta"><span style={{ width: estado.porcentaje + '%' }} /></div>
-              </div>
-              <button type="button" onClick={() => ir('propuestas')}>Revisar <Icono nombre="flecha" /></button>
-            </div>
-          })() : <div className="continuar">
-            <span className="portada c-dorado" aria-hidden="true">✨</span>
-            <div className="datos"><strong>Aún no tienes propuestas</strong><small>Elige un curso y un tema: Kusi te ayuda a crear el juego.</small></div>
-            <button type="button" onClick={() => ir('solicitar')}>Crear la primera <Icono nombre="flecha" /></button>
-          </div>}
-        </div>
-
-        <div className="encabezado-seccion"><h2>Mis cursos</h2>
-          <button type="button" className="secundario" onClick={() => ir('cursos')}>Ver todos</button></div>
-        {contextos === null ? <p role="status">Cargando tus cursos…</p>
-          : cursos.length === 0 ? <p className="tarjeta">Aún no tienes cursos asignados. El administrador te los asignará.</p>
-          : <div className="mosaicos">{cursos.map((c) => {
-            const apariencia = aparienciaCurso(c.curso_nombre)
-            return <button key={c.curso_id + '/' + (c.seccion_id ?? '')} type="button" className="mosaico"
-              onClick={() => ir('solicitar', c.curso_id + '/' + (c.seccion_id ?? ''))}>
-              <span className={'icono-grande ' + apariencia.color} aria-hidden="true">{apariencia.emoji}</span>
-              <span><strong>{c.curso_nombre}</strong><small>{c.seccion_nombre ? 'Sección ' + c.seccion_nombre : 'Primero de primaria'}</small></span>
-            </button>
-          })}</div>}
+    <div className="contenido-con-lateral"><div>
+      <div className="encabezado-seccion"><h2>Continúa con tu juego</h2><button type="button" className="secundario" onClick={() => ir('propuestas')}>Mis juegos<Icono nombre="flecha" /></button></div>
+      {trabajos === null ? <CargandoDocente texto="Buscando dónde te quedaste…" /> : ultima ? <article className="tarjeta continuar"><IconoCurso nombre={nombreCurso(ultima.solicitud.curso_id)} /><div className="datos"><strong>{ultima.solicitud.tema}</strong><small>{nombreCurso(ultima.solicitud.curso_id)} · {estadoTrabajo(ultima).etiqueta}</small></div><button type="button" onClick={() => ir('propuestas', '', ultima.solicitud.id_solicitud)}>{estadoTrabajo(ultima).accion}<Icono nombre="flecha" /></button></article>
+        : <MensajeDocente titulo="Tu primer juego empieza aquí"><p>Cuéntale a Kusi qué quieres trabajar con tu clase.</p><button type="button" onClick={() => ir('solicitar')}>Preparar mi primera idea</button></MensajeDocente>}
+      <div className="encabezado-seccion"><h2>Acciones rápidas</h2></div><div className="mosaicos">
+        <button className="mosaico" type="button" onClick={() => ir('solicitar')}><span className="icono-grande c-dorado"><Icono nombre="varita" /></span><span><strong>Crear propuesta</strong><small>Una idea para tu clase</small></span></button>
+        <button className="mosaico" type="button" onClick={() => ir('propuestas')}><span className="icono-grande c-morado"><Icono nombre="carpeta" /></span><span><strong>Mis juegos</strong><small>Revisa, prueba y comparte</small></span></button>
+        <button className="mosaico" type="button" onClick={() => ir('estudiantes')}><span className="icono-grande c-rojo"><Icono nombre="usuarios" /></span><span><strong>Mis estudiantes</strong><small>Encuentra a tu grupo</small></span></button>
       </div>
-
-      <aside className="lateral-derecho" aria-label="Resumen">
-        <div className="tarjeta">
-          <h2>Tu meta de propuestas</h2>
-          <div className="anillo">
-            <svg viewBox="0 0 120 120" role="img" aria-label={aprobadas + ' de ' + total + ' propuestas aprobadas'}>
-              <circle cx="60" cy="60" r={radio} fill="none" stroke="var(--crema-3)" strokeWidth="12" />
-              <circle cx="60" cy="60" r={radio} fill="none" stroke="var(--dorado)" strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={circunferencia} strokeDashoffset={circunferencia * (1 - proporcion)} transform="rotate(-90 60 60)" />
-              <text x="60" y="58" textAnchor="middle" fontFamily="Fredoka" fontSize="24" fill="var(--vino)">{aprobadas}/{total}</text>
-              <text x="60" y="78" textAnchor="middle" fontSize="11" fontWeight="800" fill="var(--texto-suave)">aprobadas</text>
-            </svg>
-            <p>{total === 0 ? 'Crea tu primera propuesta y apruébala para convertirla en juego.' : aprobadas === total ? '¡Excelente! Revisaste todas tus propuestas.' : '¡Vas muy bien! ' + (total - aprobadas === 1 ? 'Te falta 1 por aprobar.' : 'Te faltan ' + (total - aprobadas) + ' por aprobar.')}</p>
-          </div>
-        </div>
-
-        <div className="tarjeta">
-          <h2>Mis secciones</h2>
-          {estudiantes === null ? <p role="status">Cargando…</p> : secciones.length === 0 ? <p>Aún no hay estudiantes vinculados a tus secciones.</p>
-            : <ol className="lista-mini">{secciones.map(([seccion, cantidad], indice) => <li key={seccion}>
-              <span className={'puesto ' + colorPara(seccion)} aria-hidden="true">{indice + 1}</span>
-              <span className="texto">Sección {seccion}<small>{cantidad} {cantidad === 1 ? 'estudiante' : 'estudiantes'}</small></span>
-            </li>)}</ol>}
-        </div>
-
-        <div className="tarjeta tarjeta-premio">
-          <span className="emoji" aria-hidden="true">🎁</span>
-          <strong>¡Pronto, tus juegos!</strong>
-          <p>Cada propuesta aprobada se convertirá en un juego para tus estudiantes.</p>
-          <div className="barra-progreso" aria-hidden="true"><span style={{ width: (total ? Math.round(proporcion * 100) : 0) + '%' }} /></div>
-        </div>
-      </aside>
-    </div>
-  </>
+      <div className="encabezado-seccion"><h2>Mis cursos</h2><button type="button" className="secundario" onClick={() => ir('cursos')}>Ver todos<Icono nombre="flecha" /></button></div>
+      {!contextos ? <CargandoDocente texto="Buscando tus cursos…" /> : !cursos.length ? <MensajeDocente titulo="Tus cursos aparecerán aquí"><p>El administrador te ayudará a vincular tu cuenta con tu clase.</p></MensajeDocente> : <div className="mosaicos">{cursos.map((c) => <button className="mosaico" key={c.curso_id + '/' + (c.seccion_id ?? '')} type="button" onClick={() => ir('solicitar', c.curso_id + '/' + (c.seccion_id ?? ''))}><IconoCurso nombre={c.curso_nombre} /><span><strong>{c.curso_nombre}</strong><small>{c.seccion_nombre ? 'Sección ' + c.seccion_nombre : 'Primero de primaria'}</small></span></button>)}</div>}
+    </div><aside className="lateral-derecho" aria-label="Tu clase y primeros pasos">
+      <PrimerosPasos pasos={pasos} alElegir={(destino) => ir(destino)} descripcion="Tres pasos para compartir tu primer juego." cargando={trabajos === null || trabajos.some((trabajo) => trabajo.sinConfirmar)} />
+      <section className="tarjeta"><h2>Mis secciones</h2>{!secciones.length ? <p>Tus secciones aparecerán aquí.</p> : <ul className="lista-mini">{secciones.map(([id, nombreSeccion]) => <li key={id}><span className="puesto c-verde"><IconoDocente nombre="secciones" /></span><span className="texto">{nombreSeccion}<small>{cantidadSeccion(id)}</small></span></li>)}</ul>}</section>
+    </aside></div>
+  </section>
 }

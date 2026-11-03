@@ -1,10 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { crearRegla, comerEnCasilla } from '../../src/logica/reglasLaberinto.js'
+import { crearRegla, comerEnCasilla } from '../../juegos/laberinto/logica/reglasLaberinto.js'
 
 const paquete = JSON.parse(readFileSync(
-  new URL('../../public/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
+  new URL('../../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
 ))
 
 test('cada partida conserva objetos propios sin modificar el paquete', () => {

@@ -7,6 +7,7 @@ import { PantallaCuarto } from './componentes/PantallaCuarto'
 import { obtenerSesion, salir } from './servicios/acceso'
 import type { Cuenta } from './servicios/acceso'
 import './App.css'
+import './componentes/paneles.css'
 
 // El login con Rive se descarga solo cuando hace falta; los paneles no lo cargan.
 const LoginCuy = lazy(() => import('./acceso/LoginCuy').then((modulo) => ({ default: modulo.LoginCuy })))

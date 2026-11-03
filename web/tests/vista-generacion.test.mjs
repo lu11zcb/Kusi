@@ -6,7 +6,7 @@ import { cargarModulo } from './cargar-modulo.mjs'
 import { etapa, generacion, instante, juegoListo, paquete } from './fixtures-generaciones.mjs'
 
 const { DetalleGeneracion } = await import(await cargarModulo(new URL('../src/docente/DetalleGeneracion.tsx', import.meta.url)))
-const { pasosDeGeneracion, problemasDeComprobacion, etiquetaReglaJuego, segundosTranscurridos, direccionVistaPrevia, atenderMensajeJuego } = await import(await cargarModulo(new URL('../src/docente/utilidadesGeneracion.ts', import.meta.url)))
+const { pasosDeGeneracion, problemasDeComprobacion, etiquetaReglaJuego, segundosTranscurridos, direccionVistaPrevia, atenderMensajeJuego, aportesDelJuego, recursosDelPaquete } = await import(await cargarModulo(new URL('../src/docente/utilidadesGeneracion.ts', import.meta.url)))
 const mostrar = (datos) => renderToStaticMarkup(createElement(DetalleGeneracion, { generacion: datos }))
 
 test('HU27: empareja inicio y cierre por intento sin borrar correcciones ni fallos de comprobación', () => {
@@ -39,34 +39,39 @@ test('HU33: convierte mensajes de comprobación fallida en problemas y conserva 
   assert.deepEqual(problemasDeComprobacion(etapa('comprobacion', 'fallida', null)), [])
 })
 
-test('HU27/HU33/HU30: muestra recorrido accesible, problemas, procedencia completa y vista 16:9', () => {
-  const html = mostrar(juegoListo())
-  for (const texto of ['aria-live="polite"', 'La IA escribe el juego', 'Kusi revisa que se pueda jugar', 'La IA corrige lo que faltaba',
-    'Se usan los caminos de respaldo', 'Lo que Kusi encontró y se corrigió', 'La puerta no es alcanzable.', 'Faltan frutas.',
-    'Cómo se hizo este juego', 'Proveedor', 'proveedor-simulado', 'Modelo', 'modelo-de-prueba', 'Intentos', '>3<',
-    'Sí, se usaron los caminos de respaldo', 'Vista previa del laberinto generado', 'paquete=mensaje', 'Volver a empezar', '120 s']) {
-    assert.ok(html.includes(texto), texto)
-  }
-  assert.ok(html.includes('aria-live="off"'))
-  assert.ok(!html.includes(juegoListo().id))
-})
-
-test('HU33: conserva ultimo_error y no presenta problemas pendientes como resueltos', () => {
-  const datos = generacion({ estado: 'fallida', ultimo_error: '<script>motivo de prueba</script>', etapas: [etapa('comprobacion', 'fallida', 'PUERTA: Sin salida.')] })
-  const html = mostrar(datos)
-  assert.ok(html.includes('No se pudo terminar este juego'))
-  assert.ok(html.includes('&lt;script&gt;motivo de prueba&lt;/script&gt;'))
-  assert.ok(html.includes('La corrección solo se confirma cuando el juego queda listo.'))
-  assert.ok(!html.includes('<script>'))
-  assert.ok(!html.includes('<iframe'))
-})
-
-test('HU30: distingue caminos de IA y procedencia no registrada sin inventar proveedor', () => {
+test('el juego listo ocupa la pantalla sin mostrar el proceso interno ni crear otro juego', () => {
   const datos = juegoListo()
-  assert.ok(mostrar({ ...datos, procedencia: { ...datos.procedencia, mapa_base: false } }).includes('No, se usaron los caminos de la IA'))
-  const html = mostrar({ ...datos, procedencia: null })
-  assert.ok(html.includes('no registró la procedencia'))
-  assert.ok(!html.includes('proveedor-simulado'))
+  const original = structuredClone(datos)
+  const html = mostrar(datos)
+  for (const texto of ['Tu juego está listo', 'Tu juego para probar', 'Enviar a mi clase', 'Volver a empezar', 'Ampliar juego', 'paquete=mensaje']) assert.ok(html.includes(texto), texto)
+  for (const texto of ['La IA escribe', 'Comprobación', 'proveedor-simulado', 'modelo-de-prueba', 'Cómo se hizo', 'Lo que Kusi registró', 'Generar juego', '120 s', datos.id]) assert.ok(!html.includes(texto), texto)
+  // Ocultar los detalles nunca borra la procedencia o las comprobaciones recibidas.
+  assert.deepEqual(datos, original)
+})
+
+test('todas las etapas en curso se presentan como una preparación sin porcentajes inventados', () => {
+  for (const estado of ['pendiente', 'generando', 'comprobando', 'correccion']) {
+    const html = mostrar(generacion({ estado }))
+    assert.ok(html.includes('Estamos preparando tu juego'))
+    assert.ok(!html.includes('progressbar'))
+    assert.ok(!html.includes('<iframe'))
+  }
+})
+
+test('un fallo ofrece una salida sencilla sin trasladar el diagnóstico al docente', () => {
+  const datos = generacion({ estado: 'fallida', ultimo_error: '<script>motivo interno</script>', etapas: [etapa('comprobacion', 'fallida', 'PUERTA: Sin salida.')] })
+  const html = mostrar(datos)
+  assert.ok(html.includes('Tu juego quedó por terminar'))
+  assert.ok(html.includes('Tu idea está guardada'))
+  for (const texto of ['motivo interno', 'PUERTA', '<script>', '<iframe']) assert.ok(!html.includes(texto), texto)
+  assert.equal(datos.ultimo_error, '<script>motivo interno</script>')
+})
+
+test('un juego enviado muestra una confirmación y deja de ofrecer el envío como siguiente paso', () => {
+  const html = mostrar({ ...juegoListo(), publicada: true })
+  assert.ok(html.includes('Tu juego ya está en la app'))
+  assert.ok(!html.includes('Enviar a mi clase'))
+  assert.ok(!html.includes('Dar el OK'))
 })
 
 test('la regla elegida se expresa con las etiquetas docentes', () => {
@@ -114,41 +119,23 @@ test('cargado y error validan sus datos y también rechazan ventanas y orígenes
   }
 })
 
-test('HU29/HU30: distingue autoría y recursos usados con nombre y versión del catálogo', () => {
-  const datos = juegoListo()
-  datos.procedencia = { ...datos.procedencia, catalogo: { nombre: 'laberinto', version: 1 } }
-  datos.paquete = JSON.stringify({ retos: [{ objetos: [{ tipo: 'fresa' }], enemigos: [{ tipo: 'zorro' }] }] })
-  const html = mostrar(datos)
-  for (const texto of ['Lo que hizo la IA', 'Lo reutilizado del catálogo de Kusi', 'Catálogo laberinto · versión 1', 'fresa, zorro', 'mapas de respaldo']) assert.ok(html.includes(texto), texto)
+test('los recursos siguen disponibles internamente a partir del paquete real', () => {
+  assert.deepEqual(recursosDelPaquete(JSON.stringify({ retos: [{ objetos: [{ tipo: 'fresa' }], enemigos: [{ tipo: 'zorro' }] }] })), ['fresa', 'zorro'])
 })
 
 const paqueteConHistoria = JSON.stringify({ historia: 'Kusi explora los caminos.', retos: [{}, {}, {}] })
-const parteDeLaIa = (html) => html.slice(html.indexOf('<h4>Lo que hizo la IA</h4>'), html.indexOf('<h4>Lo que rehízo Kusi</h4>'))
-
-test('HU30: acredita las reparaciones por nivel y atribuye solo las partes conservadas', () => {
-  const datos = juegoListo()
-  const html = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia, reparaciones: { regla: [1], textos: [2, 3] } } })
-  assert.ok(html.includes('Kusi rehízo la regla en el nivel 1.'))
-  assert.ok(html.includes('Kusi rehízo los textos en los niveles 2 y 3.'))
-  const aportes = parteDeLaIa(html)
-  for (const texto of ['La historia.', 'La regla en los niveles 2 y 3.', 'Las consignas y las ayudas en el nivel 1.']) assert.ok(aportes.includes(texto), texto)
-  assert.ok(!aportes.includes('La regla en el nivel 1.'))
-  assert.ok(!aportes.includes('los mapas'))
-  const completo = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia, reparaciones: { regla: [1, 2, 3], textos: [1, 2, 3] } } })
-  assert.ok(parteDeLaIa(completo).includes('La historia.'))
-  assert.ok(!parteDeLaIa(completo).includes('La regla'))
-  assert.ok(!parteDeLaIa(completo).includes('Las consignas'))
+test('se conservan los cálculos internos de procedencia y reparaciones por nivel', () => {
+  const procedencia = juegoListo().procedencia
+  const datos = aportesDelJuego({ ...procedencia, reparaciones: { regla: [1], textos: [2, 3] } }, paqueteConHistoria)
+  assert.deepEqual(datos.reparaciones, ['Kusi rehízo la regla en el nivel 1.', 'Kusi rehízo los textos en los niveles 2 y 3.'])
+  assert.deepEqual(datos.aportes, ['La historia.', 'La regla en los niveles 2 y 3.', 'Las consignas y las ayudas en el nivel 1.'])
+  const completo = aportesDelJuego({ ...procedencia, reparaciones: { regla: [1, 2, 3], textos: [1, 2, 3] } }, paqueteConHistoria)
+  assert.deepEqual(completo.aportes, ['La historia.'])
 })
 
-test('HU30: un juego viejo no inventa reparaciones ni conservación a partir de sus etapas', () => {
-  const datos = juegoListo()
-  const sinDatos = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia } })
-  assert.ok(sinDatos.includes('Este juego anterior no registra qué reglas, consignas o ayudas se conservaron de la respuesta.'))
-  assert.ok(!sinDatos.includes('Kusi rehízo la regla en el nivel'))
-  const conDatos = mostrar({ ...datos, paquete: paqueteConHistoria, procedencia: { ...datos.procedencia, reparaciones: { regla: [], textos: [] } },
-    etapas: [etapa('mapa_base', 'completada', 'Nivel 1: se rehízo la regla y los textos.')] })
-  const aportes = parteDeLaIa(conDatos)
-  assert.ok(aportes.includes('La regla en los niveles 1, 2 y 3.'))
-  assert.ok(aportes.includes('Las consignas y las ayudas en los niveles 1, 2 y 3.'))
-  assert.ok(!conDatos.includes('Kusi rehízo la regla en el nivel 1.'))
+test('un juego antiguo no inventa atribuciones aunque ya no se muestren al docente', () => {
+  const datos = aportesDelJuego(juegoListo().procedencia, paqueteConHistoria)
+  assert.ok(datos.nota.includes('no registra'))
+  assert.deepEqual(datos.reparaciones, [])
+  assert.deepEqual(aportesDelJuego(null, paqueteConHistoria).aportes, [])
 })

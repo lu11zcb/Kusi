@@ -9,11 +9,6 @@
 .panel-administracion .admin-antetitulo { color:#956139; font-weight:900; font-size:.75rem; letter-spacing:.12em }
 .panel-administracion .admin-ilustracion-icono { display:grid; place-items:center; width:86px; height:86px; border-radius:26px; color:#9a5816; background:#fff0cc; transform:rotate(6deg); flex:none }
 .panel-administracion .admin-ilustracion-icono svg { width:48px; height:48px }
-.panel-administracion .admin-superficie button { text-shadow:none; color:#5a2912; box-shadow:0 3px 0 #c08435; min-height:46px; transition:transform .15s,background .15s,box-shadow .15s }
-.panel-administracion .admin-superficie button:active:not(:disabled) { transform:translateY(2px); box-shadow:0 1px 0 #c08435 }
-.panel-administracion .admin-superficie button.secundario { color:#603c2c; background:#fffaf3; border:1px solid #e2ccb0; box-shadow:none }
-.panel-administracion .admin-superficie button.secundario:hover:not(:disabled) { background:#fff0d9 }
-.panel-administracion .admin-superficie button:disabled { cursor:default }
 .panel-administracion .admin-volver { margin-bottom:1.3rem; padding:.5rem .9rem }
 .panel-administracion .admin-superficie form { max-width:none }
 .panel-administracion .admin-roles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:0 0 1.8rem }
@@ -25,7 +20,6 @@
 .panel-administracion .admin-indicacion { padding:1.5rem; background:#f7efe3; border-radius:16px; color:#79645c }
 .panel-administracion .admin-superficie form>fieldset { max-width:46rem }
 .panel-administracion .campo label { font-size:.9rem }
-.panel-administracion input,.panel-administracion select { background:white; border-width:1px; border-color:#dccab2; border-radius:12px; font-weight:600 }
 .panel-administracion .admin-filtros { display:flex; align-items:flex-end; flex-wrap:wrap; gap:1rem; padding:1.15rem; background:#f7f0e6; border-radius:18px }
 .panel-administracion .admin-filtros .campo { margin:0; flex:1; min-width:180px }
 .panel-administracion .admin-filtros .admin-buscar { flex:2; min-width:min(100%,260px) }

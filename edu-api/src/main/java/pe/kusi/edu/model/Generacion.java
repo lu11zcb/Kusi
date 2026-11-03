@@ -36,6 +36,14 @@ public class Generacion {
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
 
+    // Preparar el paquete y enviarlo a la clase son decisiones diferentes.
+    // El buzón conserva su trabajo sin publicar el juego antes de la revisión.
+    @Column(name = "publicada", nullable = false)
+    private boolean publicada;
+
+    @Column(name = "publicada_en")
+    private Instant publicadaEn;
+
     @Column(name = "actualizado_en", nullable = false)
     private Instant actualizadoEn;
 
@@ -75,5 +83,17 @@ public class Generacion {
     public void guardarPaquete(String paquete) {
         this.paquete = paquete;
         this.actualizadoEn = Instant.now();
+    }
+
+    public boolean isPublicada() { return publicada; }
+    public Instant getPublicadaEn() { return publicadaEn; }
+
+    // Repetir el envío confirmado no cambia su fecha ni vuelve a colocar
+    // un juego antiguo por delante del último que recibió la clase.
+    public void publicar() {
+        if (publicada) return;
+        this.publicada = true;
+        this.publicadaEn = Instant.now();
+        this.actualizadoEn = this.publicadaEn;
     }
 }

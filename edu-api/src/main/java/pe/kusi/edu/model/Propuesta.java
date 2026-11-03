@@ -31,6 +31,10 @@ public class Propuesta {
     @Column(name="creado_en", nullable=false) private Instant creadoEn=Instant.now();
     // HU28: la regla con que se juega el laberinto ("orden" o "solo_clase"); null si la propuesta no la eligió.
     @Column(name="regla_juego", length=12) private String reglaJuego;
+    // El juego que diseñó la propuesta: "laberinto" (Kusi ya sabe construirlo) u "otro" (el
+    // tema pide otro juego u otros dibujos y todavía no se puede generar). Null en las
+    // propuestas anteriores, que se tratan como laberinto.
+    @Column(name="tipo_juego", length=12) private String tipoJuego;
 
     protected Propuesta() {}
     // origen "ia" lleva proveedor/modelo; origen "docente" (HU23) los deja vacíos.
@@ -44,10 +48,17 @@ public class Propuesta {
     public Propuesta(UUID solicitudId, int version, String origen, Integer versionBase, String observaciones,
                      String objetivo, String origenObjetivo, String historia, String acciones, String reglas, String retos,
                      String ayudas, String recursos, String proveedor, String modelo, String reglaJuego) {
+        this(solicitudId, version, origen, versionBase, observaciones, objetivo, origenObjetivo, historia, acciones, reglas,
+            retos, ayudas, recursos, proveedor, modelo, reglaJuego, null);
+    }
+
+    public Propuesta(UUID solicitudId, int version, String origen, Integer versionBase, String observaciones,
+                     String objetivo, String origenObjetivo, String historia, String acciones, String reglas, String retos,
+                     String ayudas, String recursos, String proveedor, String modelo, String reglaJuego, String tipoJuego) {
         this.solicitudId=solicitudId; this.version=version; this.origen=origen; this.versionBase=versionBase; this.observaciones=observaciones;
         this.objetivo=objetivo; this.origenObjetivo=origenObjetivo; this.historia=historia; this.acciones=acciones; this.reglas=reglas;
         this.retos=retos; this.ayudas=ayudas; this.recursos=recursos; this.proveedor=proveedor; this.modelo=modelo;
-        this.reglaJuego=reglaJuego;
+        this.reglaJuego=reglaJuego; this.tipoJuego=tipoJuego;
     }
 
     // HU21/HU24: la revisión queda registrada en la versión exacta, con docente y fecha.
@@ -60,4 +71,7 @@ public class Propuesta {
     public UUID getRevisadaPor(){return revisadaPor;} public Instant getRevisadaEn(){return revisadaEn;}
     public String getProveedor(){return proveedor;} public String getModelo(){return modelo;} public Instant getCreadoEn(){return creadoEn;}
     public String getReglaJuego(){return reglaJuego;}
+    public String getTipoJuego(){return tipoJuego;}
+    // Solo se genera lo que Kusi sabe construir hoy: el laberinto.
+    public boolean sePuedeGenerar(){return !"otro".equals(tipoJuego);}
 }

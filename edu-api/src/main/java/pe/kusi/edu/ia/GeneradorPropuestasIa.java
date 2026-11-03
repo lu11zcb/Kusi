@@ -41,16 +41,18 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
 
     // La forma de la respuesta: la regla del juego es una de dos, la historia es un texto
     // y todo lo demás, listas de textos. Se exige antes de recibirla; el validador local
-    // sigue siendo obligatorio. La regla va primero para que la IA la elija antes de
-    // escribir el resto, que debe seguirla.
+    // sigue siendo obligatorio. El tipo de juego y la regla van primero para que la IA los
+    // elija antes de escribir el resto, que debe seguirlos. «objetos» es interno: con él Kusi
+    // comprueba si puede construir el juego; el docente no lo ve.
     static Map<String, Object> esquema() {
         Map<String, Object> texto = Map.of("type", "string");
         Map<String, Object> lista = Map.of("type", "array", "items", texto);
         Map<String, Object> propiedades = new LinkedHashMap<>();
-        propiedades.put("regla_juego", Map.of("type", "string", "enum", List.of(REGLA_ORDEN, REGLA_SOLO_CLASE)));
+        propiedades.put("tipo_juego", Map.of("type", "string", "enum", List.of("laberinto", "otro")));
+        propiedades.put("regla_juego", Map.of("type", "string", "enum", List.of(REGLA_ORDEN, REGLA_SOLO_CLASE, "ninguna")));
         propiedades.put("objetivo", texto);
         propiedades.put("historia", texto);
-        for (String campo : List.of("acciones", "reglas", "retos", "ayudas", "recursos")) propiedades.put(campo, lista);
+        for (String campo : List.of("acciones", "reglas", "retos", "ayudas", "recursos", "objetos")) propiedades.put(campo, lista);
         return Map.of("type", "object", "properties", propiedades,
                 "required", List.copyOf(propiedades.keySet()), "additionalProperties", false);
     }
@@ -65,7 +67,7 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         if (e.instrucciones() != null) texto.append("\nInstrucciones del docente: ").append(e.instrucciones());
         if ("observaciones".equals(e.tipo())) {
             texto.append("\n\nAjusta esta propuesta según las observaciones del docente, sin cambiar lo que no menciona.");
-            texto.append("\nSi las observaciones no piden otra regla, conserva en «regla_juego» la que ya tiene.");
+            texto.append("\nSi las observaciones no piden otro juego ni otra regla, conserva «tipo_juego» y «regla_juego» como están.");
             texto.append("\nPropuesta actual: ").append(json.writeValueAsString(e.propuestaBase()));
             texto.append("\nObservaciones: ").append(e.observaciones());
         } else if ("alternativa".equals(e.tipo())) {
@@ -76,34 +78,43 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         return texto.toString();
     }
 
-    // Kusi hoy hace un solo juego, el laberinto, con dos reglas. La IA elige la regla que
-    // mejor encaja con el tema; si el tema no encaja en ninguna, lo dice en la historia.
+    // La propuesta diseña el juego que de verdad corresponde al tema. Si ese juego es el
+    // laberinto que Kusi ya sabe construir, lo marca como «laberinto» y elige su regla; si
+    // el tema pide otro juego, lo diseña igual y lo marca como «otro» (se guarda, pero
+    // todavía no se genera). El texto que lee el docente describe el juego como debe ser:
+    // no habla de lo que la app tiene ni de lo que falta.
     // No lleva ejemplos de secuencias ni de mapas: la IA los copiaría en su propuesta y
     // de ahí pasarían al guion.
     private static final String INSTRUCCIONES = """
-        Eres el asistente de Kusi, una app de juegos para niños de primer grado de primaria en Perú. Propones un juego a partir del tema del docente. La propuesta la lee el docente: escribe corto, en español sencillo y sin palabras técnicas.
+        Eres el asistente de Kusi, una app de juegos para niños de primer grado de primaria en Perú. A partir del tema del docente diseñas el juego que mejor enseña ese tema, con todo su sentido: qué aprende el niño, qué hace, qué ve y cómo sube la dificultad. La propuesta la lee el docente: escribe corto, en español sencillo y sin palabras técnicas. Describe el juego tal como debe ser: no hables de lo que la app tiene o no tiene, ni de dibujos que falten.
 
-        Kusi hoy hace un solo juego: el laberinto. El niño mueve a un cuy por los caminos de un laberinto, recoge frutas y verduras, esquiva zorros y llega a la puerta. Son 3 niveles y cada uno es más grande que el anterior. El laberinto se juega con una de estas dos reglas, y tú eliges la que mejor encaja con el tema:
-        - "orden" (patrones): el niño recoge las frutas siguiendo un patrón que se repite, por ejemplo dos frutas que se alternan o un grupo de tres que vuelve a empezar. Sirve para temas de patrones, secuencias, qué sigue y repetir un orden.
-        - "solo_clase" (clasificar): el niño recoge solo las frutas, o solo las verduras, y deja las otras en el camino. Sirve para temas de clasificar, agrupar y reconocer a qué grupo pertenece algo.
-        Elige según lo que el tema pide practicar. Si el tema no encaja en ninguna de las dos reglas, elige la que más se acerque y dilo con claridad en la historia: qué parte del tema practica el juego y qué parte no.
+        Kusi, el cuy guía con sombrero y poncho, acompaña al niño en cualquier juego: le da la consigna con voz y lo ayuda.
+
+        Kusi ya sabe construir un juego: el laberinto. El niño mueve a un cuy por los caminos, recoge frutas y verduras, esquiva al zorro y llega al portal. Son 3 niveles y cada uno es más grande que el anterior. En el laberinto solo hay estas frutas (fresa, plátano, mango, mandarina, piña) y estas verduras (zanahoria, papa, choclo), y se juega con una de dos reglas:
+        - "orden" (patrones): el niño recoge las frutas siguiendo un patrón que se repite, por ejemplo dos frutas que se alternan o un grupo de tres que vuelve a empezar. Sirve para patrones, secuencias, qué sigue y repetir un orden.
+        - "solo_clase" (clasificar): el niño recoge solo las frutas, o solo las verduras, y deja las otras en el camino. Sirve para clasificar, agrupar y reconocer a qué grupo pertenece algo.
+
+        Cómo eliges el juego:
+        - Si el tema se aprende bien con ese laberinto (patrones o clasificar con esas frutas y verduras), propón el laberinto: "tipo_juego": "laberinto" y la regla que mejor encaje.
+        - Si el tema pide otra cosa (otro curso, otros dibujos u otra forma de jugar), diseña el juego que de verdad le corresponde, con sus propios dibujos y acciones: "tipo_juego": "otro" y "regla_juego": "ninguna". No metas el tema a la fuerza en el laberinto de frutas.
 
         Responde solo con un objeto JSON con estas claves:
-        - "regla_juego": "orden" o "solo_clase", la regla que elegiste. Todo lo demás debe seguir esa regla.
+        - "tipo_juego": "laberinto" u "otro".
+        - "regla_juego": "orden" o "solo_clase" si es el laberinto; "ninguna" si es otro juego. Todo lo demás debe seguir lo que elegiste.
         - "objetivo": una sola oración que empieza con «Los niños aprenderán a».
-        - "historia": un único texto (string, nunca una lista), con 2 o 3 oraciones cortas: qué pasa en el laberinto y qué practica el niño.
+        - "historia": un único texto (string, nunca una lista), con 2 o 3 oraciones cortas: de qué trata el juego y qué practica el niño.
         - "acciones": lo que hace el niño.
-        - "reglas": cómo se juega con la regla que elegiste.
-        - "retos": los desafíos de los niveles.
+        - "reglas": cómo se juega.
+        - "retos": los desafíos de cada nivel, de más fácil a más difícil.
         - "ayudas": pistas que guían al niño.
-        - "recursos": los dibujos que usa el juego.
-        Cada lista tiene 2 o 3 textos cortos.
+        - "recursos": los dibujos y elementos que se ven en el juego.
+        - "objetos": los nombres de las cosas que el niño recoge, ordena o usa, sin los personajes. En el laberinto, solo de la lista de frutas y verduras.
+        Cada lista tiene 2 o 3 textos cortos; "objetos" puede tener hasta 8.
 
         Reglas:
         - No hay cuenta regresiva, ni vidas, ni corazones: equivocarse no termina el juego.
         - Ninguna ayuda dice la respuesta.
-        - Solo existen estos objetos: frutas (fresa, plátano, mango, mandarina, piña) y verduras (zanahoria, papa, choclo). El único enemigo es el zorro. No inventes otros objetos ni otros juegos.
-        - En "recursos" usa solo esos nombres y el cuy, que es quien juega. Si para el tema hace falta un dibujo que no está, escribe «Falta dibujar:» y qué falta.
+        - En el laberinto, el único enemigo es el zorro, que es travieso y no da miedo.
         - No uses nombres de niños ni datos personales.
         """;
 }

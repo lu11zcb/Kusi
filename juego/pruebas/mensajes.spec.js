@@ -1,3 +1,4 @@
+import { avanzarConJoystick } from './ayudas/laberinto.js'
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { leerPaquete, estado, esperarCasilla, puntoEnLienzo } from './ayudas/laberinto.js'
@@ -32,14 +33,6 @@ async function esperarJuego(pagina, nivel = 1) {
   await pagina.waitForFunction((nivel) => window.kusi?.listo && window.kusi.estado().familia === 'laberinto' &&
     window.kusi.estado().nivel === nivel, nivel)
   return estado(pagina)
-}
-
-async function tocarCasilla(pagina, fila, columna) {
-  const actual = await estado(pagina)
-  const punto = await puntoEnLienzo(pagina,
-    actual.origenMapa.x + (columna + 0.5) * actual.casilla,
-    actual.origenMapa.y + (fila + 0.5) * actual.casilla)
-  await pagina.mouse.click(punto.x, punto.y)
 }
 
 test('sin guion el juego espera y avisa a la página que ya puede recibirlo, una sola vez', async ({ page: pagina }) => {
@@ -89,13 +82,15 @@ test('un guion de patrones y uno de clasificar cambian el juego: otra regla, otr
   await mandar(pagina, { tipo: 'paquete', paquete: await leerFixture('laberinto-orden.json') })
   const patrones = await esperarJuego(pagina)
   expect(patrones.reglaDelReto).toEqual({ tipo: 'orden', secuencia: ['fresa', 'platano', 'fresa', 'platano'] })
-  expect(patrones.barra).toEqual({ titulo: 'Sigue el orden', fichas: 4 })
-  await tocarCasilla(pagina, 1, 7)
-  const equivocado = await esperarCasilla(pagina, 1, 7)
-  expect(equivocado.regla).toMatchObject({ recogidos: 0, errores: 1, completada: false })
-  await tocarCasilla(pagina, 1, 3)
-  const acertado = await esperarCasilla(pagina, 1, 3)
-  expect(acertado.regla).toMatchObject({ recogidos: 1, errores: 1 })
+  expect(patrones.barra).toMatchObject({ titulo: 'Sigue el orden', fichas: 4 })
+  await avanzarConJoystick(pagina, 'derecha', 6)
+  expect((await estado(pagina)).regla).toMatchObject({ recogidos: 2, errores: 0 })
+  // El niño elige el desvío con el joystick. Pisar otro plátano cuando toca
+  // fresa sigue siendo un error; ninguna ruta omite la recogida de paso.
+  await avanzarConJoystick(pagina, 'izquierda', 2)
+  await avanzarConJoystick(pagina, 'abajo', 4)
+  const equivocado = await avanzarConJoystick(pagina, 'derecha', 2)
+  expect(equivocado.regla).toMatchObject({ recogidos: 2, errores: 1, completada: false })
 
   // Clasificar («solo_clase»): llega otro guion y el juego se reemplaza desde el primer nivel.
   await mandar(pagina, { tipo: 'paquete', paquete: await leerFixture('laberinto-solo-clase.json') })
@@ -103,14 +98,15 @@ test('un guion de patrones y uno de clasificar cambian el juego: otra regla, otr
   const clasificar = await estado(pagina)
   expect(clasificar.nivel).toBe(1)
   expect(clasificar.reglaDelReto).toEqual({ tipo: 'solo_clase', clase: 'fruta', meta: 3 })
-  expect(clasificar.barra).toEqual({ titulo: 'Busca frutas', fichas: 3 })
+  expect(clasificar.barra).toMatchObject({ titulo: 'Busca frutas', fichas: 3 })
   expect(clasificar.regla).toMatchObject({ recogidos: 0, errores: 0 })
-  // Aquí no importa el orden: la segunda fruta primero es correcta, y la trampa es la verdura.
-  await tocarCasilla(pagina, 1, 7)
-  expect((await esperarCasilla(pagina, 1, 7)).regla).toMatchObject({ recogidos: 1, errores: 0 })
-  await tocarCasilla(pagina, 5, 7)
-  const trampa = await esperarCasilla(pagina, 5, 7)
-  expect(trampa.regla).toMatchObject({ recogidos: 1, errores: 1 })
+  // Clasificar acepta las dos frutas del pasillo y rechaza la verdura.
+  const frutas = await avanzarConJoystick(pagina, 'derecha', 6)
+  expect(frutas.regla).toMatchObject({ recogidos: 2, errores: 0 })
+  await avanzarConJoystick(pagina, 'derecha', 2)
+  await avanzarConJoystick(pagina, 'abajo', 4)
+  const trampa = await avanzarConJoystick(pagina, 'izquierda', 2)
+  expect(trampa.regla).toMatchObject({ recogidos: 2, errores: 1 })
   expect(trampa.regla.objetos.find((objeto) => objeto.tipo === 'zanahoria').recogido).toBe(false)
   // Los dos juegos llegaron sin recargar la página.
   expect((await avisosDelJuego(pagina)).map((aviso) => aviso.tipo)).toEqual(['listo', 'cargado', 'cargado'])
@@ -125,7 +121,7 @@ test('un nivel de verduras pide buscar verduras', async ({ page: pagina }) => {
   const verduras = await esperarJuego(pagina, 2)
 
   expect(verduras.reglaDelReto).toEqual({ tipo: 'solo_clase', clase: 'verdura', meta: 3 })
-  expect(verduras.barra).toEqual({ titulo: 'Busca verduras', fichas: 3 })
+  expect(verduras.barra).toMatchObject({ titulo: 'Busca verduras', fichas: 3 })
 })
 
 test('reiniciar vuelve al primer nivel con una partida nueva y no cambia el guion', async ({ page: pagina }) => {
@@ -196,7 +192,7 @@ test('con ?paquete=laberinto el juego empieza con el ejemplo y también acepta u
 
   await mandar(pagina, { tipo: 'paquete', paquete: await leerFixture('laberinto-solo-clase.json') })
   await pagina.waitForFunction(() => window.kusi?.listo && window.kusi.estado().reglaDelReto.tipo === 'solo_clase')
-  expect((await estado(pagina)).barra).toEqual({ titulo: 'Busca frutas', fichas: 3 })
+  expect((await estado(pagina)).barra).toMatchObject({ titulo: 'Busca frutas', fichas: 3 })
 })
 
 test('sin parámetros abre el ejemplo y acepta un guion nuevo por mensaje', async ({ page: pagina }) => {
@@ -206,5 +202,5 @@ test('sin parámetros abre el ejemplo y acepta un guion nuevo por mensaje', asyn
   expect((await avisosDelJuego(pagina)).map((aviso) => aviso.tipo)).toEqual(['listo', 'cargado'])
   await mandar(pagina, { tipo: 'paquete', paquete: await leerFixture('laberinto-solo-clase.json') })
   await pagina.waitForFunction(() => window.kusi?.listo && window.kusi.estado().reglaDelReto.tipo === 'solo_clase')
-  expect((await estado(pagina)).barra).toEqual({ titulo: 'Busca frutas', fichas: 3 })
+  expect((await estado(pagina)).barra).toMatchObject({ titulo: 'Busca frutas', fichas: 3 })
 })

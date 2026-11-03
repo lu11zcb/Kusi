@@ -78,4 +78,67 @@ class ValidadorPropuestaTest {
         assertEquals("docente", resultado.origenObjetivo());
         assertEquals("orden", resultado.reglaJuego());
     }
+
+    // La propuesta diseña el juego del tema; Kusi decide si puede construirlo hoy.
+    @Test
+    void unLaberintoDeFrutasYVerdurasSePuedeConstruir() throws Exception {
+        Map<String, Object> datos = propuesta();
+        datos.put("tipo_juego", "laberinto");
+        datos.put("regla_juego", "solo_clase");
+        datos.put("objetos", List.of("Fresas y plátanos", "las zanahorias", "PIÑA", "verduras"));
+
+        ValidadorPropuesta.Resultado resultado = validador.validar(datos, null);
+        assertEquals("laberinto", resultado.tipoJuego());
+        assertEquals("solo_clase", resultado.reglaJuego());
+    }
+
+    @Test
+    void otroJuegoSeGuardaSinReglaDeLaberinto() throws Exception {
+        Map<String, Object> datos = propuesta();
+        datos.put("tipo_juego", "otro");
+        datos.put("regla_juego", "ninguna");
+        datos.put("objetos", List.of());
+
+        ValidadorPropuesta.Resultado resultado = validador.validar(datos, null);
+        assertEquals("otro", resultado.tipoJuego());
+        assertNull(resultado.reglaJuego());
+
+        // Aunque la IA escriba una regla, otro juego no la lleva.
+        datos.put("regla_juego", "orden");
+        assertNull(validador.validar(datos, null).reglaJuego());
+    }
+
+    @Test
+    void unLaberintoSinReglaOConDibujosQueNoExistenEsOtroJuego() throws Exception {
+        Map<String, Object> sinRegla = propuesta();
+        sinRegla.put("tipo_juego", "laberinto");
+        sinRegla.put("regla_juego", "ninguna");
+        assertEquals("otro", validador.validar(sinRegla, null).tipoJuego());
+
+        Map<String, Object> conDibujosNuevos = propuesta();
+        conDibujosNuevos.put("tipo_juego", "laberinto");
+        conDibujosNuevos.put("regla_juego", "orden");
+        conDibujosNuevos.put("objetos", List.of("la luz", "el sol y la luna"));
+        assertEquals("otro", validador.validar(conDibujosNuevos, null).tipoJuego());
+    }
+
+    @Test
+    void sinTipoDeJuegoSeHeredaYUnTipoDesconocidoEsInvalido() throws Exception {
+        assertNull(validador.validar(propuesta(), null).tipoJuego());
+        for (Object invalido : List.of("memoria", "Laberinto", 3, true)) {
+            Map<String, Object> datos = propuesta();
+            datos.put("tipo_juego", invalido);
+            assertThrows(FalloGeneracion.class, () -> validador.validar(datos, null), "Con " + invalido);
+        }
+    }
+
+    @Test
+    void reconoceLosAlimentosConTildesMayusculasYPlural() {
+        for (String objeto : List.of("plátanos", "Mandarinas", "choclos", "papas", "la piña", "frutas", "el zorro")) {
+            assertTrue(ValidadorPropuesta.nombraAlgoDelCatalogo(objeto), objeto);
+        }
+        for (String objeto : List.of("el sol", "los días de la creación", "tomate", "manzana")) {
+            assertFalse(ValidadorPropuesta.nombraAlgoDelCatalogo(objeto), objeto);
+        }
+    }
 }

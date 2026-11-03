@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import paisaje from '../assets/kusi/paisaje-andes.webp'
+import imagenAdministrador from '../assets/kusi/hero-administrador-v1.webp'
 import { Icono } from '../componentes/Icono'
 import type { NombreIcono } from '../componentes/Icono'
 import { primerNombre, saludo } from '../componentes/apariencia'
 import { listarCursos } from '../servicios/cursos'
 import { listarAsignaciones, listarVinculos } from '../servicios/educacion'
 import { listarUsuarios } from '../servicios/usuarios'
+import { PrimerosPasos } from '../componentes/PrimerosPasos'
 
 type Conteos = { usuarios: number | null; cursos: number | null; vinculos: number | null; asignaciones: number | null }
 
@@ -44,11 +45,11 @@ export function InicioAdministracion({ nombre, ir }: { nombre: string; ir: (secc
   return <>
     <section className="hero paisaje" aria-labelledby="saludo-admin">
       <div className="hero-texto">
-        <h1 id="saludo-admin">¡{saludo()},<br /><span>{primerNombre(nombre)}!</span> 🏔️</h1>
+        <h1 id="saludo-admin">¡{saludo()},<br /><span>{primerNombre(nombre)}!</span></h1>
         <p>Organiza tu escuela para que los docentes creen juegos con Kusi.</p>
         <button type="button" onClick={() => ir('registro')}>Registrar usuario <Icono nombre="flecha" /></button>
       </div>
-      <div className="hero-imagen" style={{ backgroundImage: 'url(' + paisaje + ')' }} role="img" aria-label="Los Andes vistos desde la ventana del cuarto de Kusi" />
+      <div className="hero-imagen hero-administrador" style={{ backgroundImage: 'url(' + imagenAdministrador + ')' }} role="img" aria-label="Kusi organiza las cuentas y secciones de la escuela con una lista y carpetas" />
     </section>
 
     <div className="estadisticas">
@@ -81,19 +82,9 @@ export function InicioAdministracion({ nombre, ir }: { nombre: string; ir: (secc
         </div>
       </div>
       <aside className="lateral-derecho" aria-label="Primeros pasos">
-        <div className="tarjeta">
-          <h2>Primeros pasos</h2>
-          <div className="barra-progreso" role="progressbar" aria-valuenow={hechos} aria-valuemin={0} aria-valuemax={pasos.length} aria-label="Pasos completados">
-            <span style={{ width: (hechos / pasos.length * 100) + '%' }} /></div>
-          <p><strong>{hechos} de {pasos.length}</strong> pasos completados</p>
-          <ol className="lista-mini">{pasos.map((paso, indice) => <li key={paso.texto} className={paso.hecho ? 'hecho' : undefined}>
-            <span className={'puesto ' + (paso.hecho ? 'c-verde' : 'c-dorado')} aria-hidden="true">{paso.hecho ? '✓' : indice + 1}</span>
-            <span className="texto">{paso.texto}</span>
-            {!paso.hecho && <button type="button" className="boton-icono" onClick={() => ir(paso.destino)} aria-label={'Ir a ' + paso.texto}><Icono nombre="flecha" /></button>}
-          </li>)}</ol>
-        </div>
+        <PrimerosPasos pasos={pasos} alElegir={ir} cargando={Object.values(conteos).some((valor) => valor === null)} />
         <div className="tarjeta tarjeta-premio">
-          <span className="emoji" aria-hidden="true">{hechos === pasos.length ? '🏆' : '🎒'}</span>
+          <span className="icono-grande c-morado" aria-hidden="true"><Icono nombre={hechos === pasos.length ? 'check' : 'aula'} /></span>
           <strong>{hechos === pasos.length ? '¡Tu escuela está lista!' : 'Prepara el aula de Kusi'}</strong>
           <p>{hechos === pasos.length ? 'Los docentes ya pueden crear propuestas de juego.' : 'Completa los pasos para que los docentes empiecen a crear juegos.'}</p>
         </div>

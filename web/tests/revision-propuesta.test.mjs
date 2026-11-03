@@ -6,53 +6,47 @@ import { cargarModulo } from './cargar-modulo.mjs'
 
 const { RevisionPropuesta } = await import(await cargarModulo(new URL('../src/docente/RevisionPropuesta.tsx', import.meta.url)))
 const solicitud = {
-  id_solicitud: '00000000-0000-4000-8000-000000000001', tema: 'Compras de prueba', proposito: 'refuerzo', estado: 'generada',
+  id_solicitud: '00000000-0000-4000-8000-000000000001', tema: 'Patrones de prueba', proposito: 'refuerzo', estado: 'generada',
   propuesta: {
     id: '00000000-0000-4000-8000-000000000002', version: 2, origen: 'ia', estado_revision: 'pendiente', origen_objetivo: 'ia',
-    objetivo: 'Los niños aprenderán a sumar.', historia: 'Kusi compra en el mercado.', acciones: ['Elegir una fruta'],
-    reglas: ['Pagar antes de salir'], retos: ['Revisar el vuelto'], ayudas: ['Cuenta las monedas'], recursos: ['fresa'],
+    objetivo: 'Reconocer patrones.', historia: 'Kusi recorre los caminos.', acciones: ['Elegir una fruta'],
+    reglas: ['Seguir el orden'], retos: ['Completar el patrón'], ayudas: ['Mira qué sigue'], recursos: ['archivo-del-catalogo'],
   },
 }
-const mostrar = (datos) => renderToStaticMarkup(createElement(RevisionPropuesta, { solicitud: datos, alCambiar() {} }))
+const mostrar = (datos, opciones = {}) => renderToStaticMarkup(createElement(RevisionPropuesta, { solicitud: datos, alCambiar() {}, ...opciones }))
 
-test('HU20: la vista compartida muestra toda la propuesta y las acciones sin UUID visibles', () => {
+test('la idea conserva su contenido educativo y ofrece aprobar y preparar en un solo paso', () => {
   const html = mostrar(solicitud)
-  for (const texto of ['Los niños aprenderán a sumar.', 'Kusi compra en el mercado.', 'Elegir una fruta', 'Pagar antes de salir', 'Revisar el vuelto', 'Cuenta las monedas', 'fresa', 'Aprobar versión 2', 'Rechazar', 'Modificar', 'Enviar observaciones', 'Ver versiones anteriores']) {
-    assert.ok(html.includes(texto), texto)
-  }
-  assert.ok(!html.includes(solicitud.id_solicitud))
-  assert.ok(!html.includes(solicitud.propuesta.id))
+  for (const texto of ['Reconocer patrones.', 'Kusi recorre los caminos.', 'Elegir una fruta', 'Seguir el orden', 'Completar el patrón', 'Mira qué sigue', 'Aprobar y preparar juego', 'Editar el texto', 'Pedir estos cambios']) assert.ok(html.includes(texto), texto)
+  for (const texto of ['Versión', 'versiones anteriores', 'generada por IA', 'archivo-del-catalogo', solicitud.id_solicitud, solicitud.propuesta.id]) assert.ok(!html.includes(texto), texto)
 })
 
-test('HU20: las acciones corresponden al estado de revisión y los recursos ausentes se señalan', () => {
-  const rechazada = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, estado_revision: 'rechazada', recursos: null } })
-  assert.ok(rechazada.includes('Pedir otra alternativa'))
-  assert.ok(!rechazada.includes('Aprobar versión'))
-  assert.ok(rechazada.includes('<em>Pendiente</em>'))
-  const aprobada = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, estado_revision: 'aprobada', apta_para_juego: true } })
-  assert.ok(aprobada.includes('Aprobada'))
-  assert.ok(!aprobada.includes('Aprobar versión'))
-  assert.ok(!aprobada.includes('Pedir otra alternativa'))
+test('los cambios se piden en una conversación y una idea rechazada todavía se puede recuperar', () => {
+  const html = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, estado_revision: 'rechazada' } })
+  assert.ok(html.includes('role="log"'))
+  assert.ok(html.includes('¿Qué quieres cambiar?'))
+  assert.ok(html.includes('Proponer otra idea'))
+  assert.ok(!html.includes('Aprobar y preparar juego'))
+  const ajustada = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, observaciones: 'Acorta las instrucciones.' } })
+  assert.ok(ajustada.includes('Preparar juego con estos cambios'))
 })
 
-test('HU27: solo una propuesta aprobada ofrece Generar juego y muestra la regla del laberinto', () => {
-  const pendiente = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, regla_juego: 'orden' } })
-  assert.ok(pendiente.includes('Seguir el orden (patrones)'))
-  assert.ok(!pendiente.includes('>Generar juego</button>'))
-  const aprobada = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, estado_revision: 'aprobada', regla_juego: 'solo_clase' } })
-  assert.ok(aprobada.includes('Solo una clase (clasificar)'))
-  assert.ok(aprobada.includes('Generar juego</button>'))
-  assert.ok(aprobada.includes('Generar y probar el juego'))
+test('la idea aprobada permite continuar sin volver a aprobar ni mostrar versiones', () => {
+  const html = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, estado_revision: 'aprobada', apta_para_juego: true } })
+  assert.ok(html.includes('Continuar preparando mi juego'))
+  assert.ok(!html.includes('Aprobar y preparar juego'))
+  assert.ok(!html.includes('Generar juego'))
 })
 
-// El menú conserva las pantallas ocultas. Verificamos que la revisión siga
-// presente para conservar su borrador, pero que se retire todo el seguimiento
-// (cuyos efectos cancelan las consultas al desmontarse) hasta volver a entrar.
-test('HU27: una revisión oculta conserva la propuesta sin montar consultas ni vista previa', () => {
-  const html = renderToStaticMarkup(createElement(RevisionPropuesta, {
-    solicitud, alCambiar() {}, activo: false,
-  }))
-  assert.ok(html.includes('Los niños aprenderán a sumar.'))
-  assert.ok(!html.includes('Generar y probar el juego'))
+test('un tipo de juego no disponible se explica sin ofrecer una preparación que no se puede realizar', () => {
+  const html = mostrar({ ...solicitud, propuesta: { ...solicitud.propuesta, tipo_juego: 'otro', se_puede_generar: false } })
+  assert.ok(html.includes('Este tipo de juego todavía no está disponible'))
+  assert.ok(html.includes('Pedir estos cambios'))
+  assert.ok(!html.includes('Aprobar y preparar juego'))
+})
+
+test('una revisión oculta conserva la idea y no monta el juego', () => {
+  const html = mostrar(solicitud, { activo: false })
+  assert.ok(html.includes('Reconocer patrones.'))
   assert.ok(!html.includes('<iframe'))
 })

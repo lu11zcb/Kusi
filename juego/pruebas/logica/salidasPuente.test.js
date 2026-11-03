@@ -1,8 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { emitirAlAnfitrion } from '../../src/logica/salidasPuente.js'
-import { decir } from '../../src/logica/voz.js'
-import { avisar } from '../../src/logica/avisos.js'
+import { emitirAlAnfitrion } from '../../kit/reproductor/logica/salidasPuente.js'
+import { decir } from '../../kit/reproductor/logica/voz.js'
+import { avisar } from '../../kit/reproductor/logica/avisos.js'
 
 test('HU48: el mismo aviso viaja a la web y Android como texto JSON', () => {
   const web = [], android = []
@@ -28,7 +28,7 @@ test('HU48: avisar conserva partida y orden y usa la voz nativa si está disponi
 })
 
 test('HU46: listo, cargado y error también llegan por el puente nativo', async () => {
-  const { crearPuente } = await import('../../src/mensajes/puenteGuion.js')
+  const { crearPuente } = await import('../../kit/reproductor/mensajes/puenteGuion.js')
   const textos = []
   const ventana = { parent: { postMessage() {} }, addEventListener() {}, removeEventListener() {}, KusiPuente: { emitir: (texto) => textos.push(JSON.parse(texto)) } }
   const puente = crearPuente(ventana)

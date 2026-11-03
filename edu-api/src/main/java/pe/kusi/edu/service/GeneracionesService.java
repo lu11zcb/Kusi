@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 
 @Service
 public class GeneracionesService {
+    private static final String TRABAJADOR_LABERINTO = "laberinto_interno";
 
     private final PropuestasService propuestasService;
     private final PropuestaRepository propuestaRepository;
@@ -81,6 +82,16 @@ public class GeneracionesService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "La propuesta debe estar aprobada antes de generar el juego");
+        }
+
+        // El buzón recibe los datos completos, pero el reproductor disponible
+        // sigue siendo el laberinto. Conservar esta comprobación evita preparar
+        // un juego de frutas para una idea que necesita otros objetos o acciones.
+        if (!ultima.sePuedeGenerar()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Por ahora Kusi solo crea juegos de laberinto con frutas y verduras. "
+                            + "Esta propuesta queda guardada para cuando Kusi tenga este tipo de juego.");
         }
 
         Generacion generacion = generacionRepository.save(
@@ -147,16 +158,40 @@ public class GeneracionesService {
         }
 
         // Solo un proceso puede tomar la generación: si otro llegó antes, se rechaza.
-        Integer tomada = transaccion.execute(
-                estado -> generacionRepository.tomarParaProcesar(generacionId, Instant.now()));
+        Integer tomada = transaccion.execute(estado -> {
+            int cantidad = generacionRepository.tomarParaProcesar(generacionId, Instant.now());
+            if (cantidad == 0) return 0;
+            // La misma transacción reclama la generación y su trabajo del buzón.
+            // Si otro trabajador ya lo recogió, se deshacen ambos cambios. Las
+            // generaciones anteriores al buzón siguen funcionando sin esa fila.
+            trabajoRepository.bloquearTrabajo(generacionId).ifPresent(trabajo -> {
+                if (!"pendiente".equals(trabajo.getEstado())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Este juego ya se está preparando");
+                }
+                trabajo.tomar(TRABAJADOR_LABERINTO);
+                trabajoRepository.save(trabajo);
+            });
+            return cantidad;
+        });
         if (tomada == null || tomada == 0) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Esta generación ya se está procesando");
         }
 
-        return proceso.procesar(
+        Generacion resultado = proceso.procesar(
                 docenteId, generacionRepository.findById(generacionId).orElseThrow());
+        // Mientras se incorpora el trabajador externo, el procesador existente
+        // termina también la tarea del buzón. Así no queda pendiente un paquete
+        // que ya se preparó ni se genera otra vez al arrancar el taller.
+        transaccion.executeWithoutResult(estado ->
+                trabajoRepository.bloquearTrabajo(generacionId).ifPresent(trabajo -> {
+                    if (!TRABAJADOR_LABERINTO.equals(trabajo.getTomadoPor()) || !"en_proceso".equals(trabajo.getEstado())) return;
+                    if ("lista".equals(resultado.getEstado())) trabajo.registrarResultado(resultado.getPaquete());
+                    else trabajo.registrarFallo(resultado.getUltimoError());
+                    trabajoRepository.save(trabajo);
+                }));
+        return resultado;
     }
 
     // El bloque «procedencia» del paquete (proveedor, modelo, intentos y si se usó un
@@ -186,6 +221,19 @@ public class GeneracionesService {
                 docenteId, generacion.getSolicitudId());
 
         return generacion;
+    }
+
+    // El trabajo del taller puede terminar antes de la revisión docente.
+    // Solo esta acción explícita permite que el juego aparezca en la app.
+    public Generacion publicar(UUID docenteId, UUID generacionId) {
+        Generacion generacion = consultar(docenteId, generacionId);
+        if (!"lista".equals(generacion.getEstado())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Solo se puede enviar a los estudiantes un juego listo");
+        }
+        generacion.publicar();
+        return generacionRepository.save(generacion);
     }
 
     @Transactional(readOnly = true)

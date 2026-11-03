@@ -4,7 +4,7 @@ import {
   buscarCamino, crearZorro, avanzarZorro, restablecerZorro,
   posicionEnCasillas, seAtrapan, DISTANCIA_PERSECUCION,
   SEGUNDOS_PERSECUCION, SEGUNDOS_DESCANSO,
-} from '../../src/logica/zorrosLaberinto.js'
+} from '../../juegos/laberinto/logica/zorrosLaberinto.js'
 
 const PASILLO = ['########', '#C....P#', '########']
 const PASILLO_LARGO = ['#############', '#C.........P#', '#############']

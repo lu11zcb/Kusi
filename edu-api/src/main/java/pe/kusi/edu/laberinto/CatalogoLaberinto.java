@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 // Lo que el juego del laberinto sabe dibujar y los límites que Kusi le pone a un
-// guion. Debe coincidir con juego/src/datos/validarLaberinto.js (tipos de objeto,
-// enemigos y movimientos) y con juego/src/logica/disposicionLaberinto.js (tamaño
+// guion. Debe coincidir con juego/juegos/laberinto/datos/validarLaberinto.js (tipos de objeto,
+// enemigos y movimientos) y con juego/juegos/laberinto/logica/disposicionLaberinto.js (tamaño
 // máximo del mapa); si uno cambia, el otro también.
 public final class CatalogoLaberinto {
     private CatalogoLaberinto() {}

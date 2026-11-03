@@ -65,10 +65,11 @@ test('al caminar hacia abajo la nube queda arriba de los pies y se abre a los la
   }
 })
 
-test('el zorro también levanta polvo, más grande porque pesa más', async ({ page: pagina }) => {
-  await servirPasillo(pagina, { ...FRUTA_LEJANA, zorros: [8] })
+test('el zorro que persigue levanta polvo, más grande porque pesa más', async ({ page: pagina }) => {
+  await servirPasillo(pagina, { ...FRUTA_LEJANA, zorros: [6], movimientoZorro: 'persigue_cerca' })
   await abrir(pagina)
-  // El cuy espera contra el muro y solo camina el zorro: todas las nubes son suyas.
+  // El polvo del diseño nuevo pertenece a la persecución. El cuy espera:
+  // la alerta termina a los 0,6 s y todas las nubes deben salir del zorro.
   await pagina.keyboard.press('ArrowUp')
   await pagina.waitForFunction(() => window.kusi.estado().vida.polvito.nubes >= 2, null, { timeout: 5000 })
   const polvito = (await estado(pagina)).vida.polvito

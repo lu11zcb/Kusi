@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { crearPuente, interpretarMensaje } from '../../src/mensajes/puenteGuion.js'
+import { crearPuente, interpretarMensaje } from '../../kit/reproductor/mensajes/puenteGuion.js'
 
 // Una ventana de mentira: guarda a quien escucha y lo que se le avisa a la página que la contiene.
 function crearVentanaFalsa() {

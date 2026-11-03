@@ -15,6 +15,23 @@ const trazos = {
   chispa: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
   buscar: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14M20 20l-4-4',
   flecha: 'M5 12h14M13 6l6 6-6 6',
+  atras: 'M19 12H5M11 6l-6 6 6 6',
+  mas: 'M12 5v14M5 12h14',
+  editar: 'm15 4 5 5M4 20l4.5-1L21 6.5 17.5 3 5 15.5z',
+  check: 'm5 12 4 4L19 6',
+  info: 'M12 8h.01M12 11v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+  reloj: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  abajo: 'm6 9 6 6 6-6',
+  cerrar: 'm6 6 12 12M18 6 6 18',
+  libros: 'M3 4h4v16H3zM10 4h4v16h-4zM16 5l4-1 3 15-4 1z',
+  edificio: 'M3 21h18M5 21V8l9-5v18M14 8h5v13M8 9v1M11 7v1M8 13v1M11 11v1M8 17v1M11 15v1M17 12v1M17 16v1',
+  matematica: 'M6 3h12v18H6zM9 6h6v4H9zM9 14h.01M15 14h.01M9 18h.01M15 18h.01',
+  comunicacion: 'M21 11.5a8.5 8.5 0 0 1-12.7 7.4L3 21l1.7-5.1A8.5 8.5 0 1 1 21 11.5M8 10h8M8 14h5',
+  ciencia: 'M9 3h6M10 3v6L4.5 18a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3M7.5 13h9M10 17h.01M14 18h.01',
+  arte: 'M12 3a9 9 0 1 0 0 18h1a2.5 2.5 0 0 0 2.1-3.8 1.8 1.8 0 0 1 1.5-2.7H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9M8 8h.01M12 6h.01M16 8h.01M6 12h.01',
+  religion: 'M10 3h4v5h5v4h-5v9h-4v-9H5V8h5z',
+  ingles: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M3 12h18M12 3c4 4 4 14 0 18-4-4-4-14 0-18',
 } as const
 
 export type NombreIcono = keyof typeof trazos

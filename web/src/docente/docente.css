@@ -4,10 +4,8 @@
 .panel-docente .icono-menu .doc-icono { width: 25px; height: 25px; }
 .panel-docente .tablero-lateral { background: #fffaf3; backdrop-filter: none; }
 .panel-docente .menu button { box-shadow: none; }
-.panel-docente .tarjeta-promo { background: #fff0d6; border: 1px solid #edce9d; box-shadow: none; }
 .panel-docente .tarjeta-promo > .doc-icono { margin-bottom: 8px; color: #a34a20; width: 30px; height: 30px; }
 .panel-docente .tarjeta-promo strong { display: block; }
-.panel-docente .ficha { font-size: 13px; border-width: 1px; padding: 8px 12px; }
 .panel-docente .ficha .doc-icono { width: 18px; height: 18px; }
 .panel-docente .doc-alternar-menu { display: none; }
 .panel-docente .doc-pagina { max-width: 1260px; margin: 10px auto 0; }
@@ -16,14 +14,7 @@
 .panel-docente .doc-cabecera h1 { font-size: 32px; line-height: 1.2; margin: 0 0 8px; }
 .panel-docente .doc-cabecera p { margin: 0; color: var(--doc-suave); max-width: 65ch; }
 .panel-docente .doc-cabecera-acciones { flex: none; }
-.panel-docente .doc-pagina button { font-family: var(--letra); font-size: 14px; min-height: 44px; color: var(--vino); text-shadow: none; box-shadow: 0 3px 8px -5px #9b5b26; transition: background 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
-.panel-docente .doc-pagina button:active:not(:disabled) { transform: none; box-shadow: none; }
-.panel-docente .doc-pagina button:disabled { cursor: not-allowed; }
-.panel-docente .doc-pagina button.secundario { border: 1px solid var(--doc-linea); box-shadow: none; background: var(--doc-papel); }
-.panel-docente .doc-pagina button.secundario:hover:not(:disabled) { background: #fff0d7; border-color: #be956a; }
-.panel-docente .doc-pagina input, .panel-docente .doc-pagina select, .panel-docente .doc-pagina textarea { border: 1px solid #cbb7a3; border-radius: 12px; background: #fffefa; font-weight: 600; font-size: 15px; min-height: 46px; }
 .panel-docente .doc-pagina input::placeholder, .panel-docente .doc-pagina textarea::placeholder { color: #806960; opacity: 1; }
-.panel-docente .doc-pagina input:focus, .panel-docente .doc-pagina select:focus, .panel-docente .doc-pagina textarea:focus { border-color: #a64b26; box-shadow: none; outline: 2px solid #b77729; outline-offset: 2px; }
 .panel-docente .doc-pagina :focus-visible { outline: 3px solid #a96522; outline-offset: 3px; }
 .panel-docente .doc-pagina h2 { font-size: 22px; }
 .panel-docente .doc-pagina h3 { font-size: 18px; }
@@ -36,8 +27,6 @@
 .panel-docente .doc-filtro { min-width: 210px; }
 .panel-docente .doc-resultados { font-size: 13px; color: var(--doc-suave); margin: 14px 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .panel-docente .doc-resultado-linea { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.panel-docente .doc-pagina .doc-texto-boton { background: transparent; border: 0; box-shadow: none; padding: 6px 0; border-radius: 6px; }
-.panel-docente .doc-pagina .doc-texto-boton:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 4px; background: transparent; }
 .panel-docente .doc-nota { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.6; color: var(--doc-suave); margin: 24px 0 0; max-width: 85ch; }
 .panel-docente .doc-nota > .doc-icono { width: 19px; height: 19px; margin-top: 2px; }
 .panel-docente .doc-mensaje { display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--doc-linea); background: var(--doc-papel); border-radius: 16px; padding: 22px; margin: 18px 0; }
@@ -64,8 +53,6 @@
 .panel-docente .doc-curso-cabecera > span:not(.doc-icono-curso) { color: var(--doc-suave); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .panel-docente .doc-curso h2 { font-size: 21px; margin: 20px 0 6px; min-height: 50px; }
 .panel-docente .doc-curso > p { color: var(--doc-suave); font-size: 13px; margin: 0 0 22px; }
-.panel-docente .doc-pagina .doc-boton-curso { background: var(--doc-tinte); color: var(--doc-tono); border-radius: 10px; box-shadow: none; width: 100%; justify-content: space-between; padding: 10px 14px; }
-.panel-docente .doc-pagina .doc-boton-curso:hover { filter: brightness(.97); }
 .panel-docente .doc-listado { background: var(--doc-papel); padding: 22px; border-radius: 18px; border: 1px solid var(--doc-linea); }
 .panel-docente .doc-tabla { border-collapse: collapse; width: 100%; text-align: left; font-size: 14px; }
 .panel-docente .doc-tabla thead th { background: #f7efe4; color: var(--doc-suave); font-size: 12px; font-weight: 800; padding: 13px 16px; }
@@ -272,3 +259,104 @@
   .panel-docente .doc-generacion-paso { grid-template-columns: 36px minmax(0, 1fr); }
   .panel-docente .doc-generacion-paso > .doc-generacion-reloj { grid-column: 2; }
 }
+
+/* Todas las secciones docentes comparten la misma escala y los mismos controles.
+   Se conserva la paleta, las fuentes y el arte de Kusi; cambia la composición. */
+.panel-docente .doc-sobre-titulo { display: block; font-size: 12px; font-weight: 900; color: var(--doc-suave); margin-bottom: 8px; }
+.panel-docente .doc-bienvenida { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, .8fr); align-items: center; overflow: hidden; border: 1px solid var(--doc-linea); border-radius: 24px; background: var(--doc-papel); }
+.panel-docente .doc-bienvenida > div { padding: 32px; }
+.panel-docente .doc-bienvenida h1 { font-size: clamp(28px, 3vw, 40px); margin-bottom: 14px; }
+.panel-docente .doc-bienvenida p { color: var(--doc-suave); margin-bottom: 24px; }
+.panel-docente .doc-bienvenida img { display: block; width: 100%; height: 100%; max-height: 330px; object-fit: cover; object-position: center 40%; }
+.panel-docente .doc-resumen-inicio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 24px 0 32px; }
+.panel-docente .doc-pagina .doc-resumen-tarjeta { display: flex; justify-content: flex-start; text-align: left; gap: 14px; padding: 20px; border-radius: 18px; }
+.panel-docente .doc-resumen-tarjeta > .doc-icono:first-child { color: #a34a25; width: 30px; height: 30px; }
+.panel-docente .doc-resumen-tarjeta > .doc-icono:last-child { width: 18px; height: 18px; margin-left: auto; }
+.panel-docente .doc-resumen-tarjeta strong { display: block; font: 600 28px var(--letra-titulo); }
+.panel-docente .doc-resumen-tarjeta small { display: block; color: var(--doc-suave); font-size: 13px; }
+.panel-docente .doc-inicio-distribucion { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 28px; align-items: start; }
+.panel-docente .doc-encabezado-seccion { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.panel-docente .doc-encabezado-seccion h2 { margin: 0; }
+.panel-docente .doc-encabezado-seccion:not(:first-child) { margin-top: 32px; }
+.panel-docente .doc-continuar { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 24px; border: 1px solid var(--doc-linea); border-radius: 18px; background: var(--doc-papel); }
+.panel-docente .doc-continuar > div { flex: 1; min-width: 150px; }
+.panel-docente .doc-continuar h3 { margin: 0 0 6px; overflow-wrap: anywhere; }
+.panel-docente .doc-continuar p { margin: 0; color: var(--doc-suave); font-size: 14px; }
+.panel-docente .doc-clase-resumen { padding: 24px; border: 1px solid var(--doc-linea); border-radius: 18px; background: var(--doc-papel); }
+.panel-docente .doc-clase-resumen h2 { margin: 0 0 20px; }
+.panel-docente .doc-clase-resumen > p { font-size: 14px; color: var(--doc-suave); }
+.panel-docente .doc-total-clase { display: flex; align-items: center; gap: 10px; }
+.panel-docente .doc-total-clase strong { font: 600 30px var(--letra-titulo); color: var(--vino); }
+.panel-docente .doc-clase-resumen ul { list-style: none; padding: 0; margin: 24px 0; }
+.panel-docente .doc-clase-resumen li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--doc-linea); font-size: 13px; }
+.panel-docente .doc-clase-resumen li > span:last-child { color: var(--doc-suave); }
+.panel-docente .doc-curso h3 { font-size: 21px; margin: 20px 0 6px; }
+.panel-docente .doc-curso > button { width: 100%; }
+.panel-docente .doc-propuestas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 390px), 1fr)); gap: 18px; background: transparent; border: 0; }
+.panel-docente .doc-propuestas > li { display: flex; flex-direction: column; min-width: 0; padding: 24px; background: var(--doc-papel); border: 1px solid var(--doc-linea); border-radius: 18px; }
+.panel-docente .doc-propuestas > li + li { border-top: 1px solid var(--doc-linea); }
+.panel-docente .doc-juego-ficha { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; flex: 1; }
+.panel-docente .doc-juego-ficha .doc-propuesta-datos { min-width: 180px; }
+.panel-docente .doc-propuesta-datos h2 { margin: 0 0 6px; font-size: 21px; overflow-wrap: anywhere; }
+.panel-docente .doc-propuesta-datos p { margin: 0; font-size: 13px; color: var(--doc-suave); }
+.panel-docente .doc-juego-ficha > .doc-estado { margin-top: 8px; }
+.panel-docente .doc-juego-acciones { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; margin-top: 20px; border-top: 1px solid var(--doc-linea); }
+.panel-docente .doc-pagina button.doc-eliminar { color: #982f1e; }
+.panel-docente .doc-estado-enviado, .panel-docente .doc-estado-probar { background: #e6f3e7; color: #266140; }
+.panel-docente .doc-dialogo { width: min(500px, calc(100% - 32px)); padding: 28px; background: var(--doc-papel); border: 1px solid var(--doc-linea); border-radius: 24px; color: var(--texto); }
+.panel-docente .doc-dialogo::backdrop { background: #3d211a80; }
+.panel-docente .doc-dialogo p { color: var(--doc-suave); }
+.panel-docente .doc-trabajo-distribucion { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 26px; align-items: start; }
+.panel-docente .doc-trabajo-principal { min-width: 0; }
+.panel-docente .doc-con-juego { grid-template-columns: minmax(0, 1fr); }
+.panel-docente .doc-con-juego .doc-chat { position: static; width: 100%; max-width: 760px; }
+.panel-docente .doc-siguiente { padding: 24px; border: 1px solid var(--doc-linea); border-radius: 18px; background: #fff0d6; margin-top: 18px; }
+.panel-docente .doc-siguiente > p { margin: 0 0 16px; color: var(--doc-suave); }
+.panel-docente .doc-chat { position: sticky; top: 20px; padding: 22px; border-radius: 18px; border: 1px solid var(--doc-linea); background: var(--doc-papel); min-width: 0; }
+.panel-docente .doc-chat-cabecera { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--doc-linea); }
+.panel-docente .doc-chat-cabecera > .doc-icono { color: #a34a25; }
+.panel-docente .doc-chat-cabecera h3 { margin: 0; }
+.panel-docente .doc-chat-cabecera p { color: var(--doc-suave); font-size: 13px; margin: 6px 0 0; }
+.panel-docente .doc-chat-mensajes { max-height: 360px; overflow-y: auto; margin: 18px 0; scrollbar-gutter: stable; }
+.panel-docente .doc-burbuja { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; padding: 14px; border-radius: 14px; margin: 12px 0; }
+.panel-docente .doc-burbuja strong { display: block; font-size: 12px; margin-bottom: 6px; }
+.panel-docente .doc-burbuja-kusi { background: var(--crema-3); margin-right: 18px; }
+.panel-docente .doc-burbuja-profe { background: #fff0d6; margin-left: 18px; }
+.panel-docente .doc-chat label { display: block; font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+.panel-docente .doc-chat textarea { width: 100%; resize: vertical; }
+.panel-docente .doc-chat form > button { width: 100%; margin-top: 12px; }
+.panel-docente .doc-chat-opciones { display: grid; gap: 6px; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--doc-linea); }
+.panel-docente .doc-idea-resumen { border: 1px solid var(--doc-linea); border-radius: 18px; background: var(--doc-papel); margin-top: 22px; padding: 8px 24px; }
+.panel-docente .doc-idea-resumen[open] { padding-bottom: 24px; }
+.panel-docente .doc-juego-listo { padding: 26px; border: 1px solid var(--doc-linea); border-radius: 18px; background: var(--doc-papel); }
+.panel-docente .doc-juego-titulo { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.panel-docente .doc-juego-titulo h2 { margin: 0; }
+.panel-docente .doc-prueba-controles, .panel-docente .doc-envio { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.panel-docente .doc-prueba-controles p, .panel-docente .doc-envio p { font-size: 14px; color: var(--doc-suave); }
+.panel-docente .doc-envio { margin-top: 24px; border-top: 1px solid var(--doc-linea); padding-top: 22px; }
+.panel-docente .doc-envio p { margin: 6px 0 0; }
+.panel-docente .doc-vista-previa:fullscreen { padding: 16px; background: var(--crema); display: flex; flex-direction: column; }
+.panel-docente .doc-vista-previa:fullscreen iframe { flex: 1; min-height: 0; aspect-ratio: auto; }
+.panel-docente .doc-espera { text-align: center; padding: 48px 24px; border-radius: 18px; background: var(--doc-papel); border: 1px solid var(--doc-linea); }
+.panel-docente .doc-espera h2 { margin: 20px 0 12px; }
+.panel-docente .doc-espera p { color: var(--doc-suave); margin-inline: auto; }
+.panel-docente .doc-espera-puntos { display: inline-flex; gap: 8px; }
+.panel-docente .doc-espera-puntos i { width: 12px; height: 12px; border-radius: 50%; background: var(--dorado); animation: doc-espera 1.4s ease-in-out infinite; }
+.panel-docente .doc-espera-puntos i:nth-child(2) { animation-delay: .2s; }
+.panel-docente .doc-espera-puntos i:nth-child(3) { animation-delay: .4s; }
+@keyframes doc-espera { 50% { opacity: .35; transform: translateY(-4px); } }
+@media (max-width: 1120px) {
+  .panel-docente .doc-inicio-distribucion, .panel-docente .doc-trabajo-distribucion { grid-template-columns: minmax(0, 1fr); }
+  .panel-docente .doc-chat { position: static; }
+}
+@media (max-width: 600px) {
+  .panel-docente .doc-bienvenida { grid-template-columns: minmax(0, 1fr); }
+  .panel-docente .doc-bienvenida > div { padding: 24px; }
+  .panel-docente .doc-bienvenida img { max-height: 180px; object-position: center 32%; }
+  .panel-docente .doc-resumen-inicio { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .panel-docente .doc-propuestas > li, .panel-docente .doc-juego-listo, .panel-docente .doc-chat { padding: 20px; }
+  .panel-docente .doc-juego-acciones { flex-wrap: wrap; }
+  .panel-docente .doc-juego-titulo { align-items: flex-start; flex-direction: column; }
+  .panel-docente .doc-envio > button, .panel-docente .doc-siguiente > button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .panel-docente .doc-espera-puntos i { animation: none; } }

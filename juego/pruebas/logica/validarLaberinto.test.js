@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { validarLaberinto } from '../../src/datos/validarLaberinto.js'
+import { validarLaberinto } from '../../juegos/laberinto/datos/validarLaberinto.js'
 
 const ejemplo = JSON.parse(readFileSync(
-  new URL('../../public/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
+  new URL('../../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
 ))
 
 const copiarEjemplo = () => structuredClone(ejemplo)

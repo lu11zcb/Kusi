@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { FrutasVivas, FLOTAR, calcularFlotar } from '../../src/efectos/FrutasVivas.js'
+import { FrutasVivas, FLOTAR, calcularFlotar } from '../../kit/reproductor/efectos/FrutasVivas.js'
 
 const CASILLA = 60
 const cerca = (real, esperado, tolerancia = 1e-9) => {

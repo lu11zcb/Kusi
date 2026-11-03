@@ -35,6 +35,13 @@ public class EliminacionPropuestas {
         if (enCurso != null && enCurso > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Espera a que termine el juego que se está generando antes de eliminar la propuesta.");
         }
+        // El trabajador del taller puede haber reclamado su tarea antes de
+        // actualizar la generación. También se protege ese intervalo del buzón.
+        Integer trabajosEnCurso = jdbc.queryForObject("select count(*) from edu.trabajos_taller where estado = 'en_proceso' "
+                + "and generacion_id in (select id from edu.generaciones where solicitud_id = ?)", Integer.class, solicitud);
+        if (trabajosEnCurso != null && trabajosEnCurso > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Espera a que termine el juego antes de eliminarlo.");
+        }
         jdbc.update("delete from edu.etapas_generacion where generacion_id in (select id from edu.generaciones where solicitud_id = ?)", solicitud);
         jdbc.update("delete from edu.generaciones where solicitud_id = ?", solicitud);
         jdbc.update("delete from edu.propuestas where solicitud_id = ?", solicitud);

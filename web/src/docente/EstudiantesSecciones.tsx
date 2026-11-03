@@ -15,7 +15,7 @@ export function EstudiantesSecciones() {
   useEffect(() => {
     let vigente = true
     misEstudiantesDocente().then((r) => { if (vigente) { establecerItems(r.estudiantes); establecerError('') } })
-      .catch((e: unknown) => { if (vigente) establecerError(e instanceof Error ? e.message : 'No se pudieron cargar los estudiantes.') })
+      .catch(() => { if (vigente) establecerError('No pudimos abrir la lista. Comprueba tu conexión e intenta otra vez.') })
     return () => { vigente = false }
   }, [recarga])
   const filtro = normalizarBusqueda(buscar)
@@ -24,7 +24,7 @@ export function EstudiantesSecciones() {
     .sort((a, b) => (a.estudiante_nombre ?? '').localeCompare(b.estudiante_nombre ?? '', 'es'))
   function limpiar() { establecerBuscar(''); establecerSeccion(''); document.getElementById('doc-buscar-estudiante')?.focus() }
   return <section className="doc-pagina" aria-label="Mis estudiantes">
-    <CabeceraDocente titulo="Mis estudiantes" descripcion="Encuentra a los estudiantes de tus secciones y consulta sus datos de acceso." />
+    <CabeceraDocente icono="personas" color="c-rojo" titulo="Mis estudiantes" descripcion="Encuentra a los estudiantes de tu clase por nombre, DNI o sección." />
     {error && <MensajeDocente titulo="No pudimos cargar tus estudiantes" error><p>{error}</p><button className="secundario" type="button" onClick={() => establecerRecarga((n) => n + 1)}>Volver a intentar</button></MensajeDocente>}
     {!error && items === null && <CargandoDocente texto="Cargando los estudiantes de tus secciones…" />}
     {items?.length === 0 && <MensajeDocente titulo="Tu grupo aún no tiene estudiantes vinculados"><p>El administrador puede vincularlos a tus secciones. Después aparecerán aquí.</p></MensajeDocente>}

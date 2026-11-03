@@ -37,3 +37,7 @@ cuentas_0001.sql
 
 edu-api/target/
 .idea/
+
+# Configuración y archivos propios de cada equipo.
+.DS_Store
+movil/gradle/gradle-daemon-jvm.properties

@@ -18,12 +18,19 @@ public interface GeneracionRepository extends JpaRepository<Generacion, UUID> {
     Optional<Generacion> findByIdAndSolicitudId(UUID id, UUID solicitudId);
 
     // La sección se resuelve en el servidor a partir de vínculos vigentes. No se
-    // acepta una lista de secciones enviada por la app ni una generación ajena.
-    @Query("select g from Generacion g where g.estado = 'lista' and exists ("
+    // acepta una lista de secciones enviada por la app ni una generación ajena. Solo
+    // aparecen los juegos que el docente envió a sus estudiantes.
+    @Query("select g from Generacion g where g.estado = 'lista' and g.publicada = true and exists ("
             + "select s.id from SolicitudPropuesta s where s.id = g.solicitudId and exists ("
             + "select v.id from VinculoEstudiante v where v.estudianteId = :estudiante "
             + "and v.seccion.id = s.seccionId and v.anioEscolar = v.seccion.anioEscolar)) "
-            + "order by g.creadoEn desc, g.id desc")
+            // Cada idea ocupa un solo lugar en la biblioteca. Los envíos anteriores
+            // conservan sus fechas y paquetes para el historial, pero se muestra
+            // únicamente el último envío confirmado. Preparar cambios no lo oculta.
+            + "and not exists (select nueva.id from Generacion nueva where nueva.solicitudId = g.solicitudId "
+            + "and nueva.publicada = true and nueva.estado = 'lista' and (nueva.publicadaEn > g.publicadaEn "
+            + "or (nueva.publicadaEn = g.publicadaEn and nueva.id > g.id))) "
+            + "order by g.publicadaEn desc, g.id desc")
     List<Generacion> juegosDelEstudiante(@Param("estudiante") UUID estudiante, org.springframework.data.domain.Pageable pagina);
 
     // Transición atómica: solo un proceso puede pasar una generación de "pendiente"

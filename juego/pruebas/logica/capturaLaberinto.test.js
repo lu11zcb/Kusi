@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CapturaLaberinto, CONGELADO, TEMBLOR, calcularTemblor } from '../../src/efectos/CapturaLaberinto.js'
+import { CapturaLaberinto, CONGELADO, TEMBLOR, calcularTemblor } from '../../juegos/laberinto/efectos/CapturaLaberinto.js'
 
 const ANCHO = 1280
 
