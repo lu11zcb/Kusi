@@ -16,18 +16,20 @@ Los paneles de **administración y docente** comparten `web/`. Con Django en 800
 
 La base existente y sus migraciones se conservan; revisar la configuración antes de iniciar sobre una instalación nueva. El proveedor de propuestas usa la clave local Groq; sin clave se mantiene la solicitud pendiente.
 
-## Aplicación Android y laberinto
+## Presentación Android
 
-El APK de desarrollo se genera en `movil/app/build/outputs/apk/debug/app-debug.apk`. Abre Kusi con acceso real del estudiante, biblioteca de juegos enviados por su docente, laberinto en WebView y cierre de la partida. La actividad de presentación con cuentas de ejemplo fue retirada. [Configuración y recorrido](movil/README.md).
+El APK de desarrollo se genera en `movil/app/build/outputs/apk/debug/app-debug.apk`. Incluye **Kusi**, con acceso real, y **Kusi · presentación**, recorrido aislado con ejemplos visibles. En presentación usar DNI `12345678` y cualquier contraseña; después crear y repetir una de ocho caracteres o más. Elegir aventura → misión horizontal → «¡Jugar!» → «Terminar» en la página técnica → cierre. No es una cuenta, biblioteca o juego generado reales. La variante de producción no incluye esa actividad.
 
-El juego está en `juego/`, servido en <http://127.0.0.1:5174/>. Reutiliza los personajes y el kit de adobe, con fondo cenital, vegetación animada por sprites, Kusi a la derecha y joystick a la izquierda. La barra representa los alimentos reales y los zorros exploran desde que aparece el nivel. [Guía del juego](juego/README.md).
+![Diseño Android actual](docs/vista-app-infantil.png)
 
 ## Estado y diseño
 
+- [Avance del martes 20 de octubre](docs/AVANCE_20_OCTUBRE.md).
+- [Verificaciones y límites](docs/VERIFICACION_20_OCTUBRE.md).
 - [Diseño vigente de administración, docente y Android](DESIGN.md).
 - [Alcance de producto](PRODUCT.md) y [autoría](AUTORIA.md).
 
-La propuesta aprobada puede generar un guion de laberinto mediante IA, pasar las comprobaciones técnicas y enviarse a los estudiantes desde el panel docente. Android integra biblioteca, juego y avisos de partida.
+Este avance conserva pendiente la generación del paquete real, validaciones completas e integración biblioteca/juego/eventos. No declara cerrado el Sprint 2 ni demuestra eficacia educativa.
 
 ## Instalar en macOS
 
@@ -37,7 +39,7 @@ Todo el proyecto corre en macOS (Apple Silicon o Intel). Los comandos son para l
 | --- | --- | --- | --- |
 | Git | cualquiera reciente | todo | `brew install git` |
 | Node.js | 22.12 o más (se probó con 24.19; Vite 8 pide 20.19 o más, o 22.12 o más) | `juego/` (Phaser, Playwright) y `web/` (React) | `brew install node@24` |
-| Python | 3.12 o más (se probó con 3.14) | `admin-api/` (Django 6.1) y las herramientas de `juego/kit/herramientas` | `brew install python@3.14` |
+| Python | 3.12 o más (se probó con 3.14) | `admin-api/` (Django 6.1) y las herramientas de `juego/herramientas` | `brew install python@3.14` |
 | Java | 21 (Temurin) | `edu-api/` (Spring Boot 3.5.6) y `movil/` | `brew install --cask temurin@21` |
 | PostgreSQL | 16 | base compartida: Django usa el esquema `admin` y Spring, el `edu` | `brew install postgresql@16` |
 | Android Studio y adb | SDK de Android 37 (`minSdk` 26) | `movil/` y probar en un celular | `brew install --cask android-studio`; adb sale de Platform-Tools (`brew install --cask android-platform-tools`) |

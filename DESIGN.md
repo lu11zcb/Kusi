@@ -30,7 +30,7 @@ La contraseña temporal se muestra una sola vez, con cierre expreso; el secreto 
 
 **Docente:** Inicio, Mis cursos, Mis estudiantes, Crear propuesta y Mis propuestas. Búsqueda por nombre/DNI, filtro por sección y listado adaptable. La propuesta muestra objetivo, historia, acciones, reglas, retos, ayudas y recursos; incluye edición, observaciones, alternativas, aprobación/rechazo y versiones. Tema/objetivo/propósito/instrucciones y filtros se conservan al navegar; se bloquea navegación al guardar. La propuesta textual y la generación posterior del paquete son etapas distintas.
 
-El menú se pliega en móvil; expresa `aria-expanded` y `aria-controls`. Escape lo cierra y devuelve el foco. Cambiar de sección lleva el foco al contenido. Texto y fichas se apilan sin perder acciones. Se respeta `prefers-reduced-motion`.
+El menú se pliega en móvil; expresa `aria-expanded` y `aria-controls`. Escape lo cierra y devuelve el foco. Cambiar de sección lleva el foco al contenido. Texto y fichas se apilan sin perder acciones. Se respeta `prefers-reduced-motion`. Las capturas de referencia actuales están en [administración](docs/vista-administracion.png) y [Android](docs/vista-app-infantil.png).
 
 ## App infantil Android
 
@@ -42,10 +42,10 @@ Botón nativo con cara mínima de 60 dp y base fija de 6 dp: se hunde al pulsar 
 
 Flujo Sprint 2: arranque/sesión → bienvenida → ingreso → nueva clave solo si es temporal → aventuras autorizadas → misión → juego → cierre. Misión/juego/cierre solicitan horizontal y se adaptan a tablet. Formularios desplazables con margen de teclado, letra ampliable y áreas del sistema respetadas. Sin pestañas, Cursos/Mi cuy, puntos ni premios de sprints futuros.
 
-La app usa acceso real y biblioteca de juegos enviados por el docente. El laberinto se abre en un WebView horizontal, recibe su guion por el puente y registra los avisos de partida. La actividad de presentación con datos de ejemplo fue retirada. En el juego, Kusi está a la derecha y el joystick a la izquierda; el terreno y los tejados comparten la vista cenital del mapa. Pasto, arbustos y flores cambian de cuadro en hojas de sprites, y las imágenes anteriores se conservan como recursos.
+La app normal conserva acceso real. Biblioteca, juego y eventos del estudiante siguen pendientes de conexión. **Kusi · presentación** existe solo en debug, identifica datos de ejemplo y recorre WebView local/cierre sin crear cuentas ni guardar resultados. Esa página técnica no es el juego generado.
 
 Cuatro escenas de bienvenida, feria, jardín de palabras y celebración, con sus prompts y procedencia. Las imágenes son apoyo visual de desarrollo. La generación educativa real exige contenido/paquete de IA, validación técnica/educativa y revisión docente; ninguna ilustración sustituye esas funciones.
 
 ## Verificación y entrega
 
-Compilar y recorrer ejemplos no acredita resultados de aprendizaje, accesibilidad completa o preferencia de niños/docentes. Mantener los contratos existentes al integrar biblioteca y eventos.
+Consultar [avance del 20](docs/AVANCE_20_OCTUBRE.md), [resumen de verificaciones](docs/VERIFICACION_20_OCTUBRE.md) e [instrucciones](README.md). Compilar y recorrer ejemplos no acredita resultados de aprendizaje, accesibilidad completa o preferencia de niños/docentes. Mantener los contratos existentes al integrar biblioteca y eventos.
