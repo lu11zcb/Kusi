@@ -20,6 +20,7 @@ import pe.kusi.edu.model.Propuesta;
 import pe.kusi.edu.repository.EtapaGeneracionRepository;
 import pe.kusi.edu.repository.GeneracionRepository;
 import pe.kusi.edu.repository.PropuestaRepository;
+import pe.kusi.edu.repository.TrabajoTallerRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,6 +32,7 @@ class GeneracionesServiceTest {
     private PropuestaRepository propuestaRepository;
     private GeneracionRepository generacionRepository;
     private EtapaGeneracionRepository etapaRepository;
+    private TrabajoTallerRepository trabajoRepository;
     private ProcesoGeneracionLaberinto proceso;
     private GeneracionesService service;
 
@@ -44,6 +46,7 @@ class GeneracionesServiceTest {
         propuestaRepository = mock(PropuestaRepository.class);
         generacionRepository = mock(GeneracionRepository.class);
         etapaRepository = mock(EtapaGeneracionRepository.class);
+        trabajoRepository = mock(TrabajoTallerRepository.class);
         proceso = mock(ProcesoGeneracionLaberinto.class);
 
         // Una transacción de mentira que solo ejecuta lo que se le pide.
@@ -56,6 +59,7 @@ class GeneracionesServiceTest {
             propuestaRepository,
             generacionRepository,
             etapaRepository,
+            trabajoRepository,
             proceso,
             transaccion,
             new ObjectMapper()
@@ -100,6 +104,12 @@ class GeneracionesServiceTest {
             .findFirstBySolicitudIdOrderByVersionDesc(solicitudId))
             .thenReturn(Optional.of(propuesta));
 
+        when(propuestasService.contextoDe(docenteId, solicitudId))
+            .thenReturn(new PropuestasService.ContextoSolicitud(
+                "Ciencias", 5, "El sistema solar",
+                "Aprender los planetas", "Crear un juego educativo"
+            ));
+
         when(generacionRepository.save(any(Generacion.class)))
             .thenAnswer(invocacion -> {
                 Generacion generacion = invocacion.getArgument(0);
@@ -132,6 +142,12 @@ class GeneracionesServiceTest {
             .findFirstBySolicitudIdOrderByVersionDesc(solicitudId))
             .thenReturn(Optional.of(propuesta));
 
+        when(propuestasService.contextoDe(docenteId, solicitudId))
+            .thenReturn(new PropuestasService.ContextoSolicitud(
+                "Ciencias", 5, "El sistema solar",
+                "Aprender los planetas", "Crear un juego educativo"
+            ));
+
         ResponseStatusException error = assertThrows(
             ResponseStatusException.class,
             () -> service.iniciar(docenteId, solicitudId, 2)
@@ -148,6 +164,12 @@ class GeneracionesServiceTest {
         when(propuestaRepository
             .findFirstBySolicitudIdOrderByVersionDesc(solicitudId))
             .thenReturn(Optional.of(propuesta));
+
+        when(propuestasService.contextoDe(docenteId, solicitudId))
+            .thenReturn(new PropuestasService.ContextoSolicitud(
+                "Ciencias", 5, "El sistema solar",
+                "Aprender los planetas", "Crear un juego educativo"
+            ));
 
         ResponseStatusException error = assertThrows(
             ResponseStatusException.class,

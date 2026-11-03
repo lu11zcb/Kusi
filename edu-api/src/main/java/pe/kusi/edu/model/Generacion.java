@@ -1,10 +1,12 @@
-
 package pe.kusi.edu.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Representa una generación de juego asociada a una propuesta aprobada.
+ */
 @Entity
 @Table(name = "generaciones")
 public class Generacion {
@@ -58,12 +60,18 @@ public class Generacion {
     public Instant getCreadoEn() { return creadoEn; }
     public Instant getActualizadoEn() { return actualizadoEn; }
 
+    /**
+     * Actualiza el estado y el último error de la generación.
+     */
     public void registrarEstado(String estado, String error) {
         this.estado = estado;
         this.ultimoError = error;
         this.actualizadoEn = Instant.now();
     }
 
+    /**
+     * Guarda el paquete JSON devuelto por el trabajador.
+     */
     public void guardarPaquete(String paquete) {
         this.paquete = paquete;
         this.actualizadoEn = Instant.now();

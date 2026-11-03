@@ -7,9 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import pe.kusi.edu.model.EtapaGeneracion;
 import pe.kusi.edu.model.Generacion;
 import pe.kusi.edu.model.Propuesta;
+import pe.kusi.edu.model.TrabajoTaller;
 import pe.kusi.edu.repository.EtapaGeneracionRepository;
 import pe.kusi.edu.repository.GeneracionRepository;
 import pe.kusi.edu.repository.PropuestaRepository;
+import pe.kusi.edu.repository.TrabajoTallerRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 @Service
 public class GeneracionesService {
@@ -27,6 +31,7 @@ public class GeneracionesService {
     private final PropuestaRepository propuestaRepository;
     private final GeneracionRepository generacionRepository;
     private final EtapaGeneracionRepository etapaRepository;
+    private final TrabajoTallerRepository trabajoRepository;
     private final ProcesoGeneracionLaberinto proceso;
     private final TransactionTemplate transaccion;
     private final ObjectMapper json;
@@ -36,6 +41,7 @@ public class GeneracionesService {
             PropuestaRepository propuestaRepository,
             GeneracionRepository generacionRepository,
             EtapaGeneracionRepository etapaRepository,
+            TrabajoTallerRepository trabajoRepository,
             ProcesoGeneracionLaberinto proceso,
             TransactionTemplate transaccion,
             ObjectMapper json) {
@@ -43,6 +49,7 @@ public class GeneracionesService {
         this.propuestaRepository = propuestaRepository;
         this.generacionRepository = generacionRepository;
         this.etapaRepository = etapaRepository;
+        this.trabajoRepository = trabajoRepository;
         this.proceso = proceso;
         this.transaccion = transaccion;
         this.json = json;
@@ -81,6 +88,35 @@ public class GeneracionesService {
                         solicitudId,
                         ultima.getId(),
                         ultima.getVersion()));
+
+        PropuestasService.ContextoSolicitud contexto =
+                propuestasService.contextoDe(docenteId, solicitudId);
+
+        Map<String, Object> datosSolicitud = new LinkedHashMap<>();
+        datosSolicitud.put("curso", contexto.cursoNombre());
+        datosSolicitud.put("grado", contexto.grado());
+        datosSolicitud.put("tema", contexto.tema());
+        datosSolicitud.put("proposito", contexto.proposito());
+        datosSolicitud.put("instrucciones", contexto.instrucciones());
+
+        Map<String, Object> datosEntrada = new LinkedHashMap<>();
+        datosEntrada.put("tipo", "crear_juego");
+        datosEntrada.put("solicitud", datosSolicitud);
+        datosEntrada.put("propuesta", propuestasService.contenido(ultima));
+
+        String contenidoEntrada;
+        try {
+            contenidoEntrada = json.writeValueAsString(datosEntrada);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException(
+                    "No se pudieron preparar los datos del trabajo del taller", ex);
+        }
+
+        trabajoRepository.save(new TrabajoTaller(
+                generacion.getId(),
+                "crear_juego",
+                contenidoEntrada));
+
 
         etapaRepository.save(new EtapaGeneracion(
                 generacion.getId(),
