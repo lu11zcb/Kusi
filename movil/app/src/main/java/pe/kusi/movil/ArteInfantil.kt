@@ -12,6 +12,24 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.CircleShape
 
+/** Los cursos conservan el mismo significado visual que en el panel docente,
+ * con las siluetas sólidas ya incluidas para la app. No depende del orden de las tarjetas. */
+fun iconoCursoInfantil(nombre: String, clasificacion: Boolean): Int {
+    val curso = java.text.Normalizer.normalize(nombre, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "").lowercase(java.util.Locale.ROOT)
+    return when {
+        curso.contains("matematica") -> R.drawable.ic_calculator
+        curso.contains("comunicacion") -> R.drawable.ic_chat_circle_text
+        curso.contains("personal social") -> R.drawable.ic_users
+        curso.contains("ciencia") -> R.drawable.ic_flask
+        curso.contains("arte") -> R.drawable.ic_palette
+        curso.contains("religiosa") -> R.drawable.ic_hands_praying
+        curso.contains("ingles") -> R.drawable.ic_globe_hemisphere_west
+        clasificacion -> R.drawable.ic_kusi_basket
+        else -> R.drawable.ic_kusi_compass
+    }
+}
+
 /** Familia Phosphor Fill local. El color se aplica según el contexto; nunca se rasteriza. */
 @Composable
 fun StickerKusi(recurso: Int, modifier: Modifier = Modifier) {

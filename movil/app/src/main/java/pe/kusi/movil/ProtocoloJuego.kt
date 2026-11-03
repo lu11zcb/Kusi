@@ -8,6 +8,24 @@ import org.json.JSONObject
 data class MensajeJuego(val tipo: String, val aviso: JSONObject? = null, val motivo: String? = null)
 data class JuegoDisponible(val id: String, val titulo: String, val paquete: String)
 
+data class PresentacionJuego(val titulo: String, val mision: String, val consigna: String, val clasificacion: Boolean, val curso: String)
+
+/** El niño recibe la consigna comprobada del juego, sin inventar objetivos ni
+ * usar el tema del docente como una instrucción. No cambia el paquete recibido. */
+fun presentacionJuego(juego: JuegoDisponible): PresentacionJuego {
+    val paquete = JSONObject(juego.paquete)
+    val primerReto = paquete.getJSONArray("retos").getJSONObject(0)
+    val clasificacion = primerReto.optJSONObject("regla")?.optString("tipo") == "solo_clase"
+    val consigna = primerReto.optString("consigna").takeIf { it.isNotBlank() } ?: "Escucha a Kusi al entrar."
+    return PresentacionJuego(
+        paquete.optString("titulo").takeIf { it.isNotBlank() } ?: juego.titulo,
+        paquete.optString("meta").takeIf { it.isNotBlank() && it.length <= 180 }
+            ?: if (clasificacion) "Busca los alimentos que te pide Kusi." else "Recoge los alimentos siguiendo el orden que ves arriba.",
+        consigna, clasificacion,
+        paquete.optString("curso").takeIf { it.isNotBlank() } ?: if (clasificacion) "Frutas y verduras" else "Patrones con alimentos"
+    )
+}
+
 fun leerMensajeJuego(texto: String): MensajeJuego? = try {
     if (texto.length > 9000) null else {
         val datos = JSONObject(texto)

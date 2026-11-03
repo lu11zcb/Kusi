@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -48,10 +49,11 @@ fun AplicacionInfantil(
     var paso by rememberSaveable(estado.cuenta?.id) { mutableStateOf("mision") }
     var ayuda by rememberSaveable { mutableStateOf(false) }
     var confirmarSalida by remember { mutableStateOf(false) }
+    var confirmarRegreso by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }; val scope = rememberCoroutineScope()
     val voz = recordarVozKusi { scope.launch { snackbar.showSnackbar(it) } }
     val aventura = biblioteca.aventuras.find { it.id == aventuraId }
-    fun volver() { if (ayuda) ayuda = false else if (aventura != null) { if (paso == "juego") paso = "mision" else aventuraId = null } else entrada = "bienvenida" }
+    fun volver() { if (ayuda) ayuda = false else if (aventura != null) { if (paso == "juego") confirmarRegreso = true else aventuraId = null } else entrada = "bienvenida" }
     BackHandler(ayuda || aventura != null || (estado.cuenta == null && entrada == "ingreso")) { volver() }
     val actividad = LocalContext.current.actividad()
     val orienta = actividad?.javaClass?.packageName == "pe.kusi.movil"
@@ -76,7 +78,7 @@ fun AplicacionInfantil(
                         "clave" -> NuevaClaveInfantil(estado, cambiarClave) { confirmarSalida = true }
                         "adulto" -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { AvisoKusi("Esta app es para estudiantes. Para enseñar o administrar, entra desde la web."); BotonKusi("Salir de Kusi", salir, habilitado = !estado.ocupado) }
                         "mision" -> aventura?.let { MisionInfantil(it, voz) { paso = "juego" } }
-                        "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { paso = "mision" }) }
+                        "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { volver() }) }
                         "cierre" -> aventura?.let { CierreInfantil(it, cierre, voz, { aventuraId = null }, { paso = "juego" }, reintentarGuardado) }
                         else -> estado.cuenta?.let { InicioAventurasInfantil(it, estado, biblioteca, voz, { aventuraId = it.id; paso = "mision" }, reintentarBiblioteca, comprobar) { confirmarSalida = true } }
                     }
@@ -84,8 +86,20 @@ fun AplicacionInfantil(
             }
         }
     }
-    if (ayuda) AlertDialog(onDismissRequest = { ayuda = false }, icon = { IconoKusi(R.drawable.ic_question) }, title = { Text("Pide una mano a tu profe") }, text = { Text("Tu profe te da tu cuenta. Si olvidaste tu contraseña, pídele una nueva. Un adulto puede ayudarte a entrar.") },
-        confirmButton = { TextButton(onClick = { ayuda = false }) { Text("¡Entendido!") } }, dismissButton = { TextButton(onClick = { voz.hablar("Si olvidaste tu contraseña, pídele una nueva a tu profe. Un adulto puede ayudarte a entrar.") }) { IconoKusi(R.drawable.ic_speaker_high); Text("Escuchar") } })
+    // La ayuda corresponde a lo que el niño está intentando hacer ahora.
+    val textoAyuda = when (destino) {
+        "ingreso", "clave" -> "Tu profe te da tu cuenta. Pide ayuda a un adulto para entrar o cambiar tu contraseña."
+        "mision" -> aventura?.consigna ?: "Escucha a Kusi y toca Jugar cuando estés listo."
+        "cierre" -> "Puedes jugar otra vez o elegir otra aventura."
+        "inicio" -> "Elige una aventura de tu clase y toca Ver la misión."
+        else -> "Soy Kusi. Toca Entrar y pide ayuda a un adulto la primera vez."
+    }
+    if (ayuda) AlertDialog(onDismissRequest = { ayuda = false }, icon = { IconoKusi(R.drawable.ic_question) }, title = { Text("Kusi te ayuda") }, text = { Text(textoAyuda) },
+        confirmButton = { TextButton(onClick = { ayuda = false }) { Text("¡Entendido!") } }, dismissButton = { TextButton(onClick = { voz.hablar(textoAyuda) }) { IconoKusi(R.drawable.ic_speaker_high); Text("Escuchar") } })
+    if (confirmarRegreso) AlertDialog(onDismissRequest = { confirmarRegreso = false }, title = { Text("¿Volvemos a la misión?") },
+        text = { Text("Cuando vuelvas a jugar, empezarás una partida nueva.") },
+        confirmButton = { TextButton(onClick = { confirmarRegreso = false; paso = "mision" }) { Text("Volver a la misión") } },
+        dismissButton = { TextButton(onClick = { confirmarRegreso = false }) { Text("Seguir jugando") } })
     if (confirmarSalida) AlertDialog(onDismissRequest = { confirmarSalida = false }, title = { Text("¿Salimos por ahora?") }, text = { Text("Para volver necesitarás tu DNI y contraseña.") }, confirmButton = { TextButton(onClick = { confirmarSalida = false; salir() }, enabled = !estado.ocupado) { Text("Sí, salir") } }, dismissButton = { TextButton(onClick = { confirmarSalida = false }) { Text("Seguir aquí") } })
 }
 
@@ -95,12 +109,12 @@ private fun FondoAventura(modifier: Modifier = Modifier, contenido: @Composable 
 }
 @Composable
 private fun ArranqueInfantil(voz: VozKusi) {
-    Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { CuyInteractivo(voz, Modifier.size(190.dp)); Text("Kusi", style = MaterialTheme.typography.displayLarge); Spacer(Modifier.height(24.dp)); CircularProgressIndicator(); Spacer(Modifier.height(16.dp)); Text("Revisando tu sesión…") }
+    Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { CuyInteractivo(voz, Modifier.size(190.dp)); Text("Kusi", style = MaterialTheme.typography.displayLarge); Spacer(Modifier.height(24.dp)); CircularProgressIndicator(); Spacer(Modifier.height(16.dp)); Text("Preparando Kusi…") }
 }
 @Composable
 private fun BienvenidaInfantil(voz: VozKusi, entrar: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Box(Modifier.fillMaxWidth().height(350.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp,32.dp,64.dp,24.dp))) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 180.dp, max = 260.dp).aspectRatio(1.5f).clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp,32.dp,64.dp,24.dp))) {
             CuyInteractivo(voz, Modifier.fillMaxSize(), recurso = R.drawable.kusi_bienvenida_v2)
             Surface(color = MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium, shadowElevation = 3.dp, modifier = Modifier.align(Alignment.BottomEnd).padding(14.dp)) {
                 Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { StickerKusi(R.drawable.ic_kusi_sparkle, Modifier.size(23.dp)); Text("Tócame para saludar", style = MaterialTheme.typography.labelSmall) }
@@ -122,13 +136,13 @@ private fun BienvenidaInfantil(voz: VozKusi, entrar: () -> Unit) {
 private fun IngresoInfantil(estado: EstadoEntradaKusi, ingresar: (String, String, Boolean) -> Unit, ayuda: () -> Unit) {
     var dni by rememberSaveable { mutableStateOf("") }; var clave by remember { mutableStateOf("") }; var recordar by rememberSaveable { mutableStateOf(true) }
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) { InsigniaKusi(R.drawable.ic_kusi_key, Modifier.size(72.dp)); Column(Modifier.weight(1f)) { Text("¡Ya casi!", style = MaterialTheme.typography.headlineLarge); Text("Entra con tu cuenta", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) { InsigniaKusi(R.drawable.ic_kusi_key, Modifier.size(72.dp)); Column(Modifier.weight(1f)) { Text("¡Vamos a entrar!", style = MaterialTheme.typography.headlineLarge); Text("Entra con tu cuenta", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
         TarjetaKusi(Modifier.fillMaxWidth()) {
             OutlinedTextField(dni, { dni = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("Mi DNI") }, supportingText = { Text("Los 8 números de tu DNI") }, singleLine = true, enabled = !estado.ocupado, shape = MaterialTheme.shapes.medium, colors = coloresCampoKusi(), textStyle = MaterialTheme.typography.titleMedium, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next), modifier = Modifier.fillMaxWidth())
             CampoClaveKusi(clave, { clave = it }, "Mi contraseña", !estado.ocupado)
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(recordar, role = Role.Checkbox, enabled = !estado.ocupado, onValueChange = { recordar = it }), verticalAlignment = Alignment.CenterVertically) { Checkbox(recordar, null, enabled = !estado.ocupado); Text("Recordarme en este celular", style = MaterialTheme.typography.bodySmall) }
             estado.mensaje?.let { AvisoKusi(it, true) }
-            BotonKusi(if (estado.ocupado) "Entrando…" else "Entrar", { ingresar(dni, clave, recordar); clave = "" }, Modifier.fillMaxWidth(), !estado.ocupado && dni.length == 8 && clave.isNotEmpty(), R.drawable.ic_arrow_right)
+            BotonKusi(if (estado.ocupado) "Entrando…" else "Entrar", { ingresar(dni, clave, recordar) }, Modifier.fillMaxWidth(), !estado.ocupado && dni.length == 8 && clave.isNotEmpty(), R.drawable.ic_arrow_right)
             if (estado.ocupado) LinearProgressIndicator(Modifier.fillMaxWidth())
         }
         TextButton(onClick = ayuda, modifier = Modifier.heightIn(min = 48.dp)) { Text("Olvidé mi contraseña") }
@@ -141,7 +155,7 @@ private fun NuevaClaveInfantil(estado: EstadoEntradaKusi, cambiar: (String, Stri
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         InsigniaKusi(R.drawable.ic_kusi_key, Modifier.size(64.dp))
         Text("Crea tu contraseña", style = MaterialTheme.typography.headlineLarge)
-        Text("Un adulto puede ayudarte. Guarda tu nueva contraseña en un lugar seguro.", style = MaterialTheme.typography.bodyMedium)
+        Text("Pide ayuda a un adulto para elegir una contraseña y recordarla.", style = MaterialTheme.typography.bodyMedium)
         TarjetaKusi(Modifier.fillMaxWidth()) {
             if (!estado.claveTemporalDisponible) { Text("Vuelve a escribir la contraseña que te dio tu profe.", style = MaterialTheme.typography.bodySmall); CampoClaveKusi(actual, { actual = it }, "Contraseña actual", !estado.ocupado) }
             CampoClaveKusi(nueva, { nueva = it }, "Nueva contraseña", !estado.ocupado)
@@ -149,7 +163,7 @@ private fun NuevaClaveInfantil(estado: EstadoEntradaKusi, cambiar: (String, Stri
             CampoClaveKusi(repetir, { repetir = it }, "Repite tu contraseña", !estado.ocupado)
             if (!coincide) AvisoKusi("Las dos contraseñas deben ser iguales.", true)
             estado.mensaje?.let { AvisoKusi(it, true) }
-            BotonKusi(if (estado.ocupado) "Guardando…" else "Guardar y continuar", { cambiar(actual, nueva, repetir); actual = ""; nueva = ""; repetir = "" }, Modifier.fillMaxWidth(), !estado.ocupado && (estado.claveTemporalDisponible || actual.isNotEmpty()) && nueva.length >= 8 && repetir == nueva, R.drawable.ic_check)
+            BotonKusi(if (estado.ocupado) "Guardando…" else "Guardar y continuar", { cambiar(actual, nueva, repetir) }, Modifier.fillMaxWidth(), !estado.ocupado && (estado.claveTemporalDisponible || actual.isNotEmpty()) && nueva.length >= 8 && repetir == nueva, R.drawable.ic_check)
             if (estado.ocupado) LinearProgressIndicator(Modifier.fillMaxWidth())
         }
         TextButton(onClick = salir, enabled = !estado.ocupado, modifier = Modifier.heightIn(min = 48.dp)) { Text("Salir de Kusi") }
@@ -159,7 +173,7 @@ private fun NuevaClaveInfantil(estado: EstadoEntradaKusi, cambiar: (String, Stri
 private fun InicioAventurasInfantil(cuenta: Cuenta, estado: EstadoEntradaKusi, biblioteca: EstadoBibliotecaInfantil, voz: VozKusi, elegir: (AventuraInfantil) -> Unit, recargar: (() -> Unit)?, comprobar: () -> Unit, salir: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(22.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text("¡Hola, ${cuenta.nombre.trim().substringBefore(' ')}!", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f)); TextButton(onClick = salir, enabled = !estado.ocupado, modifier = Modifier.heightIn(min = 48.dp)) { IconoKusi(R.drawable.ic_sign_out); Text("Salir") } } }
-        item { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) { Column(Modifier.weight(1f)) { Text("Elige una\naventura", style = MaterialTheme.typography.displaySmall); Text("Un mundo por descubrir", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; InsigniaKusi(R.drawable.ic_kusi_compass, Modifier.size(72.dp)) } }
+        item { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) { Column(Modifier.weight(1f)) { Text("Mis aventuras", style = MaterialTheme.typography.displaySmall); Text("Tu profe preparó estos juegos para ti", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; InsigniaKusi(R.drawable.ic_kusi_compass, Modifier.size(72.dp)) } }
         if (!estado.validado || estado.mensaje != null) item { AvisoKusi(estado.mensaje ?: "Vamos a comprobar tu acceso.", estado.mensaje != null); TextButton(onClick = comprobar, enabled = !estado.ocupado) { Text(if (estado.ocupado) "Comprobando…" else "Volver a comprobar") } }
         when {
             biblioteca.cargando -> item {
@@ -172,32 +186,40 @@ private fun InicioAventurasInfantil(cuenta: Cuenta, estado: EstadoEntradaKusi, b
                 Spacer(Modifier.height(20.dp)); Text("Tu próxima aventura\nestá por llegar", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 Text("Tu profe te avisará cuando puedas jugar.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp))
                 BotonKusi("Escuchar a Kusi", { voz.hablar("Todavía no tienes juegos. Tu profe te avisará cuando tu aventura esté lista.") }, Modifier.fillMaxWidth(), icono = R.drawable.ic_speaker_high)
+                // La biblioteca se carga al entrar. Si el profe genera un juego después,
+                // este botón la vuelve a pedir sin tener que salir y entrar otra vez.
+                if (recargar != null) BotonKusi("Buscar juegos nuevos", recargar, Modifier.fillMaxWidth().padding(top = 12.dp))
             }
         }
-        // El ejemplo sigue al final incluso si falla la consulta de la biblioteca.
-        // Conserva la autorización de estudiante, pero no depende de una generación.
+        // Buscar sigue disponible con una biblioteca llena: un juego recién
+        // enviado debe poder aparecer sin cerrar la sesión del estudiante.
+        if (biblioteca.aventuras.isNotEmpty() && recargar != null) item {
+            BotonKusi(if (biblioteca.cargando) "Buscando…" else "Buscar juegos nuevos", recargar,
+                Modifier.fillMaxWidth(), habilitado = !biblioteca.cargando && !estado.ocupado, icono = R.drawable.ic_kusi_sparkle, secundario = true)
+        }
+        // Solo los juegos enviados a la sección del estudiante.
         if (biblioteca.aventuras.isNotEmpty()) items(biblioteca.aventuras.size, key = { biblioteca.aventuras[it].id }) { indice ->
             val aventura = biblioteca.aventuras[indice]
-            AventuraTarjeta(aventura, indice, estado.validado && !estado.ocupado) { elegir(aventura) }
+            AventuraTarjeta(aventura, estado.validado && !estado.ocupado && !biblioteca.cargando) { elegir(aventura) }
         }
     }
 }
 @Composable
-private fun AventuraTarjeta(aventura: AventuraInfantil, indice: Int, habilitada: Boolean, elegir: () -> Unit) {
+private fun AventuraTarjeta(aventura: AventuraInfantil, habilitada: Boolean, elegir: () -> Unit) {
     val colores = MaterialTheme.colorScheme
-    val fondo = if (indice % 2 == 0) colores.primaryContainer else colores.tertiaryContainer
-    val tinta = if (indice % 2 == 0) colores.onPrimaryContainer else colores.onTertiaryContainer
+    val fondo = colores.primaryContainer
+    val tinta = colores.onPrimaryContainer
     Card(onClick = elegir, enabled = habilitada, colors = CardDefaults.cardColors(containerColor = colores.surface), border = androidx.compose.foundation.BorderStroke(2.dp, fondo), shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
         Column {
             Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
                 Image(painterResource(aventura.portada), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
                 Surface(color = fondo, contentColor = tinta, shape = MaterialTheme.shapes.medium, shadowElevation = 2.dp, modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) {
-                    Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) { IconoKusi(if (indice % 2 == 0) R.drawable.ic_kusi_basket else R.drawable.ic_kusi_book, modifier = Modifier.size(23.dp)); Text(aventura.curso, style = MaterialTheme.typography.labelMedium) }
+                    Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) { IconoKusi(aventura.icono, modifier = Modifier.size(23.dp)); Text(aventura.curso, style = MaterialTheme.typography.labelMedium) }
                 }
             }
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(aventura.titulo, style = MaterialTheme.typography.headlineSmall)
-                BotonKusi("¡Vamos!", elegir, Modifier.fillMaxWidth(), habilitada, R.drawable.ic_kusi_play, secundario = indice % 2 != 0)
+                Text(aventura.titulo, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                BotonKusi("Ver la misión", elegir, Modifier.fillMaxWidth(), habilitada, R.drawable.ic_kusi_play)
             }
         }
     }
@@ -217,11 +239,11 @@ private fun MisionInfantil(aventura: AventuraInfantil, voz: VozKusi, jugar: () -
 private fun CierreInfantil(aventura: AventuraInfantil, estado: EstadoCierreInfantil, voz: VozKusi, inicio: () -> Unit, otraVez: () -> Unit, reintentar: () -> Unit) {
     PanelHorizontalInfantil(imagen = { CuyInteractivo(voz, Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge), "¡Terminaste tu aventura! Gracias por explorar conmigo.", R.drawable.kusi_celebracion_v2) }) {
         Text("¡Terminaste tu aventura!", style = MaterialTheme.typography.headlineMedium); Text(aventura.titulo, style = MaterialTheme.typography.titleLarge)
-        if (estado.completados != null && estado.total != null) Text("Retos completados: ${estado.completados} de ${estado.total}")
-        when { estado.guardando -> { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Guardando…") }; estado.error != null -> { AvisoKusi(estado.error, true); TextButton(onClick = reintentar) { Text("Reintentar guardado") } }; estado.guardado -> Text("Tu recorrido se guardó.", color = MaterialTheme.colorScheme.primary) }
+        if (estado.completados != null && estado.total != null) Text("Completaste " + estado.completados + " de " + estado.total + " retos")
+        when { estado.guardando -> Text("Kusi está guardando tu aventura…", style = MaterialTheme.typography.bodySmall); estado.error != null -> { AvisoKusi("Tu aventura terminó. Vamos a guardar tu avance."); TextButton(onClick = reintentar) { Text("Intentar otra vez") } }; estado.guardado -> Text("¡Tu aventura quedó guardada!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            BotonKusi("Volver al inicio", inicio, Modifier.weight(1f), icono = R.drawable.ic_house, compacto = true)
-            BotonKusi("Jugar otra vez", otraVez, Modifier.weight(1f), icono = R.drawable.ic_kusi_replay, secundario = true, compacto = true)
+            BotonKusi("Jugar otra vez", otraVez, Modifier.weight(1f), icono = R.drawable.ic_kusi_replay, compacto = true)
+            BotonKusi("Elegir otra aventura", inicio, Modifier.weight(1f), icono = R.drawable.ic_house, secundario = true, compacto = true)
         }
     }
 }

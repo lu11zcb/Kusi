@@ -26,6 +26,24 @@ class ProtocoloJuegoTest {
         assertEquals("paquete", datos.getString("tipo"))
         assertEquals(paquete, datos.getString("paquete"))
     }
+    @Test fun laMisionUsaLaConsignaDelJuegoYNoModificaElPaquete() {
+        val paquete = JSONObject().put("titulo", "La aventura de las frutas").put("curso", "Matemática").put("meta", "Ayuda a Kusi a juntar frutas.")
+            .put("retos", org.json.JSONArray().put(JSONObject().put("consigna", "Junta solo las frutas.")
+                .put("regla", JSONObject().put("tipo", "solo_clase")))).toString()
+        val juego = JuegoDisponible("prueba", "Tema del docente", paquete)
+        val presentacion = presentacionJuego(juego)
+        assertEquals("La aventura de las frutas", presentacion.titulo)
+        assertEquals("Matemática", presentacion.curso)
+        assertEquals("Ayuda a Kusi a juntar frutas.", presentacion.mision)
+        assertEquals("Junta solo las frutas.", presentacion.consigna)
+        assertTrue(presentacion.clasificacion)
+        assertEquals(paquete, juego.paquete)
+        val patron = presentacionJuego(juego.copy(paquete = JSONObject(paquete).put("retos",
+            org.json.JSONArray().put(JSONObject().put("consigna", "Sigue el patrón.")
+                .put("regla", JSONObject().put("tipo", "orden")))).toString()))
+        assertFalse(patron.clasificacion)
+        assertEquals("Sigue el patrón.", patron.consigna)
+    }
     @Test fun restringeLaNavegacionYConservaLosParametrosDelJuego() {
         val base = "http://10.0.2.2:5174/"
         assertTrue(direccionJuegoPermitida(base, base + "src/main.js"))

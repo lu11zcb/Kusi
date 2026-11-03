@@ -25,6 +25,14 @@ Luis pide mejorar de nuevo iconos, botones y letra. Esta revisión sustituye los
 
 Arranque → bienvenida → ingreso → cambio de clave solo si es temporal → aventuras autorizadas → misión → juego → cierre. Sin pestañas, Cursos, Mi cuy, premios ni personalización de sprints futuros. Cerrar sesión pide confirmación. Carga, error, biblioteca vacía y guardado dependen de estados recibidos.
 
-`PresentacionInfantilActivity` y su HTML existen únicamente en debug. Las dos aventuras de Mateo y el contador final son ejemplos, identificados en todas las pantallas, sin cuentas ni persistencia reales. La app normal conserva acceso real y biblioteca sin conectar; no se inventa un juego disponible ni un guardado exitoso. La intervención real de IA en paquetes educativos y su validación/docente siguen pendientes de integración y diferenciadas de las ilustraciones de apoyo.
+La actividad de presentación con datos de ejemplo y su HTML fueron retirados. La app usa acceso real, biblioteca de juegos enviados por el docente, laberinto en WebView y registro de avisos de partida. La biblioteca vacía conserva su estado de espera; no inventa juegos ni resultados. Las ilustraciones de apoyo se distinguen de los guiones educativos generados y revisados.
 
 La instantánea histórica `.impeccable/design.json` pertenece a otra composición y no es la autoridad de este diseño. Esta actualización no la utiliza ni regenera. [Instrucciones de ejecución](README.md).
+
+## Ajustes del recorrido y coherencia con el panel
+
+La biblioteca usa el título, curso y consigna del paquete real. Los iconos representan el curso y no la posición de la tarjeta. Buscar juegos nuevos está disponible incluso con aventuras cargadas. La misión presenta el objetivo breve y la consigna del juego; conserva la escucha mediante voz.
+
+Se reduce el espacio de la ilustración de bienvenida y se prioriza la acción de entrar. La ayuda corresponde a la pantalla actual. Los campos de contraseña no se vacían al enviar una operación que todavía podría fallar; permanecen exclusivamente en memoria hasta abandonar la pantalla. El regreso desde una partida explica que volver a jugar empezará otra partida. El cierre diferencia Jugar otra vez de Elegir otra aventura y presenta el guardado con mensajes sencillos.
+
+El contenedor del juego usa los controles de Kusi y ofrece volver a abrir una aventura que no carga sin mostrar el diagnóstico recibido del puente. No cambian las fuentes, colores o ilustraciones. La compilación y las pruebas de pantallas pendientes en dispositivo se describen en [la revisión del proyecto](../REVISION-DISENO.md).

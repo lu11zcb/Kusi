@@ -48,9 +48,9 @@ class InterfazInfantilTest {
         pantalla.onNodeWithText("Entrar",substring=false).performScrollTo().performClick()
         pantalla.runOnIdle { assertEquals(Triple("12345678","Clave-sintetica-2026",false),enviado) }
         pantalla.onNodeWithText("Olvidé mi contraseña").performScrollTo().performClick()
-        pantalla.onNodeWithText("Pide una mano a tu profe").assertIsDisplayed(); capturar("ayuda")
+        pantalla.onNodeWithText("Kusi te ayuda").assertIsDisplayed(); capturar("ayuda")
         pantalla.runOnUiThread { pantalla.activity.onBackPressedDispatcher.onBackPressed() }
-        pantalla.onNodeWithText("¡Ya casi!").assertIsDisplayed()
+        pantalla.onNodeWithText("¡Vamos a entrar!").assertIsDisplayed()
     }
     @Test fun nueva_clave_sin_repetir_la_temporal() {
         val estado=mutableStateOf(EstadoEntradaKusi(cuenta.copy(temporal=true),claveTemporalDisponible=true))
@@ -70,18 +70,38 @@ class InterfazInfantilTest {
         pantalla.setContent { TemaKusi { AplicacionInfantil(EstadoEntradaKusi(cuenta,validado=true),{_,_,_->},{_,_,_->},{},{},
             biblioteca=EstadoBibliotecaInfantil(listOf(aventura)),cierre=EstadoCierreInfantil(1,1),
             contenidoJuego={_,fin,_->BotonKusi("Terminar recorrido de prueba",fin)}) } }
-        pantalla.onNodeWithText("Elige una\naventura").assertIsDisplayed()
+        pantalla.onNodeWithText("Mis aventuras").assertIsDisplayed()
         pantalla.onNodeWithText("Cursos").assertDoesNotExist(); pantalla.onNodeWithText("Mi cuy").assertDoesNotExist(); capturar("inicio")
         pantalla.onNodeWithText("La feria de las cantidades").performScrollTo().performClick()
         pantalla.onNodeWithText("Escuchar la misión").assertExists(); capturar("mision")
         pantalla.onNodeWithText("¡Jugar!").performScrollTo().performClick()
         pantalla.onNodeWithText("Terminar recorrido de prueba").performClick()
         pantalla.onNodeWithText("¡Terminaste tu aventura!").assertExists(); capturar("cierre")
-        pantalla.onNodeWithText("Tu recorrido se guardó.").assertDoesNotExist()
+        pantalla.onNodeWithText("¡Tu aventura quedó guardada!").assertDoesNotExist()
         pantalla.onNodeWithText("Jugar otra vez").performScrollTo().performClick()
         pantalla.onNodeWithText("Terminar recorrido de prueba").performClick()
-        pantalla.onNodeWithText("Volver al inicio").performScrollTo().performClick()
-        pantalla.onNodeWithText("Elige una\naventura").assertIsDisplayed()
+        pantalla.onNodeWithText("Elegir otra aventura").performScrollTo().performClick()
+        pantalla.onNodeWithText("Mis aventuras").assertIsDisplayed()
+    }
+    @Test fun buscar_juegos_y_ayuda_con_una_aventura_disponible() {
+        var busquedas = 0
+        pantalla.setContent { TemaKusi { AplicacionInfantil(EstadoEntradaKusi(cuenta,validado=true),{_,_,_->},{_,_,_->},{},{},
+            biblioteca=EstadoBibliotecaInfantil(listOf(aventura)),reintentarBiblioteca={busquedas++},
+            contenidoJuego={_,_,volver->BotonKusi("Volver de la prueba",volver)}) } }
+        pantalla.onNodeWithText("Buscar juegos nuevos").performScrollTo().performClick()
+        pantalla.runOnIdle { assertEquals(1,busquedas) }
+        pantalla.onNodeWithContentDescription("Necesito ayuda").performClick()
+        pantalla.onNodeWithText("Elige una aventura de tu clase y toca Ver la misión.").assertExists()
+        pantalla.onNodeWithText("¡Entendido!").performClick()
+        pantalla.onNodeWithText("Ver la misión").performScrollTo().performClick()
+        pantalla.onNodeWithContentDescription("Necesito ayuda").performClick()
+        pantalla.onNodeWithText(aventura.consigna).assertExists()
+        pantalla.onNodeWithText("¡Entendido!").performClick()
+        pantalla.onNodeWithText("¡Jugar!").performScrollTo().performClick()
+        pantalla.onNodeWithText("Volver de la prueba").performClick()
+        pantalla.onNodeWithText("¿Volvemos a la misión?").assertExists()
+        pantalla.onNodeWithText("Seguir jugando").performClick()
+        pantalla.onNodeWithText("Volver de la prueba").assertExists()
     }
     @Test fun estados_vacios_error_y_reintento() {
         val biblioteca=mutableStateOf(EstadoBibliotecaInfantil())

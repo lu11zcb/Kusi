@@ -11,8 +11,13 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import java.io.ByteArrayInputStream
 
@@ -25,11 +30,22 @@ fun JuegoLaberinto(aventura: AventuraInfantil, registrar: (org.json.JSONObject) 
     val finalizarActual by rememberUpdatedState(finalizar)
     val hablarActual by rememberUpdatedState(voz.hablar)
     var error by remember { mutableStateOf<String?>(null) }
+    var recarga by remember { mutableIntStateOf(0) }
     val hiloPrincipal = remember { Handler(Looper.getMainLooper()) }
     Column(Modifier.fillMaxSize()) {
-        TextButton(onClick = volver) { Text("Volver a la misión") }
-        error?.let { Text(it) }
-        key(aventura.id) {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                BotonIconoKusi(R.drawable.ic_arrow_left, "Volver a la misión", volver)
+                Text(aventura.titulo, style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(end = 12.dp))
+            }
+        }
+        if (error != null) Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            AvisoKusi("No pudimos abrir esta aventura. Vamos a intentarlo otra vez.")
+            BotonKusi("Intentar otra vez", { error = null; recarga += 1 }, icono = R.drawable.ic_kusi_replay)
+            TextButton(onClick = volver) { Text("Volver a la misión") }
+        }
+        key(aventura.id, recarga) {
             AndroidView(modifier = Modifier.weight(1f).fillMaxWidth(), factory = { contexto ->
                 WebView(contexto).apply {
                     val vista = this
@@ -43,7 +59,8 @@ fun JuegoLaberinto(aventura: AventuraInfantil, registrar: (org.json.JSONObject) 
                                 if (!activa) return@post
                                 when (mensaje.tipo) {
                                     "listo" -> aventura.paquete?.let { paquete -> vista.evaluateJavascript(mensajePaqueteJuego(paquete), null) }
-                                    "error" -> error = mensaje.motivo ?: "No se pudo abrir el juego."
+                                    "cargado" -> error = null
+                                    "error" -> error = "No se pudo abrir la aventura."
                                     "aviso" -> mensaje.aviso?.let { aviso ->
                                         registrarActual(aviso)
                                         if (aviso.optString("tipo") == "fin") finalizarActual()
