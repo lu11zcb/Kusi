@@ -1,23 +1,20 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { DIRECCIONES_PERSONAJE, validarSpritePersonaje } from '../kit/reproductor/datos/validarSpritePersonaje.js'
+import { DIRECCIONES_PERSONAJE, validarSpritePersonaje } from '../src/datos/validarSpritePersonaje.js'
 
 const leerZorro = async () => JSON.parse(await readFile(
-  new URL('../kit/recursos/dibujos/zorro-animado-v1.json', import.meta.url), 'utf8',
+  new URL('../public/dibujos/zorro-animado-v1.json', import.meta.url), 'utf8',
 ))
 
 test('el zorro usa su propio manifiesto, caminar continuo y el cuadro quieto central', async () => {
   const datos = validarSpritePersonaje(await leerZorro(), 'zorro')
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 5 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 1 })
   for (const direccion of DIRECCIONES_PERSONAJE) {
-    const inicio = { frente: 0, derecha: 3, izquierda: 3, espaldas: 6 }[direccion]
     expect(datos.animaciones[direccion].caminar).toMatchObject({
-      fotogramas: [inicio, inicio + 1, inicio + 2, inicio + 1], fps: 8, repetir: -1,
+      fotogramas: [0, 1, 2, 1], fps: 8, repetir: -1,
     })
-    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([inicio + 1])
-    expect(datos.animaciones[direccion].caminar.voltear === true).toBe(direccion === 'izquierda')
-    expect(datos.animaciones[direccion].cansado.fotogramas).toEqual([9, 10, 11, 10])
+    expect(datos.animaciones[direccion].quieto.fotogramas).toEqual([1])
   }
 })
 
@@ -46,7 +43,7 @@ test('el motor compartido conserva una expresión finita y vuelve al estado del 
   await pagina.goto('/')
   await pagina.waitForFunction(() => window.kusi?.listo)
   const resultado = await pagina.evaluate(async () => {
-    const { PersonajeAnimado } = await import('/kit/reproductor/dibujos/personajeAnimado.js')
+    const { PersonajeAnimado } = await import('/src/dibujos/personajeAnimado.js')
     const datos = await (await fetch('/dibujos/zorro-animado-v1.json')).json()
     datos.animaciones.frente.prueba = { fotogramas: [0, 1, 2], fps: 8, repetir: 0, siguiente: 'quieto' }
     const reproducidas = []

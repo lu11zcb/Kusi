@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
-const RUTA_PAQUETE = new URL('../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url)
+const RUTA_PAQUETE = new URL('../public/paquete-laberinto-ejemplo.json', import.meta.url)
 const CLAVE_MANO = 'kusi-laberinto-tocar-v1'
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))
@@ -72,7 +72,7 @@ test('come las cuatro frutas del nivel real, abre la puerta y entra al nivel 2',
   expect(segundo.puertaAbierta).toBe(false)
   expect(segundo.manoVisible).toBe(false)
   expect(segundo.zorros).toHaveLength(1)
-  expect(segundo.zorros[0].mirando).toBe('derecha')
+  expect(segundo.zorros[0].mirando).toBe('frente')
 
   const avisos = await pagina.evaluate(() => window.kusi.avisos)
   comprobarOrdenDeAvisos(avisos)
@@ -140,24 +140,19 @@ test('la voz dice la consigna al entrar y Escuchar la repite después de una ayu
   expect(await pagina.evaluate(() => window.frasesKusi.every((frase) => frase.idioma.startsWith('es')))).toBe(true)
 })
 
-test('el joystick izquierdo permanece visible y la mano tutorial aparece una sola vez', async ({ page: pagina }) => {
+test('la mano enseña a tocar una fruta una sola vez y no reaparece al recargar', async ({ page: pagina }) => {
   await abrirLaberinto(pagina)
-  const inicial = await estado(pagina)
-  expect(inicial.manoVisible).toBe(true)
-  // Desde el 27 de octubre el joystick está a la izquierda del mapa.
-  expect(inicial.joystick.centro.x).toBeLessThan(inicial.presentacion.mapa.x)
-  expect(inicial.joystick.visible).toBe(true)
+  expect((await estado(pagina)).manoVisible).toBe(true)
+  await pagina.keyboard.press('ArrowRight')
+  await pagina.waitForFunction(() => window.kusi.estado().manoVisible === false)
+  expect(await pagina.evaluate((clave) => localStorage.getItem(clave), CLAVE_MANO)).toBeTruthy()
   await pagina.reload()
   await pagina.waitForFunction(() => window.kusi?.listo)
-  const recargado = await estado(pagina)
-  expect(recargado.joystick.centro).toEqual(inicial.joystick.centro)
-  expect(recargado.joystick.visible).toBe(true)
-  expect(recargado.manoVisible).toBe(false)
+  expect((await estado(pagina)).manoVisible).toBe(false)
+  expect((await estado(pagina)).nivel).toBe(1)
 })
 
 test('solo_clase deja las verduras, reúne cuatro frutas y muestra el cierre sin vidas ni reloj', async ({ page: pagina }) => {
-  const errores = []
-  pagina.on('pageerror', error => errores.push(error.message))
   const paquete = await leerPaquete()
   paquete.retos = [{
     ...paquete.retos[2],
@@ -181,7 +176,6 @@ test('solo_clase deja las verduras, reúne cuatro frutas y muestra el cierre sin
   expect(final.regla.completada).toBe(true)
   expect(final.regla.objetos.filter((objeto) => ['zanahoria', 'papa'].includes(objeto.tipo))
     .every((objeto) => !objeto.recogido)).toBe(true)
-  expect(errores).toEqual([])
   expect(final.mensajeCierre).toBe(paquete.cierre.mensaje)
   expect(final.movimiento.moviendose).toBe(false)
   expect(final).not.toHaveProperty('vidas')
@@ -248,7 +242,7 @@ test('el zorro devuelve al inicio sin perder frutas y protege durante dos segund
   expect(atrapado.regla.recogidos).toBe(1)
   expect(atrapado.regla.objetos[0].recogido).toBe(true)
   expect(atrapado.movimiento).toMatchObject({ fila: 1, columna: 1, progreso: 0, moviendose: false })
-  expect(atrapado.zorros[0]).toMatchObject({ fila: 1, columna: 2, mirando: 'derecha' })
+  expect(atrapado.zorros[0]).toMatchObject({ fila: 1, columna: 2, mirando: 'frente' })
   expect(atrapado.animacionCuy.clave).toContain(':asustado')
   expect(atrapado.invulnerable).toBe(true)
   expect(atrapado.segundosInvulnerable).toBeGreaterThan(1.7)

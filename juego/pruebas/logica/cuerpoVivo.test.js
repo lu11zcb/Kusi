@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   calcularFase, calcularRebote, calcularRespiracion, calcularSacudida, leerFase, CuerpoVivo, PERFIL_CUY, PERFIL_ZORRO,
-} from '../../kit/reproductor/efectos/CuerpoVivo.js'
+} from '../../src/efectos/CuerpoVivo.js'
 
 const CASILLA = 60
 const cerca = (real, esperado, tolerancia = 1e-9) => {

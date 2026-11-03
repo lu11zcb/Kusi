@@ -1,0 +1,132 @@
+{
+  "entrada": "juego\\arte\\zorro\\origen\\zorro-caminar-3-cuadros.png",
+  "salida": "juego\\public\\dibujos\\zorro-caminar-v1.png",
+  "fotograma": {
+    "ancho": 256,
+    "alto": 256
+  },
+  "cuadricula": {
+    "columnas": 3,
+    "filas": 1
+  },
+  "escala_uniforme": 0.3333333333333333,
+  "anclaje_objetivo": {
+    "x": 128.0,
+    "y": 243.66666666666666
+  },
+  "margen_solicitado": 8,
+  "limpieza_original": [
+    {
+      "archivo": "juego\\arte\\zorro\\origen\\zorro-caminar-3-cuadros.png",
+      "islas_eliminadas": 70,
+      "pixeles_eliminados": 96
+    }
+  ],
+  "cuadros": [
+    {
+      "cuadro": 0,
+      "anclas_original": {
+        "centro_cabeza_x": 278.5,
+        "cima_cabeza_y": 5,
+        "linea_pies_y": 701,
+        "caja_silueta": [
+          3,
+          5,
+          530,
+          702
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 128.0,
+        "cima_cabeza_y": 12,
+        "linea_pies_y": 243,
+        "caja_silueta": [
+          36,
+          12,
+          212,
+          244
+        ]
+      },
+      "caja_alfa_salida": [
+        34,
+        9,
+        214,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 5,
+        "pixeles_eliminados": 20
+      }
+    },
+    {
+      "cuadro": 1,
+      "anclas_original": {
+        "centro_cabeza_x": 271.5,
+        "cima_cabeza_y": 6,
+        "linea_pies_y": 701,
+        "caja_silueta": [
+          2,
+          6,
+          529,
+          702
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 128.0,
+        "cima_cabeza_y": 12,
+        "linea_pies_y": 243,
+        "caja_silueta": [
+          38,
+          12,
+          214,
+          244
+        ]
+      },
+      "caja_alfa_salida": [
+        36,
+        9,
+        216,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 1,
+        "pixeles_eliminados": 8
+      }
+    },
+    {
+      "cuadro": 2,
+      "anclas_original": {
+        "centro_cabeza_x": 277.5,
+        "cima_cabeza_y": 6,
+        "linea_pies_y": 702,
+        "caja_silueta": [
+          3,
+          6,
+          526,
+          703
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 128.5,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 243,
+        "caja_silueta": [
+          36,
+          11,
+          211,
+          244
+        ]
+      },
+      "caja_alfa_salida": [
+        34,
+        9,
+        213,
+        246
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 3,
+        "pixeles_eliminados": 23
+      }
+    }
+  ]
+}

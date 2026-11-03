@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { CONGELADO, TEMBLOR } from '../juegos/laberinto/efectos/CapturaLaberinto.js'
+import { CONGELADO, TEMBLOR } from '../src/efectos/CapturaLaberinto.js'
 import { abrir, muestrear, servirPasillo } from './ayudas/laberinto.js'
 
 // Un zorro pegado al cuy en un pasillo: al elegir un rumbo lo alcanza en un instante.
@@ -21,8 +21,7 @@ const leerCaptura = (e) => ({
 
 test('al ser atrapado el juego se congela un instante y la pantalla tiembla muy suave', async ({ page: pagina }) => {
   await servirPasillo(pagina, PASILLO_CON_ZORRO)
-  const inicial = await abrir(pagina)
-  const camaraInicial = inicial.vida.captura.camara
+  await abrir(pagina)
   await pagina.keyboard.press('ArrowRight')
   await pagina.waitForFunction(
     () => window.kusi.estado().vida.captura.congelado, null, { timeout: 8000, polling: 'raf' },
@@ -68,9 +67,8 @@ test('al ser atrapado el juego se congela un instante y la pantalla tiembla muy 
   expect(maximoY).toBeLessThanOrEqual(TEMBLOR.amplitud * 1280 * TEMBLOR.alto + 1e-6)
   for (const m of muestras) {
     expect(m.camara.rotacion).toBe(0)
-    expect(m.camara.zoom).toBe(camaraInicial.zoom)
-    expect(m.camara.scrollX).toBeCloseTo(camaraInicial.scrollX + m.scroll.x, 6)
-    expect(m.camara.scrollY).toBeCloseTo(camaraInicial.scrollY + m.scroll.y, 6)
+    expect(m.camara.zoom).toBe(1)
+    expect(m.camara.scrollX).toBeCloseTo(m.scroll.x, 6)
   }
   expect(muestras.some((m) => !m.congelado && m.temblando)).toBe(true)
   let saltoMaximo = 0
@@ -79,8 +77,8 @@ test('al ser atrapado el juego se congela un instante y la pantalla tiembla muy 
   }
   expect(saltoMaximo).toBeLessThan(5)
   expect(muestras.at(-1).temblando).toBe(false)
-  expect(muestras.at(-1).camara.scrollX).toBe(camaraInicial.scrollX)
-  expect(muestras.at(-1).camara.scrollY).toBe(camaraInicial.scrollY)
+  expect(muestras.at(-1).camara.scrollX).toBe(0)
+  expect(muestras.at(-1).camara.scrollY).toBe(0)
 })
 
 test('tras el congelado el juego sigue: el zorro patrulla y el cuy ya no se queda atrapado', async ({ page: pagina }) => {
@@ -102,8 +100,7 @@ test('tras el congelado el juego sigue: el zorro patrulla y el cuy ya no se qued
 
 test('con ?vida=0 la captura es inmediata, sin congelar ni temblar', async ({ page: pagina }) => {
   await servirPasillo(pagina, PASILLO_CON_ZORRO)
-  const inicial = await abrir(pagina, '&vida=0')
-  const camaraInicial = inicial.vida.captura.camara
+  await abrir(pagina, '&vida=0')
   await pagina.keyboard.press('ArrowRight')
   await pagina.waitForFunction(() => window.kusi.estado().capturas === 1, null, { timeout: 8000, polling: 'raf' })
   const muestras = await muestrear(pagina, 600, leerCaptura)
@@ -112,9 +109,8 @@ test('con ?vida=0 la captura es inmediata, sin congelar ni temblar', async ({ pa
     expect(m.congelado).toBe(false)
     expect(m.congelados).toBe(0)
     expect(m.scroll).toEqual({ x: 0, y: 0 })
-    expect(m.camara.scrollX).toBe(camaraInicial.scrollX)
-    expect(m.camara.scrollY).toBe(camaraInicial.scrollY)
-    expect(m.camara.zoom).toBe(camaraInicial.zoom)
+    expect(m.camara.scrollX).toBe(0)
+    expect(m.camara.scrollY).toBe(0)
   }
   expect(muestras[0].cuy.clave).toContain(':asustado')
   expect(muestras[0].invulnerable).toBe(true)

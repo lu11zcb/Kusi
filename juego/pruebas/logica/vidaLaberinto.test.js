@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vidaActiva } from '../../kit/reproductor/efectos/vida.js'
-import { ParpadeoCuy, ESPERA_MINIMA, ESPERA_MAXIMA } from '../../kit/reproductor/efectos/ParpadeoCuy.js'
-import { SonidosLaberinto, SONIDOS_LABERINTO, esCuadroDePisada } from '../../kit/reproductor/efectos/SonidosLaberinto.js'
+import { vidaActiva } from '../../src/efectos/vida.js'
+import { ParpadeoCuy, ESPERA_MINIMA, ESPERA_MAXIMA } from '../../src/efectos/ParpadeoCuy.js'
+import { SonidosLaberinto, SONIDOS_LABERINTO, esCuadroDePisada } from '../../src/efectos/SonidosLaberinto.js'
 
 // Un cuy de mentira con la misma interfaz que usa el parpadeo: dónde mira, si
 // tiene una expresión en curso y las dos operaciones que el efecto le pide.
@@ -204,7 +204,7 @@ test('silenciar detiene lo que suena y impide nuevos sonidos; destruir libera to
 test('los volúmenes se quedan bajos para un juego de niños y cada sonido tiene su archivo', () => {
   for (const [tipo, datos] of Object.entries(SONIDOS_LABERINTO)) {
     assert.ok(datos.volumen > 0 && datos.volumen <= 0.15, tipo + ' debe sonar bajo')
-    assert.match(datos.archivo, /^[a-z0-9-]+\.(ogg|wav)$/, tipo + ' debe apuntar a audio de public/sonidos')
+    assert.match(datos.archivo, /^[a-z0-9-]+\.ogg$/, tipo + ' debe apuntar a un .ogg de public/sonidos')
     assert.ok(datos.espera >= 0, tipo + ' necesita una espera válida')
   }
 })

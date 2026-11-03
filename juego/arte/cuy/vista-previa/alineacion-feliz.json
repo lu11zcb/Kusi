@@ -1,0 +1,82 @@
+{
+  "hoja": "juego\\public\\dibujos\\cuy-nino-cuadros-v3.png",
+  "medicion": "Alfa >= 32; centro horizontal de la cabeza en el 30.0 % superior de la silueta; última fila visible de los pies",
+  "tolerancia_px": 2.0,
+  "cuadros_comprobados": [
+    9,
+    10,
+    11
+  ],
+  "cuadros_pies": [
+    9,
+    11
+  ],
+  "altura_variable": true,
+  "fraccion_cabeza": 0.3,
+  "referencias_comprobadas": [
+    "centro_cabeza_x",
+    "linea_pies_y"
+  ],
+  "correcta": true,
+  "variacion_px": {
+    "centro_cabeza_x": 0.0,
+    "cima_cabeza_y": 28,
+    "linea_pies_y": 0
+  },
+  "cuadros": [
+    {
+      "cuadro": 9,
+      "centro_cabeza_x": 128.0,
+      "cima_cabeza_y": 39,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        55,
+        39,
+        192,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 52,
+        "superior": 37,
+        "derecho": 62,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 10,
+      "centro_cabeza_x": 128.0,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 225,
+      "caja_silueta": [
+        44,
+        11,
+        213,
+        226
+      ],
+      "margenes": {
+        "izquierdo": 41,
+        "superior": 8,
+        "derecho": 41,
+        "inferior": 28
+      }
+    },
+    {
+      "cuadro": 11,
+      "centro_cabeza_x": 128.0,
+      "cima_cabeza_y": 31,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        31,
+        31,
+        222,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 29,
+        "superior": 29,
+        "derecho": 31,
+        "inferior": 9
+      }
+    }
+  ]
+}

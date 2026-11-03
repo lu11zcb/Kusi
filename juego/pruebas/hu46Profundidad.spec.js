@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { avanzarConJoystick, abrir, estado, esperarCasilla, puntoEnLienzo, seSuperponen, servirPasillo } from './ayudas/laberinto.js'
+import { abrir, estado, esperarCasilla, puntoEnLienzo, seSuperponen, servirPasillo } from './ayudas/laberinto.js'
 
-const CASILLA_MINIMA = 35
+const CASILLA_MINIMA = 40
 const NIVELES = [1, 2, 3]
 // En 1280 × 720 se conserva la disposición de siempre; en un celular alargado el
 // lienzo se ensancha y la barra y Kusi pasan a un panel a la izquierda.
 const PANTALLAS = [
-  { width: 1280, height: 720, disposicion: 'columnas' },
-  { width: 800, height: 360, disposicion: 'columnas' },
+  { width: 1280, height: 720, disposicion: 'clasica' },
+  { width: 800, height: 360, disposicion: 'lateral' },
 ]
 
 async function cajaEnPantalla(pagina, caja) {
@@ -64,9 +64,8 @@ async function comprobarPresentacion(pagina, pantalla) {
   const b = await puntoEnLienzo(pagina, actual.origenMapa.x + actual.casilla, actual.origenMapa.y + actual.casilla)
   expect(b.x - a.x).toBeGreaterThanOrEqual(CASILLA_MINIMA - 0.01)
   expect(b.y - a.y).toBeGreaterThanOrEqual(CASILLA_MINIMA - 0.01)
-  expect(actual.presentacion.piso).toMatchObject({ tipo: 'Image', cantidad: 1 })
-  expect(actual.presentacion.vineta).toBe(false)
-  expect(actual.casilla).toBeGreaterThanOrEqual(64)
+  expect(actual.presentacion.piso).toMatchObject({ tipo: 'TileSprite', cantidad: 1, textura: 'piso-tierra' })
+  expect(actual.presentacion.vineta).toBe(true)
   expect(actual.vida.frutas).toHaveLength(actual.regla.objetos.length)
   for (const fruta of actual.vida.frutas) {
     expect(fruta.visible).toBe(true)
@@ -80,7 +79,7 @@ for (const pantalla of PANTALLAS) {
     test.use({ viewport: pantalla, hasTouch: pantalla.width === 800, isMobile: pantalla.width === 800 })
     for (const nivel of NIVELES) {
       for (const vida of [true, false]) {
-        test('nivel ' + nivel + ': fondo completo, casillas de al menos 35 px y frutas visibles con vida=' + (vida ? 1 : 0),
+        test('nivel ' + nivel + ': fondo completo, casillas de al menos 40 px y frutas visibles con vida=' + (vida ? 1 : 0),
           async ({ page: pagina }) => {
             const errores = []
             const fallosDeRed = []
@@ -113,14 +112,10 @@ test('los muros conservan dos variantes por nivel y se ordenan por fila sobre el
   expect(new Set(muros.map((muro) => muro.variante)).size).toBe(2)
   const sombras = inicial.presentacion.sombrasMuros
   const totalPuertas = inicial.mapa.join('').split('P').length - 1
-  expect(Array.isArray(sombras) ? sombras.length : sombras).toBe(0)
+  expect(Array.isArray(sombras) ? sombras.length : sombras).toBe(totalMuros + totalPuertas)
   const porFila = new Map()
   for (const muro of muros) {
     expect(inicial.mapa[muro.fila][muro.columna]).toBe('#')
-    expect(muro.textura).toMatch(/^muro-[01]{4}-[ab]$/)
-    expect(muro.matas).toBe(false)
-    const k=[[muro.fila-1,muro.columna],[muro.fila,muro.columna+1],[muro.fila+1,muro.columna],[muro.fila,muro.columna-1]].map(([f,c])=>inicial.mapa[f]?.[c]==='#'?'1':'0').join('')
-    expect(muro.textura).toBe('muro-'+k+'-'+muro.variante)
     expect(muro.profundidad).toBeGreaterThan(1)
     expect(muro.profundidad).toBeLessThan(3)
     if (porFila.has(muro.fila)) expect(muro.profundidad).toBe(porFila.get(muro.fila))
@@ -149,7 +144,7 @@ test('cambiar de escritorio a celular conserva la partida, los adobes y el contr
   expect(despues.presentacion.muros).toEqual(antes.presentacion.muros)
   expect(await pagina.evaluate(() => window.kusi.avisos[0].partida)).toBe(partida)
   // El nivel se abrió con la disposición clásica: sigue entero, centrado en la pantalla ancha.
-  expect(despues.presentacion.disposicion).toBe('columnas')
+  expect(despues.presentacion.disposicion).toBe('clasica')
   await comprobarQueTodoSeVe(pagina, { width: 800, height: 360 })
 
   const punto = await pagina.evaluate(() => window.kusi.ubicarCasilla(1, 8))
@@ -157,8 +152,9 @@ test('cambiar de escritorio a celular conserva la partida, los adobes y el contr
   expect(punto.x).toBeLessThan(800)
   expect(punto.y).toBeGreaterThan(0)
   expect(punto.y).toBeLessThan(360)
-  const llegada = await avanzarConJoystick(pagina, 'izquierda', 1)
-  expect(llegada.modoControl).toBe('joystick')
+  await pagina.mouse.click(punto.x, punto.y)
+  const llegada = await esperarCasilla(pagina, 1, 8)
+  expect(llegada.modoControl).toBe('toque')
   expect(llegada.regla.recogidos).toBe(antes.regla.recogidos)
 })
 
@@ -171,7 +167,7 @@ test.describe('de celular a escritorio', () => {
     await abrir(pagina, '&rapido=1')
     await pagina.keyboard.press('ArrowRight')
     const antes = await esperarCasilla(pagina, 1, 9)
-    expect(antes.presentacion.disposicion).toBe('columnas')
+    expect(antes.presentacion.disposicion).toBe('lateral')
     expect(antes.presentacion.zoom).toBe(1)
 
     await pagina.setViewportSize({ width: 1280, height: 720 })
@@ -184,10 +180,11 @@ test.describe('de celular a escritorio', () => {
     expect(despues.regla).toEqual(antes.regla)
     await comprobarQueTodoSeVe(pagina, { width: 1280, height: 720 })
 
-    // El joystick sigue usando su centro proyectado después del cambio de tamaño.
+    // Un toque en el centro de una casilla del mapa sigue llegando a ella.
     const punto = await pagina.evaluate(() => window.kusi.ubicarCasilla(1, 8))
-    const llegada = await avanzarConJoystick(pagina, 'izquierda', 1)
-    expect(llegada.modoControl).toBe('joystick')
+    await pagina.mouse.click(punto.x, punto.y)
+    const llegada = await esperarCasilla(pagina, 1, 8)
+    expect(llegada.modoControl).toBe('toque')
     expect(errores).toEqual([])
   })
 

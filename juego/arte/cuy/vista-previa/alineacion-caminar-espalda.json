@@ -1,0 +1,204 @@
+{
+  "hoja": "juego\\public\\dibujos\\cuy-nino-cuadros-v5.png",
+  "medicion": "Alfa >= 32; centro horizontal de la cabeza en el 42.0 % superior de la silueta; última fila visible de los pies",
+  "tolerancia_px": 2.0,
+  "cuadros_comprobados": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    12,
+    13,
+    14
+  ],
+  "cuadros_pies": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    12,
+    13,
+    14
+  ],
+  "altura_variable": false,
+  "fraccion_cabeza": 0.42,
+  "referencias_comprobadas": [
+    "centro_cabeza_x",
+    "cima_cabeza_y",
+    "linea_pies_y"
+  ],
+  "correcta": true,
+  "variacion_px": {
+    "centro_cabeza_x": 0.5,
+    "cima_cabeza_y": 1,
+    "linea_pies_y": 1
+  },
+  "cuadros": [
+    {
+      "cuadro": 0,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        53,
+        11,
+        210,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 51,
+        "superior": 9,
+        "derecho": 44,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 1,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        42,
+        11,
+        214,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 40,
+        "superior": 9,
+        "derecho": 39,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 2,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        43,
+        11,
+        198,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 41,
+        "superior": 9,
+        "derecho": 56,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 3,
+      "centro_cabeza_x": 128.0,
+      "cima_cabeza_y": 10,
+      "linea_pies_y": 243,
+      "caja_silueta": [
+        35,
+        10,
+        202,
+        244
+      ],
+      "margenes": {
+        "izquierdo": 33,
+        "superior": 8,
+        "derecho": 52,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 4,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 10,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        63,
+        10,
+        189,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 61,
+        "superior": 8,
+        "derecho": 64,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 5,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        41,
+        11,
+        199,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 39,
+        "superior": 8,
+        "derecho": 55,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 12,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 243,
+      "caja_silueta": [
+        45,
+        11,
+        195,
+        244
+      ],
+      "margenes": {
+        "izquierdo": 43,
+        "superior": 9,
+        "derecho": 59,
+        "inferior": 10
+      }
+    },
+    {
+      "cuadro": 13,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        45,
+        11,
+        213,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 43,
+        "superior": 9,
+        "derecho": 41,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 14,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 243,
+      "caja_silueta": [
+        59,
+        11,
+        213,
+        244
+      ],
+      "margenes": {
+        "izquierdo": 57,
+        "superior": 9,
+        "derecho": 41,
+        "inferior": 9
+      }
+    }
+  ]
+}

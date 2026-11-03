@@ -1,0 +1,134 @@
+{
+  "entrada": "juego\\arte\\cuy\\origen\\cuy-asustado-3-cuadros.png",
+  "salida": "juego\\public\\dibujos\\cuy-nino-cuadros-v2.png",
+  "fotograma": {
+    "ancho": 256,
+    "alto": 256
+  },
+  "cuadricula": {
+    "columnas": 3,
+    "filas": 3
+  },
+  "escala_uniforme": 0.3539156626506024,
+  "anclaje_objetivo": {
+    "x": 128.0,
+    "y": 243.9382530120482
+  },
+  "referencia": null,
+  "hoja_base": "juego\\public\\dibujos\\cuy-nino-cuadros-v1.png",
+  "margen_solicitado": 8,
+  "limpieza_original": [
+    {
+      "archivo": "juego\\arte\\cuy\\origen\\cuy-asustado-3-cuadros.png",
+      "islas_eliminadas": 500,
+      "pixeles_eliminados": 1115
+    }
+  ],
+  "cuadros": [
+    {
+      "cuadro": 6,
+      "anclas_original": {
+        "centro_cabeza_x": 254.0,
+        "cima_cabeza_y": 38,
+        "linea_pies_y": 694,
+        "caja_silueta": [
+          3,
+          38,
+          506,
+          695
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 127.5,
+        "cima_cabeza_y": 12,
+        "linea_pies_y": 243,
+        "caja_silueta": [
+          39,
+          12,
+          217,
+          244
+        ]
+      },
+      "caja_alfa_salida": [
+        37,
+        9,
+        220,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 1,
+        "pixeles_eliminados": 5
+      }
+    },
+    {
+      "cuadro": 7,
+      "anclas_original": {
+        "centro_cabeza_x": 211.0,
+        "cima_cabeza_y": 36,
+        "linea_pies_y": 693,
+        "caja_silueta": [
+          3,
+          36,
+          401,
+          694
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 128.0,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 244,
+        "caja_silueta": [
+          54,
+          11,
+          196,
+          245
+        ]
+      },
+      "caja_alfa_salida": [
+        52,
+        9,
+        198,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 3,
+        "pixeles_eliminados": 8
+      }
+    },
+    {
+      "cuadro": 8,
+      "anclas_original": {
+        "centro_cabeza_x": 207.5,
+        "cima_cabeza_y": 35,
+        "linea_pies_y": 694,
+        "caja_silueta": [
+          2,
+          35,
+          398,
+          695
+        ]
+      },
+      "anclas_salida": {
+        "centro_cabeza_x": 128.0,
+        "cima_cabeza_y": 11,
+        "linea_pies_y": 243,
+        "caja_silueta": [
+          55,
+          11,
+          196,
+          244
+        ]
+      },
+      "caja_alfa_salida": [
+        53,
+        8,
+        198,
+        247
+      ],
+      "limpieza_remuestreo": {
+        "islas_eliminadas": 1,
+        "pixeles_eliminados": 4
+      }
+    }
+  ]
+}

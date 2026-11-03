@@ -1,18 +1,8 @@
-# Kusi · Juegos
+# Kusi · El laberinto (HU46)
 
-Reproductor de juegos de Kusi, hecho con Phaser 4.2.1 y Vite. Hoy tiene un
-juego: el laberinto, donde el cuy recoge alimentos siguiendo patrones o
-clasificándolos, abre el portal y evita al zorro, con Kusi dando consignas,
-dos ayudas y voz.
-
-## Carpetas
-
-- [`kit/`](kit/LEEME.md): lo que la IA usa para armar un juego: el reproductor
-  común, los dibujos y sonidos, los originales, las herramientas y el catálogo.
-- [`juegos/`](juegos/LEEME.md): la biblioteca de juegos de ejemplo; hoy, el
-  [laberinto](juegos/laberinto/LEEME.md).
-- [`taller/`](taller/LEEME.md): cómo la IA crea un juego nuevo (Sprint 3).
-- `pruebas/`: las pruebas de lógica (`node --test`) y de navegador (Playwright).
+Juego de Kusi hecho con Phaser 4.2.1 y Vite. El cuy recorre tres niveles,
+recoge alimentos siguiendo patrones o clasificándolos, abre la puerta y evita
+al zorro. Kusi acompaña con consignas, dos ayudas y voz del navegador.
 
 ## Abrirlo
 
@@ -23,11 +13,11 @@ npm run dev
 ```
 
 Abre <http://localhost:5174/> (el panel web usa el puerto 5173). El laberinto
-se abre directamente con `kit/recursos/paquete-laberinto-ejemplo.json`.
+se abre directamente con `public/paquete-laberinto-ejemplo.json`.
 El alias `?paquete=laberinto` sigue funcionando para los enlaces existentes.
 
-- Mantén y arrastra el joystick para elegir un rumbo. Al soltar, el cuy termina
-  la casilla y se detiene. Los toques sobre el mapa no eligen un destino.
+- Toca una fruta para caminar hasta ella y recoger solo la elegida. Toca el
+  camino para elegir un destino; otro toque cambia la ruta. Los arrastres se ignoran.
 - Las flechas mantienen el avance hasta el muro y recogen alimentos al pasar.
 - **Ayuda** muestra las pistas y **Escuchar** repite la consigna.
 - `?nivel=2` y `?nivel=3` abren directamente esos niveles.
@@ -36,8 +26,8 @@ El alias `?paquete=laberinto` sigue funcionando para los enlaces existentes.
 - `?renderizador=auto` permite comparar la elección de Phaser con Canvas,
   que es el renderizador predeterminado.
 
-El lienzo usa `Scale.EXPAND`, con base de 1280 × 720 y columnas para el
-joystick, el mapa y Kusi. El tamaño de las casillas y los controles se
+El lienzo usa `Scale.EXPAND`, con base de 1280 × 720 y disposiciones para
+pantallas clásicas y alargadas. El tamaño de las casillas y los controles se
 ajusta a la ventana.
 
 ## Guiones y mensajes
@@ -51,37 +41,23 @@ El contrato es `kusi-paquete/0`, familia `laberinto`. Las reglas disponibles son
 `orden` y `solo_clase`. El catálogo admite fresa, platano, mango, mandarina, pina,
 zanahoria, papa y choclo, incluidos los tipos que solo aparezcan en una secuencia.
 Los ejemplos enviados por mensaje están en `pruebas/fixtures/`.
-Consulta [juegos/laberinto/GUIA.md](juegos/laberinto/GUIA.md) para el protocolo y los niveles.
+Consulta [HU46-LABERINTO.md](HU46-LABERINTO.md) para el protocolo y los niveles.
 
 ## Dibujos, animaciones y sonidos
 
-Los alimentos, los personajes y el kit están en `kit/recursos/dibujos/`. El paisaje
-de `kit/recursos/dibujos/cenital-v1/` comparte la vista desde arriba del mapa y anima
-pasto, arbustos y flores con cuatro cuadros ilustrados por hoja. Kusi y su globo están a la derecha y el joystick a la
-izquierda. El origen del nuevo arte y su preparación están documentados en
-[kit/arte/fondo-cenital-v1/LEEME.md](kit/arte/fondo-cenital-v1/LEEME.md).
+Los alimentos y el kit están en `public/dibujos/`; el fondo usa WebP y los otros
+recursos PNG. La mano y los iconos de clase se dibujan por código. Si falta una
+imagen del paisaje o un alimento, se conserva su reemplazo con una figura simple.
 
-La barra muestra los alimentos reales: en patrones conserva el orden y señala
-el siguiente; en clasificación muestra las frutas o verduras disponibles,
-marca la que se recogió y permite elegir en cualquier orden. El contador indica
-cuántas faltan para la meta, incluso si hay más opciones que las necesarias.
-Los zorros exploran los pasillos desde que aparece el nivel, sin esperar al
-primer movimiento del niño; priorizan las casillas menos visitadas.
-
-El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v9.png`, y
-`zorro-animado-v1.json` usa `zorro-cuadros-v4.png`. El cuy mantiene pelaje liso
-en todas sus vistas y el zorro lleva la cola centrada de espalda. Las otras
-poses conservan sus píxeles originales. Las fuentes actuales y sus reportes
-permanecen en `kit/arte/`. Se retiraron los atlas intermedios, las muestras
-obsoletas y las imágenes del laberinto anterior.
-La [comparación animada](kit/arte/espaldas-v3/revision.html) muestra las vistas del
-cuy y la cola corregida; [origen y preparación](kit/arte/espaldas-v3/LEEME.md).
+El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v6.png`, y
+`zorro-animado-v1.json` usa `zorro-caminar-v1.png`. Los originales y reportes
+necesarios para reproducir las animaciones se conservan en `arte/`.
 Las herramientas están documentadas en
-[kit/herramientas/animaciones/LEEME.md](kit/herramientas/animaciones/LEEME.md).
-El nuevo paisaje se prepara con `kit/herramientas/preparar_fondo_cenital.mjs`.
+[herramientas/animaciones/LEEME.md](herramientas/animaciones/LEEME.md).
+El kit del paisaje se prepara con `herramientas/procesar_laberinto.py`.
 
-Los siete sonidos del laberinto y sus licencias están en `kit/recursos/sonidos/`;
-los originales se conservan en `kit/arte/sonidos/`. El botón de sonido recuerda el silencio.
+Los siete sonidos del laberinto y sus licencias están en `public/sonidos/`;
+los originales se conservan en `arte/sonidos/`. El botón de sonido recuerda el silencio.
 
 ## Comprobaciones
 
@@ -95,4 +71,4 @@ npx playwright test
 Las pruebas cubren reglas, movimiento, rutas, zorros, efectos, animaciones,
 teclado, ratón, tacto, niveles y guiones recibidos por mensaje. Los avisos de
 partida se guardan en `window.kusi.avisos` y se muestran en consola con `[Kusi]`.
-Las herramientas de captura y rendimiento del laberinto permanecen en `kit/herramientas/`.
+Las herramientas de captura y rendimiento del laberinto permanecen en `herramientas/`.

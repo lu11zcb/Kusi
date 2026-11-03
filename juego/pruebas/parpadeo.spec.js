@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { DIRECCIONES_CUY, validarSpriteCuy } from '../kit/reproductor/datos/validarSpriteCuy.js'
+import { DIRECCIONES_CUY, validarSpriteCuy } from '../src/datos/validarSpriteCuy.js'
 
 const leerManifiesto = async () => JSON.parse(await readFile(
-  new URL('../kit/recursos/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
+  new URL('../public/dibujos/cuy-nino-animado-v1.json', import.meta.url), 'utf8',
 ))
 
 async function encontrarCuy(pagina) {
   await pagina.goto('/')
   await pagina.waitForFunction(() => window.kusi?.listo)
   await pagina.evaluate(async () => {
-    const { CuyAnimado } = await import('/kit/reproductor/dibujos/cuyAnimado.js')
+    const { CuyAnimado } = await import('/src/dibujos/cuyAnimado.js')
     // Se captura el jugador real durante una sola actualización y se restaura
     // enseguida el método, igual que en las pruebas de feliz y asustado.
     window.cuyAnimacionDePrueba = await new Promise((resolver) => {
@@ -26,7 +26,7 @@ async function encontrarCuy(pagina) {
 
 test('el manifiesto define el parpadeo una sola vez, solo de frente, y cabe en la hoja', async () => {
   const datos = validarSpriteCuy(await leerManifiesto())
-  expect(datos.imagen).toBe('cuy-nino-cuadros-v9.png')
+  expect(datos.imagen).toBe('cuy-nino-cuadros-v6.png')
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
   expect(datos.cuadricula).toEqual({ columnas: 3, filas: 6 })
   expect(datos.animaciones.frente.parpadeo).toEqual({

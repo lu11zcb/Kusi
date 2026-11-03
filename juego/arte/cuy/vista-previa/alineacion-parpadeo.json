@@ -1,0 +1,84 @@
+{
+  "hoja": "juego\\public\\dibujos\\cuy-parpadeo-v1.png",
+  "medicion": "Alfa >= 32; centro horizontal de la cabeza en el 42.0 % superior de la silueta; última fila visible de los pies",
+  "tolerancia_px": 2.0,
+  "cuadros_comprobados": [
+    0,
+    1,
+    2
+  ],
+  "cuadros_pies": [
+    0,
+    1,
+    2
+  ],
+  "altura_variable": false,
+  "fraccion_cabeza": 0.42,
+  "referencias_comprobadas": [
+    "centro_cabeza_x",
+    "cima_cabeza_y",
+    "linea_pies_y"
+  ],
+  "correcta": true,
+  "variacion_px": {
+    "centro_cabeza_x": 0.0,
+    "cima_cabeza_y": 0,
+    "linea_pies_y": 0
+  },
+  "cuadros": [
+    {
+      "cuadro": 0,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        40,
+        11,
+        214,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 37,
+        "superior": 9,
+        "derecho": 39,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 1,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        41,
+        11,
+        215,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 38,
+        "superior": 9,
+        "derecho": 38,
+        "inferior": 9
+      }
+    },
+    {
+      "cuadro": 2,
+      "centro_cabeza_x": 127.5,
+      "cima_cabeza_y": 11,
+      "linea_pies_y": 244,
+      "caja_silueta": [
+        41,
+        11,
+        215,
+        245
+      ],
+      "margenes": {
+        "izquierdo": 39,
+        "superior": 9,
+        "derecho": 39,
+        "inferior": 9
+      }
+    }
+  ]
+}

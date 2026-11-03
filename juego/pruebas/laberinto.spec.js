@@ -32,6 +32,8 @@ async function tocarBoton(pagina, nombre) {
 test('una pulsación sigue hasta el muro, recoge en orden y conserva el nivel con la puerta cerrada', async ({ page: pagina }) => {
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
+  // La figura simple debe mantener jugable el mapa sin el PNG definitivo.
+  await pagina.route('**/dibujos/muro-adobe-*.png', (ruta) => ruta.fulfill({ status: 404, body: '' }))
   const inicial = await abrirLaberinto(pagina)
   expect(inicial.inicio).toEqual({ fila: 1, columna: 1 })
   await pagina.keyboard.press('ArrowRight')
@@ -85,17 +87,20 @@ test('guarda un giro temprano, dobla en la próxima esquina y sube de espaldas',
   })
 })
 
-test('un toque sin arrastre no manda al cuy hasta la casilla tocada', async ({ page: pagina }) => {
+test('un toque elige una casilla y el cuy se detiene sin continuar hasta el muro', async ({ page: pagina }) => {
   const inicial = await abrirLaberinto(pagina)
-  const punto = await puntoEnLienzo(pagina,
+  const destino = await puntoEnLienzo(pagina,
     inicial.origenMapa.x + 2.5 * inicial.casilla,
     inicial.origenMapa.y + 1.5 * inicial.casilla)
-  await pagina.mouse.click(punto.x, punto.y)
-  await pagina.waitForTimeout(180)
-  const final = await estado(pagina)
-  expect(final.movimiento).toMatchObject({ fila: 1, columna: 1, moviendose: false })
-  expect(final.joystick.visible).toBe(true)
+  await pagina.mouse.click(destino.x, destino.y)
+  const final = await esperarCasilla(pagina, 1, 2)
+  expect(final.modoControl).toBe('toque')
   expect(final.regla.recogidos).toBe(0)
+  expect(final.destino).toBeNull()
+  expect(final.ruta).toEqual([])
+  expect(final.marcadorDestino.visible).toBe(false)
+  await pagina.waitForTimeout(180)
+  expect((await estado(pagina)).movimiento).toEqual(final.movimiento)
 })
 
 test('Escuchar y Ayuda se pueden tocar sin elegir una dirección', async ({ page: pagina }) => {
@@ -117,7 +122,7 @@ test('Escuchar y Ayuda se pueden tocar sin elegir una dirección', async ({ page
 
 test('un mapa inválido avisa el fallo y permite volver a pedir el paquete corregido', async ({ page: pagina }) => {
   const paquete = JSON.parse(await readFile(
-    new URL('../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
+    new URL('../public/paquete-laberinto-ejemplo.json', import.meta.url), 'utf8',
   ))
   const paqueteValido = structuredClone(paquete)
   paquete.retos[0].mapa[2] += '#'
@@ -141,11 +146,8 @@ test('un mapa inválido avisa el fallo y permite volver a pedir el paquete corre
 
   // El botón real debe volver a descargar el JSON: reiniciar la escena con
   // el paquete inválido todavía en caché repetiría el mismo fallo para siempre.
-  // Phaser activa los toques de un botón nuevo en el cuadro siguiente al que lo
-  // crea. Se esperan dos cuadros para que el clic no llegue antes y se pierda.
-  await pagina.evaluate(() => new Promise((listo) => requestAnimationFrame(() => requestAnimationFrame(listo))))
   const reintentar = await puntoEnLienzo(pagina, 640, 460)
-  await pagina.mouse.click(reintentar.x, reintentar.y, { delay: 50 })
+  await pagina.mouse.click(reintentar.x, reintentar.y)
   await pagina.waitForFunction(() => window.kusi?.listo && window.kusi.estado().familia === 'laberinto')
   expect(peticiones).toBe(2)
   expect((await estado(pagina)).nivel).toBe(1)
@@ -181,16 +183,25 @@ for (const pantalla of [{ width: 1280, height: 720 }, { width: 844, height: 390 
 test.describe('toque táctil', () => {
   test.use({ viewport: { width: 800, height: 360 }, hasTouch: true, isMobile: true })
 
-  test('tocar una fruta sin mover el dedo no inicia un recorrido automático', async ({ page: pagina }) => {
+  test('un dedo llega al camino y luego a la fruta en el lienzo reducido', async ({ page: pagina }) => {
     const inicial = await abrirLaberinto(pagina)
-    const fruta = await pagina.evaluate(() => window.kusi.ubicarCasilla(1, 3))
+    const camino = await puntoEnLienzo(pagina,
+      inicial.origenMapa.x + 2.5 * inicial.casilla,
+      inicial.origenMapa.y + 1.5 * inicial.casilla)
+    await pagina.touchscreen.tap(camino.x, camino.y)
+    const enCamino = await esperarCasilla(pagina, 1, 2)
+    expect(enCamino.regla.recogidos).toBe(0)
+    expect(enCamino.modoControl).toBe('toque')
+
+    const fruta = await puntoEnLienzo(pagina,
+      inicial.origenMapa.x + 3.5 * inicial.casilla,
+      inicial.origenMapa.y + 1.5 * inicial.casilla)
     await pagina.touchscreen.tap(fruta.x, fruta.y)
-    await pagina.waitForTimeout(200)
-    const final = await estado(pagina)
-    expect(final.movimiento.fila).toBe(inicial.movimiento.fila)
-    expect(final.movimiento.columna).toBe(inicial.movimiento.columna)
-    expect(final.movimiento.moviendose).toBe(false)
-    expect(final.joystick.visible).toBe(true)
-    expect(final.regla.recogidos).toBe(0)
+    const final = await esperarCasilla(pagina, 1, 3)
+    expect(final.regla.recogidos).toBe(1)
+    expect(final.regla.objetos[0].recogido).toBe(true)
+    expect(final.marcadorDestino.visible).toBe(false)
+    await pagina.waitForTimeout(180)
+    expect((await estado(pagina)).movimiento).toEqual(final.movimiento)
   })
 })

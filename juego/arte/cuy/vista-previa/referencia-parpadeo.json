@@ -1,0 +1,6 @@
+{
+  "fotograma": { "ancho": 256, "alto": 256 },
+  "escala_uniforme": 0.33910533910533913,
+  "anclaje_objetivo": { "x": 128, "y": 244 },
+  "criterio": "Una escala isotrópica para toda la tira de parpadeo; conserva la altura visible frontal y el mismo apoyo, sin redibujar ni modificar el atlas principal."
+}
