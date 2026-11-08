@@ -1,7 +1,7 @@
 // Toma el mismo momento de cada efecto de la capa de vida con Canvas y con AUTO
 // (WebGL) y los pone uno junto al otro para mirarlos. Ejecutar con Vite en
 // http://127.0.0.1:5174/ :
-//   node herramientas/comparar_efectos.mjs [carpeta de salida]
+//   node kit/herramientas/comparar_efectos.mjs [carpeta de salida]
 // Deja una imagen por efecto (comparacion-<efecto>.png): arriba Canvas y abajo AUTO.
 // Los cuadros se copian dentro de la página justo después de que Phaser dibuja,
 // así que cada toma es el cuadro exacto y no depende de lo que tarde una captura.

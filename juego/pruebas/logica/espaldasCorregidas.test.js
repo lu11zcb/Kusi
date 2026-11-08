@@ -19,7 +19,7 @@ for (const { imagen, ancho, alto, filas } of referencias) {
 }
 
 test('la espalda del cuy conserva la cinta roja sin colgar el nudo sobre el torso y muestra pelaje dorsal', () => {
-  const im = leerRgba(new URL('cuy-nino-cuadros-v9.png', carpeta))
+  const im = leerRgba(new URL('personajes/cuy.png', carpeta))
   for (let c = 0; c < 3; c++) {
     const cuadro = recortar(im, c * 256, 1024, 256, 256)
     let rojoBajo = 0, marron = 0, total = 0
@@ -36,7 +36,7 @@ test('la espalda del cuy conserva la cinta roja sin colgar el nudo sobre el tors
 })
 
 test('la mancha de la nuca del cuy tiene bordes suaves y no añade mechones bajo el pañuelo', () => {
-  const im = leerRgba(new URL('cuy-nino-cuadros-v9.png', carpeta))
+  const im = leerRgba(new URL('personajes/cuy.png', carpeta))
   const esCrema = (r,g,b,a) => a >= 128 && r > 215 && g > 185 && b > 145
   for (let c = 0; c < 3; c++) {
     const cuadro = recortar(im, c * 256, 1024, 256, 256), bordes = []
@@ -63,7 +63,7 @@ test('la mancha de la nuca del cuy tiene bordes suaves y no añade mechones bajo
 })
 
 test('la cola del zorro permanece centrada detrás de la cadera y conserva volumen entre pasos', () => {
-  const im = leerRgba(new URL('zorro-cuadros-v4.png', carpeta)), medidas = []
+  const im = leerRgba(new URL('personajes/zorro.png', carpeta)), medidas = []
   for (let c = 0; c < 3; c++) {
     const cuadro = recortar(im, c * 256, 512, 256, 256)
     let area = 0, sumaX = 0, sumaY = 0

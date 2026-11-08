@@ -10,7 +10,7 @@ test('se cargan exactamente los ocho alimentos actuales como imágenes independi
  pedirDibujos({load:{image:(...args)=>pedidos.push(args)}},claves)
  assert.equal(pedidos.length,8)
  for(const [tipo,ruta] of pedidos){
-  assert.equal(ruta,'dibujos/'+tipo+'.png');assert.ok(!ruta.includes('-cara'))
+  assert.equal(ruta,'dibujos/objetos/'+tipo+'.png');assert.ok(!ruta.includes('-cara'))
   const p=readFileSync(new URL('../../kit/recursos/'+ruta,import.meta.url));assert.equal(p.readUInt32BE(16),256);assert.equal(p.readUInt32BE(20),256)
  }
  assert.throws(()=>completarConFiguras({textures:{exists:()=>false}},claves),/Faltan ilustraciones/)

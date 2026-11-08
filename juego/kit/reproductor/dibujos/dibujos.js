@@ -3,7 +3,7 @@ import { OBJETOS_KIT } from './kitFinal.js'
 export function clavesDelPaquete() { return new Map(OBJETOS_KIT.map(tipo => [tipo, 'producto'])) }
 export function pedirDibujos(escena, claves) {
   escena.load.maxRetries = 0
-  for (const [clave] of claves) escena.load.image(clave, 'dibujos/' + clave + '.png')
+  for (const [clave] of claves) escena.load.image(clave, 'dibujos/objetos/' + clave + '.png')
 }
 export function completarConFiguras(escena, claves) {
   const faltantes = [...claves.keys()].filter(clave => !escena.textures.exists(clave))

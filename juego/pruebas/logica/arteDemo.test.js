@@ -7,10 +7,10 @@ import { PIEZAS_MURO } from '../../kit/reproductor/dibujos/kitFinal.js'
 import { crearPatio } from '../../juegos/laberinto/dibujos/patioChacra.js'
 import { encajarTextoKusi } from '../../kit/reproductor/interfaz/textoKusi.js'
 import { ubicarSonidoSuperior } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
-const folder=new URL('../../kit/recursos/dibujos/kit-final/',import.meta.url)
+const folder=new URL('../../kit/recursos/dibujos/mundo/',import.meta.url)
 const aprobados=JSON.parse(readFileSync(new URL('../fixtures/adobe-aprobado.json',import.meta.url)))
 
-test('los 32 cubos coinciden exactamente con el arte aprobado y toda su huella es opaca',()=>{
+test('los 2 cubos coinciden exactamente con el arte aprobado y toda su huella es opaca',()=>{
  for(const name of PIEZAS_MURO){
   const bytes=readFileSync(new URL(name+'.png',folder)),v=name.at(-1)
   assert.equal(createHash('sha256').update(bytes).digest('hex'),aprobados[v],name+' no coincide con la ilustración aprobada')
@@ -19,7 +19,7 @@ test('los 32 cubos coinciden exactamente con el arte aprobado y toda su huella e
  }
  // Las juntas son de barro; no se confunden con el suelo o con vegetación.
  for(const v of ['a','b']){
-  const im=leerPng(new URL('muro-0000-'+v+'.png',folder))
+  const im=leerPng(new URL('muro-'+v+'.png',folder))
   for(let p=0;p<256;p++)for(const [x,y] of [[p,0],[p,255],[0,p],[255,p]]){
    const [r,g,b]=im.pixel(x,y);assert.ok(r>g && g>b && r<180,'junta de barro '+v)
   }

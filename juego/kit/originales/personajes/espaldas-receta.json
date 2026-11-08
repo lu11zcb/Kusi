@@ -1,0 +1,7 @@
+{
+  "carpeta": "kit/originales/personajes/",
+  "personajes": [
+    { "nombre": "cuy", "base": "cuy.png", "salida": "cuy.png", "fila": 4 },
+    { "nombre": "zorro", "base": "zorro.png", "salida": "zorro.png", "fila": 2 }
+  ]
+}

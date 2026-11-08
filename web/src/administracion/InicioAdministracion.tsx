@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import imagenAdministrador from '../assets/kusi/hero-administrador-v1.webp'
+import imagenAdministrador from '../assets/kusi/hero-administrador.webp'
 import { Icono } from '../componentes/Icono'
 import type { NombreIcono } from '../componentes/Icono'
 import { primerNombre, saludo } from '../componentes/apariencia'

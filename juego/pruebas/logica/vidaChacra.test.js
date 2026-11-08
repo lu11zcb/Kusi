@@ -30,7 +30,7 @@ test('el jardín deja libres todos los pasillos en pantallas y mapas de distinto
 
 test('cada hoja nueva tiene cuatro poses distintas, alfa transparente y anclas alineadas',()=>{
  for(const [clave,d]of Object.entries(SPRITES_CENITALES)){
-  const im=leerPng(new URL('../../kit/recursos/dibujos/cenital-v1/'+clave.replace('cenital-','')+'.png',import.meta.url))
+  const im=leerPng(new URL('../../kit/recursos/dibujos/mundo/'+clave.replace('cenital-','')+'.png',import.meta.url))
   assert.deepEqual([im.ancho,im.alto],[d.ancho*4,d.alto])
   const hashes=[]
   for(let f=0;f<4;f++){

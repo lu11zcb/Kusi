@@ -1,5 +1,5 @@
 // Integra las nuevas poses traseras sin modificar las otras filas del atlas.
-// Desde juego/: node herramientas/animaciones/preparar_espaldas.mjs
+// Desde juego/: node kit/herramientas/animaciones/preparar_espaldas.mjs
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -7,7 +7,7 @@ import { leerRgba, recortar, medirSilueta, guardarPng } from './png_rgba.mjs'
 
 const raiz = new URL('../../', import.meta.url)
 // La receta vigente reutiliza las filas aprobadas del atlas actual.
-const ajustes = JSON.parse(readFileSync(new URL(process.argv[2] ?? 'kit/arte/espaldas-v3/preparacion.json', raiz), 'utf8'))
+const ajustes = JSON.parse(readFileSync(new URL(process.argv[2] ?? 'kit/originales/personajes/espaldas-receta.json', raiz), 'utf8'))
 const carpeta = new URL(ajustes.carpeta, raiz)
 const trabajo = new URL('preparacion/', carpeta)
 mkdirSync(trabajo, { recursive: true })
@@ -15,8 +15,8 @@ const contratos = ajustes.personajes
 const informe = []
 for (const contrato of contratos) {
   const { nombre, base, salida, fila } = contrato
-  const original = leerRgba(new URL('kit/recursos/dibujos/' + base, raiz))
-  const fuente = leerRgba(new URL('origen/' + nombre + '-espalda.png', carpeta))
+  const original = leerRgba(new URL('kit/recursos/dibujos/personajes/' + base, raiz))
+  const fuente = leerRgba(new URL(nombre + '-espalda-original.png', carpeta))
   const tira = { ancho: 768, alto: 256, datos: Buffer.alloc(768 * 256 * 4) }
   const cuadros = []
   // El apoyo y la altura coinciden con las vistas frontales aprobadas.
@@ -57,11 +57,11 @@ for (const contrato of contratos) {
   const datos = Buffer.from(original.datos)
   tira.datos.copy(datos, fila * 256 * 768 * 4)
   const atlas = { ancho: original.ancho, alto: original.alto, datos }
-  guardarPng(new URL('kit/recursos/dibujos/' + salida, raiz), atlas)
-  guardarPng(new URL(nombre + '-espalda-256.png', carpeta), tira)
+  guardarPng(new URL('kit/recursos/dibujos/personajes/' + salida, raiz), atlas)
+  guardarPng(new URL(nombre + '-espalda-tira.png', trabajo), tira)
   informe.push({ nombre, base, salida, fila_reemplazada: fila, cuadros,
     otras_filas_identicas: datos.subarray(0, fila * 256 * 768 * 4).equals(original.datos.subarray(0, fila * 256 * 768 * 4)) &&
       datos.subarray((fila + 1) * 256 * 768 * 4).equals(original.datos.subarray((fila + 1) * 256 * 768 * 4)) })
   console.log(nombre + ': ' + salida + ', solo cambia la fila ' + fila)
 }
-writeFileSync(new URL('alineacion.json', carpeta), JSON.stringify(informe, null, 2) + '\n')
+writeFileSync(new URL('espaldas-medidas.json', trabajo), JSON.stringify(informe, null, 2) + '\n')

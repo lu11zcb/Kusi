@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import imagenDocente from '../assets/kusi/hero-docente-v2.webp'
+import imagenDocente from '../assets/kusi/hero-docente.webp'
 import { primerNombre, saludo } from '../componentes/apariencia'
 import { Icono } from '../componentes/Icono'
 import { PrimerosPasos } from '../componentes/PrimerosPasos'

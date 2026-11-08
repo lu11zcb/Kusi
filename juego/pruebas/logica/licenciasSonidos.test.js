@@ -4,7 +4,7 @@ import { readFile, access } from 'node:fs/promises'
 import { SONIDOS_LABERINTO } from '../../kit/reproductor/efectos/SonidosLaberinto.js'
 
 const PUBLICOS = new URL('../../kit/recursos/sonidos/', import.meta.url)
-const ORIGINALES = new URL('../../kit/arte/sonidos/origen/', import.meta.url)
+const ORIGINALES = new URL('../../kit/originales/sonidos/', import.meta.url)
 const leer = async (url) => (await readFile(url, 'utf8')).replace(/\r/g, '')
 const existe = async (url) => access(url).then(() => true, () => false)
 

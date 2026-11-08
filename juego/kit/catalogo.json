@@ -1,16 +1,37 @@
 {
   "formato": "kusi-kit/0",
-  "descripcion": "Piezas que la IA puede usar para armar un juego. Las rutas son las que sirve el reproductor (carpeta public/).",
+  "descripcion": "Piezas que la IA puede usar para armar un juego. Las rutas son las que sirve el reproductor (carpeta kit/recursos/).",
   "motor": {
     "nombre": "Phaser",
     "version": "4.2.1"
+  },
+  "protagonistas": [
+    {
+      "id": "cuy",
+      "nombre": "Cuy",
+      "manifiesto": "dibujos/personajes/cuy.json",
+      "imagen": "dibujos/personajes/cuy.png",
+      "por_omision": true
+    }
+  ],
+  "molde": {
+    "formato": "kusi-sprite/1",
+    "fotograma": { "ancho": 256, "alto": 256 },
+    "cuadricula": { "columnas": 3, "filas": 6 },
+    "anclaje": { "x": 128, "y": 244 },
+    "estados": {
+      "frente": ["reposo", "quieto", "caminar", "feliz", "asustado", "parpadeo"],
+      "espaldas": ["reposo", "quieto", "caminar", "caminar_espalda"],
+      "derecha": ["reposo", "quieto", "caminar", "caminar_lado"],
+      "izquierda": ["reposo", "quieto", "caminar", "caminar_lado"]
+    }
   },
   "personajes": [
     {
       "id": "cuy",
       "nombre": "Cuy del niño",
-      "manifiesto": "dibujos/cuy-nino-animado-v1.json",
-      "imagen": "dibujos/cuy-nino-cuadros-v9.png",
+      "manifiesto": "dibujos/personajes/cuy.json",
+      "imagen": "dibujos/personajes/cuy.png",
       "vistas": [
         "frente",
         "espaldas",
@@ -29,8 +50,8 @@
     {
       "id": "zorro",
       "nombre": "Zorro",
-      "manifiesto": "dibujos/zorro-animado-v1.json",
-      "imagen": "dibujos/zorro-cuadros-v4.png",
+      "manifiesto": "dibujos/personajes/zorro.json",
+      "imagen": "dibujos/personajes/zorro.png",
       "vistas": [
         "frente",
         "espaldas",
@@ -48,7 +69,7 @@
     {
       "id": "kusi",
       "nombre": "Kusi, el guía",
-      "imagen": "dibujos/estilo-final/kusi-cuadros-v1.png",
+      "imagen": "dibujos/personajes/kusi.png",
       "estados": [
         "hablar",
         "saludar",
@@ -62,91 +83,94 @@
       "id": "fresa",
       "nombre": "fresa",
       "clase": "fruta",
-      "imagen": "dibujos/fresa.png"
+      "imagen": "dibujos/objetos/fresa.png"
     },
     {
       "id": "platano",
       "nombre": "plátano",
       "clase": "fruta",
-      "imagen": "dibujos/platano.png"
+      "imagen": "dibujos/objetos/platano.png"
     },
     {
       "id": "mango",
       "nombre": "mango",
       "clase": "fruta",
-      "imagen": "dibujos/mango.png"
+      "imagen": "dibujos/objetos/mango.png"
     },
     {
       "id": "mandarina",
       "nombre": "mandarina",
       "clase": "fruta",
-      "imagen": "dibujos/mandarina.png"
+      "imagen": "dibujos/objetos/mandarina.png"
     },
     {
       "id": "pina",
       "nombre": "piña",
       "clase": "fruta",
-      "imagen": "dibujos/pina.png"
+      "imagen": "dibujos/objetos/pina.png"
     },
     {
       "id": "zanahoria",
       "nombre": "zanahoria",
       "clase": "verdura",
-      "imagen": "dibujos/zanahoria.png"
+      "imagen": "dibujos/objetos/zanahoria.png"
     },
     {
       "id": "papa",
       "nombre": "papa",
       "clase": "verdura",
-      "imagen": "dibujos/papa.png"
+      "imagen": "dibujos/objetos/papa.png"
     },
     {
       "id": "choclo",
       "nombre": "choclo",
       "clase": "verdura",
-      "imagen": "dibujos/choclo.png"
+      "imagen": "dibujos/objetos/choclo.png"
     }
   ],
   "mundos": [
     {
       "id": "patio-andino",
       "nombre": "Patio andino visto desde arriba",
-      "fondo": "dibujos/cenital-v1/fondo.png",
+      "fondo": "dibujos/mundo/fondo-patio.png",
       "vegetacion": [
-        "dibujos/cenital-v1/pasto.png",
-        "dibujos/cenital-v1/arbusto.png",
-        "dibujos/cenital-v1/margaritas.png",
-        "dibujos/cenital-v1/flores.png"
+        "dibujos/mundo/pasto.png",
+        "dibujos/mundo/arbusto.png",
+        "dibujos/mundo/margaritas.png",
+        "dibujos/mundo/flores.png"
       ],
-      "suelo": "dibujos/kit-final/tierra-patio.png",
-      "borde": "dibujos/kit-final/borde-pasto.png",
-      "muro": "dibujos/kit-final/muro-0000-a.png",
+      "suelo": "dibujos/mundo/tierra-patio.png",
+      "borde": "dibujos/mundo/borde-pasto.png",
+      "muros": [
+        "dibujos/mundo/muro-a.png",
+        "dibujos/mundo/muro-b.png"
+      ],
       "salida": [
-        "dibujos/kit-final/portal-cerrado.png",
-        "dibujos/kit-final/portal-abierto.png"
+        "dibujos/mundo/portal-cerrado.png",
+        "dibujos/mundo/portal-abierto.png"
       ]
     }
   ],
   "interfaz": {
-    "barra": "dibujos/kit-final/barra-frutas.png",
-    "marca": "dibujos/kit-final/check-fruta.png",
+    "barra": "dibujos/interfaz/barra-frutas.png",
+    "marca": "dibujos/interfaz/check-fruta.png",
     "globos": [
-      "dibujos/kit-final/globo-dialogo-160.png",
-      "dibujos/kit-final/globo-dialogo-232.png",
-      "dibujos/kit-final/globo-dialogo-304.png"
+      "dibujos/interfaz/globo-dialogo-160.png",
+      "dibujos/interfaz/globo-dialogo-232.png",
+      "dibujos/interfaz/globo-dialogo-304.png"
     ],
     "botones": [
-      "dibujos/kit-final/boton-voz.png",
-      "dibujos/kit-final/boton-ayuda.png",
-      "dibujos/kit-final/boton-sonido.png",
-      "dibujos/kit-final/boton-silencio.png"
+      "dibujos/interfaz/boton-voz.png",
+      "dibujos/interfaz/boton-ayuda.png",
+      "dibujos/interfaz/boton-sonido.png",
+      "dibujos/interfaz/boton-silencio.png"
     ],
     "joystick": [
-      "dibujos/kit-final/joystick-base.png",
-      "dibujos/kit-final/joystick-perilla.png"
+      "dibujos/interfaz/joystick-base.png",
+      "dibujos/interfaz/joystick-perilla.png"
     ],
-    "mano": "dibujos/estilo-final/mano-tutorial.png",
-    "destellos": "dibujos/estilo-final/destellos-siguiente.png"
+    "mano": "dibujos/interfaz/mano-tutorial.png",
+    "destellos": "dibujos/interfaz/destellos-siguiente.png"
   },
   "sonidos": [
     {

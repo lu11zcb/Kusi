@@ -1,43 +1,33 @@
-# Claves: nunca se suben
+# Claves y configuración local: nunca se suben
 .env
-.qa/
 .env.*
 !.env.example
-.impeccable/review/
-.qa/
+local.properties
+movil/gradle/gradle-daemon-jvm.properties
+
+# Dependencias
+node_modules/
+.venv/
 .npm-cache/
 
-# Python / Django
-.venv/
+# Lo que se genera al compilar o al probar
+dist/
+target/
+build/
+.gradle/
 __pycache__/
 *.pyc
+edu-api/data/
 db.sqlite3
 
-# Node / React
-node_modules/
-dist/
-
-# Java / Spring Boot
-target/
-edu-api/data/
-
-# Kotlin / Android
-.gradle/
-build/
-local.properties
-
-# Editores
-.idea/
-.vscode/
-
+# Copias y respaldos locales
+.qa/
 *.dump
 *.backup.py
 cuentas_0001.sql
-.env
 
-edu-api/target/
+# Editores y sistema
 .idea/
-
-# Configuración y archivos propios de cada equipo.
+.vscode/
+.impeccable/review/
 .DS_Store
-movil/gradle/gradle-daemon-jvm.properties

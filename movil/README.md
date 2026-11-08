@@ -1,6 +1,6 @@
 # Kusi Android · recorrido del Sprint 2
 
-Actualización visual: **lui11zcb** · **luiscb.once@gmail.com**.
+Actualización visual: **lu11zcb** · **luiscb.once@gmail.com**.
 
 Actualización del 20 de octubre de 2026, a partir del plan visual que Luis aportó y su indicación de hacer la app más infantil sin usar Impeccable.
 

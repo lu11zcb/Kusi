@@ -7,12 +7,15 @@ dos ayudas y voz.
 
 ## Carpetas
 
-- [`kit/`](kit/LEEME.md): lo que la IA usa para armar un juego: el reproductor
-  común, los dibujos y sonidos, los originales, las herramientas y el catálogo.
-- [`juegos/`](juegos/LEEME.md): la biblioteca de juegos de ejemplo; hoy, el
-  [laberinto](juegos/laberinto/LEEME.md).
-- [`taller/`](taller/LEEME.md): cómo la IA crea un juego nuevo (Sprint 3).
-- `pruebas/`: las pruebas de lógica (`node --test`) y de navegador (Playwright).
+- [`kit/`](kit/README.md): lo que la IA usa para armar un juego: el reproductor
+  común, los dibujos y sonidos, la guía de estilo, los originales, las
+  herramientas y el catálogo.
+- [`juegos/`](juegos/README.md): la biblioteca de juegos de ejemplo; hoy, el
+  [laberinto](juegos/laberinto/README.md).
+- [`taller/`](taller/README.md): cómo la IA crea un juego nuevo (Sprint 3).
+- `pruebas/`: `logica/` (con `node --test`), `navegador/` (con Playwright),
+  `ayudas/` (lo que comparten las pruebas de navegador) y `fixtures/` (guiones y
+  huellas de ejemplo).
 
 ## Abrirlo
 
@@ -51,15 +54,22 @@ El contrato es `kusi-paquete/0`, familia `laberinto`. Las reglas disponibles son
 `orden` y `solo_clase`. El catálogo admite fresa, platano, mango, mandarina, pina,
 zanahoria, papa y choclo, incluidos los tipos que solo aparezcan en una secuencia.
 Los ejemplos enviados por mensaje están en `pruebas/fixtures/`.
-Consulta [juegos/laberinto/GUIA.md](juegos/laberinto/GUIA.md) para el protocolo y los niveles.
+Consulta [juegos/laberinto/README.md](juegos/laberinto/README.md) para el protocolo y los niveles.
 
 ## Dibujos, animaciones y sonidos
 
-Los alimentos, los personajes y el kit están en `kit/recursos/dibujos/`. El paisaje
-de `kit/recursos/dibujos/cenital-v1/` comparte la vista desde arriba del mapa y anima
-pasto, arbustos y flores con cuatro cuadros ilustrados por hoja. Kusi y su globo están a la derecha y el joystick a la
-izquierda. El origen del nuevo arte y su preparación están documentados en
-[kit/arte/fondo-cenital-v1/LEEME.md](kit/arte/fondo-cenital-v1/LEEME.md).
+Los dibujos que usa el juego están en `kit/recursos/dibujos/`, ordenados por tipo:
+
+- `personajes/`: el cuy (`cuy.png`, con su manifiesto `cuy.json`), el zorro
+  (`zorro.png` y `zorro.json`) y Kusi (`kusi.png`).
+- `objetos/`: los ocho alimentos.
+- `mundo/`: el fondo del patio visto desde arriba, las plantas que se mueven
+  (cuatro cuadros por tira), el suelo, el borde de pasto, los dos cubos de adobe
+  y el portal.
+- `interfaz/`: la barra, los globos, los botones, el joystick, la mano que
+  enseña y los destellos.
+
+Kusi y su globo están a la derecha y el joystick a la izquierda.
 
 La barra muestra los alimentos reales: en patrones conserva el orden y señala
 el siguiente; en clasificación muestra las frutas o verduras disponibles,
@@ -68,20 +78,14 @@ cuántas faltan para la meta, incluso si hay más opciones que las necesarias.
 Los zorros exploran los pasillos desde que aparece el nivel, sin esperar al
 primer movimiento del niño; priorizan las casillas menos visitadas.
 
-El manifiesto `cuy-nino-animado-v1.json` usa `cuy-nino-cuadros-v9.png`, y
-`zorro-animado-v1.json` usa `zorro-cuadros-v4.png`. El cuy mantiene pelaje liso
-en todas sus vistas y el zorro lleva la cola centrada de espalda. Las otras
-poses conservan sus píxeles originales. Las fuentes actuales y sus reportes
-permanecen en `kit/arte/`. Se retiraron los atlas intermedios, las muestras
-obsoletas y las imágenes del laberinto anterior.
-La [comparación animada](kit/arte/espaldas-v3/revision.html) muestra las vistas del
-cuy y la cola corregida; [origen y preparación](kit/arte/espaldas-v3/LEEME.md).
-Las herramientas están documentadas en
-[kit/herramientas/animaciones/LEEME.md](kit/herramientas/animaciones/LEEME.md).
-El nuevo paisaje se prepara con `kit/herramientas/preparar_fondo_cenital.mjs`.
+El cuy mantiene pelaje liso en todas sus vistas y el zorro lleva la cola
+centrada de espalda. Lo que entregó la herramienta de imágenes, sus pedidos y
+los paquetes de sonidos están en [`kit/originales/`](kit/originales/README.md);
+los programas que los preparan, en [`kit/herramientas/`](kit/herramientas/README.md).
+La [guía de estilo](kit/estilo/README.md) dice cómo se dibuja una pieza nueva.
 
-Los siete sonidos del laberinto y sus licencias están en `kit/recursos/sonidos/`;
-los originales se conservan en `kit/arte/sonidos/`. El botón de sonido recuerda el silencio.
+Los ocho sonidos del laberinto y sus licencias están en `kit/recursos/sonidos/`.
+El botón de sonido recuerda el silencio.
 
 ## Comprobaciones
 

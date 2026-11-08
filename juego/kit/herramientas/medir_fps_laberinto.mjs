@@ -1,6 +1,6 @@
 // Mide los cuadros por segundo del laberinto con Canvas y con AUTO (WebGL) en la
 // misma partida. Ejecutar con Vite en http://127.0.0.1:5174/ :
-//   node herramientas/medir_fps_laberinto.mjs [segundos] [--sin-gpu] [--ventana] [--con-vsync]
+//   node kit/herramientas/medir_fps_laberinto.mjs [segundos] [--sin-gpu] [--ventana] [--con-vsync]
 // --sin-gpu apaga la aceleración del navegador (como un equipo sin tarjeta gráfica)
 // y --ventana abre una ventana de verdad en lugar de trabajar sin pantalla.
 // Por defecto se quita el límite de 60 cuadros: el número que sale es lo que aguanta

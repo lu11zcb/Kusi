@@ -5,7 +5,7 @@ y **Interface Sounds 1.0**, distribuidos bajo **CC0 1.0**. Se incluyen las licen
 originales como `LICENCIA-KENNEY-IMPACT.txt` y `LICENCIA-KENNEY-INTERFACE.txt`.
 
 Los siete archivos son copias exactas de los originales, sin conversiones,
-mezclas ni modificaciones. Rutas de origen relativas a `juego/kit/arte/sonidos/origen/`:
+mezclas ni modificaciones. Rutas de origen relativas a `juego/kit/originales/sonidos/`:
 
 | Archivo público | Origen | Uso y elección |
 |---|---|---|

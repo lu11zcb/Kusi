@@ -1,15 +1,17 @@
 // Separa el atlas ilustrado en cuatro tiras con cuatro cuadros cada una.
 // Solo recorta y centra el alfa; no inventa poses ni deforma las ilustraciones.
-// Ejecutar desde juego: node herramientas/preparar_fondo_cenital.mjs
+// Ejecutar desde juego: node kit/herramientas/preparar_fondo_cenital.mjs
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { deflateSync } from 'node:zlib'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { leerPng } from '../../pruebas/ayudas/png.js'
 
-const origen = new URL('../arte/fondo-cenital-v1/origen/vegetacion-4x4.png', import.meta.url)
-const destino = new URL('../recursos/dibujos/cenital-v1/', import.meta.url)
-const normalizado = new URL('../arte/fondo-cenital-v1/origen/vegetacion-1280.png', import.meta.url)
+const origen = new URL('../originales/mundo/plantas-original.png', import.meta.url)
+const destino = new URL('../recursos/dibujos/mundo/', import.meta.url)
+// La hoja llevada a 1280 × 1280 es un paso intermedio: queda en preparacion/, que no se sube.
+const normalizado = new URL('../originales/mundo/preparacion/plantas-1280.png', import.meta.url)
+mkdirSync(new URL('./', normalizado), { recursive: true })
 execFileSync('sips', ['-z', '1280', '1280', fileURLToPath(origen), '--out', fileURLToPath(normalizado)])
 const atlas = leerPng(normalizado), lado = atlas.ancho / 4
 if (atlas.ancho !== atlas.alto || !Number.isInteger(lado)) throw new Error('El atlas debe tener cuatro filas y cuatro columnas cuadradas.')

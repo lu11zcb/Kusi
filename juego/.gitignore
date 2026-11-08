@@ -1,6 +1,9 @@
 test-results/
 playwright-report/
-# Capturas y mediciones que generan herramientas/capturar_hu46.mjs,
-# herramientas/comparar_efectos.mjs y herramientas/medir_fps_laberinto.mjs.
+# Capturas y mediciones que generan kit/herramientas/capturar_laberinto.mjs,
+# kit/herramientas/comparar_efectos.mjs y kit/herramientas/medir_fps_laberinto.mjs.
 # Se rehacen con Vite encendido y no se versionan.
 evidencias/
+# Pasos intermedios de las herramientas (recortes, hojas normalizadas y medidas).
+# Se rehacen al volver a preparar una pieza.
+kit/originales/*/preparacion/

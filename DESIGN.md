@@ -1,6 +1,6 @@
 # Diseño vigente de Kusi
 
-20 de octubre de 2026 · lui11zcb · luiscb.once@gmail.com.
+20 de octubre de 2026 · lu11zcb · luiscb.once@gmail.com.
 
 Esta guía describe el código integrado de administración, docencia y Android. Sustituye la composición antigua de MarcoPanel/Segoe y sus menús. La revisión visual de los paneles del 3 de noviembre de 2026 toma como referencia el Inicio de administración elegido por Luis; no implica validación con niños ni aceptación académica del sprint.
 
@@ -22,7 +22,7 @@ Implementación: `web/src/componentes/Tablero.tsx`, `web/src/index.css`, `web/sr
 | Forma | Tarjetas crema con borde de 2 px, esquinas redondeadas y relieve; botones principales dorados en forma de píldora |
 | Iconos de gestión | SVG de línea compartidos desde `web/src/componentes/Icono.tsx`, blancos sobre bloques de color en tarjetas y cabeceras |
 
-Las fuentes web se solicitan desde Google Fonts en `web/index.html`, con alternativas del sistema. Android incluye sus fuentes localmente. Se conservan las fuentes, la paleta y el personaje. El Inicio de administración muestra a Kusi organizando la escuela; el docente lo muestra preparando una actividad con tarjetas. Las imágenes tienen poses propias y sus originales e indicaciones están en `web/arte/paneles-v1/LEEME.md`. Botones con etiqueta visible, campos identificados, foco de teclado y errores comprensibles. Los estilos de cada panel se limitan a `.panel-administracion` y `.panel-docente`; no extender reglas de una ficha indiscriminadamente al acceso.
+Las fuentes web se solicitan desde Google Fonts en `web/index.html`, con alternativas del sistema. Android incluye sus fuentes localmente. Se conservan las fuentes, la paleta y el personaje. El Inicio de administración muestra a Kusi organizando la escuela; el docente lo muestra preparando una actividad con tarjetas. Las imágenes tienen poses propias y sus originales e indicaciones están en `web/originales/README.md`. Botones con etiqueta visible, campos identificados, foco de teclado y errores comprensibles. Los estilos de cada panel se limitan a `.panel-administracion` y `.panel-docente`; no extender reglas de una ficha indiscriminadamente al acceso.
 
 Ambos inicios usan `PrimerosPasos`: la barra cuenta acciones completadas con los datos disponibles. Administración conserva sus cinco pasos de organización escolar; docencia presenta crear una idea, preparar un juego y enviarlo a la clase. La barra no representa tiempos de generación ni se coloca en una propuesta aprobada. Mientras se consultan los datos, el avance no se inventa.
 

@@ -2,7 +2,7 @@
 
 Proyecto integrador de experiencias educativas de juego para primero de primaria en Perú.
 
-Actualización de diseño: **lui11zcb · luiscb.once@gmail.com**. Se conserva la autoría histórica de cada contribución y las licencias de los recursos.
+Autoría: **lu11zcb** · luiscb.once@gmail.com. Se conservan las contribuciones del equipo y las licencias de las dependencias, las fuentes y los íconos.
 
 ## Ver el proyecto
 
@@ -25,7 +25,7 @@ El juego está en `juego/`, servido en <http://127.0.0.1:5174/>. Reutiliza los p
 ## Estado y diseño
 
 - [Diseño vigente de administración, docente y Android](DESIGN.md).
-- [Alcance de producto](PRODUCT.md) y [autoría](AUTORIA.md).
+- [Alcance de producto](PRODUCT.md).
 
 El buzón del taller registra la propuesta aprobada y sus indicaciones para la siguiente etapa de integración. El procesador actual y el envío explícito a la clase siguen disponibles.
 

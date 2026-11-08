@@ -1,6 +1,6 @@
 [
   {
-    "imagen": "cuy-nino-cuadros-v9.png",
+    "imagen": "personajes/cuy.png",
     "ancho": 768,
     "alto": 1536,
     "filas": {
@@ -12,7 +12,7 @@
     }
   },
   {
-    "imagen": "zorro-cuadros-v4.png",
+    "imagen": "personajes/zorro.png",
     "ancho": 768,
     "alto": 1280,
     "filas": {

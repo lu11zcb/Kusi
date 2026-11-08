@@ -9,7 +9,8 @@ const estadoQuieto = (animaciones) => animaciones.quieto ? 'quieto' : 'reposo'
 const esLateral = (direccion) => direccion === 'izquierda' || direccion === 'derecha'
 
 export function pedirHojaPersonaje(escena, datos, clave) {
-  escena.load.spritesheet(clave, 'dibujos/' + datos.imagen, {
+  // Las hojas de los personajes están en dibujos/personajes/, junto a su manifiesto.
+  escena.load.spritesheet(clave, 'dibujos/personajes/' + datos.imagen, {
     frameWidth: datos.fotograma.ancho,
     frameHeight: datos.fotograma.alto,
   })

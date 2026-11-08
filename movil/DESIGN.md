@@ -1,6 +1,6 @@
 # Diseño infantil Kusi · Sprint 2
 
-20 de octubre de 2026 · lui11zcb · luiscb.once@gmail.com.
+20 de octubre de 2026 · lu11zcb · luiscb.once@gmail.com.
 
 Luis pide mejorar de nuevo iconos, botones y letra. Esta revisión sustituye los siete dibujos bicolor, los títulos Fredoka y los botones turquesa con sombra difusa. Conserva las cuatro ilustraciones y el recorrido del Sprint 2. La implementación está en Kotlin/Compose y no emplea Impeccable. Una comprobación técnica no equivale a aceptación visual de Luis ni a un ensayo con niños.
 
@@ -35,4 +35,4 @@ La biblioteca usa el título, curso y consigna del paquete real. Los iconos repr
 
 Se reduce el espacio de la ilustración de bienvenida y se prioriza la acción de entrar. La ayuda corresponde a la pantalla actual. Los campos de contraseña no se vacían al enviar una operación que todavía podría fallar; permanecen exclusivamente en memoria hasta abandonar la pantalla. El regreso desde una partida explica que volver a jugar empezará otra partida. El cierre diferencia Jugar otra vez de Elegir otra aventura y presenta el guardado con mensajes sencillos.
 
-El contenedor del juego usa los controles de Kusi y ofrece volver a abrir una aventura que no carga sin mostrar el diagnóstico recibido del puente. No cambian las fuentes, colores o ilustraciones. La compilación y las pruebas de pantallas pendientes en dispositivo se describen en [la revisión del proyecto](../REVISION-DISENO.md).
+El contenedor del juego usa los controles de Kusi y ofrece volver a abrir una aventura que no carga sin mostrar el diagnóstico recibido del puente. No cambian las fuentes, colores o ilustraciones. Cómo compilar la app y probarla en un teléfono está en [README.md](README.md).

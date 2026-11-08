@@ -15,7 +15,7 @@ function anclas(im,c,f){
  for(let y=miny;y<end;y++)for(let x=0;x<256;x++)if(im.pixel(c*256+x,f*256+y)[3]>=32){hx=Math.min(hx,x);hX=Math.max(hX,x)}
  return{centro:(hx+hX)/2,cima:miny,pies:maxy,minx,maxx}
 }
-for(const [archivo,filas]of[['cuy-nino-cuadros-v9.png',6],['zorro-cuadros-v4.png',5],['estilo-final/kusi-cuadros-v1.png',4]]){
+for(const [archivo,filas]of[['personajes/cuy.png',6],['personajes/zorro.png',5],['personajes/kusi.png',4]]){
  test(archivo+': todas las filas tienen tres poses dibujadas y anclas medidas a 2 px',()=>{
   const im=leerPng(new URL(archivo,carpeta));assert.deepEqual([im.ancho,im.alto],[768,256*filas])
   for(let f=0;f<filas;f++){
@@ -29,7 +29,7 @@ for(const [archivo,filas]of[['cuy-nino-cuadros-v9.png',6],['zorro-cuadros-v4.png
 }
 test('el manifiesto del niño conserva el contrato aprobado',()=>{
  const antes=JSON.parse(readFileSync(new URL('../fixtures/cuy-manifiesto-base.json',import.meta.url)))
- const ahora=JSON.parse(readFileSync(new URL('cuy-nino-animado-v1.json',carpeta)))
+ const ahora=JSON.parse(readFileSync(new URL('personajes/cuy.json',carpeta)))
  assert.deepEqual(ahora,antes)
 })
 // El fondo vigente es el cenital: cuatro tiras (pasto, arbusto, margaritas y flores)
@@ -37,7 +37,7 @@ test('el manifiesto del niño conserva el contrato aprobado',()=>{
 test('las cuatro tiras del fondo cenital tienen el número de cuadros de su contrato',()=>{
  assert.equal(Object.keys(SPRITES_CENITALES).length,4)
  for(const [clave,d]of Object.entries(SPRITES_CENITALES)){
-  const im=leerPng(new URL('cenital-v1/'+clave.replace('cenital-','')+'.png',carpeta));assert.deepEqual([im.ancho,im.alto],[d.ancho*d.cuadros,d.alto])
+  const im=leerPng(new URL('mundo/'+clave.replace('cenital-','')+'.png',carpeta));assert.deepEqual([im.ancho,im.alto],[d.ancho*d.cuadros,d.alto])
   for(let t=0;t<20;t+=.043){const f=cuadroIlustrado(t,d);assert.ok(Number.isInteger(f)&&f>=0&&f<d.cuadros)}
  }
  const pedidos=[];pedirEstiloFinal({load:{image:(k,r)=>pedidos.push(r),spritesheet:(k,r)=>pedidos.push(r)}})
@@ -68,17 +68,4 @@ test('clasificar muestra los alimentos reales, conserva duplicados y marca el re
  assert.equal(b.fichas[3].marca.visible,true)
  const verduras=new BarraFrutas(e,d,{tipo:'solo_clase',clase:'verdura',meta:1},{objetos})
  assert.deepEqual(verduras.estado().map(f=>f.tipo),['zanahoria'])
-})
-
-test('las ocho siluetas grises conservan exactamente el alfa y tamaño del alimento aprobado',()=>{
- for(const tipo of OBJETOS_KIT){
-  const original=leerPng(new URL(tipo+'.png',carpeta))
-  const silueta=leerPng(new URL('kit-final/'+tipo+'-silueta.png',carpeta))
-  assert.deepEqual([silueta.ancho,silueta.alto],[original.ancho,original.alto])
-  for(let y=0;y<original.alto;y++)for(let x=0;x<original.ancho;x++){
-   const rgba=silueta.pixel(x,y)
-   assert.equal(rgba[3],original.pixel(x,y)[3])
-   if(rgba[3]>0)assert.deepEqual(rgba.slice(0,3),[178,175,168])
-  }
- }
 })

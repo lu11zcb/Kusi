@@ -11,7 +11,7 @@ export function validarSpritePersonaje(datos, personaje = 'personaje') {
   const enteroPositivo = (valor) => Number.isInteger(valor) && valor > 0
 
   exigir(datos?.formato === 'kusi-sprite/1', 'Formato de manifiesto desconocido')
-  exigir(typeof datos.imagen === 'string' && /^[a-z0-9][a-z0-9-]*\.png$/i.test(datos.imagen), 'La imagen debe ser un PNG de dibujos/')
+  exigir(typeof datos.imagen === 'string' && /^[a-z0-9][a-z0-9-]*\.png$/i.test(datos.imagen), 'La imagen debe ser un PNG de dibujos/personajes/')
   const { ancho, alto } = datos.fotograma ?? {}
   const { columnas, filas } = datos.cuadricula ?? {}
   exigir(enteroPositivo(ancho) && enteroPositivo(alto), 'Dimensiones de fotograma inválidas')

@@ -8,15 +8,15 @@ export const SPRITES_CENITALES = Object.freeze(Object.fromEntries(
   }]),
 ))
 export function pedirEstiloFinal(escena) {
-  const ruta = 'dibujos/estilo-final/'
-  escena.load.image('fondo-cenital', 'dibujos/cenital-v1/fondo.png')
+  // El fondo y las plantas son del mundo; Kusi es un personaje; la mano y los destellos, interfaz.
+  escena.load.image('fondo-cenital', 'dibujos/mundo/fondo-patio.png')
   for (const [clave, sprite] of Object.entries(SPRITES_CENITALES)) escena.load.spritesheet(clave,
-    'dibujos/cenital-v1/' + clave.replace('cenital-', '') + '.png', {
+    'dibujos/mundo/' + clave.replace('cenital-', '') + '.png', {
     frameWidth: sprite.ancho, frameHeight: sprite.alto,
   })
-  escena.load.spritesheet('kusi-animado', ruta + 'kusi-cuadros-v1.png', { frameWidth: 256, frameHeight: 256 })
-  escena.load.spritesheet('mano-tutorial', ruta + 'mano-tutorial.png', { frameWidth: 128, frameHeight: 160 })
-  escena.load.spritesheet('destellos-siguiente', ruta + 'destellos-siguiente.png', { frameWidth: 256, frameHeight: 256 })
+  escena.load.spritesheet('kusi-animado', 'dibujos/personajes/kusi.png', { frameWidth: 256, frameHeight: 256 })
+  escena.load.spritesheet('mano-tutorial', 'dibujos/interfaz/mano-tutorial.png', { frameWidth: 128, frameHeight: 160 })
+  escena.load.spritesheet('destellos-siguiente', 'dibujos/interfaz/destellos-siguiente.png', { frameWidth: 256, frameHeight: 256 })
 }
 export function cuadroIlustrado(tiempo, datos, desfase = 0) {
   const secuencia = datos.secuencia ?? Array.from({ length: datos.cuadros }, (_, i) => i)

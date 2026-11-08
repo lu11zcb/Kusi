@@ -44,6 +44,6 @@ export function PanelAdministracion({ usuario, salir, cambiarRol, actualizarAcce
     {seccion === 'secciones' && <section className="admin-superficie"><CrearSeccion alCambiarBloqueo={establecerBloqueado} /></section>}
     {seccion === 'vinculos' && <section className="admin-superficie"><GestionarVinculos alCambiarBloqueo={establecerBloqueado} /></section>}
     {seccion === 'asignaciones' && <section className="admin-superficie"><AsignarDocentes alCambiarBloqueo={establecerBloqueado} /></section>}
-    <footer className="admin-pie">Kusi · Tu escuela, en orden <span>lui11zcb</span></footer>
+    <footer className="admin-pie">Kusi · Tu escuela, en orden <span>lu11zcb</span></footer>
   </Tablero></div>
 }

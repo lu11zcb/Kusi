@@ -79,7 +79,7 @@ test('un cuadro largo y muchos pequeños recorren los mismos estados y posicione
 })
 
 test('la hoja tiene alerta en la quinta fila y el primer nivel sigue sin zorro', async () => {
-  const datos = JSON.parse(await readFile(new URL('../../kit/recursos/dibujos/zorro-animado-v1.json', import.meta.url)))
+  const datos = JSON.parse(await readFile(new URL('../../kit/recursos/dibujos/personajes/zorro.json', import.meta.url)))
   assert.equal(datos.cuadricula.filas, 5)
   assert.deepEqual(datos.animaciones.frente.alerta.fotogramas, [12, 13, 14, 13])
   const paquete = JSON.parse(await readFile(new URL('../../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url)))

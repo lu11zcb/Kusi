@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 
 // El catálogo del kit le dice a la IA qué piezas existen. Esta prueba revisa que
-// cada archivo nombrado en el catálogo exista de verdad en public/, para que la
+// cada archivo nombrado en el catálogo exista de verdad en kit/recursos/, para que la
 // lista nunca quede desactualizada cuando se agregue o se borre un dibujo.
 const catalogo = JSON.parse(readFileSync(new URL('../../kit/catalogo.json', import.meta.url), 'utf8'))
 
@@ -19,7 +19,7 @@ function rutasDelCatalogo(valor, rutas = []) {
   return rutas
 }
 
-test('cada archivo del catálogo del kit existe en public/', () => {
+test('cada archivo del catálogo del kit existe en kit/recursos/', () => {
   const rutas = rutasDelCatalogo(catalogo)
   assert.ok(rutas.length > 30, 'el catálogo debería nombrar más de 30 archivos')
   for (const ruta of rutas) {
