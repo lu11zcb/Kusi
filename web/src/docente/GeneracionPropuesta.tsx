@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { aprobarVersion, consultarSolicitud } from '../servicios/propuestas'
 import type { SolicitudPropuesta } from '../servicios/propuestas'
-import { generarJuego, generacionTerminada, listarGeneraciones, observarGeneracion, procesarGeneracion } from '../servicios/generaciones'
+import { generarJuego, generacionTerminada, INTERVALO_LABERINTO_MS, INTERVALO_TALLER_MS, listarGeneraciones, observarGeneracion, procesarGeneracion } from '../servicios/generaciones'
 import type { Generacion } from '../servicios/generaciones'
 import { mensajeDocente } from './trabajosDocente'
 
@@ -34,15 +34,18 @@ export function useJuegoDocente(solicitud: SolicitudPropuesta, activo: boolean, 
     return () => controlador.abort()
   }, [solicitud.id_solicitud, version, clave, activo, recarga])
   const idEnCurso = vigente && !generacionTerminada(vigente.estado) ? vigente.id : null
+  // Un juego del taller tarda minutos: se consulta su estado con más calma.
+  const delTaller = vigente?.taller === true
   useEffect(() => {
     if (!activo || !idEnCurso) return
     const controlador = new AbortController()
     observarGeneracion(idEnCurso, controlador.signal, (datos) => {
       establecerJuego((anterior) => anterior?.id === datos.id && generacionTerminada(anterior.estado) ? anterior : datos)
       establecerErrorConsulta('')
-    }, () => establecerErrorConsulta('Seguimos buscando tu juego. Si no aparece, comprueba tu conexión.'))
+    }, () => establecerErrorConsulta('Seguimos buscando tu juego. Si no aparece, comprueba tu conexión.'),
+    delTaller ? INTERVALO_TALLER_MS : INTERVALO_LABERINTO_MS)
     return () => controlador.abort()
-  }, [idEnCurso, activo])
+  }, [idEnCurso, activo, delTaller])
 
   async function preparar() {
     if (bloqueo.current || !version || solicitud.propuesta?.se_puede_generar === false) return
@@ -58,7 +61,9 @@ export function useJuegoDocente(solicitud: SolicitudPropuesta, activo: boolean, 
       // La aprobación y la creación ya se confirmaron. Esperar el juego no
       // bloquea la navegación: al volver se recupera el resultado guardado.
       alOcupar?.(false); navegacionLiberada = true
-      if (actual.estado === 'pendiente') actual = await procesarGeneracion(actual.id)
+      // Un laberinto se procesa aquí. Un juego del taller no: lo toma el trabajador del
+      // buzón y el panel solo consulta su estado hasta que esté listo.
+      if (actual.estado === 'pendiente' && !actual.taller) actual = await procesarGeneracion(actual.id)
       if (montada.current) establecerJuego(actual)
     } catch (fallo) {
       if (montada.current) {

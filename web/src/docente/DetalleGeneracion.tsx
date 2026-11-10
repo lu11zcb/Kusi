@@ -6,7 +6,11 @@ import { MensajeDocente } from './ElementosDocente'
 import { VistaPreviaJuego } from './VistaPreviaJuego'
 import { mensajeDocente } from './trabajosDocente'
 
-export function DetalleGeneracion({ generacion, seccion, alEnviar }: { generacion: Generacion; seccion?: string; alEnviar?: (juego: Generacion) => void }) {
+export function DetalleGeneracion({ generacion, seccion, alEnviar, alReintentar }: {
+  generacion: Generacion; seccion?: string; alEnviar?: (juego: Generacion) => void
+  // Si el juego no salió, el docente puede pedirlo otra vez desde el mismo mensaje.
+  alReintentar?: () => void
+}) {
   const [enviada, establecerEnviada] = useState(generacion.publicada === true)
   const [enviando, establecerEnviando] = useState(false)
   const [lista, establecerLista] = useState(false)
@@ -21,8 +25,10 @@ export function DetalleGeneracion({ generacion, seccion, alEnviar }: { generacio
     } catch (fallo) { establecerError(mensajeDocente(fallo, 'No pudimos confirmar el envío. Puedes intentarlo otra vez.')) }
     finally { bloqueo.current = false; establecerEnviando(false) }
   }
-  if (generacion.estado === 'fallida') return <MensajeDocente titulo="Tu juego quedó por terminar"><p>Tu idea está guardada. Puedes intentarlo otra vez.</p></MensajeDocente>
-  if (generacion.estado !== 'lista') return <div className="doc-espera" role="status"><span className="doc-espera-puntos" aria-hidden="true"><i /><i /><i /></span><h2>Estamos preparando tu juego</h2><p>Puedes visitar otras secciones. Tu juego estará aquí cuando vuelvas.</p></div>
+  // El docente nunca ve el motivo de un fallo ni cómo se hace el juego: solo un mensaje amable.
+  if (generacion.estado === 'fallida') return <MensajeDocente titulo="Tu juego quedó por terminar"><p>Tu idea está guardada. Puedes intentarlo otra vez.</p>{alReintentar && <button type="button" onClick={alReintentar}>Intentarlo de nuevo</button>}</MensajeDocente>
+  // Un juego nuevo tarda unos minutos más que un laberinto: se le dice al docente, sin pasos.
+  if (generacion.estado !== 'lista') return <div className="doc-espera" role="status"><span className="doc-espera-puntos" aria-hidden="true"><i /><i /><i /></span><h2>{generacion.taller ? 'Kusi está creando tu juego' : 'Estamos preparando tu juego'}</h2><p>{generacion.taller ? 'Puede tardar unos minutos. ' : ''}Puedes visitar otras secciones. Tu juego estará aquí cuando vuelvas.</p></div>
   return <section className="doc-juego-listo" aria-label="Tu juego">
     <div className="doc-juego-titulo"><div><span className="doc-sobre-titulo">{enviada ? 'En tu clase' : 'Tu juego está listo'}</span><h2>{enviada ? 'Así juegan tus estudiantes' : 'Pruébalo antes de enviarlo'}</h2></div><span className="doc-estado doc-estado-aprobada"><IconoDocente nombre="check" />{enviada ? 'Enviado' : 'Para probar'}</span></div>
     {generacion.paquete && <VistaPreviaJuego paquete={generacion.paquete} alCargar={establecerLista} />}

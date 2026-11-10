@@ -5,7 +5,7 @@ const raiz = '/api/edu/'
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const estados = ['pendiente', 'generando', 'comprobando', 'correccion', 'lista', 'fallida'] as const
 export type EstadoGeneracion = typeof estados[number]
-export type NombreEtapa = 'solicitud' | 'generacion' | 'comprobacion' | 'correccion' | 'mapa_base'
+export type NombreEtapa = 'solicitud' | 'generacion' | 'comprobacion' | 'correccion' | 'mapa_base' | 'taller'
 export type EstadoEtapa = 'en_progreso' | 'completada' | 'fallida'
 export type EtapaGeneracion = { id: string; etapa: NombreEtapa; estado: EstadoEtapa; mensaje: string | null; creado_en: string }
 export type ReparacionesJuego = { regla: number[]; textos: number[] }
@@ -13,10 +13,15 @@ export type ProcedenciaJuego = {
   proveedor: string; modelo: string; intentos: number; mapa_base: boolean
   catalogo?: { nombre: string; version: number }; reparaciones?: ReparacionesJuego
 }
+// Un juego nuevo lo crea el taller: su procedencia dice de qué trabajo salió, cuántos
+// intentos necesitó y cuánto tardó, sin nombres de programas.
+export type ProcedenciaTaller = { origen: 'taller'; trabajo: string; intentos: number; segundos: number }
 export type ResumenGeneracion = {
   id: string; solicitud_id: string; propuesta_id: string; version_propuesta: number
-  estado: EstadoGeneracion; paquete: string | null; procedencia: ProcedenciaJuego | null
+  estado: EstadoGeneracion; paquete: string | null; procedencia: ProcedenciaJuego | ProcedenciaTaller | null
   ultimo_error: string | null; creado_en: string; actualizado_en: string
+  // true: la prepara el taller. El panel no la procesa: solo espera a que esté lista.
+  taller?: boolean
   // El docente le dio el OK: el juego aparece en la app de sus estudiantes.
   publicada?: boolean
 }
@@ -30,6 +35,7 @@ export const etiquetasEtapas: Record<NombreEtapa, string> = {
   comprobacion: 'Kusi revisa que se pueda jugar',
   correccion: 'La IA corrige lo que faltaba',
   mapa_base: 'Se usan los caminos de respaldo',
+  taller: 'Kusi crea el juego',
 }
 export const etiquetasEstados: Record<EstadoGeneracion, string> = {
   pendiente: 'Pendiente', generando: 'Escribiendo el juego', comprobando: 'Revisando el juego',
@@ -41,6 +47,12 @@ const texto = (valor: unknown): valor is string => typeof valor === 'string' && 
 const identificador = (valor: unknown): valor is string => typeof valor === 'string' && uuid.test(valor)
 const fecha = (valor: unknown): valor is string => typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(valor) && Number.isFinite(Date.parse(valor))
 const enteroPositivo = (valor: unknown): valor is number => Number.isSafeInteger(valor) && Number(valor) > 0
+// La misma regla que Spring y el reproductor: minúsculas sin tildes, números o guion bajo.
+const patronFamilia = /^[a-z][a-z0-9_]{2,40}$/
+function procedenciaTallerValida(valor: unknown): valor is ProcedenciaTaller {
+  return objeto(valor) && valor.origen === 'taller' && identificador(valor.trabajo) && enteroPositivo(valor.intentos)
+    && Number.isSafeInteger(valor.segundos) && Number(valor.segundos) >= 0
+}
 function nivelesReparadosValidos(valor: unknown): valor is number[] {
   return Array.isArray(valor) && valor.every((nivel) => enteroPositivo(nivel) && nivel <= 5) && new Set(valor).size === valor.length
 }
@@ -58,17 +70,24 @@ function etapaValida(valor: unknown): valor is EtapaGeneracion {
 function resumenValido(valor: unknown): valor is ResumenGeneracion {
   if (!objeto(valor) || !identificador(valor.id) || !identificador(valor.solicitud_id) || !identificador(valor.propuesta_id)
     || !enteroPositivo(valor.version_propuesta) || typeof valor.estado !== 'string' || !estados.includes(valor.estado as EstadoGeneracion)
-    || !(valor.paquete === null || texto(valor.paquete)) || !(valor.procedencia === null || procedenciaValida(valor.procedencia))
+    || !(valor.paquete === null || texto(valor.paquete))
+    || !(valor.procedencia === null || procedenciaValida(valor.procedencia) || procedenciaTallerValida(valor.procedencia))
     || !(valor.ultimo_error === null || typeof valor.ultimo_error === 'string') || !fecha(valor.creado_en) || !fecha(valor.actualizado_en)
-    || !(valor.publicada === undefined || typeof valor.publicada === 'boolean')) return false
+    || !(valor.publicada === undefined || typeof valor.publicada === 'boolean')
+    || !(valor.taller === undefined || typeof valor.taller === 'boolean')) return false
   // Solo se comprueba el sobre que necesita el iframe. Los caminos y las reglas
   // ya los validó HU31 en Spring; no duplicamos su validación pedagógica aquí.
   if (valor.estado === 'lista') {
     if (!texto(valor.paquete)) return false
     try {
       const paquete: unknown = JSON.parse(valor.paquete)
-      if (!objeto(paquete) || paquete.formato !== 'kusi-paquete/0' || paquete.familia !== 'laberinto'
-        || !Array.isArray(paquete.retos) || !paquete.retos.length) return false
+      if (!objeto(paquete) || paquete.formato !== 'kusi-paquete/0' || !Array.isArray(paquete.retos) || !paquete.retos.length) return false
+      // El laberinto es de la biblioteca y no trae «trabajo». Un juego del taller trae su
+      // familia y el id de su trabajo, que el reproductor usa para abrir su código.
+      const deLaBiblioteca = paquete.familia === 'laberinto' && paquete.trabajo === undefined
+      const delTaller = typeof paquete.familia === 'string' && patronFamilia.test(paquete.familia)
+        && paquete.familia !== 'laberinto' && identificador(paquete.trabajo)
+      if (!deLaBiblioteca && !delTaller) return false
     } catch { return false }
   }
   return true
@@ -113,7 +132,12 @@ export async function listarGeneraciones(solicitud: string, signal?: AbortSignal
   return (datos.generaciones as ResumenGeneracion[]).slice().sort((a, b) => Date.parse(b.creado_en) - Date.parse(a.creado_en))
 }
 
-export function observarGeneracion(id: string, signal: AbortSignal, alCambiar: (generacion: Generacion) => void, alFallar: (error: unknown) => void) {
+// Un laberinto tarda segundos: se consulta cada 2. Un juego del taller tarda minutos:
+// cada 5, como pidió el equipo, para no cargar a Spring.
+export const INTERVALO_LABERINTO_MS = 2000
+export const INTERVALO_TALLER_MS = 5000
+export function observarGeneracion(id: string, signal: AbortSignal, alCambiar: (generacion: Generacion) => void, alFallar: (error: unknown) => void,
+  intervaloMs = INTERVALO_LABERINTO_MS) {
   let temporizador: ReturnType<typeof setTimeout> | undefined
   const cancelar = () => clearTimeout(temporizador)
   signal.addEventListener('abort', cancelar, { once: true })
@@ -133,7 +157,7 @@ export function observarGeneracion(id: string, signal: AbortSignal, alCambiar: (
     }
     // Una consulta debe terminar antes de programar la siguiente: una conexión
     // lenta no acumula GET ni permite que una respuesta antigua pise la nueva.
-    if (!signal.aborted) temporizador = setTimeout(() => void consultar(), 2000)
+    if (!signal.aborted) temporizador = setTimeout(() => void consultar(), intervaloMs)
   }
   void consultar()
 }

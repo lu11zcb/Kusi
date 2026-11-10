@@ -3,7 +3,7 @@ import test from 'node:test'
 import { cargarModulo } from './cargar-modulo.mjs'
 import { etapa, generacion, generacionId, instante, juegoListo, json, otraGeneracionId, paquete, procedencia, solicitudId } from './fixtures-generaciones.mjs'
 
-const { generarJuego, procesarGeneracion, consultarGeneracion, listarGeneraciones, etiquetasEtapas, generacionTerminada, observarGeneracion } = await import(await cargarModulo(new URL('../src/servicios/generaciones.ts', import.meta.url)))
+const { generarJuego, procesarGeneracion, consultarGeneracion, listarGeneraciones, etiquetasEtapas, generacionTerminada, observarGeneracion, INTERVALO_TALLER_MS } = await import(await cargarModulo(new URL('../src/servicios/generaciones.ts', import.meta.url)))
 const { enviar } = await import(await cargarModulo(new URL('../src/servicios/http.ts', import.meta.url)))
 function simular(t, responder) {
   t.mock.method(globalThis, 'fetch', async (ruta, opciones) => {
@@ -142,10 +142,10 @@ test('SIMULADO HU27: historial sin etapas, ordenado por fecha y sin resultados d
   }
 })
 
-test('HU27: las etiquetas de las cuatro etapas explican lo que pasa al docente', () => {
+test('HU27: las etiquetas de las etapas explican lo que pasa (la del taller, sin nombrarlo)', () => {
   assert.deepEqual(etiquetasEtapas, {
     solicitud: 'Solicitud registrada', generacion: 'La IA escribe el juego', comprobacion: 'Kusi revisa que se pueda jugar',
-    correccion: 'La IA corrige lo que faltaba', mapa_base: 'Se usan los caminos de respaldo',
+    correccion: 'La IA corrige lo que faltaba', mapa_base: 'Se usan los caminos de respaldo', taller: 'Kusi crea el juego',
   })
 })
 
@@ -245,4 +245,56 @@ test('HU30: admite reparaciones estructuradas de respaldo y conserva compatibili
   }
   recibida = { ...datos, procedencia: { ...datos.procedencia, mapa_base: false, reparaciones: { regla: [1], textos: [1] } } }
   await assert.rejects(consultarGeneracion(datos.id))
+})
+
+// ---------- Los juegos del taller ----------
+
+const trabajo = '7a1f2b3c-4d5e-4f60-8a71-92b3c4d5e6f7'
+const paqueteDelTaller = JSON.stringify({ formato: 'kusi-paquete/0', familia: 'memoria_andina', trabajo, retos: [{ id: 1 }] })
+const procedenciaDelTaller = { origen: 'taller', trabajo, intentos: 2, segundos: 340 }
+
+test('acepta el juego de un trabajo del taller: otra familia con su trabajo, su procedencia y su etapa', async (t) => {
+  simular(t, () => json({ generacion: juegoListo({ paquete: paqueteDelTaller, procedencia: procedenciaDelTaller, taller: true,
+    etapas: [etapa(), etapa('taller', 'en_progreso', 'El taller empezó a crear el juego.', 1), etapa('taller', 'completada', 'El juego está listo.', 300)] }) }))
+  const recibida = await consultarGeneracion(generacionId)
+  assert.equal(recibida.taller, true)
+  assert.deepEqual(recibida.procedencia, procedenciaDelTaller)
+  assert.equal(JSON.parse(recibida.paquete).trabajo, trabajo)
+  assert.equal(etiquetasEtapas.taller, 'Kusi crea el juego')
+})
+
+test('rechaza un juego del taller sin su trabajo, con una familia mal escrita o con una procedencia dudosa', async (t) => {
+  const conCambio = (cambio) => JSON.stringify({ ...JSON.parse(paqueteDelTaller), ...cambio })
+  for (const cambio of [
+    { paquete: conCambio({ trabajo: 'no-es-un-id' }) },
+    { paquete: conCambio({ trabajo: undefined }) },
+    { paquete: conCambio({ familia: 'Memoria' }) },
+    { paquete: conCambio({ familia: 'me' }) },
+    // El laberinto es de la biblioteca: no trae trabajo.
+    { paquete: conCambio({ familia: 'laberinto' }) },
+    { procedencia: { ...procedenciaDelTaller, segundos: -1 } },
+    { procedencia: { ...procedenciaDelTaller, trabajo: 'x' } },
+    { procedencia: { ...procedenciaDelTaller, origen: 'otro' } },
+    { taller: 'sí' },
+  ]) {
+    simular(t, () => json({ generacion: juegoListo({ paquete: paqueteDelTaller, procedencia: procedenciaDelTaller, taller: true, ...cambio }) }))
+    await assert.rejects(consultarGeneracion(generacionId), /comprobar la generación/, JSON.stringify(cambio))
+    t.mock.restoreAll()
+  }
+})
+
+test('SIMULADO: un juego del taller se consulta cada cinco segundos', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  let llamadas = 0
+  simular(t, () => json({ generacion: ++llamadas === 2 ? juegoListo({ paquete: paqueteDelTaller, procedencia: procedenciaDelTaller, taller: true })
+    : generacion({ estado: 'generando', taller: true }) }))
+  const recibidas = []; const controlador = new AbortController()
+  observarGeneracion(generacionId, controlador.signal, (datos) => recibidas.push(datos.estado), assert.fail, INTERVALO_TALLER_MS)
+  await vaciarPromesas()
+  assert.equal(llamadas, 1)
+  t.mock.timers.tick(4999); await vaciarPromesas(); assert.equal(llamadas, 1)
+  t.mock.timers.tick(1); await vaciarPromesas(); assert.equal(llamadas, 2)
+  t.mock.timers.tick(20000); await vaciarPromesas(); assert.equal(llamadas, 2)
+  assert.deepEqual(recibidas, ['generando', 'lista'])
+  controlador.abort()
 })

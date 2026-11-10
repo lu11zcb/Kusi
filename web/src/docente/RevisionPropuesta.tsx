@@ -46,7 +46,9 @@ export function RevisionPropuesta({ solicitud: actual, alCambiar, alOcupar, acti
   const propuesta = actual.propuesta
   const version = propuesta?.version ?? 0
   const juego = useJuegoDocente(actual, activo, alCambiar, alOcupar)
-  const preparando = juego.ocupado || (juego.preparando && juego.juego?.estado !== 'pendiente')
+  // Un laberinto «pendiente» espera que el docente lo procese; un juego del taller
+  // «pendiente» ya está en camino: se muestra como en preparación.
+  const preparando = juego.ocupado || (juego.preparando && (juego.juego?.estado !== 'pendiente' || juego.juego?.taller === true))
   const bloqueada = ocupado || preparando
   const listo = propuesta?.estado_revision === 'aprobada' && juego.juego?.estado === 'lista'
   const estado = estadoTrabajo({ solicitud: actual, juego: juego.juego, sinConfirmar: juego.cargando })
@@ -114,12 +116,12 @@ export function RevisionPropuesta({ solicitud: actual, alCambiar, alOcupar, acti
     {aviso && <p className="doc-confirmacion" role="status"><IconoDocente nombre="check" />{aviso}</p>}
     {!propuesta ? <div className="doc-revision-lectura">{actual.estado === 'generando' ? <div className="doc-espera" role="status"><span className="doc-espera-puntos" aria-hidden="true"><i /><i /><i /></span><h2>Estamos preparando tu idea</h2><p>Puedes volver a Mis juegos mientras la preparamos.</p></div> : <MensajeDocente titulo="Tu idea está guardada"><p>Vamos a terminar de prepararla para que puedas revisarla.</p><button type="button" disabled={ocupado} onClick={() => void retomar()}>{ocupado ? 'Buscando tu idea…' : 'Continuar con mi idea'}</button></MensajeDocente>}</div> : <div className={'doc-trabajo-distribucion' + (listo ? ' doc-con-juego' : '')}>
       <div className="doc-trabajo-principal">
-        {activo && juego.juego && propuesta.estado_revision === 'aprobada' && <DetalleGeneracion key={juego.juego.id} generacion={juego.juego} seccion={seccion} alEnviar={juego.actualizar} />}
+        {activo && juego.juego && propuesta.estado_revision === 'aprobada' && <DetalleGeneracion key={juego.juego.id} generacion={juego.juego} seccion={seccion} alEnviar={juego.actualizar} alReintentar={bloqueada || juego.cargando ? undefined : () => void juego.preparar()} />}
         {juego.error && <MensajeDocente titulo="Tu juego sigue guardado" error><p>{juego.error}</p><button type="button" className="secundario" onClick={juego.recargar}>Volver a consultar</button></MensajeDocente>}
         {edicion ? <form className="doc-editor doc-revision-lectura" onSubmit={guardarEdicion}><h3>Editar mi idea</h3><p>Escribe cada regla, reto o ayuda en una línea.</p>{campos.map(({ campo, etiqueta }) => <div className="campo" key={campo}><label htmlFor={id + '-editar-' + campo}>{etiqueta}</label><textarea id={id + '-editar-' + campo} disabled={bloqueada} value={edicion.campos[campo]} rows={campo === 'historia' ? 5 : 3} maxLength={campo === 'historia' ? 10000 : campo === 'objetivo' ? 4000 : undefined} required onChange={(e) => establecerEdicion({ ...edicion, campos: { ...edicion.campos, [campo]: e.target.value } })} /></div>)}<div className="acciones"><button disabled={bloqueada}>Guardar cambios</button><button type="button" className="secundario" disabled={bloqueada} onClick={() => establecerEdicion(null)}>Cancelar</button></div></form>
           : listo || preparando ? <details className="doc-idea-resumen"><summary>Ver la idea de este juego</summary><ContenidoPropuesta propuesta={propuesta} /></details>
           : <section className="doc-revision-lectura"><span className="doc-sobre-titulo">La idea para tu juego</span><ContenidoPropuesta propuesta={propuesta} /></section>}
-        {!edicion && !listo && !preparando && <div className="doc-siguiente">
+        {!edicion && !listo && !preparando && juego.juego?.estado !== 'fallida' && <div className="doc-siguiente">
           {propuesta.se_puede_generar === false ? <MensajeDocente titulo="Este tipo de juego todavía no está disponible"><p>Puedes pedirle a Kusi una idea de laberinto con frutas y verduras.</p></MensajeDocente>
             : propuesta.estado_revision === 'rechazada' ? <button disabled={bloqueada} onClick={() => void ejecutar(() => pedirAlternativa(actual.id_solicitud), 'Aquí tienes otra idea para revisar.')}>Proponer otra idea</button>
             : <><p>Cuando la idea te guste, prepararemos el juego para que puedas probarlo.</p><button type="button" disabled={bloqueada || juego.cargando || !!juego.error} onClick={() => void juego.preparar()}><IconoDocente nombre="check" />{propuesta.estado_revision === 'aprobada' ? 'Continuar preparando mi juego' : propuesta.observaciones ? 'Preparar juego con estos cambios' : 'Aprobar y preparar juego'}</button></>}

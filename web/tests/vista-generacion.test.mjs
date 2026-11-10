@@ -139,3 +139,25 @@ test('un juego antiguo no inventa atribuciones aunque ya no se muestren al docen
   assert.deepEqual(datos.reparaciones, [])
   assert.deepEqual(aportesDelJuego(null, paqueteConHistoria).aportes, [])
 })
+
+// ---------- Los juegos del taller ----------
+
+test('mientras se crea un juego nuevo, el docente solo lee que Kusi lo está creando', () => {
+  for (const estado of ['pendiente', 'generando']) {
+    const html = mostrar(generacion({ estado, taller: true, etapas: [etapa(), etapa('taller', 'en_progreso', 'El taller empezó a crear el juego (vez 1).', 1)] }))
+    assert.ok(html.includes('Kusi está creando tu juego'), estado)
+    assert.ok(html.includes('Puede tardar unos minutos'), estado)
+    for (const texto of ['taller', 'IA', 'vez 1', '<iframe', 'progressbar']) assert.ok(!html.includes(texto), estado + ': ' + texto)
+  }
+})
+
+test('si el juego no sale, el mensaje amable trae el botón para intentarlo de nuevo, sin el motivo', () => {
+  const datos = generacion({ estado: 'fallida', taller: true, ultimo_error: 'Esta vez no pudimos terminar tu juego.',
+    etapas: [etapa(), etapa('taller', 'fallida', 'Esta vez no pudimos terminar tu juego.', 300)] })
+  const conBoton = renderToStaticMarkup(createElement(DetalleGeneracion, { generacion: datos, alReintentar: () => {} }))
+  assert.ok(conBoton.includes('Tu juego quedó por terminar'))
+  assert.ok(conBoton.includes('Intentarlo de nuevo'))
+  for (const texto of ['taller', 'revisor', 'correcciones', 'Esta vez no pudimos']) assert.ok(!conBoton.includes(texto), texto)
+  // Sin quien lo atienda (por ejemplo, mientras se guarda otro cambio), no hay botón.
+  assert.ok(!mostrar(datos).includes('Intentarlo de nuevo'))
+})

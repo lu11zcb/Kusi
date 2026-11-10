@@ -59,3 +59,14 @@ El panel consulta las rutas de Spring `/api/edu/resultados/actividades/`, `.../{
 Los avisos antiguos sin juego asociado y las pruebas docentes se conservan y quedan fuera del informe. Los estudiantes vinculados después del envío no se incorporan a ese envío; un envío posterior puede incluirlos. La app debe adjuntar `juego_id` para que sus partidas nuevas aparezcan aquí: el panel no puede deducirlo de los avisos anteriores.
 
 Para las capturas: tomar la lista con los tres estados y el detalle de un estudiante con una primera respuesta incorrecta, una corrección y ambas ayudas. La evidencia automática se encuentra en `tests/resultados.test.mjs` y en `edu-api` (`ResultadosTest`, `RespuestasPartidaTest` y `CorreccionesJuegoTest`). Estas pruebas usan datos ficticios; las capturas del recorrido real se toman por separado.
+
+## Juegos nuevos del taller
+
+Una propuesta que no es un laberinto la crea el taller (ver `juego/taller/README.md`). Para el panel cambia poco:
+
+- `src/servicios/generaciones.ts` acepta el guion de un juego del taller: otra familia (minúsculas, sin tildes, con guion bajo) con el `trabajo` del que salió, su procedencia `{ origen: 'taller', trabajo, intentos, segundos }`, la etapa `taller` y el campo `taller` de la generación. El laberinto sigue igual y nunca trae `trabajo`.
+- Si la generación es del taller, el panel no llama a «procesar»: consulta su estado cada 5 segundos (`INTERVALO_TALLER_MS`) y muestra «Kusi está creando tu juego», sin pasos, errores ni nombres de IA. Cuando está lista, la vista previa la abre como a un laberinto.
+- Si no sale, el docente ve «Tu juego quedó por terminar» con el botón «Intentarlo de nuevo», que prepara otra generación (también en el laberinto).
+- Pruebas: las de «Los juegos del taller» en `tests/generaciones.test.mjs` y `tests/vista-generacion.test.mjs`.
+
+> **Para revisar (responsable del panel):** este cambio lo hizo Luis el 10 de noviembre, fuera del rediseño del panel. Falta su revisión.
