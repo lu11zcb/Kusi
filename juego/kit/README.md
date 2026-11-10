@@ -26,12 +26,13 @@ pero no lo cambia: si falta una pieza, la pide en lugar de inventarla.
 
 ## Cómo se conecta con los juegos
 
-El reproductor arranca, carga el guion y abre el juego. Hoy conoce un solo
-juego, el laberinto (`familia: laberinto`), que está en
-[`../juegos/laberinto/`](../juegos/laberinto/README.md): `reproductor/main.js` y
-`reproductor/escenas/EscenaCarga.js` lo abren siempre a él. Cómo se registrará
-un juego nuevo del [taller](../taller/README.md) según su familia está en
-[`../taller/entrega.md`](../taller/entrega.md).
+El reproductor arranca, carga el guion y abre el juego. Un guion sin `trabajo` es
+de la biblioteca: el laberinto (`familia: laberinto`), que está en
+[`../juegos/laberinto/`](../juegos/laberinto/README.md). Un guion con `trabajo`
+es un juego del [taller](../taller/README.md): `reproductor/escenas/EscenaCarga.js`
+trae su ficha de `taller/trabajos/<trabajo>/juego/juego.js` al abrirlo, con el
+registro de `reproductor/datos/registroJuegos.js`. Los detalles están en
+[`../taller/entrega.md`](../taller/entrega.md), sección 6.
 
 Las piezas nuevas que dibuja el taller quedan «pendientes» en su trabajo hasta
 que el docente las aprueba; solo entonces pueden pasar a la biblioteca de

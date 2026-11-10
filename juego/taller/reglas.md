@@ -21,7 +21,7 @@ Todo juego nuevo cumple estas reglas. El revisor las comprueba con
   | Módulo | Para qué |
   | --- | --- |
   | `medidas.js` | `ANCHO`, `ALTO`, `COLOR`, `NUMERO`, `LETRA` y `estiloTexto`: medidas, colores y letra. |
-  | `dibujos/protagonista.js` (propuesto) | El protagonista (ver la regla 3). |
+  | `dibujos/protagonista.js` | El protagonista (ver la regla 3). |
   | `dibujos/zorroAnimado.js` | El zorro, si el juego tiene un enemigo. |
   | `dibujos/dibujos.js` | `ajustarATamano`, para encajar un dibujo en un espacio. |
   | `logica/voz.js` | `decir`: la voz de Kusi. |
@@ -62,7 +62,7 @@ mismo [molde](../kit/estilo/molde-personaje.md).
   `mostrarEstado('feliz')`, `mostrarEstado('asustado')` y el parpadeo.
 - El guion no elige al protagonista: lo elige el niño, nunca la IA.
 
-**Contrato propuesto (pendiente de programar):**
+**Contrato:**
 
 ```js
 // El reproductor ya cargó al protagonista antes de abrir el juego.
@@ -72,8 +72,8 @@ import { crearProtagonista, ALTURA_PROTAGONISTA } from '#kit/reproductor/dibujos
 this.protagonista = crearProtagonista(this, { alto: this.casilla * ALTURA_PROTAGONISTA })
 ```
 
-`#kit/` apunta a `juego/kit/` y se configura junto con el registro de juegos
-([entrega.md](entrega.md)).
+`#kit/` apunta a `juego/kit/` (campo `imports` de `juego/package.json`) y funciona
+igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
 
 ## 4. Personajes fijos
 

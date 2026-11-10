@@ -45,10 +45,10 @@ laberinto.
 | `guion-ejemplo.json` | Pasa su validador y se puede terminar. |
 | `pruebas/` | Pasan con `node --test`. |
 
-## 3. La ficha `juego.js` (contrato propuesto)
+## 3. La ficha `juego.js`
 
-La ficha le dice al reproductor cómo abrir el juego. **Está pendiente de
-programar**, junto con el registro de la sección 6.
+La ficha le dice al reproductor cómo abrir el juego (el registro está en la
+sección 6).
 
 ```js
 // Ficha del juego: lo que el reproductor necesita para abrirlo.
@@ -56,18 +56,34 @@ import { EscenaMemoria } from './escenas/EscenaMemoria.js'
 import { validarMemoria } from './datos/validarMemoria.js'
 
 export default {
-  // La misma familia que trae el guion. Minúsculas, sin tildes y con guion bajo.
+  // La misma familia que trae el guion. Minúsculas, sin tildes y con guion bajo,
+  // de 3 a 41 caracteres. «laberinto» ya es de la biblioteca.
   familia: 'memoria',
   nombre: 'La memoria de Kusi',
-  // La clave de la escena en Phaser es la familia.
+  // La clase de Phaser del juego.
   escena: EscenaMemoria,
   // Recibe el guion y devuelve { valido, errores }.
   validar: validarMemoria,
-  // Los dibujos que el juego carga además de lo común (protagonista, Kusi,
-  // interfaz y sonidos). Son ids del catálogo o piezas nuevas de este trabajo.
+  // Los dibujos que el juego carga además de lo común (protagonista, zorro, Kusi,
+  // patio, interfaz y sonidos). Son alimentos del catálogo o piezas de este trabajo.
   piezas: ['fresa', 'olla-de-barro'],
 }
 ```
+
+- **La clave de la escena la pone el reproductor:** `taller:<trabajo>`, aunque
+  la escena ponga otra en su constructor. Así dos juegos con la misma familia no
+  se pisan. Para pasar de nivel, la escena usa `this.scene.restart(datos)`; nunca
+  `this.scene.start` con su familia.
+- **La escena recibe** `{ paquete, partida, trabajo, indiceNivel }`: el guion,
+  la partida para los avisos, el id del trabajo y el nivel en que empieza (0 o
+  el de `?nivel=N`).
+- **Las piezas:** cada id es un alimento del catálogo (`dibujos/objetos/<id>.png`)
+  o una pieza de este trabajo (`piezas/<id>.png`). En Phaser, la clave de la
+  textura es el id. Si una pieza no llega, el reproductor pone una figura simple
+  con esa clave y lo avisa en la consola: el juego no se cae.
+- **El kit se importa con `#kit/`**, que apunta a `juego/kit/` (el campo
+  `imports` de `juego/package.json`). Funciona igual en Vite y en `node --test`:
+  `import { ANCHO } from '#kit/reproductor/medidas.js'`.
 
 ## 4. El guion
 
@@ -79,6 +95,7 @@ cada reto.
 | --- | --- |
 | `formato` | siempre `kusi-paquete/0` |
 | `familia` | la familia del juego |
+| `trabajo` | el id del trabajo. El guion de ejemplo puede no traerlo; el trabajador lo agrega al entregar y Spring comprueba que sea el suyo. |
 | `titulo`, `curso`, `meta` e `historia` | lo que el docente ve del juego |
 | `orientacion` | siempre `horizontal` |
 | `consigna` | la consigna general |
@@ -107,26 +124,53 @@ en `juegos/laberinto/logica/partidaLaberinto.js`). El panel, la app y Spring
 `nivel` va de 1 a 5 y cada aviso ocupa como máximo 8192 caracteres. Los avisos
 no llevan datos personales.
 
+Si el juego no manda `listo` al terminar su `create()`, lo manda el reproductor.
+El juego tampoco necesita atender el puente: el reproductor se encarga de un
+guion nuevo (vuelve a la carga) y del reinicio (otra partida desde el nivel 1).
+
 ## 6. Cómo se registra un juego
 
-**Hoy** el reproductor solo abre el laberinto: `kit/reproductor/main.js` y
-`kit/reproductor/escenas/EscenaCarga.js` lo importan directamente. Además, el
-panel y la app solo aceptan guiones de la familia `laberinto`.
+El registro está en `kit/reproductor/datos/registroJuegos.js` (sin Phaser, con
+sus pruebas en `pruebas/logica/registroJuegos.test.js`) y lo usa
+`kit/reproductor/escenas/EscenaCarga.js`:
 
-**Propuesta, pendiente de programar** antes del primer juego del taller:
+1. **Un guion sin `trabajo` es de la biblioteca**: hoy, el laberinto, como
+   siempre.
+2. **Un guion con `trabajo` es del taller.** El id tiene que ser un UUID; si no,
+   no se arma ninguna ruta y no se pide ningún archivo.
+3. La carga trae `taller/trabajos/<trabajo>/juego/juego.js` **cuando se abre el
+   juego**, no al arrancar Vite: un trabajo que terminó hace un minuto se abre
+   sin reiniciar nada.
+4. Revisa la ficha (completa y de la misma familia que el guion) y el guion con
+   su `validar`. Carga lo común y las `piezas`, y abre la escena con su clave
+   `taller:<trabajo>` (sección 3).
+5. Si algo falla (no hay ficha, la ficha está incompleta, el guion no pasa o la
+   escena se cae al empezar), el niño ve la salida amable de siempre y la
+   página recibe un solo aviso `fallo` con el motivo.
+6. **Para probar un juego del taller** se abre
+   `http://localhost:5174/?juego=<trabajo>`, que carga su `guion-ejemplo.json`.
+   También se le puede mandar un guion con `trabajo` por el puente
+   (`?paquete=mensaje`), como hace el panel.
 
-1. Cada juego tiene su ficha `juego.js`.
-2. El reproductor busca las fichas en dos lugares: `juegos/*/juego.js` (la
-   biblioteca) y `taller/trabajos/*/juego/juego.js` (los juegos del taller en
-   esta Mac).
-3. La carga lee la `familia` del guion, busca su ficha, lo revisa con su
-   `validar`, carga lo común y las `piezas`, y abre su escena con
-   `{ paquete, partida }`.
-4. Si dos fichas tienen la misma familia, o una ficha está incompleta, el
-   reproductor muestra un error y el revisor lo detecta.
-5. Para probar un juego del taller se abre
-   `http://localhost:5174/?juego=<trabajo>`, que carga su guion de ejemplo.
-6. El panel, la app y Spring aceptan la nueva familia.
+La prueba `pruebas/navegador/juegoDelTaller.spec.js` crea una ficha mínima en una
+carpeta temporal con Vite ya encendido, la abre por su id y la borra al final.
+
+Falta que el panel y la app acepten la familia nueva y el campo `trabajo`.
+
+## 6.1 Corregir un juego (`corregir_juego`)
+
+Cuando el docente pide un cambio por el chat sobre un juego del taller, Spring deja
+un trabajo `corregir_juego`. Su `trabajo.json` trae, además de la propuesta nueva,
+`pedido` (lo que escribió el docente, que es dato y no orden) y `anterior`
+(`{ trabajo, version_propuesta, paquete }`).
+
+- El trabajador copia `juego/` y `piezas/` del trabajo anterior a la carpeta del
+  trabajo nuevo, y el supervisor modifica **esa copia**. La carpeta anterior no
+  se toca: los estudiantes siguen jugando la versión enviada hasta que el docente
+  envíe la nueva.
+- La versión nueva no hereda la aprobación: vuelve a pasar todas las
+  revisiones, y el docente la aprueba y la envía igual que un laberinto.
+- Su guion lleva el `trabajo` nuevo.
 
 ## 7. Las piezas nuevas
 

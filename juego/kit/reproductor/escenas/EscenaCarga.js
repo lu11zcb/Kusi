@@ -12,11 +12,20 @@ import { validarLaberinto } from '../../../juegos/laberinto/datos/validarLaberin
 import { crearPartidaLaberinto, avisarPartida } from '../../../juegos/laberinto/logica/partidaLaberinto.js'
 import { nivelPedido } from '../../../juegos/laberinto/logica/parametrosLaberinto.js'
 import { avisos } from '../logica/avisos.js'
-import { leerPuente, MENSAJE_PAQUETE, AVISO_ERROR } from '../mensajes/puenteGuion.js'
+import { leerPuente, MENSAJE_PAQUETE, MENSAJE_REINICIAR, AVISO_ERROR } from '../mensajes/puenteGuion.js'
 import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
 import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
-import { pedirKitFinal } from '../dibujos/kitFinal.js'
+import { elegirProtagonista } from '../datos/protagonistas.js'
+import {
+  trabajoPedido, esIdTrabajo, elegirJuego, revisarFicha, erroresDelValidar,
+  clasificarPiezas, rutaGuionEjemplo, rutaPieza, claveEscena,
+} from '../datos/registroJuegos.js'
+import { cargarFicha, escenaDelTrabajo, dibujarFiguraSimple } from './juegosDelTaller.js'
+import {
+  pedirManifiestoProtagonista, prepararProtagonista, registrarProtagonista,
+} from '../dibujos/protagonista.js'
+import { pedirKitFinal, OBJETOS_KIT } from '../dibujos/kitFinal.js'
 import { pedirEstiloFinal } from '../dibujos/estiloFinal.js'
 import { vidaActiva } from '../efectos/vida.js'
 import { pedirSonidosLaberinto } from '../efectos/SonidosLaberinto.js'
@@ -48,6 +57,9 @@ export class EscenaCarga extends Phaser.Scene {
     // La partida existe desde la carga para registrar también cualquier fallo.
     const parametros = new URLSearchParams(window.location.search)
     this.esperaMensaje = parametros.get('paquete') === 'mensaje'
+    // ?juego=<trabajo> abre el guion de ejemplo de un juego del taller.
+    this.juegoPedido = trabajoPedido(window.location.search)
+    this.familiaAbierta = 'laberinto'
     this.partidaLaberinto = crearPartidaLaberinto()
     window.kusi = { listo: false, avisos }
     this.cameras.main.setBackgroundColor(COLOR.crema)
@@ -62,11 +74,16 @@ export class EscenaCarga extends Phaser.Scene {
       .setOrigin(0.5)
 
     // Con un guion recibido por mensaje, o esperándolo, no se pide el de ejemplo.
+    // Un id que no es un UUID no arma ninguna ruta: create() lo rechaza con su motivo.
     if (!this.esperaMensaje && !this.llegoPorMensaje) {
-      this.load.json('paquete', ARCHIVO_DEL_LABERINTO)
+      if (this.juegoPedido === null) this.load.json('paquete', ARCHIVO_DEL_LABERINTO)
+      else if (esIdTrabajo(this.juegoPedido)) this.load.json('paquete', rutaGuionEjemplo(this.juegoPedido))
     }
     this.load.json(CLAVE_MANIFIESTO_CUY, ARCHIVO_MANIFIESTO_CUY)
     this.load.json(CLAVE_MANIFIESTO_ZORRO, ARCHIVO_MANIFIESTO_ZORRO)
+    // Un juego del taller no nombra al cuy: recibe «el protagonista» (hoy, el de siempre).
+    this.protagonista = elegirProtagonista(null).protagonista
+    pedirManifiestoProtagonista(this, this.protagonista)
   }
 
   async create() {
@@ -78,9 +95,17 @@ export class EscenaCarga extends Phaser.Scene {
     const paqueteBase = this.llegoPorMensaje ? this.paqueteRecibido : this.cache.json.get('paquete')
 
     try {
-      // Todo guion pasa por el mismo contrato del laberinto, también si llega
-      // por mensaje. La copia evita modificar los datos de la caché de Phaser.
+      // La copia evita modificar los datos de la caché de Phaser.
       const paquete = structuredClone(paqueteBase)
+      // Un guion con «trabajo» (o ?juego=) es de un juego del taller; sin él, del laberinto.
+      // ?juego= solo vale para su guion de ejemplo, no para uno que llegó por mensaje.
+      const eleccion = elegirJuego(paquete, this.llegoPorMensaje ? null : this.juegoPedido)
+      if (eleccion.taller) {
+        await this.abrirJuegoDelTaller(paquete, eleccion.trabajo)
+        return
+      }
+
+      // Todo guion del laberinto pasa por su contrato, también si llega por mensaje.
       const resultado = validarLaberinto(paquete)
 
       if (!resultado.valido) {
@@ -125,6 +150,88 @@ export class EscenaCarga extends Phaser.Scene {
     }
   }
 
+  // Abre un juego del taller (taller/entrega.md §6): trae su ficha, revisa el guion con
+  // el validar del juego, carga lo común, las piezas del kit y las del trabajo, y abre su
+  // escena con { paquete, partida, trabajo, indiceNivel }.
+  async abrirJuegoDelTaller(paquete, trabajo) {
+    if (!paquete || typeof paquete !== 'object' || Array.isArray(paquete)) {
+      throw new Error('No llegó el guion del juego del trabajo ' + trabajo + '.')
+    }
+    // El guion de ejemplo puede no decir su trabajo: es el que se pidió con ?juego=.
+    paquete.trabajo = trabajo
+    this.familiaAbierta = String(paquete.familia ?? 'taller')
+
+    const ficha = await cargarFicha(trabajo)
+    const revision = revisarFicha(ficha, paquete)
+    if (!revision.valido) throw new Error(revision.errores.join('; '))
+    // El validar es código del juego: si se cae, cuenta como un guion que no pasa.
+    let resultado
+    try {
+      resultado = ficha.validar(structuredClone(paquete))
+    } catch (error) {
+      throw new Error('El validar del juego se cayó: ' + String(error?.message ?? error))
+    }
+    const errores = erroresDelValidar(resultado)
+    if (errores.length) throw new Error(errores.join('; '))
+
+    // Lo común: el protagonista, el zorro (por si el juego tiene un enemigo), Kusi, el
+    // patio, la interfaz y los sonidos. Después, las piezas que pide la ficha.
+    const datosProtagonista = prepararProtagonista(this, this.protagonista)
+    const zorroAnimado = validarSpritePersonaje(this.cache.json.get(CLAVE_MANIFIESTO_ZORRO), 'zorro')
+    pedirHojaZorro(this, zorroAnimado)
+    pedirKitFinal(this)
+    pedirEstiloFinal(this)
+    if (vidaActiva()) pedirSonidosLaberinto(this)
+    const { delKit, delTrabajo } = clasificarPiezas(ficha.piezas, OBJETOS_KIT)
+    this.load.maxRetries = 0
+    for (const pieza of delKit) this.load.image(pieza, 'dibujos/objetos/' + pieza + '.png')
+    for (const pieza of delTrabajo) this.load.image(pieza, rutaPieza(trabajo, pieza))
+
+    this.load.once('complete', () => {
+      try {
+        registrarProtagonista(this, datosProtagonista)
+        registrarAnimacionesZorro(this, zorroAnimado)
+        for (const pieza of [...delKit, ...delTrabajo]) {
+          if (this.textures.exists(pieza)) continue
+          console.warn('[carga] Falta la pieza «' + pieza + '»: se usa una figura simple.')
+          dibujarFiguraSimple(this, pieza)
+        }
+
+        const clave = claveEscena(trabajo)
+        if (!this.scene.get(clave)) this.scene.add(clave, escenaDelTrabajo(ficha.escena, clave), false)
+        const datos = {
+          paquete,
+          partida: this.partidaLaberinto,
+          trabajo,
+          indiceNivel: nivelPedido(window.location.search, paquete.retos.length),
+        }
+        this.atenderPuenteDelJuego(clave, datos)
+        this.scene.start(clave, datos)
+      } catch (error) {
+        this.mostrarError(error)
+      }
+    })
+    this.load.start()
+  }
+
+  // Un juego del taller no tiene que saber del puente: el reproductor atiende por él un
+  // guion nuevo (vuelve a la carga) o el reinicio (otra partida desde el primer nivel).
+  // Se conecta cuando la carga se cierra; si el juego conecta su propio manejador, gana el suyo.
+  atenderPuenteDelJuego(clave, datos) {
+    if (!this.puente) return
+    const puente = this.puente
+    const escenas = this.game.scene
+    const alRecibir = (orden) => {
+      if (orden.tipo === MENSAJE_PAQUETE) {
+        escenas.stop(clave)
+        escenas.start('carga', { paquete: orden.paquete })
+      } else if (orden.tipo === MENSAJE_REINICIAR) {
+        escenas.start(clave, { ...datos, indiceNivel: 0, partida: crearPartidaLaberinto() })
+      }
+    }
+    this.events.once('shutdown', () => puente.conectar(alRecibir))
+  }
+
   // Si el juego se abrió para recibir guiones, esta escena atiende los que lleguen
   // mientras prepara el juego o espera. Mientras se prepara no hay nada que reiniciar:
   // solo importa un guion nuevo, y con él la escena empieza de nuevo.
@@ -141,7 +248,7 @@ export class EscenaCarga extends Phaser.Scene {
   mostrarError(error) {
     // No se intenta dibujar un mapa inválido. El niño recibe una salida simple;
     // el diagnóstico técnico queda en consola y el puente recibe un solo fallo.
-    console.error('[carga] No se pudo preparar el laberinto:', error)
+    console.error('[carga] No se pudo preparar el juego «' + this.familiaAbierta + '»:', error)
     avisarPartida(this.partidaLaberinto, 'fallo', { motivo: String(error.message ?? error) })
     // La página que contiene el juego se entera del motivo (la vista previa del panel).
     this.puente?.avisar({ tipo: AVISO_ERROR, motivo: String(error.message ?? error) })
@@ -161,7 +268,7 @@ export class EscenaCarga extends Phaser.Scene {
     })
     window.kusi = {
       listo: false, avisos,
-      estado: () => ({ familia: 'laberinto', error: mensaje }),
+      estado: () => ({ familia: this.familiaAbierta, error: mensaje }),
     }
   }
 }
