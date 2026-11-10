@@ -26,8 +26,6 @@ import java.util.LinkedHashMap;
 
 @Service
 public class GeneracionesService {
-    private static final String TRABAJADOR_LABERINTO = "laberinto_interno";
-
     private final PropuestasService propuestasService;
     private final PropuestaRepository propuestaRepository;
     private final GeneracionRepository generacionRepository;
@@ -84,21 +82,32 @@ public class GeneracionesService {
                     "La propuesta debe estar aprobada antes de generar el juego");
         }
 
-        // El buzón recibe los datos completos, pero el reproductor disponible
-        // sigue siendo el laberinto. Conservar esta comprobación evita preparar
-        // un juego de frutas para una idea que necesita otros objetos o acciones.
-        if (!ultima.sePuedeGenerar()) {
+        // Dos caminos. Un laberinto lo arma Spring con la IA cuando el panel pide
+        // «procesar», sin pasar por el buzón. Un juego nuevo (propuesta «otro») lo crea
+        // el taller: queda un trabajo en el buzón y el trabajador de la Mac lo toma.
+        boolean taller = ultima.vaAlTaller();
+        if (taller && generacionRepository.existsBySolicitudIdAndTallerTrueAndEstadoIn(
+                solicitudId, List.of("pendiente", "generando"))) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Por ahora Kusi solo crea juegos de laberinto con frutas y verduras. "
-                            + "Esta propuesta queda guardada para cuando Kusi tenga este tipo de juego.");
+                    "Kusi ya está creando este juego. Espera a que termine.");
         }
 
         Generacion generacion = generacionRepository.save(
                 new Generacion(
                         solicitudId,
                         ultima.getId(),
-                        ultima.getVersion()));
+                        ultima.getVersion(),
+                        taller));
+
+        if (!taller) {
+            etapaRepository.save(new EtapaGeneracion(
+                    generacion.getId(),
+                    "solicitud",
+                    "completada",
+                    "Solicitud de generación registrada; pendiente de procesamiento"));
+            return generacion;
+        }
 
         PropuestasService.ContextoSolicitud contexto =
                 propuestasService.contextoDe(docenteId, solicitudId);
@@ -128,12 +137,11 @@ public class GeneracionesService {
                 "crear_juego",
                 contenidoEntrada));
 
-
         etapaRepository.save(new EtapaGeneracion(
                 generacion.getId(),
                 "solicitud",
                 "completada",
-                "Solicitud de generación registrada; pendiente de procesamiento"));
+                "Solicitud registrada; el taller creará el juego"));
 
         return generacion;
     }
@@ -143,6 +151,13 @@ public class GeneracionesService {
     // (ver ProcesoGeneracionLaberinto). Devuelve la generación ya «lista» o «fallida».
     public Generacion procesar(UUID docenteId, UUID generacionId) {
         Generacion generacion = consultar(docenteId, generacionId);
+
+        // Un juego del taller no se procesa aquí: lo toma el trabajador desde el buzón.
+        if (generacion.isTaller()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Kusi ya está creando este juego; no hace falta procesarlo.");
+        }
 
         if (!"pendiente".equals(generacion.getEstado())) {
             throw new ResponseStatusException(
@@ -158,40 +173,16 @@ public class GeneracionesService {
         }
 
         // Solo un proceso puede tomar la generación: si otro llegó antes, se rechaza.
-        Integer tomada = transaccion.execute(estado -> {
-            int cantidad = generacionRepository.tomarParaProcesar(generacionId, Instant.now());
-            if (cantidad == 0) return 0;
-            // La misma transacción reclama la generación y su trabajo del buzón.
-            // Si otro trabajador ya lo recogió, se deshacen ambos cambios. Las
-            // generaciones anteriores al buzón siguen funcionando sin esa fila.
-            trabajoRepository.bloquearTrabajo(generacionId).ifPresent(trabajo -> {
-                if (!"pendiente".equals(trabajo.getEstado())) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Este juego ya se está preparando");
-                }
-                trabajo.tomar(TRABAJADOR_LABERINTO);
-                trabajoRepository.save(trabajo);
-            });
-            return cantidad;
-        });
+        Integer tomada = transaccion.execute(estado ->
+                generacionRepository.tomarParaProcesar(generacionId, Instant.now()));
         if (tomada == null || tomada == 0) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Esta generación ya se está procesando");
         }
 
-        Generacion resultado = proceso.procesar(
+        return proceso.procesar(
                 docenteId, generacionRepository.findById(generacionId).orElseThrow());
-        // Mientras se incorpora el trabajador externo, el procesador existente
-        // termina también la tarea del buzón. Así no queda pendiente un paquete
-        // que ya se preparó ni se genera otra vez al arrancar el taller.
-        transaccion.executeWithoutResult(estado ->
-                trabajoRepository.bloquearTrabajo(generacionId).ifPresent(trabajo -> {
-                    if (!TRABAJADOR_LABERINTO.equals(trabajo.getTomadoPor()) || !"en_proceso".equals(trabajo.getEstado())) return;
-                    if ("lista".equals(resultado.getEstado())) trabajo.registrarResultado(resultado.getPaquete());
-                    else trabajo.registrarFallo(resultado.getUltimoError());
-                    trabajoRepository.save(trabajo);
-                }));
-        return resultado;
     }
 
     // El bloque «procedencia» del paquete (proveedor, modelo, intentos y si se usó un

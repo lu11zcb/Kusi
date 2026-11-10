@@ -128,3 +128,18 @@ Kusi hoy hace un solo juego, el laberinto, con dos reglas: `orden` (patrones que
 - Una propuesta sin regla (como las de antes de la HU28) deja que la llamada 2 elija. Una regla que no sea una de las dos hace inválida la respuesta de la IA (502, la solicitud se puede reintentar).
 
 `GeneracionesProcesoTest` (sección HU28, con una IA falsa) comprueba que un tema de patrones da `orden`, que uno de clasificar da `solo_clase` y que el guion cambia de verdad en cada nivel: otra regla, otra barra (una ficha por cada fruta del patrón, o por cada objeto que hay que juntar) y otras trampas (lo que no va en el patrón, o los objetos de la otra clase). No acredita que una IA real elija bien la regla: eso se mira a mano con Groq.
+
+## El buzón del taller: dos caminos y las rutas del trabajador
+**Dos caminos.** Un laberinto (`tipo_juego` `laberinto` o vacío) se genera como siempre: el panel llama a `procesar` y Spring le pide el guion a la IA, sin pasar por el buzón. Un juego nuevo (`tipo_juego` `otro`) lo crea el taller: `generar` deja la generación `pendiente` con `taller: true` y un trabajo en `trabajos_taller`; `procesar` responde 409 y un segundo `generar` mientras el taller trabaja, también. La migración `V10__taller_caminos_y_piezas.sql` agrega `generaciones.taller`, cierra como `fallido` los trabajos de laberinto que quedaron abiertos (no borra nada) y crea `piezas_taller`.
+
+**Las rutas del trabajador** están fuera de `/api/edu/` (no llevan sesión ni CSRF). Piden el encabezado `X-Taller-Clave`, que se compara en tiempo constante con `TALLER_CLAVE` del `.env` (la crea `scripts/configurar_local.py`). Sin clave en el `.env` responden 503; con otra clave, 403.
+
+| Ruta | Qué hace |
+| --- | --- |
+| `POST /interno/taller/trabajos/siguiente` | Primero devuelve a `pendiente` los trabajos con más de 15 minutos `en_proceso`; al tercer vencimiento, el trabajo y su generación quedan fallidos. Después entrega el pendiente más antiguo (`{ trabajo: { id, tipo, intentos, entrada } }`), lo marca `en_proceso` y la generación pasa a `generando`. 204 si no hay. |
+| `POST /interno/taller/trabajos/{id}/resultado` | `{ paquete, piezas, evidencia }`. Revisa la parte común del guion (`ValidadorPaqueteTaller`): `kusi-paquete/0`, familia `^[a-z][a-z0-9_]{2,40}$` (no `laberinto`), `trabajo` igual al id, de 1 a 5 retos con `id`, `consigna` y exactamente 2 `ayudas` de 90 caracteres como máximo, `cierre.mensaje` y 256 KB como máximo. Si pasa: trabajo `listo`, generación `lista` con su `procedencia` (`origen: taller`, `trabajo`, `intentos`, `segundos`) y las piezas (`[{ id, tipo: objeto o fondo, nombre }]`) `pendientes`. Si no pasa: 422 con `motivos` y no se guarda nada. |
+| `POST /interno/taller/trabajos/{id}/fallo` | `{ motivo }`, recortado a 2000 caracteres. Trabajo `fallido` y generación `fallida`. El docente solo ve «Esta vez no pudimos terminar tu juego. Puedes intentarlo de nuevo.»; el motivo queda en `trabajos_taller.motivo_fallo` y en la consola de Spring (`[taller]`). |
+
+Un trabajo que no está `en_proceso` no se cierra (409), y uno que no existe da 404. Los estados son los de la tabla: `pendiente`, `en_proceso`, `listo` y `fallido`. Pruebas: `TallerBuzonTest` (de punta a punta, con H2) y `ValidadorPaqueteTallerTest`.
+
+> **Para revisar (Jesús):** las rutas, la clave, los 15 minutos y la V10 los hizo Luis sobre el buzón de la V9 el 9 de noviembre. Falta tu revisión del contrato.

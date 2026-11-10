@@ -132,6 +132,28 @@ class GeneracionesServiceTest {
         verify(propuestasService).consultar(docenteId, solicitudId);
         verify(generacionRepository).save(any(Generacion.class));
         verify(etapaRepository).save(any(EtapaGeneracion.class));
+        // Un laberinto va directo con la IA: no deja trabajo en el buzón.
+        assertFalse(resultado.isTaller());
+        verify(trabajoRepository, never()).save(any());
+    }
+
+    @Test
+    void unaGeneracionDelTallerNoSeProcesaDesdeElPanel() {
+        UUID generacionId = UUID.randomUUID();
+        Generacion generacion = new Generacion(solicitudId, UUID.randomUUID(), 1, true);
+        ReflectionTestUtils.setField(generacion, "id", generacionId);
+
+        when(generacionRepository.findById(generacionId)).thenReturn(Optional.of(generacion));
+        when(proceso.iaConfigurada()).thenReturn(true);
+
+        ResponseStatusException error = assertThrows(
+            ResponseStatusException.class,
+            () -> service.procesar(docenteId, generacionId)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(generacionRepository, never()).tomarParaProcesar(any(), any());
+        verify(proceso, never()).procesar(any(), any());
     }
 
     @Test

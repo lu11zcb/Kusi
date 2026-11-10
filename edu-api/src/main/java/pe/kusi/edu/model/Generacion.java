@@ -47,16 +47,28 @@ public class Generacion {
     @Column(name = "actualizado_en", nullable = false)
     private Instant actualizadoEn;
 
+    // V10: true si la prepara el taller (un juego nuevo, propuesta «otro»); false si es
+    // un laberinto, que Spring genera directo con la IA.
+    @Column(name = "taller", nullable = false)
+    private boolean taller;
+
     protected Generacion() {}
 
     public Generacion(UUID solicitudId, UUID propuestaId, int versionPropuesta) {
+        this(solicitudId, propuestaId, versionPropuesta, false);
+    }
+
+    public Generacion(UUID solicitudId, UUID propuestaId, int versionPropuesta, boolean taller) {
         this.solicitudId = solicitudId;
         this.propuestaId = propuestaId;
         this.versionPropuesta = versionPropuesta;
         this.estado = "pendiente";
+        this.taller = taller;
         this.creadoEn = Instant.now();
         this.actualizadoEn = this.creadoEn;
     }
+
+    public boolean isTaller() { return taller; }
 
     public UUID getId() { return id; }
     public UUID getSolicitudId() { return solicitudId; }

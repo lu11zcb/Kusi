@@ -328,10 +328,11 @@ public class PropuestasService {
         d.put("recursos", p.getRecursos() == null ? null : lista(p.getRecursos()));
         // HU28: "orden", "solo_clase" o null si la propuesta no eligió regla.
         d.put("regla_juego", p.getReglaJuego());
-        // «laberinto», «otro» o null (propuestas anteriores). El panel solo deja generar lo
-        // que Kusi sabe construir hoy.
+        // «laberinto», «otro» o null (propuestas anteriores). Las dos se pueden generar: el
+        // laberinto con la IA directo y «otro» en el taller («taller»: true).
         d.put("tipo_juego", p.getTipoJuego());
-        d.put("se_puede_generar", p.sePuedeGenerar());
+        d.put("se_puede_generar", true);
+        d.put("taller", p.vaAlTaller());
         return d;
     }
 

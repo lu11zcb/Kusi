@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,11 +22,25 @@ public interface TrabajoTallerRepository extends JpaRepository<TrabajoTaller, UU
      */
     boolean existsByGeneracionId(UUID generacionId);
 
-    // El procesador actual y el trabajador del taller comparten la misma tarea.
-    // Bloquear su fila impide que ambos la reclamen al mismo tiempo.
-    @Query(value = "select * from edu.trabajos_taller where generacion_id = :generacion "
-            + "order by creado_en asc, id asc limit 1 for update", nativeQuery = true)
-    Optional<TrabajoTaller> bloquearTrabajo(@Param("generacion") UUID generacion);
+    Optional<TrabajoTaller> findFirstByGeneracionIdOrderByCreadoEnDesc(UUID generacionId);
+
+    // El trabajador entrega un resultado o un fallo de un trabajo. Bloquear su fila evita
+    // que el mismo trabajo se cierre dos veces o que se venza mientras se guarda.
+    @Query(value = "select * from edu.trabajos_taller where id = :id for update", nativeQuery = true)
+    Optional<TrabajoTaller> bloquearPorId(@Param("id") UUID id);
+
+    /**
+     * Los trabajos que llevan «en proceso» desde antes del límite: el trabajador se
+     * cayó o se colgó. SKIP LOCKED no espera a un trabajo que otro está cerrando.
+     */
+    @Query(value = """
+        SELECT *
+        FROM edu.trabajos_taller
+        WHERE estado = 'en_proceso' AND tomado_en < :limite
+        ORDER BY tomado_en ASC, id ASC
+        FOR UPDATE SKIP LOCKED
+        """, nativeQuery = true)
+    List<TrabajoTaller> bloquearVencidos(@Param("limite") Instant limite);
 
     /**
      * Reclama el trabajo pendiente más antiguo.

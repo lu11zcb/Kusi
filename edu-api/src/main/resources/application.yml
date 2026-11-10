@@ -25,3 +25,5 @@ spring:
 kusi:
   django-url: ${DJANGO_INTERNAL_URL:http://127.0.0.1:8000}
   internal-key: ${CLAVE_INTERNA:}
+  # Clave del trabajador del taller (encabezado X-Taller-Clave). Vacía: el buzón responde 503.
+  taller-clave: ${TALLER_CLAVE:}

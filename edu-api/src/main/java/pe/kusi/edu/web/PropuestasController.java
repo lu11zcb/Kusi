@@ -273,6 +273,8 @@ public class PropuestasController {
         datos.put("propuesta_id", g.getPropuestaId());
         datos.put("version_propuesta", g.getVersionPropuesta());
         datos.put("estado", g.getEstado());
+        // true: la prepara el taller y el panel solo espera (no se llama a «procesar»).
+        datos.put("taller", g.isTaller());
         // El paquete es el guion del juego (JSON en texto); cuando la generación está
         // lista incluye su bloque «procedencia», que aquí también se da por separado.
         datos.put("paquete", g.getPaquete());

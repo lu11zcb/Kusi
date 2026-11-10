@@ -31,8 +31,8 @@ public class Propuesta {
     @Column(name="creado_en", nullable=false) private Instant creadoEn=Instant.now();
     // HU28: la regla con que se juega el laberinto ("orden" o "solo_clase"); null si la propuesta no la eligió.
     @Column(name="regla_juego", length=12) private String reglaJuego;
-    // El juego que diseñó la propuesta: "laberinto" (Kusi ya sabe construirlo) u "otro" (el
-    // tema pide otro juego u otros dibujos y todavía no se puede generar). Null en las
+    // El juego que diseñó la propuesta: "laberinto" (Spring lo genera directo con la IA) u
+    // "otro" (el tema pide otro juego u otros dibujos: lo crea el taller). Null en las
     // propuestas anteriores, que se tratan como laberinto.
     @Column(name="tipo_juego", length=12) private String tipoJuego;
 
@@ -72,6 +72,6 @@ public class Propuesta {
     public String getProveedor(){return proveedor;} public String getModelo(){return modelo;} public Instant getCreadoEn(){return creadoEn;}
     public String getReglaJuego(){return reglaJuego;}
     public String getTipoJuego(){return tipoJuego;}
-    // Solo se genera lo que Kusi sabe construir hoy: el laberinto.
-    public boolean sePuedeGenerar(){return !"otro".equals(tipoJuego);}
+    // Un juego «otro» no es un laberinto: lo crea el taller desde el buzón.
+    public boolean vaAlTaller(){return "otro".equals(tipoJuego);}
 }

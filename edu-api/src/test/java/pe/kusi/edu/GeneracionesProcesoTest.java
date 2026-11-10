@@ -292,35 +292,17 @@ class GeneracionesProcesoTest {
 
     // ---------- Un guion bueno ----------
 
+    // El laberinto sigue su camino directo con la IA: no deja trabajo en el buzón del taller.
     @Test
-    void el_buzon_conserva_la_propuesta_aprobada_y_no_publica_el_juego() throws Exception {
-        UUID solicitud = solicitudAprobada();
-        UUID juego = generar(solicitud);
-        String entrada = jdbc.queryForObject("select datos_entrada from edu.trabajos_taller where generacion_id = ?", String.class, juego);
-        JsonNode datos = json.readTree(entrada);
-        assertEquals("crear_juego", datos.path("tipo").asText());
-        assertEquals(TEMA, datos.at("/solicitud/tema").asText());
-        assertEquals("Matemática", datos.at("/solicitud/curso").asText());
-        assertEquals(1, datos.at("/solicitud/grado").asInt());
-        assertEquals(propuestas.findFirstBySolicitudIdOrderByVersionDesc(solicitud).orElseThrow().getObjetivo(), datos.at("/propuesta/objetivo").asText());
-        assertEquals("pendiente", jdbc.queryForObject("select estado from edu.trabajos_taller where generacion_id = ?", String.class, juego));
-        assertFalse(generaciones.findById(juego).orElseThrow().isPublicada());
-        assertFalse(datos.has("estudiantes"));
-    }
-
-    @Test
-    void el_procesador_no_repite_un_trabajo_que_el_taller_ya_recogio() throws Exception {
+    void el_laberinto_no_deja_trabajo_en_el_buzon() throws Exception {
+        respuestasDeLaIa(GuionesDePrueba.respuestaBuena());
         UUID juego = generacionPendiente();
-        transaccion.executeWithoutResult(estado -> {
-            var trabajo = trabajos.tomarSiguientePendiente().orElseThrow();
-            assertEquals(juego, trabajo.getGeneracionId());
-            trabajo.tomar("trabajador-de-prueba");
-            trabajos.save(trabajo);
-        });
-        procesar(juego, "ses-docente").andExpect(status().isConflict());
-        assertEquals("pendiente", generaciones.findById(juego).orElseThrow().getEstado());
-        assertEquals("en_proceso", jdbc.queryForObject("select estado from edu.trabajos_taller where generacion_id = ?", String.class, juego));
-        verify(generadorGuion, never()).generarGuion(any());
+        leer("/api/edu/generaciones/" + juego + "/", "ses-docente").andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.taller").value(false));
+        procesar(juego, "ses-docente").andExpect(jsonPath("$.generacion.estado").value("lista"));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.trabajos_taller where generacion_id = ?", Integer.class, juego));
+        assertTrue(trabajos.findAll().isEmpty());
+        assertFalse(generaciones.findById(juego).orElseThrow().isPublicada());
     }
 
     @Test
@@ -345,8 +327,6 @@ class GeneracionesProcesoTest {
             resumenDeEtapas(respuesta));
         assertEquals(List.of("ia:generando", "validador:comprobando"), estadosVistos);
         assertEquals("lista", estadoGuardado());
-        assertEquals("listo", jdbc.queryForObject("select estado from edu.trabajos_taller where generacion_id = ?", String.class, generacion));
-        assertEquals(paquete, json.readTree(jdbc.queryForObject("select resultado from edu.trabajos_taller where generacion_id = ?", String.class, generacion)));
     }
 
     @Test
@@ -542,7 +522,6 @@ class GeneracionesProcesoTest {
         assertEquals(List.of("solicitud:completada", "generacion:en_progreso", "generacion:fallida"), resumenDeEtapas(respuesta));
         assertEquals(1, pedidos.size());
         assertEquals("fallida", estadoGuardado());
-        assertEquals("fallido", jdbc.queryForObject("select estado from edu.trabajos_taller where generacion_id = ?", String.class, generacion));
         // Una generación terminada no se procesa otra vez; se pide una nueva.
         procesar(generacion, "ses-docente").andExpect(status().isConflict());
         assertEquals(1, pedidos.size());
@@ -865,7 +844,6 @@ class GeneracionesProcesoTest {
         UUID juego = generar(solicitud);
         procesar(juego, "ses-docente").andExpect(jsonPath("$.generacion.estado").value("lista"));
         UUID otra = solicitudAprobada();
-        assertEquals(1, jdbc.queryForObject("select count(*) from edu.trabajos_taller where generacion_id = ?", Integer.class, juego));
 
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(RUTA_SOLICITUDES + solicitud + "/")
                 .cookie(new Cookie("sessionid", "ses-docente"), new Cookie("kusi_edu_csrf", TOKEN)).header("X-XSRF-TOKEN", TOKEN))
@@ -875,9 +853,7 @@ class GeneracionesProcesoTest {
         assertEquals(0, jdbc.queryForObject("select count(*) from edu.generaciones where solicitud_id = ?", Integer.class, solicitud));
         assertEquals(0, jdbc.queryForObject("select count(*) from edu.etapas_generacion where generacion_id = ?", Integer.class, juego));
         assertEquals(0, jdbc.queryForObject("select count(*) from edu.propuestas where solicitud_id = ?", Integer.class, solicitud));
-        // La clave foránea del buzón elimina también su trabajo, sin dejar
-        // una tarea pendiente que pueda recrear una generación ya eliminada.
-        assertEquals(0, jdbc.queryForObject("select count(*) from edu.trabajos_taller where generacion_id = ?", Integer.class, juego));
+        // (Que también se borre el trabajo del buzón de un juego del taller lo prueba TallerBuzonTest.)
         // La otra propuesta del docente sigue intacta.
         leer(RUTA_SOLICITUDES + otra + "/", "ses-docente").andExpect(status().isOk());
     }
@@ -897,10 +873,10 @@ class GeneracionesProcesoTest {
             .andExpect(jsonPath("$.generacion.publicada").value(true));
     }
 
-    // Un tema que pide otro juego (por ejemplo, de Religión): la propuesta lo diseña y queda
-    // guardada, pero Kusi no lo genera, porque hoy solo sabe construir el laberinto.
+    // Un tema que pide otro juego (por ejemplo, de Religión): la propuesta lo diseña y, al
+    // generarlo, va al taller: queda un trabajo en el buzón y la IA del laberinto no se llama.
     @Test
-    void un_tema_que_pide_otro_juego_tiene_su_propuesta_pero_no_se_genera() throws Exception {
+    void un_tema_que_pide_otro_juego_va_al_taller() throws Exception {
         Map<String, Object> creacion = new HashMap<>(propuestaValida());
         creacion.put("tipo_juego", "otro");
         creacion.put("regla_juego", "ninguna");
@@ -910,16 +886,21 @@ class GeneracionesProcesoTest {
 
         leer(RUTA_SOLICITUDES + solicitud + "/", "ses-docente").andExpect(status().isOk())
             .andExpect(jsonPath("$.solicitud.propuesta.tipo_juego").value("otro"))
-            .andExpect(jsonPath("$.solicitud.propuesta.se_puede_generar").value(false))
+            .andExpect(jsonPath("$.solicitud.propuesta.se_puede_generar").value(true))
+            .andExpect(jsonPath("$.solicitud.propuesta.taller").value(true))
             .andExpect(jsonPath("$.solicitud.propuesta.regla_juego").isEmpty());
-        escribir(RUTA_SOLICITUDES + solicitud + "/versiones/1/generar/", "ses-docente", Map.of())
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.mensaje").value(org.hamcrest.Matchers.startsWith("Por ahora Kusi solo crea juegos de laberinto")));
-        assertEquals(0, generaciones.findAll().stream().filter(g -> g.getSolicitudId().equals(solicitud)).count());
+        UUID juego = UUID.fromString(cuerpo(escribir(RUTA_SOLICITUDES + solicitud + "/versiones/1/generar/", "ses-docente", Map.of())
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.generacion.estado").value("pendiente"))
+            .andExpect(jsonPath("$.generacion.taller").value(true))).path("generacion").path("id").asText());
+        assertEquals("pendiente", jdbc.queryForObject("select estado from edu.trabajos_taller where generacion_id = ?", String.class, juego));
+        // El panel no la procesa: la toma el trabajador del taller.
+        procesar(juego, "ses-docente").andExpect(status().isConflict());
+        verify(generadorGuion, never()).generarGuion(any());
     }
 
     // Si la IA dice «laberinto» pero sus objetos no son frutas ni verduras, Kusi no se fía:
-    // tampoco lo genera. Un laberinto de frutas sigue generándose como siempre.
+    // no arma un laberinto, lo manda al taller. Un laberinto de frutas sigue como siempre.
     @Test
     void kusi_decide_si_puede_construir_el_laberinto_segun_sus_objetos() throws Exception {
         Map<String, Object> dudosa = new HashMap<>(propuestaValida());
@@ -935,7 +916,8 @@ class GeneracionesProcesoTest {
         leer(RUTA_SOLICITUDES + conDibujosNuevos + "/", "ses-docente").andExpect(status().isOk())
             .andExpect(jsonPath("$.solicitud.propuesta.tipo_juego").value("otro"));
         escribir(RUTA_SOLICITUDES + conDibujosNuevos + "/versiones/1/generar/", "ses-docente", Map.of())
-            .andExpect(status().isConflict());
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.generacion.taller").value(true));
 
         UUID deFrutasYVerduras = solicitudAprobada(TEMA_DE_PATRONES);
         leer(RUTA_SOLICITUDES + deFrutasYVerduras + "/", "ses-docente").andExpect(status().isOk())
