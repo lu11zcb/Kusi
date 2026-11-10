@@ -421,6 +421,77 @@ class TallerBuzonTest {
         taller(trabajo + "/resultado", CLAVE, resultadoBueno(trabajo)).andExpect(status().isConflict());
     }
 
+    // ---------- Un cambio por el chat ----------
+
+    // El docente pide un cambio sobre un juego del taller que ya envió. Spring deja un
+    // trabajo «corregir_juego» con el juego anterior y el pedido; la versión nueva no
+    // hereda la aprobación (HU39), vuelve a pasar las comprobaciones y se envía igual
+    // que un laberinto (HU37 y HU41). El juego anterior sigue intacto hasta entonces.
+    @Test
+    void un_cambio_por_el_chat_corrige_el_mismo_juego_sin_heredar_su_aprobacion() throws Exception {
+        UUID primero = generarJuegoDelTaller();
+        UUID solicitud = solicitudDe(primero);
+        UUID trabajoAnterior = tomar();
+        taller(trabajoAnterior + "/resultado", CLAVE, resultadoBueno(trabajoAnterior)).andExpect(status().isOk());
+        escribir("/api/edu/generaciones/" + primero + "/publicar/", Map.of()).andExpect(status().isOk());
+
+        // El chat crea la versión 2 de la propuesta, que espera su propia aprobación.
+        escribir(RUTA_SOLICITUDES + solicitud + "/versiones/1/observaciones/", Map.of("observaciones", "Que tenga un solo nivel."))
+            .andExpect(status().isCreated());
+        escribir(RUTA_SOLICITUDES + solicitud + "/versiones/2/generar/", Map.of()).andExpect(status().isConflict());
+        escribir(RUTA_SOLICITUDES + solicitud + "/versiones/2/aprobar/", Map.of()).andExpect(status().isOk());
+        UUID corregido = UUID.fromString(cuerpo(escribir(RUTA_SOLICITUDES + solicitud + "/versiones/2/generar/", Map.of())
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.generacion.taller").value(true))
+            .andExpect(jsonPath("$.generacion.publicada").value(false))).path("generacion").path("id").asText());
+
+        JsonNode trabajo = cuerpo(taller("siguiente", CLAVE, null).andExpect(status().isOk())).path("trabajo");
+        UUID trabajoNuevo = UUID.fromString(trabajo.path("id").asText());
+        assertNotEquals(trabajoAnterior, trabajoNuevo);
+        assertEquals("corregir_juego", trabajo.path("tipo").asText());
+        JsonNode entrada = trabajo.path("entrada");
+        assertEquals("Que tenga un solo nivel.", entrada.path("pedido").asText());
+        assertEquals(trabajoAnterior.toString(), entrada.at("/anterior/trabajo").asText());
+        assertEquals(1, entrada.at("/anterior/version_propuesta").asInt());
+        assertEquals("memoria_andina", entrada.at("/anterior/paquete/familia").asText());
+        assertEquals(2, entrada.at("/anterior/paquete/retos").size());
+
+        // No hereda nada: no se envía hasta estar lista y vuelve a pasar las comprobaciones
+        // (un guion con el id del trabajo anterior se rechaza).
+        escribir("/api/edu/generaciones/" + corregido + "/publicar/", Map.of()).andExpect(status().isConflict());
+        taller(trabajoNuevo + "/resultado", CLAVE, resultadoBueno(trabajoAnterior)).andExpect(status().isUnprocessableEntity());
+        ObjectNode conUnNivel = resultadoBueno(trabajoNuevo);
+        ((ArrayNode) conUnNivel.at("/paquete/retos")).remove(1);
+        taller(trabajoNuevo + "/resultado", CLAVE, conUnNivel).andExpect(status().isOk());
+        leer("/api/edu/generaciones/" + corregido + "/")
+            .andExpect(jsonPath("$.generacion.estado").value("lista"))
+            .andExpect(jsonPath("$.generacion.publicada").value(false));
+
+        // El juego anterior sigue enviado y sin cambios hasta que el docente envía el nuevo.
+        assertTrue(generaciones.findById(primero).orElseThrow().isPublicada());
+        assertEquals(trabajoAnterior.toString(),
+            json.readTree(generaciones.findById(primero).orElseThrow().getPaquete()).path("trabajo").asText());
+        escribir("/api/edu/generaciones/" + corregido + "/publicar/", Map.of()).andExpect(status().isOk())
+            .andExpect(jsonPath("$.generacion.publicada").value(true));
+    }
+
+    @Test
+    void generar_otra_vez_la_misma_version_crea_un_juego_nuevo_y_no_una_correccion() throws Exception {
+        UUID primero = generarJuegoDelTaller();
+        UUID trabajo = tomar();
+        taller(trabajo + "/resultado", CLAVE, resultadoBueno(trabajo)).andExpect(status().isOk());
+        escribir(RUTA_SOLICITUDES + solicitudDe(primero) + "/versiones/1/generar/", Map.of()).andExpect(status().isCreated());
+        assertEquals("crear_juego", cuerpo(taller("siguiente", CLAVE, null).andExpect(status().isOk())).at("/trabajo/tipo").asText());
+    }
+
+    @Test
+    void la_tabla_solo_acepta_los_dos_tipos_de_trabajo() throws Exception {
+        UUID juego = generarJuegoDelTaller();
+        assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () ->
+            jdbc.update("update edu.trabajos_taller set tipo = 'otro_tipo' where generacion_id = ?", juego));
+        jdbc.update("update edu.trabajos_taller set tipo = 'corregir_juego' where generacion_id = ?", juego);
+    }
+
     // ---------- Eliminar la propuesta ----------
 
     @Test

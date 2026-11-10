@@ -21,6 +21,11 @@ public interface GeneracionRepository extends JpaRepository<Generacion, UUID> {
     // «Generar» no encarga otro igual.
     boolean existsBySolicitudIdAndTallerTrueAndEstadoIn(UUID solicitudId, java.util.Collection<String> estados);
 
+    // El último juego del taller que quedó listo con una versión anterior de la propuesta:
+    // es el que se corrige cuando el docente pidió un cambio por el chat.
+    Optional<Generacion> findFirstBySolicitudIdAndTallerTrueAndEstadoAndVersionPropuestaLessThanOrderByCreadoEnDesc(
+            UUID solicitudId, String estado, int versionPropuesta);
+
     // La sección se resuelve en el servidor a partir de vínculos vigentes. No se
     // acepta una lista de secciones enviada por la app ni una generación ajena. Solo
     // aparecen los juegos que el docente envió a sus estudiantes.

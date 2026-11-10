@@ -119,10 +119,24 @@ public class GeneracionesService {
         datosSolicitud.put("proposito", contexto.proposito());
         datosSolicitud.put("instrucciones", contexto.instrucciones());
 
+        // Si el docente pidió un cambio (una versión nueva de la propuesta) sobre un juego
+        // que el taller ya terminó, el taller corrige ese juego en vez de empezar otro.
+        // La versión nueva no hereda la aprobación ni el envío: es otra generación, que
+        // vuelve a pasar las comprobaciones y espera la aprobación del docente.
+        Map<String, Object> anterior = juegoAnteriorDelTaller(solicitudId, ultima.getVersion());
+        String tipo = anterior == null ? "crear_juego" : "corregir_juego";
+
         Map<String, Object> datosEntrada = new LinkedHashMap<>();
-        datosEntrada.put("tipo", "crear_juego");
+        datosEntrada.put("tipo", tipo);
         datosEntrada.put("solicitud", datosSolicitud);
         datosEntrada.put("propuesta", propuestasService.contenido(ultima));
+        if (anterior != null) {
+            // Lo que el docente escribió en el chat. Es dato, no orden (reglas.md, regla 1).
+            datosEntrada.put("pedido", ultima.getObservaciones() != null
+                    ? ultima.getObservaciones()
+                    : "El docente editó la propuesta: el juego debe seguir la versión nueva.");
+            datosEntrada.put("anterior", anterior);
+        }
 
         String contenidoEntrada;
         try {
@@ -134,16 +148,40 @@ public class GeneracionesService {
 
         trabajoRepository.save(new TrabajoTaller(
                 generacion.getId(),
-                "crear_juego",
+                tipo,
                 contenidoEntrada));
 
         etapaRepository.save(new EtapaGeneracion(
                 generacion.getId(),
                 "solicitud",
                 "completada",
-                "Solicitud registrada; el taller creará el juego"));
+                anterior == null
+                        ? "Solicitud registrada; el taller creará el juego"
+                        : "Solicitud registrada; el taller corregirá el juego anterior"));
 
         return generacion;
+    }
+
+    // El juego del taller que se corrige: su trabajo (la carpeta con su código y sus
+    // piezas), la versión de la propuesta con que se hizo y su guion. Null si no hay.
+    private Map<String, Object> juegoAnteriorDelTaller(UUID solicitudId, int version) {
+        return generacionRepository
+                .findFirstBySolicitudIdAndTallerTrueAndEstadoAndVersionPropuestaLessThanOrderByCreadoEnDesc(
+                        solicitudId, "lista", version)
+                .flatMap(generacion -> trabajoRepository
+                        .findFirstByGeneracionIdOrderByCreadoEnDesc(generacion.getId())
+                        .map(trabajo -> {
+                            Map<String, Object> datos = new LinkedHashMap<>();
+                            datos.put("trabajo", trabajo.getId());
+                            datos.put("version_propuesta", generacion.getVersionPropuesta());
+                            try {
+                                datos.put("paquete", json.readTree(generacion.getPaquete()));
+                            } catch (JsonProcessingException ex) {
+                                throw new IllegalStateException("El juego anterior no se pudo leer", ex);
+                            }
+                            return datos;
+                        }))
+                .orElse(null);
     }
 
     // HU26: procesa una generación pendiente con la IA. No es transaccional a

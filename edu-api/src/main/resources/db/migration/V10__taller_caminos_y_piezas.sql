@@ -14,7 +14,19 @@ SET estado = 'fallido',
     terminado_en = CURRENT_TIMESTAMP
 WHERE estado IN ('pendiente', 'en_proceso');
 
--- 3. Las piezas nuevas que dibujó el taller para un juego (objetos y, si el tema lo pide,
+-- 3. Un trabajo puede crear un juego nuevo o corregir uno que ya hizo el taller, cuando
+-- el docente pide un cambio por el chat («corregir_juego»: lleva el juego anterior y el
+-- pedido). El CHECK de la V9 no tiene nombre (y cada base lo nombra distinto), así que se
+-- rehace la columna con un CHECK con nombre. Los valores se conservan.
+ALTER TABLE trabajos_taller ADD COLUMN tipo_trabajo VARCHAR(30);
+UPDATE trabajos_taller SET tipo_trabajo = tipo;
+ALTER TABLE trabajos_taller DROP COLUMN tipo;
+ALTER TABLE trabajos_taller RENAME COLUMN tipo_trabajo TO tipo;
+ALTER TABLE trabajos_taller ALTER COLUMN tipo SET NOT NULL;
+ALTER TABLE trabajos_taller ADD CONSTRAINT ck_trabajo_taller_tipo
+    CHECK (tipo IN ('crear_juego', 'corregir_juego'));
+
+-- 4. Las piezas nuevas que dibujó el taller para un juego (objetos y, si el tema lo pide,
 -- un fondo). El archivo vive en juego/taller/trabajos/<trabajo>/piezas/<pieza>.png, en
 -- esta Mac; aquí se guarda su estado. Quedan «pendientes» hasta que el docente las aprueba.
 CREATE TABLE piezas_taller (
