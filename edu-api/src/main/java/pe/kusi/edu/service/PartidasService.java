@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,8 +21,11 @@ public class PartidasService {
     private static final List<String> TIPOS = List.of("listo", "inicio", "accion", "ayuda", "reto_completado", "fin", "fallo");
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
+    private final TransactionTemplate transaccion;
 
-    public PartidasService(JdbcTemplate jdbc, ObjectMapper json) { this.jdbc = jdbc; this.json = json; }
+    public PartidasService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion) {
+        this.jdbc = jdbc; this.json = json; this.transaccion = transaccion;
+    }
 
     public Map<String, Object> guardar(UUID usuario, boolean pruebaDocente, JsonNode aviso) {
         validar(aviso);
@@ -34,22 +38,55 @@ public class PartidasService {
         } catch (DuplicateKeyException existente) {
             // El propietario de una partida ya creada es inmutable.
         }
-        comprobarPropietario(usuario, partida);
-        boolean duplicado = false;
-        try {
-            jdbc.update("insert into edu.avisos_partida(partida_id, orden, tipo, nivel, ayuda, contenido) values (?, ?, ?, ?, ?, ?)",
-                    partida, aviso.path("orden").asInt(), aviso.path("tipo").asText(),
-                    aviso.has("nivel") ? aviso.path("nivel").asInt() : null,
-                    aviso.has("ayuda") ? aviso.path("ayuda").asInt() : null, aviso.toString());
-        } catch (DuplicateKeyException existente) {
-            String guardado = jdbc.queryForObject("select contenido from edu.avisos_partida where partida_id = ? and orden = ?", String.class,
-                    partida, aviso.path("orden").asInt());
-            try {
-                if (!json.readTree(guardado).equals(aviso)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese orden ya pertenece a otro aviso.");
-            } catch (com.fasterxml.jackson.core.JsonProcessingException error) { throw new IllegalStateException("No se pudo leer el aviso guardado."); }
-            duplicado = true;
-        }
-        return Map.of("guardado", true, "duplicado", duplicado, "resumen", resumen(usuario, partida));
+        return transaccion.execute(estado -> {
+            // El bloqueo protege también el vínculo con el juego frente a dos
+            // primeros avisos simultáneos. No se cambia de juego a mitad de partida.
+            List<UUID> propietarios = jdbc.query("select usuario_id from edu.partidas where id = ? for update",
+                    (fila, indice) -> fila.getObject(1, UUID.class), partida);
+            if (propietarios.isEmpty() || !usuario.equals(propietarios.get(0)))
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró esta partida de tu cuenta.");
+            JsonNode original = conJuego(usuario, pruebaDocente, partida, aviso);
+            List<String> existentes = jdbc.query("select contenido from edu.avisos_partida where partida_id = ? and orden = ?",
+                    (fila, indice) -> fila.getString(1), partida, aviso.path("orden").asInt());
+            boolean duplicado = !existentes.isEmpty();
+            if (duplicado) {
+                if (!leer(existentes.get(0)).equals(original))
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese orden ya pertenece a otro aviso.");
+            } else {
+                jdbc.update("insert into edu.avisos_partida(partida_id, orden, tipo, nivel, ayuda, contenido) values (?, ?, ?, ?, ?, ?)",
+                        partida, original.path("orden").asInt(), original.path("tipo").asText(),
+                        original.has("nivel") ? original.path("nivel").asInt() : null,
+                        original.has("ayuda") ? original.path("ayuda").asInt() : null, original.toString());
+            }
+            return Map.of("guardado", true, "duplicado", duplicado, "resumen", resumen(usuario, partida));
+        });
+    }
+
+    private JsonNode conJuego(UUID usuario, boolean pruebaDocente, String partida, JsonNode aviso) {
+        List<String> primeros = jdbc.query("select contenido from edu.avisos_partida where partida_id = ? order by orden fetch first 1 rows only",
+                (fila, indice) -> fila.getString(1), partida);
+        String recibido = aviso.has("juego_id") ? UUID.fromString(aviso.path("juego_id").asText()).toString() : "";
+        String guardado = primeros.isEmpty() ? recibido : leer(primeros.get(0)).path("juego_id").asText("");
+        if (!recibido.isEmpty() && !recibido.equals(guardado))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta partida ya pertenece a otro juego o no tiene un juego asociado.");
+        if (guardado.isEmpty()) return aviso;
+        UUID juego;
+        try { juego = UUID.fromString(guardado); }
+        catch (IllegalArgumentException error) { throw new IllegalArgumentException("El juego del aviso no es válido."); }
+        String acceso = pruebaDocente ? "s.docente_id = ?" : "exists (select 1 from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
+                + "where v.estudiante_id = ? and v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar and v.creado_en <= g.publicada_en)";
+        Integer permitidos = jdbc.queryForObject("select count(*) from edu.generaciones g join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
+                + "where g.id = ? and g.publicada = true and g.estado = 'lista' and " + acceso, Integer.class, juego, usuario);
+        if (permitidos == null || permitidos == 0)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este juego entre tus actividades.");
+        com.fasterxml.jackson.databind.node.ObjectNode completo = aviso.deepCopy();
+        completo.put("juego_id", juego.toString());
+        return completo;
+    }
+
+    private JsonNode leer(String contenido) {
+        try { return json.readTree(contenido); }
+        catch (com.fasterxml.jackson.core.JsonProcessingException error) { throw new IllegalStateException("No se pudo leer el aviso guardado."); }
     }
 
     public Map<String, Object> resumen(UUID usuario, String partida) {
@@ -79,6 +116,11 @@ public class PartidasService {
         try { Instant.parse(aviso.path("momento").asText()); }
         catch (RuntimeException error) { throw new IllegalArgumentException("El aviso necesita una fecha válida."); }
         String tipo = aviso.path("tipo").asText();
+        if (aviso.has("reto") && !((aviso.path("reto").isTextual() && !aviso.path("reto").asText().isBlank() && aviso.path("reto").asText().length() <= 120)
+                || entero(aviso.path("reto"), 1, 100000))) throw new IllegalArgumentException("El reto del aviso no es válido.");
+        if (aviso.has("juego_id") && (!aviso.path("juego_id").isTextual()
+                || !aviso.path("juego_id").asText().matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")))
+            throw new IllegalArgumentException("El juego del aviso no es válido.");
         if ((aviso.has("nivel") || tipo.equals("ayuda") || tipo.equals("reto_completado")) && !entero(aviso.path("nivel"), 1, 5)) {
             throw new IllegalArgumentException("El nivel del aviso no es válido.");
         }
