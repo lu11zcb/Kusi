@@ -28,6 +28,13 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch }) {
       if (estado === 200 && datos?.trabajo?.id) return datos.trabajo
       throw new Error('El buzón respondió ' + estado + ': ' + (datos?.mensaje ?? 'sin mensaje'))
     },
+    // Los juegos del taller enviados a una clase, con sus piezas aprobadas (decisión 3).
+    async biblioteca() {
+      const respuesta = await pedirHttp(raiz + 'biblioteca', { headers: { 'X-Taller-Clave': clave } })
+      if (respuesta.status !== 200) throw new Error('El buzón respondió ' + respuesta.status + ' a la biblioteca.')
+      const datos = JSON.parse(await respuesta.text())
+      return Array.isArray(datos?.juegos) ? datos.juegos : []
+    },
     // { estado, datos }: 200 listo, 422 con motivos para corregir, 409 si ya no está en proceso.
     resultado: (id, cuerpo) => pedir(id + '/resultado', cuerpo),
     fallo: (id, motivo) => pedir(id + '/fallo', { motivo }),

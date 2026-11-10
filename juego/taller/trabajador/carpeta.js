@@ -3,6 +3,7 @@
 
 import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { esIdTrabajo, PATRON_PIEZA } from '#kit/reproductor/datos/registroJuegos.js'
 import { CARPETA_JUEGO } from './configuracion.js'
@@ -13,8 +14,10 @@ export function carpetaDe(trabajos, id) {
 }
 
 // Lo que revisa el supervisor antes de decidir (decisión 3): los juegos de ejemplo de
-// juegos/ y los del taller ya aprobados, con sus piezas aprobadas.
-export async function armarBiblioteca({ aprobados = { juegos: [], piezas: [] } } = {}) {
+// juegos/ y los del taller que el docente ya envió a su clase, con sus piezas aprobadas.
+// «enviados» es lo que responde Spring; aquí se agrega dónde está cada pieza en esta Mac
+// y su huella, para que el supervisor la copie y el trabajador la reconozca como aprobada.
+export async function armarBiblioteca({ enviados = [], trabajos = path.join(CARPETA_JUEGO, 'taller', 'trabajos') } = {}) {
   const carpetaJuegos = path.join(CARPETA_JUEGO, 'juegos')
   const ejemplos = []
   for (const entrada of await readdir(carpetaJuegos, { withFileTypes: true })) {
@@ -25,11 +28,43 @@ export async function armarBiblioteca({ aprobados = { juegos: [], piezas: [] } }
       readme: path.join(carpetaJuegos, entrada.name, 'README.md'),
     })
   }
+  const taller = []
+  const piezasAprobadas = []
+  for (const juego of enviados) {
+    if (!esIdTrabajo(juego.trabajo)) continue
+    const carpeta = path.join(trabajos, juego.trabajo)
+    // Un juego cuya carpeta ya no está en esta Mac no se puede reutilizar.
+    if (!existsSync(path.join(carpeta, 'juego', 'juego.js'))) continue
+    const piezas = []
+    for (const pieza of juego.piezas ?? []) {
+      const archivo = path.join(carpeta, 'piezas', pieza.id + '.png')
+      if (!PATRON_PIEZA.test(pieza.id ?? '') || !existsSync(archivo)) continue
+      const datos = { ...pieza, trabajo: juego.trabajo, archivo, sha256: await huellaDe(archivo) }
+      piezas.push(datos)
+      piezasAprobadas.push(datos)
+    }
+    taller.push({ trabajo: juego.trabajo, familia: juego.familia, titulo: juego.titulo, carpeta: path.join(carpeta, 'juego'),
+      readme: path.join(carpeta, 'juego', 'README.md'), piezas })
+  }
   return {
     ejemplos,
     catalogo: path.join(CARPETA_JUEGO, 'kit', 'catalogo.json'),
-    taller: aprobados.juegos,
-    piezas_aprobadas: aprobados.piezas,
+    taller,
+    piezas_aprobadas: piezasAprobadas,
+  }
+}
+
+export async function huellaDe(archivo) {
+  return createHash('sha256').update(await readFile(archivo)).digest('hex')
+}
+
+// Las huellas de las piezas ya aprobadas, según biblioteca.json de la carpeta del trabajo.
+export async function huellasAprobadas(carpeta) {
+  try {
+    const biblioteca = await leerJson(path.join(carpeta, 'biblioteca.json'))
+    return new Set((biblioteca.piezas_aprobadas ?? []).map((pieza) => pieza.sha256).filter(Boolean))
+  } catch {
+    return new Set()
   }
 }
 
@@ -59,12 +94,18 @@ export async function prepararCarpeta(trabajo, { trabajos, biblioteca }) {
 }
 
 // Las piezas nuevas de este trabajo: los PNG de piezas/ con un nombre válido, menos los
-// que ya traía la copia del juego anterior. Un nombre que empieza con «fondo-» es un fondo.
+// que ya traía la copia del juego anterior y los reutilizados de la biblioteca (misma
+// huella que una pieza aprobada). Un nombre que empieza con «fondo-» es un fondo.
 export async function piezasNuevas(carpeta, anterior = null) {
   const deAntes = new Set(anterior ? await nombresDePiezas(anterior) : [])
-  return (await nombresDePiezas(carpeta))
-    .filter((id) => !deAntes.has(id))
-    .map((id) => ({ id, tipo: id.startsWith('fondo-') ? 'fondo' : 'objeto' }))
+  const aprobadas = await huellasAprobadas(carpeta)
+  const nuevas = []
+  for (const id of await nombresDePiezas(carpeta)) {
+    if (deAntes.has(id)) continue
+    if (aprobadas.has(await huellaDe(path.join(carpeta, 'piezas', id + '.png')))) continue
+    nuevas.push({ id, tipo: id.startsWith('fondo-') ? 'fondo' : 'objeto' })
+  }
+  return nuevas
 }
 
 async function nombresDePiezas(carpeta) {

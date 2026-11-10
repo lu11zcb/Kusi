@@ -59,4 +59,12 @@ public class PiezaTaller {
     public String getEstado() { return estado; }
     public Instant getCreadoEn() { return creadoEn; }
     public Instant getAprobadaEn() { return aprobadaEn; }
+
+    // El docente envió el juego a su clase: con eso aprueba sus piezas. Si un dibujo no le
+    // gusta, lo pide por el chat, y la corrección trae piezas nuevas que vuelven a «pendiente».
+    public void aprobar() {
+        if ("aprobada".equals(estado)) return;
+        this.estado = "aprobada";
+        this.aprobadaEn = Instant.now();
+    }
 }

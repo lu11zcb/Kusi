@@ -164,10 +164,10 @@ class TallerBuzonTest {
             .path("trabajo").path("id").asText());
     }
 
-    // Como si el trabajador lo hubiera tomado hace 16 minutos y se hubiera colgado.
+    // Como si el trabajador lo hubiera tomado hace 31 minutos y se hubiera colgado.
     private void envejecer(UUID trabajo) {
         jdbc.update("update edu.trabajos_taller set tomado_en = ? where id = ?",
-            Timestamp.from(Instant.now().minus(Duration.ofMinutes(16))), trabajo);
+            Timestamp.from(Instant.now().minus(Duration.ofMinutes(31))), trabajo);
     }
 
     private ObjectNode resultadoBueno(UUID trabajo) {
@@ -404,7 +404,7 @@ class TallerBuzonTest {
             assertEquals("generando", estadoDeLaGeneracion(juego));
         }
 
-        // Un trabajo que lleva menos de 15 minutos no se toca.
+        // Un trabajo que lleva menos de 30 minutos no se toca.
         taller("siguiente", CLAVE, null).andExpect(status().isNoContent());
         assertEquals("en_proceso", estadoDelTrabajo(trabajo));
 
@@ -490,6 +490,33 @@ class TallerBuzonTest {
         assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () ->
             jdbc.update("update edu.trabajos_taller set tipo = 'otro_tipo' where generacion_id = ?", juego));
         jdbc.update("update edu.trabajos_taller set tipo = 'corregir_juego' where generacion_id = ?", juego);
+    }
+
+    // ---------- La biblioteca crece sola ----------
+
+    // Al enviar un juego del taller a su clase, el docente aprueba sus piezas, y desde entonces
+    // el juego y sus piezas aparecen en la biblioteca del supervisor.
+    @Test
+    void enviar_un_juego_del_taller_aprueba_sus_piezas_y_lo_pone_en_la_biblioteca() throws Exception {
+        UUID juego = generarJuegoDelTaller();
+        UUID trabajo = tomar();
+        taller(trabajo + "/resultado", CLAVE, resultadoBueno(trabajo)).andExpect(status().isOk());
+        mvc.perform(get(RUTA_TALLER + "biblioteca").header("X-Taller-Clave", CLAVE)).andExpect(status().isOk())
+            .andExpect(jsonPath("$.juegos.length()").value(0));
+        assertEquals(List.of("pendiente", "pendiente"),
+            jdbc.queryForList("select estado from edu.piezas_taller where trabajo_id = ? order by pieza", String.class, trabajo));
+
+        escribir("/api/edu/generaciones/" + juego + "/publicar/", Map.of()).andExpect(status().isOk());
+        assertEquals(List.of("aprobada", "aprobada"),
+            jdbc.queryForList("select estado from edu.piezas_taller where trabajo_id = ? order by pieza", String.class, trabajo));
+        JsonNode biblioteca = cuerpo(mvc.perform(get(RUTA_TALLER + "biblioteca").header("X-Taller-Clave", CLAVE)).andExpect(status().isOk()));
+        assertEquals(1, biblioteca.path("juegos").size());
+        JsonNode primero = biblioteca.path("juegos").get(0);
+        assertEquals(trabajo.toString(), primero.path("trabajo").asText());
+        assertEquals("memoria_andina", primero.path("familia").asText());
+        assertEquals(List.of("fondo-chacra", "olla-de-barro"),
+            List.of(primero.path("piezas").get(0).path("id").asText(), primero.path("piezas").get(1).path("id").asText()));
+        mvc.perform(get(RUTA_TALLER + "biblioteca").header("X-Taller-Clave", "otra")).andExpect(status().isForbidden());
     }
 
     // ---------- Eliminar la propuesta ----------

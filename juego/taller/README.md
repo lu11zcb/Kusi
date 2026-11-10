@@ -65,7 +65,8 @@ npm run taller -- --una-vez
   nombre al cuy, las importaciones y `node --test`, y abre el juego en un
   navegador sin pantalla con el `validar` de su ficha. Si algo falla, o si Spring
   responde 422, el supervisor recibe los motivos y corrige, hasta 2 veces; si no,
-  o si se acaban los 12 minutos, informa el fallo.
+  o si se acaban los 25 minutos (`TALLER_LIMITE_MS`), informa el fallo. Spring da por
+  perdido un trabajo a los 30.
 - **El dibujante** también es un rol de `roles.local.json`. El supervisor le pide
   cada pieza con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"
   [--apoyado] [--fondo] [--correccion "<motivos>"]`. Cada llamada es un intento: el
@@ -77,6 +78,15 @@ npm run taller -- --una-vez
   el dibujo obliga a revisarlo otra vez. Los fallos sin imagen cuentan como
   intentos; el consumo de las correcciones se suma, también con piezas en paralelo.
   Sus pruebas están en `pruebas/logica/dibujante.test.js`.
+- **La biblioteca crece sola.** Cuando el docente envía a su clase un juego del
+  taller, Spring aprueba sus piezas. Antes de cada trabajo, el trabajador pide
+  `GET /interno/taller/biblioteca` y escribe `biblioteca.json`: los ejemplos de
+  `juegos/`, los juegos del taller ya enviados (con su carpeta en esta Mac) y
+  `piezas_aprobadas`, cada una con su archivo y su huella SHA-256. El supervisor
+  puede copiar una pieza aprobada tal cual: el trabajador la reconoce por la huella,
+  no le pide otra revisión y no la reporta como nueva. Si al docente no le gusta un
+  dibujo, lo pide por el chat y la corrección trae piezas nuevas, que vuelven a
+  «pendiente».
 - Pruebas: `pruebas/logica/trabajador.test.js` y, de punta a punta con un
   Spring falso y un supervisor de prueba sin IA,
   `pruebas/navegador/trabajador.spec.js`.
@@ -97,7 +107,10 @@ npm run taller -- --una-vez
 | Dibujante | Dibuja las piezas quietas que faltan y las prepara. | No dibuja personajes ni cambia piezas del kit. |
 | Revisor | Juega el juego, mira capturas, revisa el código, el contenido y cada pieza. | No corrige: dice qué está mal y por qué. |
 
-Cada rol es un programa distinto. El trabajador les pasa las instrucciones de
+Los roles pueden compartir un mismo programa: el supervisor delega al programador
+y al revisor, cada uno con sus instrucciones. El trabajador entiende tanto un
+resumen JSON como eventos JSON por línea: conserva la respuesta final, el consumo
+y los fallos del rol. El trabajador les pasa las instrucciones de
 [agentes/](agentes/) al arrancar. Las instrucciones son neutrales: sirven
 igual con las suscripciones de la demo o con claves de API en producción,
 porque todo lo que hay que saber vive en el proyecto.

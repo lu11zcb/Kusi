@@ -14,4 +14,6 @@ import java.util.UUID;
 public interface PiezaTallerRepository extends JpaRepository<PiezaTaller, UUID> {
 
     List<PiezaTaller> findAllByTrabajoIdOrderByPiezaAsc(UUID trabajoId);
+
+    List<PiezaTaller> findAllByEstadoOrderByCreadoEnAsc(String estado);
 }

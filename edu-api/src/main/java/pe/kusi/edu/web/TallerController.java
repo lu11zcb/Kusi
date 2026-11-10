@@ -62,6 +62,14 @@ public class TallerController {
         return sinCache(200, Map.of("trabajo", dtoTrabajo(trabajo.get())));
     }
 
+    // La biblioteca del supervisor: los juegos del taller enviados a una clase, con sus piezas aprobadas.
+    @GetMapping("/biblioteca")
+    public ResponseEntity<Map<String, Object>> biblioteca(
+            @RequestHeader(value = "X-Taller-Clave", required = false) String clave) {
+        autorizar(clave);
+        return sinCache(200, Map.of("juegos", taller.biblioteca()));
+    }
+
     // { paquete, piezas, evidencia }. 422 con los motivos si el guion no pasa.
     @PostMapping("/{id}/resultado")
     public ResponseEntity<Map<String, Object>> resultado(

@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 // El único adaptador de IA de Kusi. Habla con cualquier proveedor compatible con la
-// API de chat de OpenAI (Groq, la IA de Tecsup...). Las dos llamadas, la propuesta
+// API de chat configurada para el generador. Las dos llamadas, la propuesta
 // (llamada 1) y el guion del laberinto (llamada 2), pasan por aquí: cada una trae
 // sus instrucciones y su esquema, y este adaptador se ocupa del transporte, de los
 // errores y de pedir el formato JSON. Lo que responde la IA nunca se da por bueno:

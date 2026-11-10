@@ -65,7 +65,7 @@ La IA se configura en la sección «Configurar la IA» (más abajo en este archi
 Los objetos son `fresa`, `platano`, `mango`, `mandarina`, `pina` (frutas) y `zanahoria`, `papa`, `choclo` (verduras); el único enemigo es el `zorro`, con movimiento `patrulla` o `persigue_cerca`. La alcanzabilidad se mide con una búsqueda en anchura que no atraviesa muros ni la puerta. `ValidadorLaberintoTest` usa el paquete de ejemplo del juego como caso bueno y le hace un solo cambio por cada caso malo.
 
 ## Configurar la IA
-Hay un solo adaptador de IA, `ClienteIa`, que habla con cualquier proveedor compatible con la API de chat de OpenAI (Groq, la IA de Tecsup...). Las dos llamadas pasan por él: la llamada 1 (la propuesta, `GeneradorPropuestasIa`) y la llamada 2 (el guion del laberinto, `GeneradorGuionIa`). Se configura con variables del `.env` de la raíz del repositorio (cópialo de `.env.example`; el `.env` nunca se sube):
+Hay un solo adaptador de IA, `ClienteIa`, que habla con la API de chat del generador configurado. Las dos llamadas pasan por él: la llamada 1 (la propuesta, `GeneradorPropuestasIa`) y la llamada 2 (el guion del laberinto, `GeneradorGuionIa`). Se configura con variables del `.env` de la raíz del repositorio (cópialo de `.env.example`; el `.env` nunca se sube):
 
 | Variable | Qué es | Si está vacía |
 | --- | --- | --- |
@@ -136,12 +136,14 @@ Kusi hoy hace un solo juego, el laberinto, con dos reglas: `orden` (patrones que
 
 | Ruta | Qué hace |
 | --- | --- |
-| `POST /interno/taller/trabajos/siguiente` | Primero devuelve a `pendiente` los trabajos con más de 15 minutos `en_proceso`; al tercer vencimiento, el trabajo y su generación quedan fallidos. Después entrega el pendiente más antiguo (`{ trabajo: { id, tipo, intentos, entrada } }`), lo marca `en_proceso` y la generación pasa a `generando`. 204 si no hay. |
+| `POST /interno/taller/trabajos/siguiente` | Primero devuelve a `pendiente` los trabajos con más de 30 minutos `en_proceso`; al tercer vencimiento, el trabajo y su generación quedan fallidos. Después entrega el pendiente más antiguo (`{ trabajo: { id, tipo, intentos, entrada } }`), lo marca `en_proceso` y la generación pasa a `generando`. 204 si no hay. |
 | `POST /interno/taller/trabajos/{id}/resultado` | `{ paquete, piezas, evidencia }`. Revisa la parte común del guion (`ValidadorPaqueteTaller`): `kusi-paquete/0`, familia `^[a-z][a-z0-9_]{2,40}$` (no `laberinto`), `trabajo` igual al id, de 1 a 5 retos con `id`, `consigna` y exactamente 2 `ayudas` de 90 caracteres como máximo, `cierre.mensaje` y 256 KB como máximo. Si pasa: trabajo `listo`, generación `lista` con su `procedencia` (`origen: taller`, `trabajo`, `intentos`, `segundos`) y las piezas (`[{ id, tipo: objeto o fondo, nombre }]`) `pendientes`. Si no pasa: 422 con `motivos` y no se guarda nada. |
 | `POST /interno/taller/trabajos/{id}/fallo` | `{ motivo }`, recortado a 2000 caracteres. Trabajo `fallido` y generación `fallida`. El docente solo ve «Esta vez no pudimos terminar tu juego. Puedes intentarlo de nuevo.»; el motivo queda en `trabajos_taller.motivo_fallo` y en la consola de Spring (`[taller]`). |
 
 **Un cambio por el chat.** El chat (`observaciones`) o una edición del docente crean una versión nueva de la propuesta, que espera su propia aprobación. Si al generarla ya hay un juego del taller `lista` de una versión anterior, el trabajo es `corregir_juego` y su `entrada` trae también `pedido` (lo que escribió el docente) y `anterior` (`{ trabajo, version_propuesta, paquete }`): el taller modifica ese juego en la carpeta del trabajo nuevo y la del anterior no se toca. La versión nueva es otra generación: nace sin enviar, vuelve a pasar las comprobaciones y se envía con el mismo `publicar` que el laberinto; hasta entonces, los estudiantes siguen con la anterior. Generar otra vez la misma versión es un `crear_juego`.
 
+**La biblioteca.** `GET /interno/taller/trabajos/biblioteca` (misma clave) devuelve `{ juegos: [{ trabajo, familia, titulo, piezas: [{ id, tipo, nombre }] }] }`: los juegos del taller que un docente envió a su clase (el último de cada solicitud) con sus piezas `aprobadas`. Las piezas pasan a `aprobada` cuando el docente envía el juego (`publicar`); hasta entonces están `pendiente`.
+
 Un trabajo que no está `en_proceso` no se cierra (409), y uno que no existe da 404. Los estados son los de la tabla: `pendiente`, `en_proceso`, `listo` y `fallido`. Pruebas: `TallerBuzonTest` (de punta a punta, con H2) y `ValidadorPaqueteTallerTest`.
 
-> **Para revisar (Jesús):** las rutas, la clave, los 15 minutos y la V10 los hizo Luis sobre el buzón de la V9 el 9 de noviembre. Falta tu revisión del contrato.
+> **Para revisar (Jesús):** las rutas, la clave, los 30 minutos y la V10 los hizo Luis sobre el buzón de la V9 el 9 de noviembre. Falta tu revisión del contrato.

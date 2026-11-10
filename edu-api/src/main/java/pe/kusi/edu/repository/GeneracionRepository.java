@@ -17,6 +17,14 @@ public interface GeneracionRepository extends JpaRepository<Generacion, UUID> {
 
     Optional<Generacion> findByIdAndSolicitudId(UUID id, UUID solicitudId);
 
+    // Los juegos del taller que el docente envió a su clase: el último de cada solicitud,
+    // igual que en la biblioteca del estudiante. Son la biblioteca del supervisor.
+    @Query("select g from Generacion g where g.taller = true and g.estado = 'lista' and g.publicada = true "
+            + "and not exists (select nueva.id from Generacion nueva where nueva.solicitudId = g.solicitudId "
+            + "and nueva.publicada = true and nueva.estado = 'lista' and (nueva.publicadaEn > g.publicadaEn "
+            + "or (nueva.publicadaEn = g.publicadaEn and nueva.id > g.id))) order by g.publicadaEn asc")
+    List<Generacion> juegosDelTallerEnviados();
+
     // El taller tarda minutos: si ya está creando el juego de esta solicitud, un segundo
     // «Generar» no encarga otro igual.
     boolean existsBySolicitudIdAndTallerTrueAndEstadoIn(UUID solicitudId, java.util.Collection<String> estados);

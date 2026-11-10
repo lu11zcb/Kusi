@@ -112,6 +112,25 @@ function guardar(lista, parte) {
 // Si el programa devolvió un resumen en JSON con su consumo, se toma para la evidencia.
 // Los nombres de los campos son los que usa el programa; aquí se pasan a los de Kusi.
 export function consumoDe(salida) {
+  // También se admiten eventos JSON por línea: el rol puede informar mensajes,
+  // consumo y fallos en eventos distintos. Se usa el último mensaje terminado;
+  // los errores nunca se confunden con una entrega correcta.
+  const eventos = salida.trim().split('\n').flatMap((linea) => {
+    try { return [JSON.parse(linea)] } catch { return [] }
+  })
+  if (eventos.some((evento) => ['turn.completed', 'turn.failed', 'item.completed'].includes(evento.type))) {
+    const mensajes = eventos.filter((evento) => evento.type === 'item.completed' && evento.item?.type === 'agent_message')
+    const fallos = eventos.filter((evento) => evento.type === 'turn.failed' || evento.type === 'error')
+    const consumos = eventos.filter((evento) => evento.type === 'turn.completed').map((evento) => evento.usage ?? {})
+    return {
+      tokens_entrada: consumos.reduce((suma, uso) => suma + Number(uso.input_tokens ?? 0), 0),
+      tokens_salida: consumos.reduce((suma, uso) => suma + Number(uso.output_tokens ?? 0), 0),
+      costo_estimado_usd: 0,
+      respuesta: fallos.length ? String(fallos.at(-1).error?.message ?? fallos.at(-1).message ?? 'El rol informó un fallo.')
+        : mensajes.at(-1)?.item?.text ?? null,
+      con_error: fallos.length > 0,
+    }
+  }
   try {
     const datos = JSON.parse(salida.trim().split('\n').at(-1))
     const uso = datos.usage ?? {}

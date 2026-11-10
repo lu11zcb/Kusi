@@ -83,7 +83,13 @@ while (!saliendo) {
 
   if (trabajo) {
     try {
-      const biblioteca = await armarBiblioteca()
+      let enviados = []
+      try {
+        enviados = await buzon.biblioteca()
+      } catch (error) {
+        decir('No pude leer la biblioteca del buzón (' + error.message + '): el supervisor verá solo los ejemplos.')
+      }
+      const biblioteca = await armarBiblioteca({ enviados, trabajos: configuracion.trabajos })
       const final = await procesarTrabajo(trabajo, {
         buzon, roles, agentes, lanzar, comprobar: comprobarJuego, biblioteca,
         trabajos: configuracion.trabajos, juegoUrl: configuracion.juegoUrl, limiteMs: configuracion.limiteMs,

@@ -197,8 +197,9 @@ Los intentos se reservan en `piezas/.intentos/`, incluso si no llegó una imagen
 solo las imágenes realmente recibidas se guardan en `origen/`.
 
 - Cada pieza pasa los tres filtros de [revision.md](revision.md).
-- Queda **pendiente** hasta que el docente la aprueba. El estado lo guarda
-  Kusi.
+- Queda **pendiente** hasta que el docente envía el juego a su clase: con eso
+  la aprueba, y desde entonces entra en la biblioteca del supervisor
+  (`biblioteca.json`, `piezas_aprobadas`). El estado lo guarda Kusi.
 - Si no pasa después de 2 correcciones, el plan anota qué pieza del kit o qué
   figura simple la reemplaza.
 

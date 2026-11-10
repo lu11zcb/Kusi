@@ -25,7 +25,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -41,9 +43,9 @@ public class TallerService {
 
     private static final Logger registro = LoggerFactory.getLogger(TallerService.class);
 
-    // El trabajador se limita a 12 minutos. Si a los 15 un trabajo sigue «en proceso»,
+    // El trabajador se limita a 25 minutos. Si a los 30 un trabajo sigue «en proceso»,
     // el trabajador se cayó: el trabajo vuelve a «pendiente» para intentarlo otra vez.
-    public static final Duration VENCIMIENTO = Duration.ofMinutes(15);
+    public static final Duration VENCIMIENTO = Duration.ofMinutes(30);
     // Al tercer vencimiento el trabajo queda «fallido»: algo lo traba siempre.
     public static final int MAX_VENCIMIENTOS = 3;
     public static final int MAX_CARACTERES_MOTIVO = 2000;
@@ -206,6 +208,55 @@ public class TallerService {
         etapas.save(new EtapaGeneracion(generacion.getId(), "taller", "fallida", MENSAJE_PARA_EL_DOCENTE));
         registro.warn("[taller] El trabajo " + id + " falló: " + guardado);
         return generacion;
+    }
+
+    /**
+     * El docente envió a su clase un juego del taller: sus piezas quedan aprobadas y, desde
+     * entonces, el juego y sus piezas entran en la biblioteca que recibe el supervisor.
+     */
+    @Transactional
+    public void aprobarPiezas(Generacion generacion) {
+        trabajos.findFirstByGeneracionIdOrderByCreadoEnDesc(generacion.getId()).ifPresent(trabajo -> {
+            for (PiezaTaller pieza : piezas.findAllByTrabajoIdOrderByPiezaAsc(trabajo.getId())) {
+                pieza.aprobar();
+                piezas.save(pieza);
+            }
+        });
+    }
+
+    /**
+     * La biblioteca del supervisor: los juegos del taller que el docente envió a su clase
+     * (uno por solicitud, el último) con sus piezas aprobadas. El trabajador agrega la ruta
+     * y la huella de cada pieza, que viven en su Mac.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> biblioteca() {
+        List<Map<String, Object>> juegos = new ArrayList<>();
+        for (Generacion generacion : generaciones.juegosDelTallerEnviados()) {
+            Optional<TrabajoTaller> trabajo = trabajos.findFirstByGeneracionIdOrderByCreadoEnDesc(generacion.getId());
+            if (trabajo.isEmpty()) continue;
+            Map<String, Object> juego = new LinkedHashMap<>();
+            juego.put("trabajo", trabajo.get().getId());
+            try {
+                JsonNode paquete = json.readTree(generacion.getPaquete());
+                juego.put("familia", paquete.path("familia").asText(null));
+                juego.put("titulo", paquete.path("titulo").asText(null));
+            } catch (JsonProcessingException ex) {
+                continue;
+            }
+            List<Map<String, Object>> lista = new ArrayList<>();
+            for (PiezaTaller pieza : piezas.findAllByTrabajoIdOrderByPiezaAsc(trabajo.get().getId())) {
+                if (!"aprobada".equals(pieza.getEstado())) continue;
+                Map<String, Object> datos = new LinkedHashMap<>();
+                datos.put("id", pieza.getPieza());
+                datos.put("tipo", pieza.getTipo());
+                datos.put("nombre", pieza.getNombre());
+                lista.add(datos);
+            }
+            juego.put("piezas", lista);
+            juegos.add(juego);
+        }
+        return juegos;
     }
 
     // Solo se cierra un trabajo que está «en proceso». Si se venció y volvió a la cola,

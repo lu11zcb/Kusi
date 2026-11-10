@@ -30,7 +30,7 @@ test('lo que ya está en el entorno gana al archivo, y sin archivo hay valores p
   const configuracion = cargarConfiguracion({ TALLER_ENV: path.join(carpeta, '.env'), TALLER_CLAVE: 'del-entorno' })
   assert.equal(configuracion.eduApiUrl, 'http://del-archivo')
   assert.equal(configuracion.clave, 'del-entorno')
-  assert.equal(configuracion.limiteMs, 12 * 60 * 1000)
+  assert.equal(configuracion.limiteMs, 25 * 60 * 1000)
   assert.equal(cargarConfiguracion({ TALLER_ENV: path.join(carpeta, 'no-existe') }).clave, '')
   await rm(carpeta, { recursive: true })
 })
@@ -80,6 +80,20 @@ test('del resumen en JSON del programa salen los tokens y el costo estimado', ()
   const salida = 'algo antes\n' + JSON.stringify({ result: 'LISTO', usage: { input_tokens: 10, cache_read_input_tokens: 5, output_tokens: 3 }, total_cost_usd: 0.25 })
   assert.deepEqual(consumoDe(salida), { tokens_entrada: 15, tokens_salida: 3, costo_estimado_usd: 0.25, respuesta: 'LISTO', con_error: false })
   assert.equal(consumoDe('LISTO').respuesta, 'LISTO')
+})
+
+test('los eventos por línea conservan el mensaje final, el consumo y los fallos del rol', () => {
+  const eventos = [
+    { type: 'item.completed', item: { type: 'agent_message', text: 'Estoy revisando.' } },
+    { type: 'item.completed', item: { type: 'agent_message', text: 'LISTO' } },
+    { type: 'turn.completed', usage: { input_tokens: 120, cached_input_tokens: 100, output_tokens: 25 } },
+  ]
+  const salida = eventos.map(JSON.stringify).join('\n')
+  assert.deepEqual(consumoDe(salida), { tokens_entrada: 120, tokens_salida: 25,
+    costo_estimado_usd: 0, respuesta: 'LISTO', con_error: false })
+  const fallo = consumoDe(salida + '\n' + JSON.stringify({ type: 'turn.failed', error: { message: 'No disponible' } }))
+  assert.equal(fallo.con_error, true)
+  assert.equal(fallo.respuesta, 'No disponible')
 })
 
 test('la búsqueda del cuy no confunde «cuyo» ni «cuya»', () => {
@@ -241,4 +255,41 @@ test('si el supervisor dice que no se puede, se informa el fallo sin insistir', 
   assert.equal(final.resultado, 'falló')
   assert.equal(registro.lanzados.length, 1)
   assert.match(registro.fallos[0], /figura sagrada/)
+})
+
+// ---------- La biblioteca crece sola ----------
+
+import { armarBiblioteca, huellaDe } from '../../taller/trabajador/carpeta.js'
+import { revisarPiezas } from '../../taller/trabajador/comprobar.js'
+
+test('la biblioteca trae los juegos enviados con la ruta y la huella de sus piezas aprobadas', async () => {
+  const trabajos = await mkdtemp(path.join(tmpdir(), 'kusi-biblioteca-'))
+  const enviado = randomUUID()
+  await mkdir(path.join(trabajos, enviado, 'juego'), { recursive: true })
+  await mkdir(path.join(trabajos, enviado, 'piezas'), { recursive: true })
+  await writeFile(path.join(trabajos, enviado, 'juego', 'juego.js'), 'export default {}\n')
+  await copyFile(PAPA, path.join(trabajos, enviado, 'piezas', 'olla.png'))
+  const borrado = randomUUID()
+
+  const biblioteca = await armarBiblioteca({ trabajos, enviados: [
+    { trabajo: enviado, familia: 'memoria', titulo: 'La memoria', piezas: [{ id: 'olla', tipo: 'objeto' }, { id: 'no-existe', tipo: 'objeto' }, { id: '../cuy', tipo: 'objeto' }] },
+    { trabajo: borrado, familia: 'otra', piezas: [] },
+    { trabajo: '../../kit', familia: 'mala', piezas: [] },
+  ] })
+  assert.deepEqual(biblioteca.ejemplos.map((juego) => juego.familia), ['laberinto'])
+  assert.equal(biblioteca.taller.length, 1)
+  assert.equal(biblioteca.taller[0].familia, 'memoria')
+  assert.deepEqual(biblioteca.piezas_aprobadas.map((pieza) => pieza.id), ['olla'])
+  assert.equal(biblioteca.piezas_aprobadas[0].sha256, await huellaDe(path.join(trabajos, enviado, 'piezas', 'olla.png')))
+
+  // Un trabajo nuevo que copia esa pieza: no necesita revisión ni se reporta como nueva.
+  const nuevo = { id: randomUUID(), tipo: 'crear_juego', intentos: 1, entrada: {} }
+  const { carpeta } = await prepararCarpeta(nuevo, { trabajos, biblioteca })
+  await copyFile(PAPA, path.join(carpeta, 'piezas', 'olla-reusada.png'))
+  await copyFile(new URL('../../kit/recursos/dibujos/objetos/fresa.png', import.meta.url), path.join(carpeta, 'piezas', 'fresa-nueva.png'))
+  const motivos = await revisarPiezas(carpeta)
+  assert.equal(motivos.length, 1, motivos.join('\n'))
+  assert.match(motivos[0], /«fresa-nueva» necesita la aprobación del revisor/)
+  assert.deepEqual(await piezasNuevas(carpeta), [{ id: 'fresa-nueva', tipo: 'objeto' }])
+  await rm(trabajos, { recursive: true })
 })

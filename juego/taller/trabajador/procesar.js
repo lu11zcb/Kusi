@@ -28,7 +28,8 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
     'Entrega en la carpeta del trabajo todo lo de juego/taller/entrega.md: juego/ (juego.js, README.md, escenas/, ' +
       'logica/, datos/, guion-ejemplo.json y pruebas/), plan.md, revision/ y evidencia.json.',
     'Solo puedes escribir dentro de la carpeta del trabajo. El kit, la biblioteca y el resto de juego/ son de solo lectura.',
-    'Usa las piezas del kit y de la biblioteca. Si falta una pieza quieta (un objeto o, si el tema lo pide, un fondo; ' +
+    'Usa las piezas del kit y de la biblioteca (biblioteca.json: «taller» son juegos ya enviados a una clase, con su carpeta; ' +
+      '«piezas_aprobadas» trae el archivo de cada pieza aprobada: cópialo tal cual a piezas/ y no necesita revisión). Si falta una pieza quieta (un objeto o, si el tema lo pide, un fondo; ' +
       'nunca un personaje), pídesela al dibujante, una pieza por llamada:',
     '  node ' + path.join(CARPETA_TALLER, 'dibujar.mjs') + ' --carpeta ' + carpeta +
       ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo] [--correccion "<lo que dijo el revisor>"]',

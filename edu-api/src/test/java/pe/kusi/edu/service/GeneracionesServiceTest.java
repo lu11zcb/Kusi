@@ -34,6 +34,7 @@ class GeneracionesServiceTest {
     private EtapaGeneracionRepository etapaRepository;
     private TrabajoTallerRepository trabajoRepository;
     private ProcesoGeneracionLaberinto proceso;
+    private TallerService taller;
     private GeneracionesService service;
 
     private UUID docenteId;
@@ -48,6 +49,7 @@ class GeneracionesServiceTest {
         etapaRepository = mock(EtapaGeneracionRepository.class);
         trabajoRepository = mock(TrabajoTallerRepository.class);
         proceso = mock(ProcesoGeneracionLaberinto.class);
+        taller = mock(TallerService.class);
 
         // Una transacción de mentira que solo ejecuta lo que se le pide.
         TransactionTemplate transaccion = mock(TransactionTemplate.class);
@@ -61,6 +63,7 @@ class GeneracionesServiceTest {
             etapaRepository,
             trabajoRepository,
             proceso,
+            taller,
             transaccion,
             new ObjectMapper()
         );

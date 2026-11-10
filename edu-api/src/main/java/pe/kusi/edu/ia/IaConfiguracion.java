@@ -45,7 +45,7 @@ public class IaConfiguracion {
     }
 
     // Una dirección puede venir completa (…/chat/completions, como GROQ_URL) o solo
-    // hasta la versión (…/v1, como la piden los clientes de OpenAI). En el segundo
+    // hasta la versión (…/v1, como la piden los clientes del generador). En el segundo
     // caso se le agrega el final; cualquier otra se toma como el endpoint completo.
     static String normalizarUrl(String url) {
         String limpia = url.trim().replaceAll("/+$", "");

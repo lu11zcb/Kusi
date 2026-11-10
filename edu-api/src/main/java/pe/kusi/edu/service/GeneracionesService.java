@@ -32,6 +32,7 @@ public class GeneracionesService {
     private final EtapaGeneracionRepository etapaRepository;
     private final TrabajoTallerRepository trabajoRepository;
     private final ProcesoGeneracionLaberinto proceso;
+    private final TallerService taller;
     private final TransactionTemplate transaccion;
     private final ObjectMapper json;
 
@@ -42,6 +43,7 @@ public class GeneracionesService {
             EtapaGeneracionRepository etapaRepository,
             TrabajoTallerRepository trabajoRepository,
             ProcesoGeneracionLaberinto proceso,
+            TallerService taller,
             TransactionTemplate transaccion,
             ObjectMapper json) {
         this.propuestasService = propuestasService;
@@ -50,6 +52,7 @@ public class GeneracionesService {
         this.etapaRepository = etapaRepository;
         this.trabajoRepository = trabajoRepository;
         this.proceso = proceso;
+        this.taller = taller;
         this.transaccion = transaccion;
         this.json = json;
     }
@@ -262,7 +265,10 @@ public class GeneracionesService {
                     "Solo se puede enviar a los estudiantes un juego listo");
         }
         generacion.publicar();
-        return generacionRepository.save(generacion);
+        Generacion enviada = generacionRepository.save(generacion);
+        // Al enviar un juego del taller, el docente aprueba sus piezas nuevas.
+        if (enviada.isTaller()) taller.aprobarPiezas(enviada);
+        return enviada;
     }
 
     @Transactional(readOnly = true)

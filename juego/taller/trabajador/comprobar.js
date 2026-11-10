@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { CARPETA_JUEGO } from './configuracion.js'
 import { comprobarPieza } from '#kit/herramientas/comprobar_pieza.mjs'
+import { huellasAprobadas } from './carpeta.js'
 
 // Regla 9: red, almacenamiento, texto como código y tocar la página o la app.
 export const PROHIBIDO = [
@@ -98,6 +99,9 @@ export async function revisarPiezas(carpeta) {
     const registro = JSON.parse(await readFile(path.join(carpeta, 'revision', 'piezas.json'), 'utf8'))
     revisiones = Array.isArray(registro.piezas) ? registro.piezas : []
   } catch { /* Sin informe no se aprueba ninguna pieza nueva. */ }
+  // Una pieza reutilizada de la biblioteca (misma huella que una aprobada) ya pasó los
+  // tres filtros con otro docente: no necesita otra revisión.
+  const aprobadas = await huellasAprobadas(carpeta)
   for (const archivo of (await readdir(piezas)).filter((nombre) => nombre.endsWith('.png')).sort()) {
     const id = archivo.slice(0, -'.png'.length)
     const resultado = comprobarPieza(path.join(piezas, archivo), { fondo: id.startsWith('fondo-') })
@@ -108,6 +112,7 @@ export async function revisarPiezas(carpeta) {
     // El segundo filtro corresponde a estos bytes: una corrección nunca hereda la
     // aprobación visual de otro dibujo. El informe queda dentro de revision/.
     const huella = createHash('sha256').update(await readFile(path.join(piezas, archivo))).digest('hex')
+    if (aprobadas.has(huella)) continue
     const revision = revisiones.find((pieza) => pieza.id === id && pieza.sha256 === huella && pieza.veredicto === 'aprobado')
     let tieneInforme = false
     if (typeof revision?.informe === 'string' && revision.informe.trim()) {
