@@ -121,6 +121,44 @@ class ResultadosTest {
     }
 
     @Test
+    void dosDocentesConSeccionesPropiasSoloConsultanSusResultadosYElAdministradorNoConsultaNinguno() throws Exception {
+        UUID otroDocente = UUID.randomUUID(), alumnoAjeno = UUID.randomUUID(), actividadAjena = UUID.randomUUID();
+        Seccion otraSeccion = secciones.saveAndFlush(new Seccion("Otra sección de prueba " + UUID.randomUUID(), 1, 2026));
+        asignaciones.saveAndFlush(new AsignacionDocente(otroDocente, curso, otraSeccion, 2026, otroDocente));
+        vinculos.saveAndFlush(new VinculoEstudiante(alumnoAjeno, otraSeccion, 2026, otroDocente));
+        solicitudes.saveAndFlush(new SolicitudPropuesta(actividadAjena, otroDocente, curso, otraSeccion.getId(),
+                "Actividad de la otra sección", null, "preparacion", null));
+        Propuesta otraPropuesta = propuestas.saveAndFlush(new Propuesta(actividadAjena, 1, "docente", null, null,
+                "Objetivo de prueba", "docente", "Otra actividad", "[]", "[]", "[]", "[]", null, null, null));
+        Generacion otroJuego = new Generacion(actividadAjena, otraPropuesta.getId(), 1);
+        otroJuego.registrarEstado("lista", null); otroJuego.publicar(); generaciones.saveAndFlush(otroJuego);
+        when(django.validarSesion("otro")).thenReturn(Map.of("id", otroDocente.toString(), "roles", List.of("docente")));
+        when(django.validarSesion("admin-solo")).thenReturn(Map.of("id", UUID.randomUUID().toString(), "roles", List.of("administrador")));
+        when(django.validarCuenta(alumnoAjeno, "estudiante")).thenReturn(Map.of("nombre", "Cuenta sintética de otra sección"));
+        partidas.guardar(alumnoAjeno, false, aviso(UUID.randomUUID().toString(), 1, "accion")
+                .put("juego_id", otroJuego.getId().toString()).put("respuesta", "Respuesta privada de prueba").put("correcto", true));
+
+        // Los dos accesos propios funcionan: no es una denegación general del servicio.
+        leer(BASE + actividad + "/estudiantes/", "docente").andExpect(status().isOk());
+        leer(BASE + actividadAjena + "/estudiantes/", "otro").andExpect(status().isOk());
+        leer(BASE, "otro").andExpect(jsonPath("$.actividades.length()").value(1))
+                .andExpect(jsonPath("$.actividades[0].id").value(actividadAjena.toString()));
+        clearInvocations(django);
+        for (String sesion : List.of("admin-solo", "admin")) {
+            for (String ruta : List.of(BASE, BASE + actividadAjena + "/estudiantes/",
+                    BASE + actividadAjena + "/estudiantes/" + alumnoAjeno + "/")) {
+                leer(ruta, sesion).andExpect(status().isForbidden());
+            }
+        }
+        leer(BASE + actividadAjena + "/estudiantes/", "docente").andExpect(status().isNotFound());
+        leer(BASE + actividadAjena + "/estudiantes/" + alumnoAjeno + "/", "docente").andExpect(status().isNotFound());
+        leer(BASE + actividad + "/estudiantes/", "otro").andExpect(status().isNotFound());
+        leer(BASE + actividad + "/estudiantes/" + estudiante + "/", "otro").andExpect(status().isNotFound());
+        // Se rechaza antes incluso de pedir nombres al servicio de identidad.
+        verify(django, never()).validarCuenta(any(), any());
+    }
+
+    @Test
     void noAtribuyePruebasDocentesNiAvisosSinJuegoNiIncorporaEstudiantesPosteriores() throws Exception {
         ObjectNode antiguo = aviso(UUID.randomUUID().toString(), 1, "fin"); antiguo.remove("juego_id");
         partidas.guardar(estudiante, false, antiguo);
