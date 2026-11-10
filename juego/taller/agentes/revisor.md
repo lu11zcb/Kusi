@@ -21,6 +21,17 @@ La carpeta del trabajo: `trabajo.json`, `plan.md`, `juego/` y `piezas/`.
   [../revision.md](../revision.md).
 - `revision/intento-<n>/`: las capturas del juego.
 - La lista de comprobación de cada pieza, con sus respuestas.
+- `revision/piezas.json`: el veredicto de cada PNG final, ligado a sus bytes
+  con SHA-256 y al informe. El trabajador lo comprueba antes de entregar:
+
+  ```json
+  { "piezas": [{ "id": "olla", "sha256": "<64 caracteres hexadecimales>",
+    "veredicto": "aprobado", "informe": "piezas-intento-1.md" }] }
+  ```
+
+  El informe es una ruta relativa dentro de `revision/`. Usa `corregir` o
+  `rechazado` si hay un «no». Si cambia el dibujo, vuelve a mirarlo y calcula
+  otra huella; nunca hereda la aprobación visual del archivo anterior.
 
 ## Qué lees primero
 

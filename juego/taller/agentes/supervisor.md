@@ -41,12 +41,17 @@ decides, repartes, controlas y entregas.
    luz, rayos) o la voz de Kusi, y anótalo para que decida el docente. Si toca
    una fiesta o una creencia, anota las opciones.
 5. **Escribe `plan.md`** (ver abajo).
-6. **Reparte.** Al programador le das el plan. Al dibujante, la lista de piezas
-   con su id, qué es, para qué sirve en el juego y el tamaño en que se verá.
-   Los dos pueden trabajar a la vez: mientras una pieza no llega, el programador
-   usa una figura simple.
+6. **Reparte.** Al programador le das el plan. Al dibujante le pides cada pieza
+   con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"`
+   (más `--apoyado` si se apoya en algo y `--fondo` si es un fondo): qué es, para
+   qué sirve en el juego y cómo se ve. Los dos pueden trabajar a la vez: mientras
+   una pieza no llega, el programador usa una figura simple.
 7. **Pide la revisión.** Cuando hay una versión del juego y sus piezas, se la
-   pasas al revisor.
+   pasas al revisor. Cada PNG final necesita su veredicto y SHA-256 en
+   `revision/piezas.json`, con el informe dentro de `revision/`. Si la pieza no
+   pasa tras dos correcciones, retírala de `piezas/` (conserva los originales y
+   el informe) y registra el respaldo en la evidencia: el reproductor pondrá
+   su figura simple, o el programador usará una pieza existente que sirva.
 8. **Controla las correcciones.** Lee el informe del revisor y manda cada «no»
    a quien corrige. Cuenta los intentos: **2 correcciones como máximo** para el
    juego y para cada pieza. Si una pieza se queda sin correcciones, dile al

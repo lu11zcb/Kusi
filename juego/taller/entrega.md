@@ -179,8 +179,22 @@ un trabajo `corregir_juego`. Su `trabajo.json` trae, además de la propuesta nue
 piezas/
   <id>.png                    la pieza preparada (256 × 256 con transparencia, o el fondo)
   origen/<id>-intento-<n>.png lo que entregó la herramienta de imágenes, con fondo blanco
-  pedidos.md                  el pedido de cada pieza y de cada corrección
+  pedidos.md                  el pedido de cada pieza y de cada corrección, con su resultado
+  registro.json               por pieza: tipo, intentos, si pasó, imágenes, tokens y segundos
 ```
+
+Todo eso lo escribe `taller/dibujar.mjs`, que el supervisor llama una vez por
+intento. El trabajador suma `registro.json` a la evidencia (`intentos.piezas` y un
+paso `dibujante` por pieza), vuelve a pasar el filtro del código a cada pieza de
+`piezas/` antes de entregar y le manda a Spring las piezas nuevas.
+
+El revisor deja además `revision/piezas.json`: `{ "piezas": [{ "id": "olla",
+"sha256": "<huella SHA-256 del PNG final>", "veredicto": "aprobado",
+"informe": "piezas-intento-1.md" }] }`. El informe debe existir dentro de
+`revision/`. Sin aprobación visual de esos mismos bytes, el trabajador pide
+corregir y no entrega la pieza. Un PNG corregido necesita otra revisión.
+Los intentos se reservan en `piezas/.intentos/`, incluso si no llegó una imagen;
+solo las imágenes realmente recibidas se guardan en `origen/`.
 
 - Cada pieza pasa los tres filtros de [revision.md](revision.md).
 - Queda **pendiente** hasta que el docente la aprueba. El estado lo guarda

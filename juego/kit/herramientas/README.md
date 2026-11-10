@@ -6,6 +6,8 @@ desde la carpeta `juego/`.
 | Herramienta | Para qué sirve | Necesita |
 | --- | --- | --- |
 | `armar_lamina.mjs` | Arma la [lámina de piezas modelo](../estilo/lamina-modelos.png) de la guía de estilo. | Node |
+| `preparar_pieza.mjs` | Quita el fondo blanco de una pieza nueva con la visión de macOS y la deja en 256 × 256 (`--apoyado`: pies en y = 244) o como fondo de 1672 × 941 (`--fondo`). Compila `preparar_pieza.swift` la primera vez en `.compilado/`, que no se sube. | Node y macOS (Swift viene con las herramientas de línea de comandos) |
+| `comprobar_pieza.mjs` | El filtro del código de una pieza nueva (`--fondo` para un fondo): responde la lista de [comprobacion.md](../estilo/comprobacion.md) en JSON. | Node |
 | `preparar_fondo_cenital.mjs` | Separa la hoja de plantas de `originales/mundo/` en sus cuatro tiras animadas. | Node y `sips` |
 | `animaciones/preparar_espaldas.mjs` | Reemplaza la fila de espalda del cuy y del zorro a partir de `originales/personajes/`. | Node y `sips` |
 | `animaciones/armar_hoja.py` | Arma una hoja de personaje desde una tira o una carpeta de cuadros. | Python 3 y Pillow |

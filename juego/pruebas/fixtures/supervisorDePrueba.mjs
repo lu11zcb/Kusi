@@ -10,6 +10,8 @@
 
 import { mkdir, writeFile, copyFile } from 'node:fs/promises'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 
 const [carpeta, modo, pedido = ''] = process.argv.slice(2)
 const esCorreccion = /Corrección \d de 2/.test(pedido)
@@ -20,7 +22,7 @@ else await trabajar()
 async function trabajar() {
   if (modo === 'no') return responder('FALLÓ: el tema pide dibujar una figura sagrada como personaje.')
 
-  const conPruebas = modo === 'bien' || (modo === 'corrige' && esCorreccion)
+  const conPruebas = ['bien', 'sin-revision', 'revision-vieja'].includes(modo) || (modo === 'corrige' && esCorreccion)
   const archivos = {
     'juego/juego.js': [
       "import { EscenaParejas } from './escenas/EscenaParejas.js'",
@@ -75,6 +77,13 @@ async function trabajar() {
   }
   await mkdir(path.join(carpeta, 'piezas'), { recursive: true })
   await copyFile(new URL('../../kit/recursos/dibujos/objetos/papa.png', import.meta.url), path.join(carpeta, 'piezas', 'olla-de-prueba.png'))
+  // Es evidencia ficticia solo para esta prueba del recorrido del trabajador.
+  await mkdir(path.join(carpeta, 'revision'), { recursive: true })
+  await writeFile(path.join(carpeta, 'revision', 'piezas.md'), 'Revisión ficticia de la pieza de prueba.\n')
+  if (modo !== 'sin-revision') await writeFile(path.join(carpeta, 'revision', 'piezas.json'), JSON.stringify({ piezas: [{
+    id: 'olla-de-prueba', veredicto: 'aprobado', informe: 'piezas.md',
+    sha256: modo === 'revision-vieja' ? '0'.repeat(64) : createHash('sha256').update(await readFile(path.join(carpeta, 'piezas', 'olla-de-prueba.png'))).digest('hex'),
+  }] }))
   responder('LISTO')
 }
 

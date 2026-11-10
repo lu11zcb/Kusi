@@ -66,6 +66,17 @@ npm run taller -- --una-vez
   navegador sin pantalla con el `validar` de su ficha. Si algo falla, o si Spring
   responde 422, el supervisor recibe los motivos y corrige, hasta 2 veces; si no,
   o si se acaban los 12 minutos, informa el fallo.
+- **El dibujante** también es un rol de `roles.local.json`. El supervisor le pide
+  cada pieza con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"
+  [--apoyado] [--fondo] [--correccion "<motivos>"]`. Cada llamada es un intento: el
+  pedido de la guía de estilo con fondo blanco, el original en `piezas/origen/`, el
+  recorte con la visión de macOS y el filtro del código. Hay 1 intento y hasta 2
+  correcciones por pieza; si no pasa, la pieza no se entrega y el reproductor usa
+  una figura simple. El trabajador exige también la aprobación del revisor en
+  `revision/piezas.json`, con la huella SHA-256 del PNG final y su informe: cambiar
+  el dibujo obliga a revisarlo otra vez. Los fallos sin imagen cuentan como
+  intentos; el consumo de las correcciones se suma, también con piezas en paralelo.
+  Sus pruebas están en `pruebas/logica/dibujante.test.js`.
 - Pruebas: `pruebas/logica/trabajador.test.js` y, de punta a punta con un
   Spring falso y un supervisor de prueba sin IA,
   `pruebas/navegador/trabajador.spec.js`.

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { prepararCarpeta, piezasNuevas, escribirJson, leerJson } from './carpeta.js'
 import { armarComando, consumoDe, subagentes } from './roles.js'
-import { CARPETA_JUEGO, CARPETA_RAIZ } from './configuracion.js'
+import { CARPETA_JUEGO, CARPETA_RAIZ, CARPETA_TALLER } from './configuracion.js'
 
 // 1 intento y hasta 2 correcciones (reglas.md, regla 10).
 export const MAX_CORRECCIONES = 2
@@ -28,7 +28,17 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
     'Entrega en la carpeta del trabajo todo lo de juego/taller/entrega.md: juego/ (juego.js, README.md, escenas/, ' +
       'logica/, datos/, guion-ejemplo.json y pruebas/), plan.md, revision/ y evidencia.json.',
     'Solo puedes escribir dentro de la carpeta del trabajo. El kit, la biblioteca y el resto de juego/ son de solo lectura.',
-    'Usa piezas del kit. Si falta un objeto, usa una figura simple: el juego no se detiene por una pieza.',
+    'Usa las piezas del kit y de la biblioteca. Si falta una pieza quieta (un objeto o, si el tema lo pide, un fondo; ' +
+      'nunca un personaje), pídesela al dibujante, una pieza por llamada:',
+    '  node ' + path.join(CARPETA_TALLER, 'dibujar.mjs') + ' --carpeta ' + carpeta +
+      ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo] [--correccion "<lo que dijo el revisor>"]',
+    'Cada pieza tarda cerca de un minuto: dale 6 minutos de espera, y mientras tanto el programador puede seguir. ' +
+      'Responde un JSON: con «siguiente»: «revisor», el revisor la mira con kit/estilo/comprobacion.md; con «corregir», ' +
+      'vuelve a llamarlo con --correccion; con «respaldo», usa una pieza del kit o deja que el reproductor ponga una figura simple.',
+    'Pon en «piezas» de juego.js los ids que usa el juego, también los de las piezas nuevas.',
+    'El revisor deja revision/piezas.json con id, sha256 del PNG final, veredicto e informe relativo a revision/. ' +
+      'No se entrega ningún PNG sin esa aprobación. Si tras dos correcciones no pasa, retira el PNG de piezas/, ' +
+      'conserva sus originales e informe y registra el respaldo en evidencia.json.',
     'El juego se abre en ' + new URL('?juego=' + trabajo.id, juegoUrl).href + ' (el servidor ya está encendido).',
     'Al terminar, responde en una línea: LISTO, o FALLÓ: <motivo>.',
   )
@@ -138,6 +148,15 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
   } catch {
     delSupervisor = {}
   }
+  // Lo que anotó el dibujante por cada pieza (piezas/registro.json): intentos e imágenes.
+  let delDibujante = {}
+  try {
+    if (existsSync(path.join(carpeta, 'piezas', 'registro.json'))) delDibujante = await leerJson(path.join(carpeta, 'piezas', 'registro.json'))
+  } catch { delDibujante = {} }
+  const pasosDelDibujante = Object.entries(delDibujante).map(([pieza, registro]) => ({
+    rol: 'dibujante', pieza, imagenes: registro.imagenes ?? 0, tokens_entrada: registro.tokens ?? 0, tokens_salida: 0,
+    costo_estimado_usd: Number(((registro.imagenes ?? 0) * (registro.costo_por_imagen_usd ?? 0)).toFixed(4)),
+  }))
   let familia = delSupervisor.familia ?? null
   try {
     familia = (await leerJson(path.join(carpeta, 'juego', 'guion-ejemplo.json'))).familia ?? familia
@@ -152,10 +171,15 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
     inicio: new Date(inicio).toISOString(),
     fin: new Date(fin).toISOString(),
     segundos: Math.round((fin - inicio) / 1000),
-    intentos: { ...(delSupervisor.intentos ?? {}), juego: intento },
+    intentos: {
+      ...(delSupervisor.intentos ?? {}),
+      juego: intento,
+      piezas: { ...(delSupervisor.intentos?.piezas ?? {}), ...Object.fromEntries(Object.entries(delDibujante).map(([pieza, registro]) => [pieza, registro.intentos])) },
+    },
     correcciones: [...(Array.isArray(delSupervisor.correcciones) ? delSupervisor.correcciones : []), ...correcciones],
-    pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []), ...pasos],
-    costo_estimado_usd: Number(pasos.reduce((suma, paso) => suma + paso.costo_estimado_usd, 0).toFixed(4)),
-    como_se_estimo: 'tokens de cada paso por el precio de lista del modelo usado, a la fecha del trabajo',
+    pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []), ...pasos, ...pasosDelDibujante],
+    costo_estimado_usd: Number([...pasos, ...pasosDelDibujante].reduce((suma, paso) => suma + paso.costo_estimado_usd, 0).toFixed(4)),
+    como_se_estimo: 'tokens de cada paso por el precio de lista del modelo usado, a la fecha del trabajo; ' +
+      'las imágenes, por el precio por imagen del archivo de roles (sin precio, no se suman)',
   }
 }

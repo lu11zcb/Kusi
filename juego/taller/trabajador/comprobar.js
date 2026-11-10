@@ -5,9 +5,11 @@
 
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile, readdir, realpath } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { CARPETA_JUEGO } from './configuracion.js'
+import { comprobarPieza } from '#kit/herramientas/comprobar_pieza.mjs'
 
 // Regla 9: red, almacenamiento, texto como código y tocar la página o la app.
 export const PROHIBIDO = [
@@ -85,6 +87,42 @@ export async function revisarCodigo(carpetaJuego) {
   return motivos
 }
 
+// El primer filtro de cada pieza de piezas/ (kit/estilo/comprobacion.md): una pieza que no
+// pasa no se entrega. El dibujante ya lo pasó; aquí se confirma lo que quedó en la carpeta.
+export async function revisarPiezas(carpeta) {
+  const motivos = []
+  const piezas = path.join(carpeta, 'piezas')
+  if (!existsSync(piezas)) return motivos
+  let revisiones = []
+  try {
+    const registro = JSON.parse(await readFile(path.join(carpeta, 'revision', 'piezas.json'), 'utf8'))
+    revisiones = Array.isArray(registro.piezas) ? registro.piezas : []
+  } catch { /* Sin informe no se aprueba ninguna pieza nueva. */ }
+  for (const archivo of (await readdir(piezas)).filter((nombre) => nombre.endsWith('.png')).sort()) {
+    const id = archivo.slice(0, -'.png'.length)
+    const resultado = comprobarPieza(path.join(piezas, archivo), { fondo: id.startsWith('fondo-') })
+    if (!resultado.pasa) {
+      motivos.push('La pieza «' + id + '» no pasa el filtro del código: ' +
+        resultado.respuestas.filter((respuesta) => !respuesta.si).map((respuesta) => respuesta.motivo).join(' '))
+    }
+    // El segundo filtro corresponde a estos bytes: una corrección nunca hereda la
+    // aprobación visual de otro dibujo. El informe queda dentro de revision/.
+    const huella = createHash('sha256').update(await readFile(path.join(piezas, archivo))).digest('hex')
+    const revision = revisiones.find((pieza) => pieza.id === id && pieza.sha256 === huella && pieza.veredicto === 'aprobado')
+    let tieneInforme = false
+    if (typeof revision?.informe === 'string' && revision.informe.trim()) {
+      try {
+        const raiz = await realpath(path.join(carpeta, 'revision'))
+        const informe = await realpath(path.resolve(raiz, revision.informe))
+        tieneInforme = informe.startsWith(raiz + path.sep) && (await readFile(informe, 'utf8')).trim().length > 0
+      } catch { /* Un informe ausente o fuera de revision/ no sirve. */ }
+    }
+    if (!tieneInforme) motivos.push('La pieza «' + id + '» necesita la aprobación del revisor para su archivo final, ' +
+      'con sha256 e informe en revision/piezas.json (revision.md, filtro 2).')
+  }
+  return motivos
+}
+
 // Corre las pruebas del juego con node --test. Sin pruebas no se entrega.
 export async function correrPruebas(carpetaJuego, { limiteMs = 60_000 } = {}) {
   const pruebas = (await archivosDe(path.join(carpetaJuego, 'pruebas'), ['.test.js', '.test.mjs']))
@@ -136,7 +174,7 @@ export async function abrirEnNavegador(trabajo, { juegoUrl, limiteMs = 30_000 })
 // id del trabajo, listo para entregarlo a Spring.
 export async function comprobarJuego({ carpeta, trabajo, juegoUrl }) {
   const carpetaJuego = path.join(carpeta, 'juego')
-  const motivos = await revisarCodigo(carpetaJuego)
+  const motivos = [...await revisarCodigo(carpetaJuego), ...await revisarPiezas(carpeta)]
   let paquete = null
   try {
     paquete = JSON.parse(await readFile(path.join(carpetaJuego, 'guion-ejemplo.json'), 'utf8'))

@@ -202,12 +202,13 @@ outlines*, *simple cel-like soft shading*, *not pixel art, not realistic 3D*,
 ## 14. Cómo se prepara y se comprueba
 
 1. La herramienta de imágenes entrega la pieza sobre **fondo blanco liso**.
-2. Una herramienta que quita el fondo deja la pieza transparente. En esta Mac
-   será BiRefNet, que todavía no está instalado. El contorno oscuro y cerrado
-   protege los blancos de adentro: si la herramienta se come una parte blanca
-   de la pieza, se repite.
-3. La pieza se recorta, se reduce a 256 × 256 sin deformarla y se centra según
-   la sección 7.
+2. La visión de macOS quita el fondo y deja la pieza transparente
+   (`kit/herramientas/preparar_pieza.mjs`; no hay que instalar nada). También
+   quita el blanco que se ve por los huecos de la pieza. El contorno oscuro y
+   cerrado protege los blancos de adentro: si la herramienta se come una parte
+   blanca de la pieza, el filtro del código lo detecta y se repite.
+3. La misma herramienta recorta la pieza, la reduce a 256 × 256 sin deformarla
+   (lado mayor de 200 px) y la centra según la sección 7.
 4. Pasa los **tres filtros**: el código (medidas y transparencia), el revisor
    (comparando con esta guía y con los modelos) y el docente (queda
    «pendiente» hasta que la apruebe). Todo está en

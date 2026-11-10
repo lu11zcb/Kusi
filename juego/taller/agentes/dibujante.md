@@ -36,22 +36,28 @@ En la carpeta `piezas/` de tu trabajo:
 
 ## Paso a paso
 
+El supervisor pide cada pieza con `taller/dibujar.mjs`, que hace un intento
+completo por llamada (ver [../README.md](../README.md)):
+
 1. **Una pieza a la vez.**
-2. **Escribe el pedido** como dice la sección 13 de la guía. Usa la lámina
-   como referencia de estilo y pide **fondo blanco liso**, sin sombras ni
-   suelo. Guárdalo en `pedidos.md`.
-3. **Genera la imagen** con la herramienta de imágenes. Guarda lo que salió en
+2. **El pedido** se arma como dice la sección 13 de la guía: en inglés, con la
+   lámina como referencia de estilo y **fondo blanco liso**, sin sombras ni
+   suelo. Queda en `pedidos.md`.
+3. **La imagen** la genera la herramienta de imágenes. Lo que salió se guarda en
    `origen/<id>-intento-<n>.png`, sin cambiarlo.
-4. **Quita el fondo** con la herramienta para quitar fondos. Revisa que no se
-   haya borrado ninguna parte blanca de la pieza.
-5. **Prepara la pieza.**
+4. **El fondo se quita** con la visión de macOS (`kit/herramientas/preparar_pieza.mjs`),
+   que también quita el blanco que se ve por los huecos, como entre un asa y la
+   olla.
+5. **La pieza se prepara** con la misma herramienta:
    - Un objeto se recorta y se reduce, sin deformarlo, hasta que su lado mayor
-     mida de 180 a 215 px. Va centrado en 256 × 256 y, si se apoya en algo, con
-     su punto más bajo en y = 244.
-   - Un fondo se deja en 1672 × 941, sin transparencia.
-6. **Pasa el filtro del código** de la lista de comprobación: medidas,
-   transparencia, márgenes, peso y nombre.
-7. **Avísale al supervisor** que la pieza está lista para el revisor.
+     mide 200 px (la guía pide de 180 a 215). Va centrado en 256 × 256 y, con
+     `--apoyado`, con su punto más bajo en y = 244.
+   - Un fondo (`--fondo`) se deja en 1672 × 941, sin transparencia.
+6. **Pasa el filtro del código** (`kit/herramientas/comprobar_pieza.mjs`): medidas,
+   transparencia, márgenes, silueta, manchas, contorno, blancos de adentro, peso
+   y nombre. Una pieza que no pasa no queda en `piezas/`.
+7. **Responde al supervisor** con un JSON: `revisor` (la mira el revisor),
+   `corregir` (otro intento con `--correccion`) o `respaldo`.
 
 ## Las correcciones
 

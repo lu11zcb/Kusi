@@ -121,3 +121,14 @@ test('un supervisor que no termina se corta al acabarse el tiempo', async () => 
   expect(recibido.fallos).toHaveLength(1)
   expect(recibido.fallos[0]).toMatch(/Se acabó el tiempo/)
 })
+
+for (const modo of ['sin-revision', 'revision-vieja']) {
+  test('no entrega una pieza ' + (modo === 'sin-revision' ? 'sin revisión visual' : 'con revisión de otro archivo'), async () => {
+    const { codigo, consola, recibido } = await correrTrabajador({ modo })
+    expect(codigo, consola).toBe(0)
+    expect(recibido.resultados).toEqual([])
+    expect(recibido.fallos).toHaveLength(1)
+    expect(recibido.fallos[0]).toContain('aprobación del revisor para su archivo final')
+    expect(consola.match(/el supervisor empieza el intento/g)).toHaveLength(3)
+  })
+}
