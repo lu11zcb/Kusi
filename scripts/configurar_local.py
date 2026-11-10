@@ -6,7 +6,11 @@ raiz = Path(__file__).resolve().parent.parent
 archivo = raiz / ".env"
 contenido = archivo.read_text(encoding="utf-8") if archivo.exists() else ""
 datos = dict(linea.split("=", 1) for linea in contenido.splitlines() if "=" in linea and not linea.startswith("#"))
-for nombre in ("DJANGO_SECRET_KEY", "CLAVE_INTERNA"):
+# Si el archivo no termina en salto de línea, la primera clave nueva quedaría pegada a la última línea.
+if contenido and not contenido.endswith("\n"):
+    contenido += "\n"
+# TALLER_CLAVE es la que usa el trabajador del taller para hablar con el buzón de Spring.
+for nombre in ("DJANGO_SECRET_KEY", "CLAVE_INTERNA", "TALLER_CLAVE"):
     if not datos.get(nombre):
         if nombre in datos:
             contenido = "\n".join(linea for linea in contenido.splitlines() if not linea.startswith(nombre + "=")) + "\n"

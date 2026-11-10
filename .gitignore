@@ -20,6 +20,9 @@ __pycache__/
 edu-api/data/
 db.sqlite3
 
+# Los juegos que crea el taller viven solo en esta Mac: Kusi guarda su guion en la base
+juego/taller/trabajos/
+
 # Copias y respaldos locales
 .qa/
 *.dump
