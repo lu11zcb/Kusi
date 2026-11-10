@@ -35,4 +35,23 @@ Las ilustraciones creadas con ImageGen son ayuda visual de desarrollo. Esta actu
 
 ## Comprobar
 
+### Juegos del taller (10 de noviembre, para revisión del integrante de la app)
+
+`ProtocoloJuego.kt` admite el laberinto de la biblioteca sin `trabajo`, y juegos
+del taller con familia válida y el UUID canónico de su trabajo. El paquete se
+envía completo como texto escapado a la misma WebView; el reproductor carga el
+juego y sus piezas. Se rechazan familias o identificadores que parezcan rutas,
+trabajos ausentes y paquetes con menos de uno o más de cinco retos.
+
+Para un juego del taller sin `meta`, la misión usa su primera consigna. Si no
+trae `curso`, muestra «Tu actividad», para que un juego de animales no anuncie
+una misión de patrones con alimentos. El laberinto conserva sus textos.
+
+Cambio mínimo del paso 7: revisar `ProtocoloJuego.kt` y `ProtocoloJuegoTest.kt`.
+Las pruebas comprueban aceptación del sobre, conservación de `trabajo`, textos
+escapados y rechazo de rutas. La autorización para recibir una actividad sigue
+correspondiendo a Spring; este cambio no publica ni asigna juegos.
+
+### Ejecutar las pruebas
+
 Con Java 21 y un emulador: `gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:connectedDebugAndroidTest`. En la Mac, el comando `java` del sistema no tiene un Java registrado; se usa el de Android Studio: `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"` y después `./gradlew :app:testDebugUnitTest :app:assembleDebug`. Las pruebas instrumentadas usan datos sintéticos y no crean alumnos. Las pruebas de servicios reales están desactivadas por defecto. Compilar y revisar pantallas no demuestra usabilidad con niños ni resultados de aprendizaje.

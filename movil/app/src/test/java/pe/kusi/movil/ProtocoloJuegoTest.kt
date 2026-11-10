@@ -26,6 +26,49 @@ class ProtocoloJuegoTest {
         assertEquals("paquete", datos.getString("tipo"))
         assertEquals(paquete, datos.getString("paquete"))
     }
+    private fun paqueteDelTaller() = JSONObject().put("formato", "kusi-paquete/0").put("familia", "escucha_y_toca")
+        .put("trabajo", "b9fc0482-dd7d-4764-831c-2ea19493e46c")
+        .put("retos", org.json.JSONArray().put(JSONObject().put("consigna", "Busca la vaca.")))
+
+    @Test fun elJuegoDelTallerConservaSuFamiliaSuTrabajoYSusTextosEnElMensaje() {
+        val paquete = paqueteDelTaller().put("titulo", "Los animales de la chacra")
+        paquete.getJSONArray("retos").getJSONObject(0).put("consigna", "Comillas: \"; alert(1); //\nBusca la vaca.")
+        val texto = paquete.toString()
+        val codigo = mensajePaqueteJuego(texto)
+        val mensaje = JSONObject(codigo.removePrefix("window.postMessage(").removeSuffix(", '*');"))
+        assertEquals("paquete", mensaje.getString("tipo"))
+        assertEquals(texto, mensaje.getString("paquete"))
+        val recibido = JSONObject(mensaje.getString("paquete"))
+        assertEquals("escucha_y_toca", recibido.getString("familia"))
+        assertEquals(paquete.getString("trabajo"), recibido.getString("trabajo"))
+    }
+
+    @Test fun rechazaFamiliasInvalidasYTrabajosQueNoSonIdentificadoresCanonicos() {
+        fun rechazar(paquete: JSONObject) {
+            assertThrows(IllegalArgumentException::class.java) { mensajePaqueteJuego(paquete.toString()) }
+        }
+        for (familia in listOf("", "ab", "../juego", "https://otro.example", "Matemática", "j".repeat(42))) {
+            rechazar(paqueteDelTaller().put("familia", familia))
+        }
+        for (trabajo in listOf("", "../otro", "https://otro.example", "no-es-uuid", 123, JSONObject.NULL)) {
+            rechazar(paqueteDelTaller().put("trabajo", trabajo))
+        }
+        val sinTrabajo = paqueteDelTaller().apply { remove("trabajo") }
+        rechazar(sinTrabajo)
+        rechazar(paqueteDelTaller().put("familia", "laberinto"))
+        rechazar(paqueteDelTaller().put("formato", "otro"))
+        rechazar(paqueteDelTaller().put("retos", org.json.JSONArray()))
+        rechazar(paqueteDelTaller().put("retos", org.json.JSONArray(List(6) { JSONObject() })))
+    }
+
+    @Test fun laPresentacionDelTallerUsaSuConsignaSinInventarUnaActividadDeAlimentos() {
+        val paquete = paqueteDelTaller().put("titulo", "Los animales de la chacra").toString()
+        val presentacion = presentacionJuego(JuegoDisponible("juego-de-prueba", "Animales", paquete))
+        assertEquals("Busca la vaca.", presentacion.mision)
+        assertEquals("Busca la vaca.", presentacion.consigna)
+        assertEquals("Tu actividad", presentacion.curso)
+        assertFalse(presentacion.clasificacion)
+    }
     @Test fun laMisionUsaLaConsignaDelJuegoYNoModificaElPaquete() {
         val paquete = JSONObject().put("titulo", "La aventura de las frutas").put("curso", "Matemática").put("meta", "Ayuda a Kusi a juntar frutas.")
             .put("retos", org.json.JSONArray().put(JSONObject().put("consigna", "Junta solo las frutas.")

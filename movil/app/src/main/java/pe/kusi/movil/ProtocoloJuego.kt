@@ -15,14 +15,16 @@ data class PresentacionJuego(val titulo: String, val mision: String, val consign
 fun presentacionJuego(juego: JuegoDisponible): PresentacionJuego {
     val paquete = JSONObject(juego.paquete)
     val primerReto = paquete.getJSONArray("retos").getJSONObject(0)
-    val clasificacion = primerReto.optJSONObject("regla")?.optString("tipo") == "solo_clase"
+    val esDelTaller = paquete.has("trabajo")
+    val clasificacion = !esDelTaller && primerReto.optJSONObject("regla")?.optString("tipo") == "solo_clase"
     val consigna = primerReto.optString("consigna").takeIf { it.isNotBlank() } ?: "Escucha a Kusi al entrar."
     return PresentacionJuego(
         paquete.optString("titulo").takeIf { it.isNotBlank() } ?: juego.titulo,
         paquete.optString("meta").takeIf { it.isNotBlank() && it.length <= 180 }
-            ?: if (clasificacion) "Busca los alimentos que te pide Kusi." else "Recoge los alimentos siguiendo el orden que ves arriba.",
+            ?: if (esDelTaller) consigna else if (clasificacion) "Busca los alimentos que te pide Kusi." else "Recoge los alimentos siguiendo el orden que ves arriba.",
         consigna, clasificacion,
-        paquete.optString("curso").takeIf { it.isNotBlank() } ?: if (clasificacion) "Frutas y verduras" else "Patrones con alimentos"
+        paquete.optString("curso").takeIf { it.isNotBlank() }
+            ?: if (esDelTaller) "Tu actividad" else if (clasificacion) "Frutas y verduras" else "Patrones con alimentos"
     )
 }
 
@@ -54,7 +56,16 @@ fun avisoJuegoValido(aviso: JSONObject): Boolean = try {
 
 fun mensajePaqueteJuego(paquete: String): String {
     val datos = JSONObject(paquete)
-    require(datos.optString("formato") == "kusi-paquete/0" && datos.optString("familia") == "laberinto" && datos.getJSONArray("retos").length() > 0)
+    val familia = datos.optString("familia")
+    val deLaBiblioteca = familia == "laberinto" && !datos.has("trabajo")
+    // El trabajo elige una carpeta del taller. Se exige el UUID canónico que
+    // escribe Spring: nunca se permite una ruta ni una dirección como identificador.
+    val delTaller = familia != "laberinto" && familia.matches(Regex("[a-z][a-z0-9_]{2,40}")) &&
+        (datos.opt("trabajo") as? String)?.matches(
+            Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+        ) == true
+    require(datos.optString("formato") == "kusi-paquete/0" && (deLaBiblioteca || delTaller) &&
+        datos.getJSONArray("retos").length() in 1..5)
     // JSONObject escapa comillas y barras: el texto del paquete nunca se concatena
     // como código ejecutable, aunque una consigna contenga comillas o saltos.
     return "window.postMessage(" + JSONObject().put("tipo", "paquete").put("paquete", paquete).toString() + ", '*');"
