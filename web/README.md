@@ -47,3 +47,15 @@ Las pruebas usan Node y TypeScript ya presentes, sin añadir dependencias. Las 1
 - El motor de Rive (`rive.wasm`) se sirve desde el propio proyecto, no desde un CDN.
 - Paleta y fuentes salen del diseño del login: crema `#fdf7ee`, vino `#5a1c15`, dorado `#f8b73e`, terracota `#c6441d`; Fredoka para títulos y Nunito para texto (`src/index.css`).
 - Los paneles de administrador y docente comparten `src/componentes/Tablero.tsx` (menú lateral, perfil y barra superior). Las imágenes están en `src/assets/kusi/`.
+
+## Resultados de la clase
+
+En `http://127.0.0.1:5173/`, entrar como docente y abrir **Resultados**. Elegir una actividad enviada para consultar a sus estudiantes: **Sin iniciar**, **En curso** o **Completada**. Se puede buscar por nombre y filtrar por estado. **Ver respuestas** abre las partidas, los retos, la primera respuesta y las correcciones. Cada respuesta muestra **Sin ayuda**, **Ayuda 1** o **Ayuda 2**; las ayudas no se convierten en puntos. El juego jugado se reconoce por su envío y su fecha, sin mostrar identificadores técnicos ni segundos.
+
+El panel consulta las rutas de Spring `/api/edu/resultados/actividades/`, `.../{actividad}/estudiantes/` y `.../{actividad}/estudiantes/{estudiante}/`. El servidor exige el rol docente, la propiedad de la actividad y la asignación vigente al curso, sección y año. El rol administrador también se rechaza cuando la cuenta tiene ambos roles. Todas estas respuestas usan `Cache-Control: no-store`.
+
+**Integración del registro:** al guardar los avisos de una actividad, el anfitrión debe añadir `juego_id` con el identificador del juego que abrió. Spring comprueba que esté publicado y asignado al estudiante, conserva ese vínculo en los avisos de la partida y rechaza cambiarlo. `reto` permite identificar un reto de cualquier familia; si falta, se utiliza `nivel`. Las respuestas usan `respuesta` y `correcto`; se admite `objeto` para los avisos anteriores del laberinto. El orden del emisor conserva la secuencia de respuestas y ayudas aunque lleguen tarde. Reenviar el mismo aviso no lo cuenta dos veces.
+
+Los avisos antiguos sin juego asociado y las pruebas docentes se conservan y quedan fuera del informe. Los estudiantes vinculados después del envío no se incorporan a ese envío; un envío posterior puede incluirlos. La app debe adjuntar `juego_id` para que sus partidas nuevas aparezcan aquí: el panel no puede deducirlo de los avisos anteriores.
+
+Para las capturas: tomar la lista con los tres estados y el detalle de un estudiante con una primera respuesta incorrecta, una corrección y ambas ayudas. La evidencia automática se encuentra en `tests/resultados.test.mjs` y en `edu-api` (`ResultadosTest`, `RespuestasPartidaTest` y `CorreccionesJuegoTest`). Estas pruebas usan datos ficticios; las capturas del recorrido real se toman por separado.

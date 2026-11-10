@@ -8,11 +8,13 @@ import { EstudiantesSecciones } from './EstudiantesSecciones'
 import { InicioDocente } from './InicioDocente'
 import { MisCursos } from './MisCursos'
 import { MisPropuestas } from './MisPropuestas'
+import { ResultadosDocente } from './ResultadosDocente'
 import { SolicitarPropuesta } from './SolicitarPropuesta'
 import { IconoDocente } from './IconoDocente'
 import type { BorradorPropuesta } from './SolicitarPropuesta'
 import { mensajeDocente } from './trabajosDocente'
 import './docente.css'
+import './resultados.css'
 
 const opciones: readonly OpcionMenu[] = [
   { id: 'inicio', etiqueta: 'Inicio', icono: 'inicio', iconoVisual: <IconoDocente nombre="inicio" /> },
@@ -20,6 +22,7 @@ const opciones: readonly OpcionMenu[] = [
   { id: 'estudiantes', etiqueta: 'Mis estudiantes', icono: 'estudiantes', iconoVisual: <IconoDocente nombre="personas" /> },
   { id: 'solicitar', etiqueta: 'Crear propuesta', icono: 'varita', iconoVisual: <IconoDocente nombre="editar" /> },
   { id: 'propuestas', etiqueta: 'Mis juegos', icono: 'carpeta', iconoVisual: <IconoDocente nombre="juegos" /> },
+  { id: 'resultados', etiqueta: 'Resultados', icono: 'check', iconoVisual: <IconoDocente nombre="check" /> },
 ]
 
 export function PanelDocente({ usuario, salir, cambiarRol }: { usuario: Cuenta; salir: () => void; cambiarRol?: () => void }) {
@@ -59,5 +62,6 @@ export function PanelDocente({ usuario, salir, cambiarRol }: { usuario: Cuenta; 
     {visitadas.includes('estudiantes') && <div hidden={seccion !== 'estudiantes'}><EstudiantesSecciones /></div>}
     {visitadas.includes('solicitar') && <div hidden={seccion !== 'solicitar'}><SolicitarPropuesta borrador={borrador} alCambiarBorrador={establecerBorrador} alOcupar={establecerOcupado} activo={seccion === 'solicitar'} alSalir={() => ir('propuestas')} /></div>}
     {visitadas.includes('propuestas') && <div hidden={seccion !== 'propuestas'}><MisPropuestas contextos={contextos} crear={() => ir('solicitar')} alOcupar={establecerOcupado} activo={seccion === 'propuestas'} abrirId={abrirJuego} /></div>}
+    {visitadas.includes('resultados') && <div hidden={seccion !== 'resultados'}><ResultadosDocente activo={seccion === 'resultados'} /></div>}
   </Tablero></div>
 }
