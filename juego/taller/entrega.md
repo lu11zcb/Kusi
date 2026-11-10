@@ -107,8 +107,9 @@ nombran con su id del catálogo (`platano`, `pina`).
 
 ## 5. Los avisos de la partida
 
-El juego avisa lo que pasa con `crearPartidaLaberinto` y `avisarPartida` (hoy
-en `juegos/laberinto/logica/partidaLaberinto.js`). El panel, la app y Spring
+El juego avisa lo que pasa con `avisarPartida(partida, tipo, datos)`, de
+`#kit/reproductor/logica/partida.js`, usando la `partida` que le da el reproductor.
+El panel, la app y Spring
 **solo aceptan estos avisos**:
 
 | Aviso | Cuándo | Campos |

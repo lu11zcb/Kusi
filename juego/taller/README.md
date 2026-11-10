@@ -39,6 +39,37 @@ Lo hace un equipo de cuatro roles que solo usa las piezas del
    aprueba o rechaza las piezas nuevas, que hasta entonces están
    «pendientes».
 
+## Cómo se arranca el trabajador
+
+```bash
+cd juego
+npm run taller            # pregunta al buzón cada 5 segundos (Ctrl+C para salir)
+npm run taller -- --una-vez
+```
+
+- Lee `EDU_API_URL` y `TALLER_CLAVE` del `.env` de la raíz y nunca los muestra.
+  La clave la crea `python3 scripts/configurar_local.py`.
+- Si el servidor de juegos (Vite, puerto 5174) no está encendido, lo enciende y
+  lo apaga al salir.
+- **Qué programa hace cada rol** está en `taller/roles.local.json`, que no se
+  sube. Por cada rol dice `{ programa, argumentos, carpeta }`, y los argumentos
+  llevan marcadores: `{pedido}`, `{instrucciones}` (el texto de `agentes/<rol>.md`),
+  `{agentes}` (los subagentes del rol), `{carpeta}` (la del trabajo), `{juego}`,
+  `{raiz}` y `{temporal}` (una carpeta vacía fuera del proyecto, desde donde
+  trabaja el rol). Ese archivo fija también los permisos: leer `juego/`, escribir
+  solo en la carpeta del trabajo y correr `node` y Playwright.
+- Por cada trabajo (código en `trabajador/`): prepara la carpeta (en una
+  corrección, con la copia del juego anterior), lanza al supervisor con el
+  programador y el revisor como subagentes, y comprueba con código lo que
+  entregó. Revisa los archivos de entrega.md, lo prohibido de la regla 9, que no
+  nombre al cuy, las importaciones y `node --test`, y abre el juego en un
+  navegador sin pantalla con el `validar` de su ficha. Si algo falla, o si Spring
+  responde 422, el supervisor recibe los motivos y corrige, hasta 2 veces; si no,
+  o si se acaban los 12 minutos, informa el fallo.
+- Pruebas: `pruebas/logica/trabajador.test.js` y, de punta a punta con un
+  Spring falso y un supervisor de prueba sin IA,
+  `pruebas/navegador/trabajador.spec.js`.
+
 ## Lo que ve cada uno
 
 - **El docente** solo ve su juego. No ve comprobaciones, fallas, versiones ni

@@ -29,7 +29,8 @@ Todo juego nuevo cumple estas reglas. El revisor las comprueba con
   | `interfaz/piezas.js` | `crearBoton`, `dibujarGlobo` y `desactivarBotones`. |
   | `interfaz/BotonSonido.js` | El botón que apaga y prende el sonido. |
   | `efectos/` | `Polvito`, `PopFruta`, `FrutasVivas` y `CuerpoVivo`, más `vida.js` (`?vida=0` apaga los efectos) y `silencio.js`. |
-  | `mensajes/puenteGuion.js` y `logica/avisos.js` | El puente con el panel y la app, y los avisos de la partida. |
+  | `logica/partida.js` | `crearPartida` y `avisarPartida`: los avisos de la partida (la escena recibe su `partida`). |
+  | `mensajes/puenteGuion.js` | El puente con el panel y la app (el reproductor lo atiende por el juego). |
 
 - De los recursos (`kit/catalogo.json`): los personajes fijos, los 8
   alimentos, el patio andino (fondo, plantas, suelo, borde, muros y portal),
@@ -43,9 +44,9 @@ Todo juego nuevo cumple estas reglas. El revisor las comprueba con
 - Instalar paquetes ni agregar dependencias.
 - Usar imágenes, sonidos, letras o código de internet.
 - Cambiar el kit, el reproductor ni otro juego.
-- Importar código de otro juego. Única excepción, mientras no pase al kit:
-  `juegos/laberinto/logica/partidaLaberinto.js`, que no tiene nada propio del
-  laberinto.
+- Importar código de otro juego. Lo que el laberinto comparte ya está en el kit
+  (`logica/partida.js`). Un juego solo importa de `#kit/`, de su propia carpeta y
+  `phaser`.
 
 ## 3. El protagonista
 
