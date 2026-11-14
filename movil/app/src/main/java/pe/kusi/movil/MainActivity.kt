@@ -26,7 +26,9 @@ fun AccesoPantalla(modelo: AccesoViewModel = viewModel()) {
         ingresar = modelo::ingresar, cambiarClave = modelo::cambiar, comprobar = modelo::comprobar, salir = modelo::salir,
         biblioteca = modelo.biblioteca, reintentarBiblioteca = modelo::cargarBiblioteca,
         cierre = modelo.cierre, reintentarGuardado = modelo::reenviarAvisosJuego,
+        alVerMision = modelo::marcarAventuraVista,
         contenidoJuego = { aventura, finalizar, volver ->
-            JuegoLaberinto(aventura, modelo::registrarAvisoJuego, finalizar, volver)
+            JuegoLaberinto(aventura, modelo::registrarAvisoJuego, finalizar, volver,
+                preparar = modelo::prepararJuego, guardarPausa = modelo::guardarPausaJuego)
         })
 }

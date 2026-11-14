@@ -25,7 +25,7 @@ class JuegoApiTest {
                 }
                 "/api/edu/estudiante/juegos/" -> {
                     assertTrue(intercambio.requestHeaders.getFirst("Cookie").contains("sessionid=alumno-simulado"))
-                    JSONObject().put("juegos", org.json.JSONArray().put(JSONObject().put("id", "generacion-simulada").put("titulo", "Patrones").put("paquete", paquete)))
+                    JSONObject().put("juegos", org.json.JSONArray().put(JSONObject().put("id", "generacion-simulada").put("titulo", "Patrones").put("paquete", paquete).put("nuevo", true)))
                 }
                 "/api/edu/acceso/csrf/" -> {
                     intercambio.responseHeaders.add("Set-Cookie", "kusi_edu_csrf=spring-de-prueba; Path=/api/edu/; HttpOnly")
@@ -54,7 +54,9 @@ class JuegoApiTest {
             val base = "http://127.0.0.1:" + servidor.address.port
             val api = AccesoApi(base, base)
             api.ingresar("70000001", "solo-prueba")
-            assertEquals("Patrones", api.juegosDePrueba().single().titulo)
+            val recibido = api.juegosDePrueba().single()
+            assertEquals("Patrones", recibido.titulo)
+            assertTrue(recibido.nuevo)
             val registro = RegistroAvisosJuego()
             val aviso = JSONObject().put("tipo", "ayuda").put("partida", "prueba").put("orden", 1)
                 .put("momento", "2026-10-26T20:00:00Z").put("nivel", 1).put("ayuda", 1)

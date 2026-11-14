@@ -131,7 +131,7 @@ fun TarjetaKusi(modifier: Modifier = Modifier, contenido: @Composable ColumnScop
         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp), content = contenido)
     }
 }
-data class VozKusi(val disponible: Boolean, val hablar: (String) -> Unit)
+data class VozKusi(val disponible: Boolean, val hablar: (String) -> Unit, val callar: () -> Unit = {})
 @Composable
 fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
     val contexto = LocalContext.current
@@ -150,9 +150,9 @@ fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
         motor.value = instancia
         onDispose { cerrado = true; lista = false; instancia.stop(); instancia.shutdown(); motor.value = null }
     }
-    return VozKusi(lista) { texto ->
+    return VozKusi(lista, hablar = { texto ->
         if (!lista || motor.value?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "ayuda-kusi") == TextToSpeech.ERROR) {
             avisoActual("La voz no está disponible en este celular. También puedes leer la ayuda.")
         }
-    }
+    }, callar = { motor.value?.stop() })
 }

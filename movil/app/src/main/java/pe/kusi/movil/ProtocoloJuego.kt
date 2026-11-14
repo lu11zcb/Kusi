@@ -5,8 +5,33 @@ import java.time.Instant
 import org.json.JSONObject
 
 /** Contrato puro del puente; se prueba sin WebView ni credenciales reales. */
-data class MensajeJuego(val tipo: String, val aviso: JSONObject? = null, val motivo: String? = null)
-data class JuegoDisponible(val id: String, val titulo: String, val paquete: String)
+data class MensajeJuego(val tipo: String, val aviso: JSONObject? = null, val motivo: String? = null, val pausa: PuntoPausa? = null)
+data class JuegoDisponible(val id: String, val titulo: String, val paquete: String, val nuevo: Boolean = false)
+data class PuntoPausa(val partida: String, val orden: Int, val nivel: Int)
+data class AvanceJuego(val juegoId: String, val paquete: String, val nivel: Int, val partida: JSONObject)
+data class InicioJuego(val aventura: AventuraInfantil, val nivel: Int = 1, val partida: JSONObject? = null)
+private val identificadorJuego = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+/** El anfitrión adjunta el juego que realmente abrió; no cambia el aviso original. */
+fun avisoDelJuego(aviso: JSONObject, juegoId: String): JSONObject {
+    require(identificadorJuego.matches(juegoId))
+    require(avisoJuegoValido(aviso))
+    return JSONObject(aviso.toString()).put("juego_id", juegoId)
+}
+
+fun leerAvanceJuego(datos: JSONObject): AvanceJuego {
+    val id = datos.getString("juego_id")
+    val paquete = datos.getString("paquete")
+    val nivel = datos.getInt("nivel")
+    val partida = datos.getJSONObject("partida")
+    require(identificadorJuego.matches(id) && nivel in 1..JSONObject(paquete).getJSONArray("retos").length())
+    require(partida.getString("id").matches(Regex("[A-Za-z0-9-]{1,120}")) && partida.getInt("orden") in 0..100000 &&
+        partida.opt("cerrada") == false)
+    val avisados = partida.getJSONArray("avisados")
+    require((0 until avisados.length()).all { avisados.getString(it).matches(Regex("listo|inicio|reto_completado:[1-5]")) })
+    mensajePaqueteJuego(paquete)
+    return AvanceJuego(id, paquete, nivel, JSONObject(partida.toString()))
+}
 
 data class PresentacionJuego(val titulo: String, val mision: String, val consigna: String, val clasificacion: Boolean, val curso: String)
 
@@ -33,6 +58,14 @@ fun leerMensajeJuego(texto: String): MensajeJuego? = try {
         val datos = JSONObject(texto)
         when (val tipo = datos.optString("tipo")) {
             "listo", "cargado" -> MensajeJuego(tipo)
+            "reanudado" -> MensajeJuego(tipo)
+            "pausado" -> {
+                val partida = datos.getString("partida")
+                val orden = datos.getInt("orden")
+                val nivel = datos.getInt("nivel")
+                if (partida.matches(Regex("[A-Za-z0-9-]{1,120}")) && orden in 1..100000 && nivel in 1..5)
+                    MensajeJuego(tipo, pausa = PuntoPausa(partida, orden, nivel)) else null
+            }
             "error" -> MensajeJuego(tipo, motivo = datos.optString("motivo").take(1000))
             "aviso" -> datos.optJSONObject("aviso")?.takeIf(::avisoJuegoValido)?.let { MensajeJuego(tipo, it) }
             else -> null
@@ -54,7 +87,7 @@ fun avisoJuegoValido(aviso: JSONObject): Boolean = try {
         ((!aviso.has("ayuda") && tipo != "ayuda") || (ayuda is Number && ayuda.toDouble() == ayuda.toInt().toDouble() && ayuda.toInt() in 1..2))
 } catch (_: Exception) { false }
 
-fun mensajePaqueteJuego(paquete: String): String {
+fun mensajePaqueteJuego(paquete: String, partida: JSONObject? = null): String {
     val datos = JSONObject(paquete)
     val familia = datos.optString("familia")
     val deLaBiblioteca = familia == "laberinto" && !datos.has("trabajo")
@@ -68,14 +101,18 @@ fun mensajePaqueteJuego(paquete: String): String {
         datos.getJSONArray("retos").length() in 1..5)
     // JSONObject escapa comillas y barras: el texto del paquete nunca se concatena
     // como código ejecutable, aunque una consigna contenga comillas o saltos.
-    return "window.postMessage(" + JSONObject().put("tipo", "paquete").put("paquete", paquete).toString() + ", '*');"
+    val mensaje = JSONObject().put("tipo", "paquete").put("paquete", paquete)
+    if (partida != null) mensaje.put("partida", JSONObject(partida.toString()))
+    return "window.postMessage(" + mensaje.toString() + ", '*');"
 }
 
-fun direccionJuego(base: String, generado: Boolean): String {
+fun direccionJuego(base: String, generado: Boolean, nivel: Int? = null): String {
     val uri = URI(base)
     require(uri.scheme in listOf("http", "https") && uri.host != null && uri.userInfo == null)
-    val parametros = uri.rawQuery?.split('&')?.filterNot { it.substringBefore('=') == "paquete" }?.toMutableList() ?: mutableListOf()
+    require(nivel == null || nivel in 1..5)
+    val parametros = uri.rawQuery?.split('&')?.filterNot { it.substringBefore('=') in listOf("paquete", "nivel") }?.toMutableList() ?: mutableListOf()
     if (generado) parametros.add("paquete=mensaje")
+    if (nivel != null) parametros.add("nivel=" + nivel)
     return URI(uri.scheme + "://" + uri.rawAuthority + (uri.rawPath.ifEmpty { "/" }) +
         (if (parametros.isEmpty()) "" else "?" + parametros.joinToString("&"))).toString()
 }

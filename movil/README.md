@@ -1,5 +1,43 @@
 # Kusi Android · recorrido del Sprint 2
 
+## Cierre del Sprint 3 · 10 de noviembre
+
+El contenedor de cualquier juego admite **Pausa**. Primero detiene la escena,
+la entrada, las animaciones, los sonidos y la voz; después vacía la cola de
+avisos y pide a Spring guardar el avance. Solo muestra «guardado» cuando el
+servidor confirma la partida y su último orden. Si no lo confirma, mantiene la
+pausa y ofrece guardar otra vez o seguir jugando; volver a la misión queda
+habilitado después de confirmar el guardado.
+
+Al abrir una aventura se consulta `GET /api/edu/estudiante/juegos/{id}/avance/`.
+Un avance pendiente devuelve el paquete de la versión exacta, el reto y la
+semilla de partida. El WebView abre `?paquete=mensaje&nivel=N` y envía esa semilla
+con el paquete, por lo que no repite los avisos «listo» ni «inicio» y continúa
+el orden confirmado. Mientras la pausa permanece abierta se conserva también
+el estado dentro del reto. Si se cierra la aventura, al volver se conservan
+los retos completados y se empieza el reto pendiente desde su inicio; no se
+promete guardar el estado interno de cualquier familia de juego.
+
+Cada aviso incorpora `juego_id` del juego que realmente abrió el contenedor,
+incluida una versión anterior recuperada por el servidor. Así las respuestas y
+las ayudas pueden aparecer en Resultados. Spring decide acceso, confirmación y
+puntos; el cliente no concede puntos. El cierre muestra el total confirmado,
+con un máximo de 20 por actividad, y explica que se reparten entre los retos,
+se redondean, pedir ayuda no resta y repetir no vuelve a dar puntos.
+
+La biblioteca muestra «Nueva» cuando Spring devuelve `nuevo: true`. Al abrir
+la misión se confirma `POST .../{id}/visto/` antes de quitar la marca. Se vuelve
+a consultar la biblioteca al regresar a primer plano con la misma cuenta; un
+fallo de red conserva el aviso para intentarlo después.
+
+Pruebas: `ProtocoloJuegoTest`, `AvanceJuegoApiTest` y `JuegoApiTest` usan datos
+sintéticos para comprobar identidad del juego, conservación del paquete,
+semilla y nivel, CSRF y guardados no confirmados. Las pruebas de navegador del
+reproductor en `juego/pruebas/navegador/pausa.spec.js` comprueban que los zorros,
+el protagonista y sus animaciones dejan de avanzar durante la pausa y que
+reabrir continúa en el reto confirmado sin duplicar los avisos iniciales.
+La revisión en un celular físico queda a cargo del equipo.
+
 Actualización visual: **lu11zcb** · **luiscb.once@gmail.com**.
 
 Actualización del 20 de octubre de 2026, a partir del plan visual que Luis aportó y su indicación de hacer la app más infantil sin usar Impeccable.

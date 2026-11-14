@@ -210,8 +210,38 @@ class AccesoApi(private val django: String, private val edu: String, private val
             val juego = lista.getJSONObject(indice)
             val paquete = juego.getString("paquete")
             mensajePaqueteJuego(paquete)
-            JuegoDisponible(juego.getString("id"), juego.getString("titulo"), paquete)
+            JuegoDisponible(juego.getString("id"), juego.getString("titulo"), paquete, juego.optBoolean("nuevo"))
         }
+    }
+
+    fun consultarAvanceJuego(juegoId: String): AvanceJuego? {
+        val datos = solicitar(edu, rutaJuego(juegoId) + "avance/")
+        return datos.optJSONObject("avance")?.let(::leerAvanceJuego)
+    }
+
+    fun guardarAvanceJuego(juegoId: String, punto: PuntoPausa): AvanceJuego {
+        val respuesta = escribirJuego(rutaJuego(juegoId) + "avance/", JSONObject()
+            .put("partida", punto.partida).put("orden", punto.orden).put("nivel", punto.nivel))
+        val avance = leerAvanceJuego(respuesta.getJSONObject("avance"))
+        if (!respuesta.optBoolean("guardado") || avance.juegoId != juegoId || avance.partida.getString("id") != punto.partida ||
+            avance.partida.getInt("orden") != punto.orden) throw FalloAcceso(502, "No se pudo confirmar tu avance.")
+        return avance
+    }
+
+    fun marcarJuegoVisto(juegoId: String) {
+        if (!escribirJuego(rutaJuego(juegoId) + "visto/", JSONObject()).optBoolean("guardado"))
+            throw FalloAcceso(502, "No se pudo confirmar la actividad abierta.")
+    }
+
+    private fun rutaJuego(id: String): String {
+        require(id.matches(Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")))
+        return "/api/edu/estudiante/juegos/" + id + "/"
+    }
+
+    private fun escribirJuego(ruta: String, datos: JSONObject): JSONObject {
+        val csrf = solicitar(edu, "/api/edu/acceso/csrf/").optString("csrf_token").takeIf { it.isNotBlank() }
+            ?: throw FalloAcceso(403, "No se pudo comprobar la seguridad del avance.")
+        return solicitar(edu, ruta, datos, csrf, educativo = true)
     }
 
     fun guardarAvisoJuego(aviso: JSONObject): JSONObject {

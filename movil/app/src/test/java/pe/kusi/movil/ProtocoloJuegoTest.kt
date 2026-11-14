@@ -8,6 +8,43 @@ class ProtocoloJuegoTest {
     private fun aviso(orden: Int = 1) = JSONObject().put("tipo", "ayuda").put("partida", "prueba-1").put("orden", orden)
         .put("momento", "2026-10-26T20:00:00Z").put("nivel", 1).put("ayuda", 2)
 
+    @Test fun elAnfitrionAdjuntaElJuegoElegidoSinCambiarLaPartidaNiElOrden() {
+        val original = aviso(7).put("juego_id", "identificador-recibido-no-autorizado")
+        val juego = "11111111-2222-4333-8444-555555555555"
+        val completo = avisoDelJuego(original, juego)
+        assertEquals(juego, completo.getString("juego_id"))
+        assertEquals(7, completo.getInt("orden"))
+        assertEquals("prueba-1", completo.getString("partida"))
+        assertEquals("identificador-recibido-no-autorizado", original.getString("juego_id"))
+        assertThrows(IllegalArgumentException::class.java) { avisoDelJuego(original, "../otro-juego") }
+    }
+
+    @Test fun laPausaNoEsUnAvisoEducativoYExigeSuPuntoDeConfirmacion() {
+        val pausa = leerMensajeJuego("{\"tipo\":\"pausado\",\"partida\":\"prueba-1\",\"orden\":7,\"nivel\":2}")
+        assertEquals(PuntoPausa("prueba-1", 7, 2), pausa?.pausa)
+        assertNull(pausa?.aviso)
+        assertNull(leerMensajeJuego("{\"tipo\":\"pausado\",\"partida\":\"prueba-1\",\"orden\":7,\"nivel\":6}"))
+        assertFalse(avisoJuegoValido(aviso().put("tipo", "pausado")))
+    }
+
+    @Test fun elAvanceRestauraLaVersionExactaLaPartidaYElNivelConfirmados() {
+        val paquete = paqueteDelTaller().put("retos", org.json.JSONArray(List(3) { JSONObject() })).toString()
+        val semilla = JSONObject().put("id", "partida-guardada").put("orden", 8).put("cerrada", false)
+            .put("avisados", org.json.JSONArray(listOf("listo", "inicio", "reto_completado:1")))
+        val id = "11111111-2222-4333-8444-555555555555"
+        val avance = leerAvanceJuego(JSONObject().put("juego_id", id).put("paquete", paquete).put("nivel", 2).put("partida", semilla))
+        assertEquals(id, avance.juegoId)
+        assertEquals(2, avance.nivel)
+        val mensaje = JSONObject(mensajePaqueteJuego(avance.paquete, avance.partida)
+            .removePrefix("window.postMessage(").removeSuffix(", '*');"))
+        assertEquals(semilla.toString(), mensaje.getJSONObject("partida").toString())
+        assertEquals(paquete, mensaje.getString("paquete"))
+        assertEquals("http://localhost:5174/?vida=0&paquete=mensaje&nivel=2",
+            direccionJuego("http://localhost:5174/?vida=0&nivel=1", true, 2))
+        assertThrows(IllegalArgumentException::class.java) { leerAvanceJuego(JSONObject()
+            .put("juego_id", id).put("paquete", paquete).put("nivel", 4).put("partida", semilla)) }
+    }
+
     @Test fun interpretaLosAvisosYRechazaMensajesFueraDelContrato() {
         assertEquals("listo", leerMensajeJuego("{\"tipo\":\"listo\"}")?.tipo)
         val mensaje = JSONObject().put("tipo", "aviso").put("aviso", aviso()).toString()

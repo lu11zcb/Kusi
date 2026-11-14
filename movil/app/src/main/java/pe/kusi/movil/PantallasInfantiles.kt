@@ -42,17 +42,19 @@ fun AplicacionInfantil(
     estado: EstadoEntradaKusi, ingresar: (String, String, Boolean) -> Unit, cambiarClave: (String, String, String) -> Unit, comprobar: () -> Unit, salir: () -> Unit,
     biblioteca: EstadoBibliotecaInfantil = EstadoBibliotecaInfantil(), reintentarBiblioteca: (() -> Unit)? = null,
     cierre: EstadoCierreInfantil = EstadoCierreInfantil(), reintentarGuardado: () -> Unit = {},
+    alVerMision: (AventuraInfantil) -> Unit = {},
     contenidoJuego: @Composable (AventuraInfantil, () -> Unit, () -> Unit) -> Unit = { _, _, volver -> JuegoSinConectar(volver) }, presentacion: Boolean = false
 ) {
     var entrada by rememberSaveable(estado.cuenta?.id) { mutableStateOf("bienvenida") }
     var aventuraId by rememberSaveable(estado.cuenta?.id) { mutableStateOf<String?>(null) }
+    var aventuraElegida by remember(estado.cuenta?.id) { mutableStateOf<AventuraInfantil?>(null) }
     var paso by rememberSaveable(estado.cuenta?.id) { mutableStateOf("mision") }
     var ayuda by rememberSaveable { mutableStateOf(false) }
     var confirmarSalida by remember { mutableStateOf(false) }
     var confirmarRegreso by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }; val scope = rememberCoroutineScope()
     val voz = recordarVozKusi { scope.launch { snackbar.showSnackbar(it) } }
-    val aventura = biblioteca.aventuras.find { it.id == aventuraId }
+    val aventura = biblioteca.aventuras.find { it.id == aventuraId } ?: aventuraElegida?.takeIf { it.id == aventuraId }
     fun volver() { if (ayuda) ayuda = false else if (aventura != null) { if (paso == "juego") confirmarRegreso = true else aventuraId = null } else entrada = "bienvenida" }
     BackHandler(ayuda || aventura != null || (estado.cuenta == null && entrada == "ingreso")) { volver() }
     val actividad = LocalContext.current.actividad()
@@ -61,6 +63,7 @@ fun AplicacionInfantil(
     DisposableEffect(actividad) { val anterior = actividad?.requestedOrientation; onDispose { if (orienta && anterior != null) actividad?.requestedOrientation = anterior } }
     LaunchedEffect(horizontal) { if (orienta) actividad?.requestedOrientation = if (horizontal) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT }
     val destino = when { estado.iniciando -> "arranque"; estado.cuenta == null -> entrada; estado.cuenta.temporal -> "clave"; !estado.cuenta.roles.contains("estudiante") -> "adulto"; aventura != null -> paso; else -> "inicio" }
+    LaunchedEffect(destino, aventuraId) { if (destino == "mision") aventura?.let(alVerMision) }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if (destino != "juego" && destino != "arranque") TopAppBar(title = { MarcaKusi() },
             navigationIcon = { if (destino == "ingreso" || aventura != null) BotonIconoKusi(R.drawable.ic_arrow_left, "Volver") { volver() } },
@@ -78,9 +81,9 @@ fun AplicacionInfantil(
                         "clave" -> NuevaClaveInfantil(estado, cambiarClave) { confirmarSalida = true }
                         "adulto" -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { AvisoKusi("Esta app es para estudiantes. Para enseñar o administrar, entra desde la web."); BotonKusi("Salir de Kusi", salir, habilitado = !estado.ocupado) }
                         "mision" -> aventura?.let { MisionInfantil(it, voz) { paso = "juego" } }
-                        "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { volver() }) }
+                        "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { paso = "mision" }) }
                         "cierre" -> aventura?.let { CierreInfantil(it, cierre, voz, { aventuraId = null }, { paso = "juego" }, reintentarGuardado) }
-                        else -> estado.cuenta?.let { InicioAventurasInfantil(it, estado, biblioteca, voz, { aventuraId = it.id; paso = "mision" }, reintentarBiblioteca, comprobar) { confirmarSalida = true } }
+                        else -> estado.cuenta?.let { InicioAventurasInfantil(it, estado, biblioteca, voz, { aventuraElegida = it; aventuraId = it.id; paso = "mision" }, reintentarBiblioteca, comprobar) { confirmarSalida = true } }
                     }
                 }
             }
@@ -97,7 +100,7 @@ fun AplicacionInfantil(
     if (ayuda) AlertDialog(onDismissRequest = { ayuda = false }, icon = { IconoKusi(R.drawable.ic_question) }, title = { Text("Kusi te ayuda") }, text = { Text(textoAyuda) },
         confirmButton = { TextButton(onClick = { ayuda = false }) { Text("¡Entendido!") } }, dismissButton = { TextButton(onClick = { voz.hablar(textoAyuda) }) { IconoKusi(R.drawable.ic_speaker_high); Text("Escuchar") } })
     if (confirmarRegreso) AlertDialog(onDismissRequest = { confirmarRegreso = false }, title = { Text("¿Volvemos a la misión?") },
-        text = { Text("Cuando vuelvas a jugar, empezarás una partida nueva.") },
+        text = { Text("Usa Pausa dentro del juego para guardar el reto antes de volver.") },
         confirmButton = { TextButton(onClick = { confirmarRegreso = false; paso = "mision" }) { Text("Volver a la misión") } },
         dismissButton = { TextButton(onClick = { confirmarRegreso = false }) { Text("Seguir jugando") } })
     if (confirmarSalida) AlertDialog(onDismissRequest = { confirmarSalida = false }, title = { Text("¿Salimos por ahora?") }, text = { Text("Para volver necesitarás tu DNI y contraseña.") }, confirmButton = { TextButton(onClick = { confirmarSalida = false; salir() }, enabled = !estado.ocupado) { Text("Sí, salir") } }, dismissButton = { TextButton(onClick = { confirmarSalida = false }) { Text("Seguir aquí") } })
@@ -174,6 +177,7 @@ private fun InicioAventurasInfantil(cuenta: Cuenta, estado: EstadoEntradaKusi, b
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(22.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text("¡Hola, ${cuenta.nombre.trim().substringBefore(' ')}!", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f)); TextButton(onClick = salir, enabled = !estado.ocupado, modifier = Modifier.heightIn(min = 48.dp)) { IconoKusi(R.drawable.ic_sign_out); Text("Salir") } } }
         item { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) { Column(Modifier.weight(1f)) { Text("Mis aventuras", style = MaterialTheme.typography.displaySmall); Text("Tu profe preparó estos juegos para ti", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; InsigniaKusi(R.drawable.ic_kusi_compass, Modifier.size(72.dp)) } }
+        if (biblioteca.aventuras.any { it.nuevo }) item { AvisoKusi("¡Tu profe te dejó aventuras nuevas! Busca la etiqueta Nueva.") }
         if (!estado.validado || estado.mensaje != null) item { AvisoKusi(estado.mensaje ?: "Vamos a comprobar tu acceso.", estado.mensaje != null); TextButton(onClick = comprobar, enabled = !estado.ocupado) { Text(if (estado.ocupado) "Comprobando…" else "Volver a comprobar") } }
         when {
             biblioteca.cargando -> item {
@@ -218,6 +222,7 @@ private fun AventuraTarjeta(aventura: AventuraInfantil, habilitada: Boolean, ele
                 }
             }
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (aventura.nuevo) Text("Nueva", style = MaterialTheme.typography.labelLarge, color = colores.primary)
                 Text(aventura.titulo, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 BotonKusi("Ver la misión", elegir, Modifier.fillMaxWidth(), habilitada, R.drawable.ic_kusi_play)
             }
@@ -240,9 +245,11 @@ private fun CierreInfantil(aventura: AventuraInfantil, estado: EstadoCierreInfan
     PanelHorizontalInfantil(imagen = { CuyInteractivo(voz, Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge), "¡Terminaste tu aventura! Gracias por explorar conmigo.", R.drawable.kusi_celebracion_v2) }) {
         Text("¡Terminaste tu aventura!", style = MaterialTheme.typography.headlineMedium); Text(aventura.titulo, style = MaterialTheme.typography.titleLarge)
         if (estado.completados != null && estado.total != null) Text("Completaste " + estado.completados + " de " + estado.total + " retos")
+        if (estado.puntos != null) Text("Tienes " + estado.puntos + " de 20 puntos en esta actividad.", style = MaterialTheme.typography.titleLarge)
+        Text("Hasta 20 puntos, repartidos entre los retos y redondeados. Pedir ayuda no resta puntos. Repetir no da puntos de nuevo.", style = MaterialTheme.typography.bodySmall)
         when { estado.guardando -> Text("Kusi está guardando tu aventura…", style = MaterialTheme.typography.bodySmall); estado.error != null -> { AvisoKusi("Tu aventura terminó. Vamos a guardar tu avance."); TextButton(onClick = reintentar) { Text("Intentar otra vez") } }; estado.guardado -> Text("¡Tu aventura quedó guardada!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            BotonKusi("Jugar otra vez", otraVez, Modifier.weight(1f), icono = R.drawable.ic_kusi_replay, compacto = true)
+            BotonKusi("Jugar otra vez", otraVez, Modifier.weight(1f), habilitado = !estado.guardando && estado.guardado, icono = R.drawable.ic_kusi_replay, compacto = true)
             BotonKusi("Elegir otra aventura", inicio, Modifier.weight(1f), icono = R.drawable.ic_house, secundario = true, compacto = true)
         }
     }
