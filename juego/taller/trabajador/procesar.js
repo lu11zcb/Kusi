@@ -27,13 +27,19 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
   lineas.push(
     'Entrega en la carpeta del trabajo todo lo de juego/taller/entrega.md: juego/ (juego.js, README.md, escenas/, ' +
       'logica/, datos/, guion-ejemplo.json y pruebas/), plan.md, revision/ y evidencia.json.',
-    'Solo puedes escribir dentro de la carpeta del trabajo. El kit, la biblioteca y el resto de juego/ son de solo lectura.',
+    'Tú diriges y compruebas: escribes plan.md, evidencia.json y, con tu revisor, revision/. No escribes el código del juego ' +
+      'ni dibujas: el código se lo encargas al programador, una tarea por llamada (puedes dividir el juego en partes):',
+    '  node ' + path.join(CARPETA_TALLER, 'programar.mjs') + ' --carpeta ' + carpeta +
+      ' --tarea "<qué programar, según el plan>" [--correccion "<lo que dijo el revisor>"]',
+    'Cada encargo puede tardar varios minutos: dale 13 minutos de espera. Responde un JSON: con «siguiente»: «revisor», ' +
+      'pásale el juego a tu revisor; con «corregir», vuelve a llamarlo con --correccion y los «no» del revisor.',
+    'El kit, la biblioteca y el resto de juego/ son de solo lectura para todos.',
     'Usa las piezas del kit y de la biblioteca (biblioteca.json: «taller» son juegos ya enviados a una clase, con su carpeta; ' +
       '«piezas_aprobadas» trae el archivo de cada pieza aprobada: cópialo tal cual a piezas/ y no necesita revisión). Si falta una pieza quieta (un objeto o, si el tema lo pide, un fondo; ' +
       'nunca un personaje), pídesela al dibujante, una pieza por llamada:',
     '  node ' + path.join(CARPETA_TALLER, 'dibujar.mjs') + ' --carpeta ' + carpeta +
       ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo] [--correccion "<lo que dijo el revisor>"]',
-    'Cada pieza tarda cerca de un minuto: dale 6 minutos de espera, y mientras tanto el programador puede seguir. ' +
+    'Cada pieza tarda cerca de un minuto: dale 6 minutos de espera. Pide las piezas antes que el código, para que el programador ya las tenga. ' +
       'Responde un JSON: con «siguiente»: «revisor», el revisor la mira con kit/estilo/comprobacion.md; con «corregir», ' +
       'vuelve a llamarlo con --correccion; con «respaldo», usa una pieza del kit o deja que el reproductor ponga una figura simple.',
     'Pon en «piezas» de juego.js los ids que usa el juego, también los de las piezas nuevas.',
@@ -89,7 +95,9 @@ export async function procesarTrabajo(trabajo, dependencias) {
     const comando = armarComando(roles.supervisor, {
       pedido: pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion: motivos, intento }),
       instrucciones: agentes.supervisor.instrucciones,
-      agentes: subagentes(agentes, ['programador', 'revisor']),
+      // El revisor es un subagente del supervisor; el programador y el dibujante se
+      // lanzan aparte, con programar.mjs y dibujar.mjs, como otros roles.
+      agentes: subagentes(agentes, ['revisor']),
       carpeta, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
     })
     const pasoInicio = new Date(ahora()).toISOString()
@@ -154,6 +162,16 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
   try {
     if (existsSync(path.join(carpeta, 'piezas', 'registro.json'))) delDibujante = await leerJson(path.join(carpeta, 'piezas', 'registro.json'))
   } catch { delDibujante = {} }
+  // Lo que anotó el programador por cada encargo (programador/registro.json).
+  let delProgramador = []
+  try {
+    if (existsSync(path.join(carpeta, 'programador', 'registro.json'))) delProgramador = await leerJson(path.join(carpeta, 'programador', 'registro.json'))
+  } catch { delProgramador = [] }
+  const pasosDelProgramador = (Array.isArray(delProgramador) ? delProgramador : []).map((registro) => ({
+    rol: 'programador', encargo: registro.encargo, segundos: registro.segundos ?? 0, imagenes: 0,
+    tokens_entrada: registro.tokens_entrada ?? 0, tokens_salida: registro.tokens_salida ?? 0,
+    costo_estimado_usd: Number(registro.costo_estimado_usd ?? 0),
+  }))
   const pasosDelDibujante = Object.entries(delDibujante).map(([pieza, registro]) => ({
     rol: 'dibujante', pieza, imagenes: registro.imagenes ?? 0, tokens_entrada: registro.tokens ?? 0, tokens_salida: 0,
     costo_estimado_usd: Number(((registro.imagenes ?? 0) * (registro.costo_por_imagen_usd ?? 0)).toFixed(4)),
@@ -178,8 +196,9 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
       piezas: { ...(delSupervisor.intentos?.piezas ?? {}), ...Object.fromEntries(Object.entries(delDibujante).map(([pieza, registro]) => [pieza, registro.intentos])) },
     },
     correcciones: [...(Array.isArray(delSupervisor.correcciones) ? delSupervisor.correcciones : []), ...correcciones],
-    pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []), ...pasos, ...pasosDelDibujante],
-    costo_estimado_usd: Number([...pasos, ...pasosDelDibujante].reduce((suma, paso) => suma + paso.costo_estimado_usd, 0).toFixed(4)),
+    pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []), ...pasos, ...pasosDelProgramador, ...pasosDelDibujante],
+    costo_estimado_usd: Number([...pasos, ...pasosDelProgramador, ...pasosDelDibujante]
+      .reduce((suma, paso) => suma + paso.costo_estimado_usd, 0).toFixed(4)),
     como_se_estimo: 'tokens de cada paso por el precio de lista del modelo usado, a la fecha del trabajo; ' +
       'las imágenes, por el precio por imagen del archivo de roles (sin precio, no se suman)',
   }

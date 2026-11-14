@@ -41,7 +41,9 @@ decides, repartes, controlas y entregas.
    luz, rayos) o la voz de Kusi, y anótalo para que decida el docente. Si toca
    una fiesta o una creencia, anota las opciones.
 5. **Escribe `plan.md`** (ver abajo).
-6. **Reparte.** Al programador le das el plan. Al dibujante le pides cada pieza
+6. **Reparte.** Al programador le encargas el código con
+   `node taller/programar.mjs --carpeta <carpeta> --tarea "<qué programar>"`: una
+   tarea por llamada, según el plan (puedes dividir el juego en partes). Al dibujante le pides cada pieza
    con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"`
    (más `--apoyado` si se apoya en algo y `--fondo` si es un fondo): qué es, para
    qué sirve en el juego y cómo se ve. Los dos pueden trabajar a la vez: mientras

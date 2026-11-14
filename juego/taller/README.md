@@ -60,7 +60,7 @@ npm run taller -- --una-vez
   solo en la carpeta del trabajo y correr `node` y Playwright.
 - Por cada trabajo (código en `trabajador/`): prepara la carpeta (en una
   corrección, con la copia del juego anterior), lanza al supervisor con el
-  programador y el revisor como subagentes, y comprueba con código lo que
+  revisor como subagente, y comprueba con código lo que
   entregó. Revisa los archivos de entrega.md, lo prohibido de la regla 9, que no
   nombre al cuy, las importaciones y `node --test`, y abre el juego en un
   navegador sin pantalla con el `validar` de su ficha. Si algo falla, o si Spring
@@ -107,8 +107,15 @@ npm run taller -- --una-vez
 | Dibujante | Dibuja las piezas quietas que faltan y las prepara. | No dibuja personajes ni cambia piezas del kit. |
 | Revisor | Juega el juego, mira capturas, revisa el código, el contenido y cada pieza. | No corrige: dice qué está mal y por qué. |
 
-Los roles pueden compartir un mismo programa: el supervisor delega al programador
-y al revisor, cada uno con sus instrucciones. El trabajador entiende tanto un
+**Quién dirige y quién hace.** El trabajador lanza al supervisor, que trae al
+revisor como subagente: los dos dirigen y comprueban, y no escriben el código del
+juego ni dibujan (sus permisos les bloquean `juego/` y `piezas/` del trabajo). El
+supervisor encarga el código al programador con `node taller/programar.mjs
+--carpeta <carpeta> --tarea "<qué programar>" [--correccion "<motivos>"]` y cada
+pieza al dibujante con `dibujar.mjs`; esos dos roles se lanzan aparte, cada uno
+con su programa del archivo de roles. El programador escribe solo en `juego/`
+del trabajo y deja `programador/pedidos.md` y `programador/registro.json`, que el
+trabajador suma a la evidencia. El trabajador entiende tanto un
 resumen JSON como eventos JSON por línea: conserva la respuesta final, el consumo
 y los fallos del rol. El trabajador les pasa las instrucciones de
 [agentes/](agentes/) al arrancar. Las instrucciones son neutrales: sirven
