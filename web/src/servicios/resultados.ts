@@ -1,7 +1,8 @@
-import { solicitar } from './http'
+import { enviar, solicitar } from './http'
 import { ErrorApi } from './django'
 
 export type ActividadResultado = { id: string; titulo: string; seccion: string }
+export type DestinatarioActividad = { id: string; nombre: string; asignado: boolean }
 export type EstadoResultado = 'sin_iniciar' | 'en_curso' | 'completada'
 export type EstudianteResultado = { id: string; nombre: string; estado: EstadoResultado; partidas: number; ayudas_usadas: number }
 export type RespuestaResultado = { respuesta: string; correcto: boolean | null; tipo: 'primera' | 'correccion' | 'siguiente'; ayudas: number[] }
@@ -21,6 +22,24 @@ export async function actividadesResultados(signal?: AbortSignal): Promise<Activ
 export async function estudiantesResultados(actividad: string, signal?: AbortSignal): Promise<EstudianteResultado[]> {
   return lista(await solicitar<unknown>(base + encodeURIComponent(actividad) + '/estudiantes/', { signal }), 'estudiantes',
     d => objeto(d) && texto(d.id) && texto(d.nombre) && estado(d.estado) && cantidad(d.partidas) && cantidad(d.ayudas_usadas)) as EstudianteResultado[]
+}
+
+export async function destinatariosActividad(actividad: string, signal?: AbortSignal): Promise<DestinatarioActividad[]> {
+  return lista(await solicitar<unknown>(base + encodeURIComponent(actividad) + '/asignaciones/', { signal }), 'estudiantes',
+    d => objeto(d) && texto(d.id) && texto(d.nombre) && typeof d.asignado === 'boolean') as DestinatarioActividad[]
+}
+
+export async function asignarActividad(actividad: string, estudiantes: string[]): Promise<void> {
+  // Solo se envían las elecciones explícitas del docente; nunca se incorpora a
+  // quienes llegaron después por el simple hecho de consultar los resultados.
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!estudiantes.length || estudiantes.some(id => !uuid.test(id)) || new Set(estudiantes).size !== estudiantes.length) {
+    throw new ErrorApi('Elige a los estudiantes que recibirán la actividad.', 400)
+  }
+  const respuesta = await enviar<unknown>(base + encodeURIComponent(actividad) + '/asignaciones/', { estudiantes })
+  if (!objeto(respuesta) || respuesta.guardado !== true) {
+    throw new ErrorApi('No pudimos confirmar la asignación. Actualiza la lista antes de volver a intentarlo.', 502)
+  }
 }
 function respuestaValida(d: unknown): boolean {
   return objeto(d) && texto(d.respuesta) && (d.correcto === null || typeof d.correcto === 'boolean')

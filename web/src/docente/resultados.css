@@ -6,4 +6,10 @@
 .panel-docente .doc-partida { margin-top: 18px; padding: 24px; min-width: 0; }
 .panel-docente .doc-partida section + section { margin-top: 24px; }
 .panel-docente .doc-partida .doc-nota { display: block; }
+.panel-docente .doc-resultado-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.panel-docente .doc-asignaciones { padding: 24px; margin: 16px 0; }
+.panel-docente .doc-asignacion-lista { border: 1px solid var(--doc-linea); border-radius: 12px; margin: 18px 0; padding: 16px; }
+.panel-docente .doc-asignacion-lista label { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 0; cursor: pointer; }
+.panel-docente .doc-asignacion-lista input { width: 20px; height: 20px; accent-color: var(--doc-vino, #5a1c15); }
+.panel-docente .doc-asignacion-lista small { color: var(--doc-texto-suave, #69594d); }
 @media (max-width: 640px) { .panel-docente .doc-partida { padding: 16px; } }

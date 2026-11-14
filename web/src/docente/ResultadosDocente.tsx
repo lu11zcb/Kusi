@@ -5,6 +5,7 @@ import { CabeceraDocente, CargandoDocente, MensajeDocente } from './ElementosDoc
 import { IconoDocente } from './IconoDocente'
 import { normalizarBusqueda } from './utilidadesDocente'
 import { mensajeDocente } from './trabajosDocente'
+import { AsignacionesActividad } from './AsignacionesActividad'
 
 const estados: Record<EstadoResultado, string> = { sin_iniciar: 'Sin iniciar', en_curso: 'En curso', completada: 'Completada' }
 const tipos = { primera: 'Primera respuesta', correccion: 'Corrección', siguiente: 'Respuesta siguiente' }
@@ -45,6 +46,7 @@ function RespuestasEstudiante({ actividad, estudiante }: { actividad: string; es
 }
 
 function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) {
+  const [asignando, establecerAsignando] = useState(false)
   const [estudiantes, establecerEstudiantes] = useState<EstudianteResultado[] | null>(null)
   const [elegido, establecerElegido] = useState<EstudianteResultado | null>(null)
   const [buscar, establecerBuscar] = useState('')
@@ -59,7 +61,11 @@ function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) 
   }, [actividad.id, recarga])
   const visibles = (estudiantes ?? []).filter(e => (!filtro || e.estado === filtro) && normalizarBusqueda(e.nombre).includes(normalizarBusqueda(buscar)))
   return <>
-    <div className="doc-resultado-cabecera"><div><h2>{actividad.titulo}</h2><p>Sección {actividad.seccion}</p></div><button type="button" className="secundario" onClick={() => { establecerError(''); establecerEstudiantes(null); establecerElegido(null); establecerRecarga(n => n + 1) }}>Actualizar</button></div>
+    <div className="doc-resultado-cabecera"><div><h2>{actividad.titulo}</h2><p>Sección {actividad.seccion}</p></div><div className="doc-resultado-acciones">
+      <button type="button" className="secundario" aria-expanded={asignando} onClick={() => establecerAsignando(valor => !valor)}>Asignar a estudiantes nuevos</button>
+      <button type="button" className="secundario" onClick={() => { establecerError(''); establecerEstudiantes(null); establecerElegido(null); establecerRecarga(n => n + 1) }}>Actualizar</button>
+    </div></div>
+    {asignando && <AsignacionesActividad actividad={actividad.id} alAsignar={() => { establecerElegido(null); establecerRecarga(n => n + 1) }} />}
     {error ? <MensajeDocente titulo="No pudimos cargar los resultados" error><p>{error}</p></MensajeDocente> : estudiantes === null ? <CargandoDocente texto="Buscando el avance de tu clase…" /> : <>
       <div className="doc-filtros-estado" role="group" aria-label="Filtrar por avance"><button type="button" className="secundario" aria-pressed={!filtro} onClick={() => establecerFiltro('')}>Todos <span>{estudiantes.length}</span></button>{Object.entries(estados).map(([clave, nombre]) => <button type="button" className="secundario" aria-pressed={filtro === clave} key={clave} onClick={() => establecerFiltro(clave)}>{nombre} <span>{estudiantes.filter(e => e.estado === clave).length}</span></button>)}</div>
       <div className="doc-herramientas"><div className="doc-busqueda"><label htmlFor="resultado-buscar">Buscar estudiante</label><div><IconoDocente nombre="buscar" /><input type="search" id="resultado-buscar" value={buscar} onChange={e => establecerBuscar(e.target.value)} placeholder="Nombre del estudiante" /></div></div></div>
