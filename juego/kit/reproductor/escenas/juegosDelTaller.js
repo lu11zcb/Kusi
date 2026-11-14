@@ -52,7 +52,12 @@ function avisarQueAbrio(escena) {
     const { paquete, partida, trabajo } = datos
     if (partida && paquete) {
       const primero = avisarPartida(partida, 'listo', { familia: paquete.familia, nivel: (datos.indiceNivel ?? 0) + 1 })
-      if (primero) leerPuente(escena.game)?.avisar({ tipo: AVISO_CARGADO, niveles: paquete.retos.length })
+      // Cargado describe esta apertura, incluso si se reanuda una partida cuyo
+      // aviso educativo «listo» ya quedó guardado.
+      if (primero || (partida.reanudada && !partida.cargadoReanudado)) {
+        partida.cargadoReanudado = true
+        leerPuente(escena.game)?.avisar({ tipo: AVISO_CARGADO, niveles: paquete.retos.length })
+      }
     }
     // Las pruebas y el revisor leen aquí qué juego quedó abierto.
     window.kusi = Object.assign(window.kusi ?? {}, {

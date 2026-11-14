@@ -3,6 +3,21 @@ import assert from 'node:assert/strict'
 import { crearPartidaLaberinto, avisarPartida } from '../../juegos/laberinto/logica/partidaLaberinto.js'
 import { avisos } from '../../kit/reproductor/logica/avisos.js'
 
+test('reanudar conserva el orden confirmado y no vuelve a emitir listo, inicio ni retos terminados', (contexto) => {
+  contexto.mock.method(console, 'log', () => {})
+  const semilla = { id: 'partida-confirmada', orden: 8, avisados: ['listo', 'inicio', 'reto_completado:1'], cerrada: false }
+  const partida = crearPartidaLaberinto(semilla)
+  assert.equal(avisarPartida(partida, 'listo', { nivel: 2 }), null)
+  assert.equal(avisarPartida(partida, 'inicio', { nivel: 2 }), null)
+  assert.equal(avisarPartida(partida, 'reto_completado', { nivel: 1 }), null)
+  const ayuda = avisarPartida(partida, 'ayuda', { nivel: 2, ayuda: 1 })
+  assert.equal(ayuda.partida, semilla.id)
+  assert.equal(ayuda.orden, 9)
+  assert.equal(semilla.orden, 8)
+  assert.throws(() => crearPartidaLaberinto({ ...semilla, cerrada: true }), /avance confirmado/)
+  assert.throws(() => crearPartidaLaberinto({ ...semilla, orden: -1 }), /avance confirmado/)
+})
+
 // Cada prueba conserva los avisos anteriores y observa solamente los suyos.
 // El mock de consola pertenece al contexto de la prueba y Node lo restaura al
 // terminar, sin cambiar el registro de avisos del laberinto.

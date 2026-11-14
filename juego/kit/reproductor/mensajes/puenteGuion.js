@@ -33,6 +33,7 @@ export const AVISO_ERROR = 'error'
 // rechaza y le explica el motivo a la página.
 export function interpretarMensaje(datos) {
   if (!datos || typeof datos !== 'object' || Array.isArray(datos)) return null
+  if (datos.tipo === 'pausar' || datos.tipo === 'reanudar') return { tipo: datos.tipo }
   if (datos.tipo === MENSAJE_REINICIAR) return { tipo: MENSAJE_REINICIAR }
   if (datos.tipo !== MENSAJE_PAQUETE) return null
   let paquete = datos.paquete
@@ -43,7 +44,7 @@ export function interpretarMensaje(datos) {
       paquete = null
     }
   }
-  return { tipo: MENSAJE_PAQUETE, paquete }
+  return { tipo: MENSAJE_PAQUETE, paquete, ...(Object.hasOwn(datos, 'partida') ? { partida: datos.partida } : {}) }
 }
 
 // «ventana» es la ventana del juego. Las pruebas le pasan una de mentira.
@@ -51,6 +52,7 @@ export function crearPuente(ventana) {
   const pendientes = []
   let manejador = null
   let listoAvisado = false
+  let controlar = null
 
   const alRecibir = (evento) => {
     // Solo se escucha a la página que contiene el juego. Con el juego abierto solo, esa
@@ -58,6 +60,9 @@ export function crearPuente(ventana) {
     if (evento.source !== ventana.parent) return
     const orden = interpretarMensaje(evento.data)
     if (!orden) return
+    // La pausa pertenece al reproductor, y sigue atendiendo cuando la escena
+    // está detenida. No es un aviso educativo ni cambia el orden de la partida.
+    if (orden.tipo === 'pausar' || orden.tipo === 'reanudar') { controlar?.(orden); return }
     if (manejador) manejador(orden)
     else pendientes.push(orden)
   }
@@ -68,6 +73,7 @@ export function crearPuente(ventana) {
   }
 
   return {
+    controlar(funcion) { controlar = funcion },
     // Quien atiende las órdenes (la carga, o el nivel que se está jugando) se registra
     // aquí; el que llega después reemplaza al anterior. Lo que esperaba se entrega en orden.
     // La primera vez que alguien atiende, el juego ya puede recibir: se le avisa a la página.

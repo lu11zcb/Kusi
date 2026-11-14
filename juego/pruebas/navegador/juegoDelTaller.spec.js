@@ -153,6 +153,25 @@ test('un id que no es un UUID no pide ningún archivo del taller', async ({ page
   expect(await pagina.evaluate(() => window.kusi.listo)).toBe(false)
 })
 
+test('el taller reabre el reto y la partida confirmados aunque listo ya se haya guardado', async ({ page: pagina }) => {
+  await escucharAvisos(pagina)
+  await pagina.goto('/?paquete=mensaje&nivel=2&vida=0')
+  await pagina.waitForFunction(() => window.__avisosDelJuego.some((aviso) => aviso.tipo === 'listo'))
+  const paquete = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO }
+  const partida = { id: 'taller-partida-confirmada', orden: 5, avisados: ['listo', 'inicio', 'reto_completado:1'], cerrada: false }
+  await pagina.evaluate((datos) => window.postMessage({ tipo: 'paquete', ...datos }, '*'), { paquete, partida })
+  await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
+  expect(await pagina.evaluate(() => window.__pruebaTaller.nivel)).toBe(2)
+  expect(await pagina.evaluate(() => window.__avisosDelJuego)).toEqual([{ tipo: 'listo' }, { tipo: 'cargado', niveles: 2 }])
+  expect(await avisosDePartida(pagina)).toEqual([])
+  await pagina.evaluate(() => {
+    window.__pausaTaller = null
+    window.addEventListener('message', ({ data }) => { if (data?.tipo === 'pausado') window.__pausaTaller = data })
+    window.postMessage({ tipo: 'pausar' }, '*')
+  })
+  await expect.poll(() => pagina.evaluate(() => window.__pausaTaller)).toEqual({ tipo: 'pausado', partida: partida.id, orden: 5, nivel: 2 })
+})
+
 test('un trabajo que no existe y un guion que no pasa su validar muestran el error amable', async ({ page: pagina }) => {
   const inexistente = '00000000-0000-4000-8000-000000000000'
   // Con ?juego= lo primero que falta es su guion de ejemplo.

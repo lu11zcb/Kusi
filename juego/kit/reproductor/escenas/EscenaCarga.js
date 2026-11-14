@@ -50,6 +50,7 @@ export class EscenaCarga extends Phaser.Scene {
   init(datos) {
     this.llegoPorMensaje = Boolean(datos) && Object.hasOwn(datos, 'paquete')
     this.paqueteRecibido = this.llegoPorMensaje ? datos.paquete : null
+    this.partidaRecibida = this.llegoPorMensaje ? datos.partida ?? null : null
   }
 
   preload() {
@@ -60,7 +61,7 @@ export class EscenaCarga extends Phaser.Scene {
     // ?juego=<trabajo> abre el guion de ejemplo de un juego del taller.
     this.juegoPedido = trabajoPedido(window.location.search)
     this.familiaAbierta = 'laberinto'
-    this.partidaLaberinto = crearPartidaLaberinto()
+    this.partidaLaberinto = crearPartidaLaberinto(this.partidaRecibida)
     window.kusi = { listo: false, avisos }
     this.cameras.main.setBackgroundColor(COLOR.crema)
 
@@ -138,6 +139,10 @@ export class EscenaCarga extends Phaser.Scene {
           // sin él, o con un valor dudoso, el laberinto empieza en el primero.
           const datos = { paquete, cuyAnimado, zorroAnimado, partida: this.partidaLaberinto }
           datos.indiceNivel = nivelPedido(window.location.search, paquete.retos.length)
+          // «listo» sigue siendo único por partida, pero una reapertura confirmada
+          // necesita avisar de nuevo al anfitrión que terminó de cargar.
+          if (this.partidaRecibida) this.scene.get('laberinto').events.once('create', () =>
+            this.puente?.avisar({ tipo: 'cargado', niveles: paquete.retos.length }))
           this.scene.start('laberinto', datos)
         } catch (error) {
           this.mostrarError(error)
@@ -224,7 +229,7 @@ export class EscenaCarga extends Phaser.Scene {
     const alRecibir = (orden) => {
       if (orden.tipo === MENSAJE_PAQUETE) {
         escenas.stop(clave)
-        escenas.start('carga', { paquete: orden.paquete })
+        escenas.start('carga', { paquete: orden.paquete, partida: orden.partida })
       } else if (orden.tipo === MENSAJE_REINICIAR) {
         escenas.start(clave, { ...datos, indiceNivel: 0, partida: crearPartidaLaberinto() })
       }
@@ -239,7 +244,7 @@ export class EscenaCarga extends Phaser.Scene {
     this.puente = leerPuente(this.game)
     if (!this.puente) return
     this.alRecibirOrden = (orden) => {
-      if (orden.tipo === MENSAJE_PAQUETE) this.scene.restart({ paquete: orden.paquete })
+      if (orden.tipo === MENSAJE_PAQUETE) this.scene.restart({ paquete: orden.paquete, partida: orden.partida })
     }
     this.puente.conectar(this.alRecibirOrden)
     this.events.once('shutdown', () => this.puente.desconectar(this.alRecibirOrden))

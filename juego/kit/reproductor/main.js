@@ -10,6 +10,7 @@ import { EscenaLaberinto } from '../../juegos/laberinto/escenas/EscenaLaberinto.
 import { elegirRenderizador } from '../../juegos/laberinto/logica/parametrosLaberinto.js'
 import { CLAVE_RENDERIZADOR_PEDIDO } from './renderizador.js'
 import { crearPuente, CLAVE_PUENTE } from './mensajes/puenteGuion.js'
+import { instalarPausaJuego } from './mensajes/pausaJuego.js'
 
 // Sin parámetros, o con ?paquete=laberinto, se usa el guion de ejemplo.
 // ?paquete=mensaje espera el guion de la página que contiene el juego.
@@ -50,6 +51,7 @@ async function empezar() {
   juego.registry.set(CLAVE_RENDERIZADOR_PEDIDO, pedido)
   // Las escenas del laberinto encuentran el puente aquí, antes de su primer cuadro.
   juego.registry.set(CLAVE_PUENTE, puente)
+  instalarPausaJuego(juego, puente)
 }
 
 empezar()
