@@ -22,9 +22,10 @@ public class PartidasService {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final TransactionTemplate transaccion;
+    private final ActividadesEstudianteService actividades;
 
-    public PartidasService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion) {
-        this.jdbc = jdbc; this.json = json; this.transaccion = transaccion;
+    public PartidasService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion, ActividadesEstudianteService actividades) {
+        this.jdbc = jdbc; this.json = json; this.transaccion = transaccion; this.actividades = actividades;
     }
 
     public Map<String, Object> guardar(UUID usuario, boolean pruebaDocente, JsonNode aviso) {
@@ -57,6 +58,7 @@ public class PartidasService {
                         partida, original.path("orden").asInt(), original.path("tipo").asText(),
                         original.has("nivel") ? original.path("nivel").asInt() : null,
                         original.has("ayuda") ? original.path("ayuda").asInt() : null, original.toString());
+                actividades.registrarPuntos(usuario, pruebaDocente, original);
             }
             return Map.of("guardado", true, "duplicado", duplicado, "resumen", resumen(usuario, partida));
         });
@@ -73,8 +75,9 @@ public class PartidasService {
         UUID juego;
         try { juego = UUID.fromString(guardado); }
         catch (IllegalArgumentException error) { throw new IllegalArgumentException("El juego del aviso no es válido."); }
-        String acceso = pruebaDocente ? "s.docente_id = ?" : "exists (select 1 from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
-                + "where v.estudiante_id = ? and v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar and v.creado_en <= g.publicada_en)";
+        if (!pruebaDocente && !actividades.permitido(usuario, juego))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este juego entre tus actividades.");
+        String acceso = pruebaDocente ? "s.docente_id = ?" : "exists (select 1 from edu.destinatarios_actividad d where d.generacion_id = g.id and d.estudiante_id = ?)";
         Integer permitidos = jdbc.queryForObject("select count(*) from edu.generaciones g join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
                 + "where g.id = ? and g.publicada = true and g.estado = 'lista' and " + acceso, Integer.class, juego, usuario);
         if (permitidos == null || permitidos == 0)
@@ -98,7 +101,8 @@ public class PartidasService {
         Integer finales = jdbc.queryForObject("select count(*) from edu.avisos_partida where partida_id = ? and tipo in ('fin', 'fallo')", Integer.class, partida);
         Boolean docente = jdbc.queryForObject("select prueba_docente from edu.partidas where id = ?", Boolean.class, partida);
         return Map.of("partida", partida, "prueba_docente", Boolean.TRUE.equals(docente), "ayudas_usadas", ayudas,
-                "niveles_completados", niveles, "termino", finales > 0);
+                "niveles_completados", niveles, "termino", finales > 0,
+                "puntos", Boolean.TRUE.equals(docente) ? 0 : actividades.puntosPartida(usuario, partida), "puntos_maximos", 20);
     }
 
     private void comprobarPropietario(UUID usuario, String partida) {

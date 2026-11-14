@@ -14,9 +14,10 @@ public class ResultadosService {
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final DjangoInternoClient django;
+    private final ActividadesEstudianteService actividades;
 
-    public ResultadosService(JdbcTemplate jdbc, ObjectMapper json, DjangoInternoClient django) {
-        this.jdbc = jdbc; this.json = json; this.django = django;
+    public ResultadosService(JdbcTemplate jdbc, ObjectMapper json, DjangoInternoClient django, ActividadesEstudianteService actividades) {
+        this.jdbc = jdbc; this.json = json; this.django = django; this.actividades = actividades;
     }
 
     // Se comprueba el curso, la sección y el año vigentes en TODAS las lecturas.
@@ -39,11 +40,13 @@ public class ResultadosService {
     }
 
     private List<UUID> destinatarios(UUID docente, UUID actividad) {
+        actividades.materializarPendientes();
         UUID seccion = seccion(docente, actividad);
         // Los vínculos posteriores al envío no se añaden a la lista por accidente.
         return jdbc.query("select distinct v.estudiante_id from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
                 + "where v.seccion_id = ? and v.anio_escolar = sec.anio_escolar and exists (select 1 from edu.generaciones g "
-                + "where g.solicitud_id = ? and g.publicada = true and v.creado_en <= g.publicada_en)",
+                + "join edu.destinatarios_actividad d on d.generacion_id = g.id and d.estudiante_id = v.estudiante_id "
+                + "where g.solicitud_id = ? and g.publicada = true)",
                 (fila, indice) -> fila.getObject(1, UUID.class), seccion, actividad);
     }
 

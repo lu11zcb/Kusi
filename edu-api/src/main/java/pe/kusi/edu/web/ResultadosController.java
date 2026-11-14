@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.kusi.edu.service.DjangoInternoClient;
 import pe.kusi.edu.service.ResultadosService;
+import pe.kusi.edu.service.ActividadesEstudianteService;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.*;
 
 @RestController
@@ -12,7 +14,10 @@ import java.util.*;
 public class ResultadosController {
     private final ResultadosService resultados;
     private final DjangoInternoClient django;
-    public ResultadosController(ResultadosService resultados, DjangoInternoClient django) { this.resultados = resultados; this.django = django; }
+    private final ActividadesEstudianteService actividades;
+    public ResultadosController(ResultadosService resultados, DjangoInternoClient django, ActividadesEstudianteService actividades) {
+        this.resultados = resultados; this.django = django; this.actividades = actividades;
+    }
 
     private UUID docente(String sesion) {
         Map<String, Object> usuario = django.validarSesion(sesion);
@@ -35,5 +40,16 @@ public class ResultadosController {
     public ResponseEntity<Map<String, Object>> respuestas(@CookieValue(value = "sessionid", required = false) String sesion,
                                                         @PathVariable UUID actividad, @PathVariable UUID estudiante) {
         return respuesta("partidas", resultados.respuestas(docente(sesion), actividad, estudiante));
+    }
+    @GetMapping("/actividades/{actividad}/asignaciones/")
+    public ResponseEntity<Map<String, Object>> asignaciones(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                          @PathVariable UUID actividad) {
+        return respuesta("estudiantes", actividades.asignaciones(docente(sesion), actividad));
+    }
+    @PostMapping("/actividades/{actividad}/asignaciones/")
+    public ResponseEntity<Map<String, Object>> asignar(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                    @PathVariable UUID actividad, @RequestBody JsonNode datos) {
+        actividades.asignar(docente(sesion), actividad, datos);
+        return respuesta("guardado", true);
     }
 }

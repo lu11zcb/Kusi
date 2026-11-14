@@ -35,6 +35,7 @@ public class GeneracionesService {
     private final TallerService taller;
     private final TransactionTemplate transaccion;
     private final ObjectMapper json;
+    private final ActividadesEstudianteService actividades;
 
     public GeneracionesService(
             PropuestasService propuestasService,
@@ -45,7 +46,7 @@ public class GeneracionesService {
             ProcesoGeneracionLaberinto proceso,
             TallerService taller,
             TransactionTemplate transaccion,
-            ObjectMapper json) {
+            ObjectMapper json, ActividadesEstudianteService actividades) {
         this.propuestasService = propuestasService;
         this.propuestaRepository = propuestaRepository;
         this.generacionRepository = generacionRepository;
@@ -55,6 +56,7 @@ public class GeneracionesService {
         this.taller = taller;
         this.transaccion = transaccion;
         this.json = json;
+        this.actividades = actividades;
     }
 
     @Transactional
@@ -257,6 +259,7 @@ public class GeneracionesService {
 
     // El trabajo del taller puede terminar antes de la revisión docente.
     // Solo esta acción explícita permite que el juego aparezca en la app.
+    @Transactional
     public Generacion publicar(UUID docenteId, UUID generacionId) {
         Generacion generacion = consultar(docenteId, generacionId);
         if (!"lista".equals(generacion.getEstado())) {
@@ -265,7 +268,8 @@ public class GeneracionesService {
                     "Solo se puede enviar a los estudiantes un juego listo");
         }
         generacion.publicar();
-        Generacion enviada = generacionRepository.save(generacion);
+        Generacion enviada = generacionRepository.saveAndFlush(generacion);
+        actividades.materializar(enviada.getId());
         // Al enviar un juego del taller, el docente aprueba sus piezas nuevas.
         if (enviada.isTaller()) taller.aprobarPiezas(enviada);
         return enviada;

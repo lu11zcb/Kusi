@@ -65,7 +65,8 @@ class GeneracionesServiceTest {
             proceso,
             taller,
             transaccion,
-            new ObjectMapper()
+            new ObjectMapper(),
+            mock(ActividadesEstudianteService.class)
         );
 
         docenteId = UUID.randomUUID();
