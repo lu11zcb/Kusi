@@ -1,5 +1,6 @@
 // El trabajador del taller (taller/README.md): corre en esta Mac, pregunta al buzón de
-// Spring cada pocos segundos, crea el juego con los roles y devuelve el resultado.
+// Spring cada pocos segundos, crea el juego (o escribe la propuesta) con los roles y
+// devuelve el resultado.
 //
 //   cd juego && npm run taller            pregunta sin parar (Ctrl+C para salir)
 //   npm run taller -- --una-vez           atiende como máximo un trabajo y termina
@@ -15,6 +16,7 @@ import { armarBiblioteca } from './trabajador/carpeta.js'
 import { leerAgentes, leerRoles, lanzar } from './trabajador/roles.js'
 import { comprobarJuego } from './trabajador/comprobar.js'
 import { procesarTrabajo } from './trabajador/procesar.js'
+import { procesarPropuesta } from './trabajador/proponer.js'
 
 const decir = (texto) => console.log('[taller] ' + texto)
 const unaVez = process.argv.includes('--una-vez')
@@ -83,6 +85,15 @@ while (!saliendo) {
 
   if (trabajo) {
     try {
+      // Un trabajo «proponer» es la propuesta de un tema: no lleva biblioteca ni supervisor.
+      if (trabajo.tipo === 'proponer') {
+        const final = await procesarPropuesta(trabajo, {
+          buzon, roles, agentes, lanzar, trabajos: configuracion.trabajos, limiteMs: configuracion.limitePropuestaMs,
+        })
+        decir('Propuesta ' + trabajo.id + ' terminada: ' + final.resultado + '.')
+        if (unaVez) break
+        continue
+      }
       let enviados = []
       try {
         enviados = await buzon.biblioteca()

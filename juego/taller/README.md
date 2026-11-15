@@ -11,9 +11,32 @@ Lo hace un equipo de cuatro roles que solo usa las piezas del
 | [reglas.md](reglas.md) | Las reglas que cumple todo juego nuevo: qué puede usar del kit, el protagonista, los niños, la seguridad y los límites. |
 | [entrega.md](entrega.md) | Qué archivos entrega cada juego nuevo, cómo se registra y qué evidencia se guarda. |
 | [revision.md](revision.md) | Cómo se revisa un juego y cada pieza nueva antes de que llegue al docente. |
-| [agentes/](agentes/) | Las instrucciones de cada rol: [supervisor](agentes/supervisor.md), [programador](agentes/programador.md), [dibujante](agentes/dibujante.md) y [revisor](agentes/revisor.md). |
+| [agentes/](agentes/) | Las instrucciones de cada rol: [proponedor](agentes/proponedor.md), [supervisor](agentes/supervisor.md), [programador](agentes/programador.md), [dibujante](agentes/dibujante.md) y [revisor](agentes/revisor.md). |
 
-## Cómo funciona
+## La propuesta también pasa por el taller
+
+Antes del juego está la **propuesta**: lo que el docente lee y aprueba. La escribe el
+**proponedor**, un rol más del taller, y no la IA directa de Spring:
+
+1. El docente escribe un tema (o pide cambios, o rechaza y pide otra alternativa).
+   Spring deja la solicitud en «generando» y un trabajo `proponer` en el buzón.
+2. El trabajador lo toma, crea su carpeta (`trabajos/<id>/` con `trabajo.json`) y lanza
+   al proponedor. Este lee los [contenidos por grado](../kit/curriculo/README.md) del
+   grado de la sección (primero o segundo), busca fuera solo si le falta algo (primero
+   fuentes oficiales) y escribe `propuesta.json`: la `propuesta` y sus `fuentes`
+   (documento y página o enlace de cada contenido). Así el contenido se contrasta con
+   una referencia independiente del juego (HU32).
+3. El trabajador la entrega a Spring (`POST …/{id}/propuesta`). Spring revisa cada
+   campo; si algo no pasa, devuelve los motivos y el proponedor corrige, hasta 2
+   veces. Las fuentes quedan guardadas por dentro: el docente no las ve.
+4. **El respaldo.** Si el proponedor no puede (sin tokens, un error, se acaba el
+   tiempo de 5 minutos, `TALLER_LIMITE_PROPUESTA_MS`) o si nadie toma el trabajo en
+   60 segundos (el taller está apagado), Spring usa la IA directa (Groq o la de
+   Tecsup) para que el docente no espere. Esa propuesta queda sin fuentes. Sin IA de
+   respaldo configurada, la solicitud queda «fallida» y el docente puede reintentar.
+   Con `PROPUESTAS_POR=ia` en el `.env`, Spring usa siempre la IA directa.
+
+## Cómo funciona el juego
 
 1. **El docente aprueba una propuesta** que no es del laberinto. La propuesta
    y el guion del laberinto siguen yendo directo de Spring a la IA; el taller
@@ -87,6 +110,10 @@ npm run taller -- --una-vez
   no le pide otra revisión y no la reporta como nueva. Si al docente no le gusta un
   dibujo, lo pide por el chat y la corrección trae piezas nuevas, que vuelven a
   «pendiente».
+- **La propuesta** la atiende `trabajador/proponer.js`: `roles.local.json` necesita el
+  rol `proponedor` (puede leer `juego/` y buscar en internet; escribe solo
+  `propuesta.json` y notas en la carpeta del trabajo; sin Bash). Sin ese rol el
+  trabajo falla y entra el respaldo. Sus pruebas están en `pruebas/logica/proponer.test.js`.
 - Pruebas: `pruebas/logica/trabajador.test.js` y, de punta a punta con un
   Spring falso y un supervisor de prueba sin IA,
   `pruebas/navegador/trabajador.spec.js`.

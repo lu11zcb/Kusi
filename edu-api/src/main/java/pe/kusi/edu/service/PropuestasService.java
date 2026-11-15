@@ -1,23 +1,39 @@
 package pe.kusi.edu.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import pe.kusi.edu.ia.*;
 import pe.kusi.edu.model.*;
 import pe.kusi.edu.repository.*;
+import pe.kusi.edu.taller.EntregaTallerInvalida;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 // HU16/HU18 crean la solicitud; HU19-HU25 revisan y versionan sus propuestas.
 // La entrada y el estado se guardan antes de llamar al proveedor y ninguna
 // transacción queda abierta durante esa llamada HTTP.
+//
+// Quién escribe la propuesta: por defecto, el taller (un trabajo «proponer» en el buzón
+// que el trabajador de la Mac atiende con sus roles). La IA directa (Groq o Tecsup) queda
+// de respaldo: entra sola si el trabajo falla (por ejemplo, sin tokens) o si nadie del
+// taller lo toma a tiempo. Con kusi.propuestas-por=ia se usa siempre la IA directa.
 @Service
 public class PropuestasService {
+    private static final Logger registro=LoggerFactory.getLogger(PropuestasService.class);
     public record Respuesta(SolicitudPropuesta solicitud, Propuesta propuesta, boolean creada) {}
     public record EdicionDocente(String objetivo, String historia, List<String> acciones, List<String> reglas, List<String> retos, List<String> ayudas, List<String> recursos) {}
 
@@ -31,15 +47,34 @@ public class PropuestasService {
     private final DjangoInternoClient django;
     private final TransactionTemplate transaccion;
     private final ObjectMapper json;
+    private final TrabajoTallerRepository trabajos;
+    // El respaldo con la IA directa tarda segundos o minutos: corre aparte, sin ocupar al
+    // trabajador del taller ni a quien consulta la solicitud.
+    private final ExecutorService respaldo=Executors.newFixedThreadPool(2, tarea -> {
+        Thread hilo=new Thread(tarea, "propuesta-respaldo");
+        hilo.setDaemon(true);
+        return hilo;
+    });
+
+    @Value("${kusi.propuestas-por:taller}") private String propuestasPor;
+    // Si nadie del taller toma el trabajo en este tiempo, entra el respaldo.
+    @Value("${kusi.propuesta-espera-taller-seg:60}") private int esperaSinTomarSeg;
+    // Si el taller lo tomó y no lo entrega en este tiempo, también (el trabajador se limita a 5 minutos).
+    @Value("${kusi.propuesta-tiempo-taller-seg:480}") private int tiempoDelTallerSeg;
 
     public PropuestasService(SolicitudPropuestaRepository solicitudes, PropuestaRepository propuestas, AsignacionDocenteRepository asignaciones,
                              GeneradorPropuestas generador, ValidadorPropuesta validador, DjangoInternoClient django,
-                             TransactionTemplate transaccion, ObjectMapper json) {
+                             TransactionTemplate transaccion, ObjectMapper json, TrabajoTallerRepository trabajos) {
         this.solicitudes=solicitudes; this.propuestas=propuestas; this.asignaciones=asignaciones; this.generador=generador;
-        this.validador=validador; this.django=django; this.transaccion=transaccion; this.json=json;
+        this.validador=validador; this.django=django; this.transaccion=transaccion; this.json=json; this.trabajos=trabajos;
     }
 
-    public boolean iaConfigurada() { return generador.configurado(); }
+    @PreDestroy void cerrar() { respaldo.shutdownNow(); }
+
+    private boolean porTaller() { return "taller".equals(propuestasPor); }
+
+    // Se puede pedir una propuesta si la hace el taller (el respaldo es opcional) o si la IA directa está lista.
+    public boolean iaConfigurada() { return porTaller() || generador.configurado(); }
 
     // Contextos de las asignaciones vigentes del docente autenticado (HU08/HU17).
     public List<Map<String,Object>> contextos(UUID docenteId) {
@@ -95,7 +130,7 @@ public class PropuestasService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe una solicitud con ese identificador y datos diferentes.");
             return leer(id, false);
         }
-        if (!generador.configurado()) return leer(id, true);
+        if (!iaConfigurada()) return leer(id, true);
         return generar(id, contexto, true);
     }
 
@@ -218,7 +253,7 @@ public class PropuestasService {
     }
 
     private void exigirIa() {
-        if (!generador.configurado())
+        if (!iaConfigurada())
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "La generación con IA aún no está configurada. Tu solicitud sigue guardada para reintentarla después.");
     }
 
@@ -227,9 +262,13 @@ public class PropuestasService {
         if (tomada == null || tomada == 0) return leer(id, creada);
         SolicitudPropuesta s=transaccion.execute(estado -> solicitudes.findById(id).orElseThrow());
         EntradaGeneracion entrada=entrada(contexto, s, "nueva", null, null);
+        if (porTaller()) {
+            encolar(id, new PedidoPropuesta(entrada, null, null, null, s.getObjetivoDocente()), "fallida");
+            return leer(id, creada);
+        }
         try {
             ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada), s.getObjetivoDocente());
-            guardarVersionIa(id, null, null, r, null, null);
+            guardarVersionIa(id, null, null, r, null, null, generador.proveedor(), generador.modelo(), null);
             return leer(id, creada);
         } catch (FalloGeneracion fallo) {
             terminarConFallo(id, "fallida", fallo.getMessage());
@@ -248,9 +287,14 @@ public class PropuestasService {
         SolicitudPropuesta s=transaccion.execute(estado -> solicitudes.findById(id).orElseThrow());
         // Un objetivo del docente se conserva exacto también en las versiones nuevas.
         String objetivoFijo=base.getOrigenObjetivo().equals("docente") ? base.getObjetivo() : null;
+        EntradaGeneracion entrada=entrada(contexto, s, tipo, base, observaciones);
+        if (porTaller()) {
+            encolar(id, new PedidoPropuesta(entrada, base.getVersion(), base.getReglaJuego(), base.getTipoJuego(), objetivoFijo), "generada");
+            return leer(id, false);
+        }
         try {
-            ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada(contexto, s, tipo, base, observaciones)), objetivoFijo);
-            guardarVersionIa(id, base.getVersion(), observaciones, r, base.getReglaJuego(), base.getTipoJuego());
+            ValidadorPropuesta.Resultado r=validador.validar(generador.generar(entrada), objetivoFijo);
+            guardarVersionIa(id, base.getVersion(), observaciones, r, base.getReglaJuego(), base.getTipoJuego(), generador.proveedor(), generador.modelo(), null);
             return leer(id, false);
         } catch (FalloGeneracion fallo) {
             terminarConFallo(id, "generada", fallo.getMessage());
@@ -270,17 +314,216 @@ public class PropuestasService {
     // reglaHeredada (HU28): la regla de la versión que se ajusta. Si la IA no vuelve a elegir
     // una, la nueva versión conserva la de la versión base. Lo mismo con el tipo de juego. Si
     // el juego es «otro», no lleva regla de laberinto.
+    // proveedor y modelo dicen quién la escribió (el taller o la IA directa); fuentes, de dónde
+    // salió su contenido (solo el taller las trae).
     private void guardarVersionIa(UUID id, Integer versionBase, String observaciones, ValidadorPropuesta.Resultado r,
-                                  String reglaHeredada, String tipoHeredado) {
+                                  String reglaHeredada, String tipoHeredado, String proveedor, String modelo, String fuentes) {
         String tipoJuego=r.tipoJuego() != null ? r.tipoJuego() : tipoHeredado;
         String reglaJuego=ValidadorPropuesta.TIPO_OTRO.equals(tipoJuego) ? null : r.reglaJuego() != null ? r.reglaJuego() : reglaHeredada;
         transaccion.executeWithoutResult(estado -> {
             int version=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).map(p -> p.getVersion()+1).orElse(1);
-            propuestas.saveAndFlush(new Propuesta(id, version, "ia", versionBase, observaciones, r.objetivo(), r.origenObjetivo(), r.historia(),
+            Propuesta nueva=new Propuesta(id, version, "ia", versionBase, observaciones, r.objetivo(), r.origenObjetivo(), r.historia(),
                 aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()),
-                generador.proveedor(), generador.modelo(), reglaJuego, tipoJuego));
+                proveedor, modelo, reglaJuego, tipoJuego);
+            nueva.setFuentes(fuentes);
+            propuestas.saveAndFlush(nueva);
             solicitudes.terminarGeneracion(id, "generada", null, Instant.now());
         });
+    }
+
+    // ---- La propuesta por el taller ----
+
+    // Quién aparece como autor de la propuesta del taller. Sin nombres de programas.
+    static final String PROVEEDOR_TALLER="taller";
+    static final String MODELO_TALLER="proponedor";
+    private static final int MAX_CARACTERES_ENTREGA=200_000;
+
+    // Deja el pedido en el buzón. La solicitud ya está «generando»: el panel espera y el
+    // trabajador del taller lo toma cuando pregunta (o entra el respaldo si no llega).
+    private void encolar(UUID id, PedidoPropuesta pedido, String estadoSiFalla) {
+        try {
+            transaccion.executeWithoutResult(estado -> trabajos.save(TrabajoTaller.paraPropuesta(id, comoTexto(pedido))));
+        } catch (RuntimeException fallo) {
+            terminarConFallo(id, estadoSiFalla, "No se pudo pedir la propuesta al taller.");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "No se pudo pedir la propuesta. Tu solicitud quedó guardada; puedes reintentarla.");
+        }
+    }
+
+    // El taller entrega la propuesta: { propuesta, fuentes, evidencia }. Si no pasa la
+    // revisión se lanza EntregaTallerInvalida con todos los motivos (422) para que el
+    // trabajador la corrija; si pasa, queda como una versión nueva con sus fuentes.
+    public void recibirDelTaller(UUID trabajoId, JsonNode cuerpo) {
+        TrabajoTaller trabajo=transaccion.execute(estado -> trabajos.findById(trabajoId).orElse(null));
+        if (trabajo == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ese trabajo del taller.");
+        if (!trabajo.esDePropuesta()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese trabajo no es una propuesta.");
+        PedidoPropuesta pedido=leerPedido(trabajo);
+        if (cuerpo == null || !cuerpo.isObject())
+            throw new EntregaTallerInvalida(List.of("La entrega debe ser un objeto JSON con «propuesta» y «fuentes»."));
+        List<String> motivos=new ArrayList<>();
+        Map<String,Object> contenido=null;
+        if (cuerpo.path("propuesta").isObject()) {
+            contenido=json.convertValue(cuerpo.get("propuesta"), new TypeReference<Map<String,Object>>() {});
+            motivos.addAll(motivosDeForma(contenido, pedido.objetivoFijo()));
+        } else {
+            motivos.add("Falta «propuesta»: el objeto con tipo_juego, regla_juego, objetivo, historia, acciones, reglas, retos, ayudas, recursos y objetos.");
+        }
+        String fuentes=revisarFuentes(cuerpo.get("fuentes"), motivos);
+        String entrega=comoTexto(cuerpo);
+        if (entrega.length() > MAX_CARACTERES_ENTREGA) motivos.add("La entrega mide " + entrega.length() + " caracteres; el máximo es " + MAX_CARACTERES_ENTREGA + ".");
+        if (!motivos.isEmpty()) throw new EntregaTallerInvalida(motivos);
+        ValidadorPropuesta.Resultado r;
+        try { r=validador.validar(contenido, pedido.objetivoFijo()); }
+        catch (FalloGeneracion invalida) { throw new EntregaTallerInvalida(List.of("La propuesta está incompleta o no es válida.")); }
+
+        transaccion.executeWithoutResult(estado -> {
+            TrabajoTaller t=trabajos.bloquearPorId(trabajoId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ese trabajo del taller."));
+            if (!"en_proceso".equals(t.getEstado()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El trabajo no está en proceso (está «" + t.getEstado() + "»).");
+            SolicitudPropuesta s=solicitudes.bloquear(t.getSolicitudId()).orElseThrow();
+            if (!s.getEstado().equals("generando"))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "La solicitud ya no espera esta propuesta.");
+            guardarVersionIa(t.getSolicitudId(), pedido.versionBase(), pedido.entrada().observaciones(), r,
+                pedido.reglaHeredada(), pedido.tipoHeredado(), PROVEEDOR_TALLER, MODELO_TALLER, fuentes);
+            t.registrarResultado(entrega);
+            trabajos.save(t);
+        });
+        registro.info("[propuestas] El taller entregó la propuesta del trabajo " + trabajoId + ".");
+    }
+
+    // El taller no pudo (sin tokens, error, tiempo): el trabajo queda fallido y entra el respaldo.
+    public void fallarDelTaller(UUID trabajoId, String motivo) {
+        TrabajoTaller cerrado=cerrarPropuesta(trabajoId, motivo == null || motivo.isBlank() ? "El taller no dio un motivo." : motivo.strip());
+        pedirRespaldo(cerrado.getSolicitudId(), leerPedido(cerrado), cerrado.getMotivoFallo());
+    }
+
+    // Cada 10 segundos: una propuesta que nadie tomó (taller apagado) o que el taller tomó
+    // y no entregó no deja al docente esperando; entra el respaldo.
+    @Scheduled(fixedDelay=10_000, initialDelay=20_000)
+    void revisarEsperaDelTaller() {
+        try { revisarEspera(Instant.now()); }
+        catch (RuntimeException fallo) { registro.warn("[propuestas] No se pudo revisar la espera del taller: " + fallo.getMessage()); }
+    }
+
+    public void revisarEspera(Instant ahora) {
+        List<TrabajoTaller> cerrados=transaccion.execute(estado -> {
+            List<TrabajoTaller> lista=new ArrayList<>();
+            for (TrabajoTaller t : trabajos.bloquearPropuestasSinTomar(ahora.minusSeconds(esperaSinTomarSeg))) {
+                t.registrarFallo("Nadie del taller tomó la propuesta en " + esperaSinTomarSeg + " segundos.");
+                lista.add(trabajos.save(t));
+            }
+            for (TrabajoTaller t : trabajos.bloquearPropuestasVencidas(ahora.minusSeconds(tiempoDelTallerSeg))) {
+                t.registrarFallo("El taller no entregó la propuesta en " + tiempoDelTallerSeg + " segundos.");
+                lista.add(trabajos.save(t));
+            }
+            return lista;
+        });
+        if (cerrados == null) return;
+        for (TrabajoTaller t : cerrados) pedirRespaldo(t.getSolicitudId(), leerPedido(t), t.getMotivoFallo());
+    }
+
+    private TrabajoTaller cerrarPropuesta(UUID trabajoId, String motivo) {
+        return transaccion.execute(estado -> {
+            TrabajoTaller t=trabajos.bloquearPorId(trabajoId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ese trabajo del taller."));
+            if (!t.esDePropuesta()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese trabajo no es una propuesta.");
+            if (!"en_proceso".equals(t.getEstado()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El trabajo no está en proceso (está «" + t.getEstado() + "»).");
+            t.registrarFallo(TallerService.recortar(motivo, TallerService.MAX_CARACTERES_MOTIVO));
+            return trabajos.save(t);
+        });
+    }
+
+    // El respaldo: la IA directa (Groq o Tecsup) escribe la propuesta, sin fuentes. Sin ella
+    // configurada, la solicitud queda como falló y el docente puede reintentar. Corre en otro
+    // hilo: la llamada a la IA puede tardar y quien llama (el trabajador, el reloj) no espera.
+    private void pedirRespaldo(UUID id, PedidoPropuesta pedido, String motivo) {
+        String estadoSiFalla=pedido.versionBase() == null ? "fallida" : "generada";
+        if (!generador.configurado()) {
+            registro.warn("[propuestas] El taller no pudo con la solicitud " + id + " (" + motivo + ") y no hay IA de respaldo.");
+            terminarConFallo(id, estadoSiFalla, "No se pudo preparar la propuesta. Puedes reintentarla.");
+            return;
+        }
+        registro.warn("[propuestas] Entra el respaldo en la solicitud " + id + ": " + motivo);
+        respaldo.execute(() -> {
+            try {
+                ValidadorPropuesta.Resultado r=validador.validar(generador.generar(pedido.entrada()), pedido.objetivoFijo());
+                guardarVersionIa(id, pedido.versionBase(), pedido.entrada().observaciones(), r, pedido.reglaHeredada(), pedido.tipoHeredado(),
+                    generador.proveedor(), generador.modelo(), null);
+            } catch (FalloGeneracion fallo) {
+                terminarConFallo(id, estadoSiFalla, fallo.getMessage());
+            } catch (RuntimeException fallo) {
+                terminarConFallo(id, estadoSiFalla, "No se pudo obtener la propuesta de la IA.");
+            }
+        });
+    }
+
+    private PedidoPropuesta leerPedido(TrabajoTaller trabajo) {
+        try { return json.readValue(trabajo.getDatosEntrada(), PedidoPropuesta.class); }
+        catch (JsonProcessingException ex) { throw new IllegalStateException("El pedido de la propuesta no se pudo leer."); }
+    }
+
+    private String comoTexto(Object valor) {
+        try { return json.writeValueAsString(valor); }
+        catch (JsonProcessingException ex) { throw new IllegalStateException("No se pudo preparar la propuesta del taller."); }
+    }
+
+    // Mensajes precisos para que el taller sepa qué corregir (ValidadorPropuesta solo dice «no válida»).
+    private List<String> motivosDeForma(Map<String,Object> p, String objetivoFijo) {
+        List<String> m=new ArrayList<>();
+        if (objetivoFijo == null) exigirTexto(p, "objetivo", 4000, m);
+        exigirTexto(p, "historia", 10000, m);
+        for (String campo : List.of("acciones", "reglas", "retos", "ayudas")) exigirLista(p, campo, 1, 20, 2000, m);
+        if (p.get("recursos") != null) exigirLista(p, "recursos", 1, 20, 2000, m);
+        if (p.get("objetos") != null) exigirLista(p, "objetos", 0, 20, 200, m);
+        if (!(p.get("tipo_juego") instanceof String tipo) || !(tipo.equals("laberinto") || tipo.equals("otro")))
+            m.add("«tipo_juego» debe ser «laberinto» u «otro».");
+        if (p.get("regla_juego") != null && !(p.get("regla_juego") instanceof String regla && Set.of("orden", "solo_clase", "ninguna").contains(regla.trim())))
+            m.add("«regla_juego» debe ser «orden», «solo_clase» o «ninguna».");
+        return m;
+    }
+
+    private static void exigirTexto(Map<String,Object> p, String campo, int limite, List<String> m) {
+        if (!(p.get(campo) instanceof String s) || s.isBlank() || s.length() > limite)
+            m.add("«" + campo + "» debe ser un texto de 1 a " + limite + " caracteres.");
+    }
+
+    private static void exigirLista(Map<String,Object> p, String campo, int minimo, int maximo, int largo, List<String> m) {
+        if (!(p.get(campo) instanceof List<?> lista) || lista.size() < minimo || lista.size() > maximo) {
+            m.add("«" + campo + "» debe ser una lista de " + minimo + " a " + maximo + " textos.");
+            return;
+        }
+        for (Object elemento : lista) {
+            if (!(elemento instanceof String s) || s.isBlank() || s.length() > largo) {
+                m.add("Cada elemento de «" + campo + "» debe ser un texto de 1 a " + largo + " caracteres.");
+                return;
+            }
+        }
+    }
+
+    // HU32: toda propuesta del taller dice de dónde sale su contenido. Cada fuente lleva el
+    // documento y la página o el enlace; el tema al que sirve es opcional. Devuelve el JSON limpio.
+    private String revisarFuentes(JsonNode fuentes, List<String> motivos) {
+        if (fuentes == null || !fuentes.isArray() || fuentes.isEmpty() || fuentes.size() > 10) {
+            motivos.add("«fuentes» debe ser una lista de 1 a 10 fuentes: de dónde sale el contenido (documento y página o enlace).");
+            return null;
+        }
+        List<Map<String,String>> limpias=new ArrayList<>();
+        for (int i=0; i < fuentes.size(); i++) {
+            JsonNode fuente=fuentes.get(i);
+            String donde="Fuente " + (i+1) + ": ";
+            String documento=textoDe(fuente, "documento"), referencia=textoDe(fuente, "referencia"), tema=textoDe(fuente, "tema");
+            if (documento == null || documento.length() > 200) { motivos.add(donde + "«documento» es obligatorio (hasta 200 caracteres)."); continue; }
+            if (referencia == null || referencia.length() > 300) { motivos.add(donde + "«referencia» es obligatoria: la página o el enlace (hasta 300 caracteres)."); continue; }
+            if (tema != null && tema.length() > 200) { motivos.add(donde + "«tema» tiene más de 200 caracteres."); continue; }
+            Map<String,String> limpia=new LinkedHashMap<>();
+            limpia.put("documento", documento); limpia.put("referencia", referencia);
+            if (tema != null) limpia.put("tema", tema);
+            limpias.add(limpia);
+        }
+        return comoTexto(limpias);
+    }
+
+    private static String textoDe(JsonNode nodo, String campo) {
+        return nodo.path(campo).isTextual() && !nodo.path(campo).asText().isBlank() ? nodo.path(campo).asText().strip() : null;
     }
 
     private void terminarConFallo(UUID id, String estado, String mensaje) {

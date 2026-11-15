@@ -37,6 +37,9 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch }) {
     },
     // { estado, datos }: 200 listo, 422 con motivos para corregir, 409 si ya no está en proceso.
     resultado: (id, cuerpo) => pedir(id + '/resultado', cuerpo),
+    // La propuesta de un trabajo «proponer»: { propuesta, fuentes, evidencia }. Mismos estados que «resultado».
+    propuesta: (id, cuerpo) => pedir(id + '/propuesta', cuerpo),
+    // Si el trabajo era una propuesta, Spring usa su respaldo; el trabajador no lo sabe ni lo necesita.
     fallo: (id, motivo) => pedir(id + '/fallo', { motivo }),
   }
 }

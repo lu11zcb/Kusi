@@ -35,6 +35,9 @@ public class Propuesta {
     // "otro" (el tema pide otro juego u otros dibujos: lo crea el taller). Null en las
     // propuestas anteriores, que se tratan como laberinto.
     @Column(name="tipo_juego", length=12) private String tipoJuego;
+    // De dónde salió el contenido (documento y página o enlace de cada tema), en JSON. Es
+    // interno: el docente no lo ve. Null si la propuesta no trae fuentes (la del respaldo).
+    @Column(columnDefinition="TEXT") private String fuentes;
 
     protected Propuesta() {}
     // origen "ia" lleva proveedor/modelo; origen "docente" (HU23) los deja vacíos.
@@ -72,6 +75,7 @@ public class Propuesta {
     public String getProveedor(){return proveedor;} public String getModelo(){return modelo;} public Instant getCreadoEn(){return creadoEn;}
     public String getReglaJuego(){return reglaJuego;}
     public String getTipoJuego(){return tipoJuego;}
+    public String getFuentes(){return fuentes;} public void setFuentes(String fuentes){this.fuentes=fuentes;}
     // Un juego «otro» no es un laberinto: lo crea el taller desde el buzón.
     public boolean vaAlTaller(){return "otro".equals(tipoJuego);}
 }

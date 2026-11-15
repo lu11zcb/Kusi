@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import pe.kusi.edu.model.Generacion;
 import pe.kusi.edu.model.TrabajoTaller;
+import pe.kusi.edu.service.PropuestasService;
 import pe.kusi.edu.service.TallerService;
 import pe.kusi.edu.taller.EntregaTallerInvalida;
 
@@ -29,11 +30,13 @@ import java.util.UUID;
 public class TallerController {
 
     private final TallerService taller;
+    private final PropuestasService propuestas;
     private final ObjectMapper json;
     @Value("${kusi.taller-clave:}") private String claveTaller;
 
-    public TallerController(TallerService taller, ObjectMapper json) {
+    public TallerController(TallerService taller, PropuestasService propuestas, ObjectMapper json) {
         this.taller = taller;
+        this.propuestas = propuestas;
         this.json = json;
     }
 
@@ -84,7 +87,19 @@ public class TallerController {
                 "generacion", Map.of("id", generacion.getId(), "estado", generacion.getEstado())));
     }
 
-    // { motivo }. El motivo es interno: el docente nunca lo ve.
+    // La propuesta que escribió el taller: { propuesta, fuentes, evidencia }. 422 con los
+    // motivos si no pasa la revisión (el trabajador la corrige y vuelve a entregarla).
+    @PostMapping("/{id}/propuesta")
+    public ResponseEntity<Map<String, Object>> propuesta(
+            @RequestHeader(value = "X-Taller-Clave", required = false) String clave,
+            @PathVariable UUID id,
+            @RequestBody(required = false) String cuerpo) {
+        autorizar(clave);
+        propuestas.recibirDelTaller(id, leer(cuerpo));
+        return sinCache(200, Map.of("trabajo", Map.of("id", id, "estado", "listo")));
+    }
+
+    // { motivo }. El motivo es interno: el docente nunca lo ve. Si era una propuesta, entra el respaldo.
     @PostMapping("/{id}/fallo")
     public ResponseEntity<Map<String, Object>> fallo(
             @RequestHeader(value = "X-Taller-Clave", required = false) String clave,
@@ -93,6 +108,10 @@ public class TallerController {
         autorizar(clave);
         JsonNode datos = leer(cuerpo);
         String motivo = datos != null && datos.path("motivo").isTextual() ? datos.path("motivo").asText() : null;
+        if (taller.esDePropuesta(id)) {
+            propuestas.fallarDelTaller(id, motivo);
+            return sinCache(200, Map.of("trabajo", Map.of("id", id, "estado", "fallido")));
+        }
         Generacion generacion = taller.fallo(id, motivo);
         return sinCache(200, Map.of(
                 "trabajo", Map.of("id", id, "estado", "fallido"),
@@ -102,7 +121,7 @@ public class TallerController {
     @ExceptionHandler(EntregaTallerInvalida.class)
     public ResponseEntity<Map<String, Object>> entregaInvalida(EntregaTallerInvalida ex) {
         return sinCache(422, Map.of(
-                "mensaje", "El guion no pasó la revisión. Corrige estos motivos y vuelve a entregarlo.",
+                "mensaje", "Lo entregado no pasó la revisión. Corrige estos motivos y vuelve a entregarlo.",
                 "motivos", ex.getMotivos()));
     }
 

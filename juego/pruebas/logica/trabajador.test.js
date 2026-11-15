@@ -58,6 +58,20 @@ test('el buzón manda la clave en su encabezado y entiende 200, 204 y los errore
   assert.equal(pedidos[3].direccion, 'http://spring/interno/taller/trabajos/x/resultado')
 })
 
+test('el buzón entrega la propuesta en su ruta y el fallo en la de siempre', async () => {
+  const pedidos = []
+  const pedirHttp = async (direccion, opciones) => {
+    pedidos.push({ direccion, cuerpo: JSON.parse(opciones.body) })
+    return { status: 200, text: async () => '{}' }
+  }
+  const buzon = crearBuzon({ url: 'http://spring/', clave: 'secreta', pedirHttp })
+  await buzon.propuesta('p1', { propuesta: {}, fuentes: [] })
+  await buzon.fallo('p1', 'sin tokens')
+  assert.equal(pedidos[0].direccion, 'http://spring/interno/taller/trabajos/p1/propuesta')
+  assert.equal(pedidos[1].direccion, 'http://spring/interno/taller/trabajos/p1/fallo')
+  assert.deepEqual(pedidos[1].cuerpo, { motivo: 'sin tokens' })
+})
+
 test('arma la línea de comando de un rol con sus marcadores, y un marcador sin valor es un error', () => {
   const rol = { programa: 'programa-del-rol', carpeta: '{temporal}', argumentos: ['--pedido', '{pedido}', 'Edit(/{carpeta}/**)'] }
   assert.deepEqual(armarComando(rol, { pedido: 'Haz el juego', carpeta: '/t/123', temporal: '/tmp/x' }), {
@@ -68,7 +82,7 @@ test('arma la línea de comando de un rol con sus marcadores, y un marcador sin 
 
 test('los roles salen de taller/agentes/ y los subagentes del supervisor son el programador y el revisor', async () => {
   const agentes = await leerAgentes()
-  assert.deepEqual(Object.keys(agentes).sort(), ['dibujante', 'programador', 'revisor', 'supervisor'])
+  assert.deepEqual(Object.keys(agentes).sort(), ['dibujante', 'programador', 'proponedor', 'revisor', 'supervisor'])
   assert.match(agentes.supervisor.instrucciones, /^# Supervisor/)
   const json = JSON.parse(subagentes(agentes, ['programador', 'revisor']))
   assert.deepEqual(Object.keys(json), ['programador', 'revisor'])

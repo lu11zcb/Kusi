@@ -104,6 +104,11 @@ public class TallerService {
         siguiente.ifPresent(trabajo -> {
             trabajo.tomar(TRABAJADOR);
             trabajos.save(trabajo);
+            if (trabajo.esDePropuesta()) {
+                // Una propuesta no tiene generación: su solicitud ya está «generando».
+                registro.info("[taller] Se entregó el trabajo " + trabajo.getId() + " (propuesta).");
+                return;
+            }
             Generacion generacion = generacionDe(trabajo);
             generacion.registrarEstado("generando", null);
             generaciones.save(generacion);
@@ -268,7 +273,17 @@ public class TallerService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "El trabajo no está en proceso (está «" + trabajo.getEstado() + "»).");
         }
+        if (trabajo.esDePropuesta()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ese trabajo es una propuesta: se entrega en «propuesta» o «fallo», no en «resultado».");
+        }
         return trabajo;
+    }
+
+    /** Si el trabajo pide una propuesta (y no un juego). Un trabajo que no existe no lo es. */
+    @Transactional(readOnly = true)
+    public boolean esDePropuesta(UUID id) {
+        return trabajos.findById(id).map(TrabajoTaller::esDePropuesta).orElse(false);
     }
 
     private Generacion generacionDe(TrabajoTaller trabajo) {

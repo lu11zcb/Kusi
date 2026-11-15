@@ -129,6 +129,15 @@ Kusi hoy hace un solo juego, el laberinto, con dos reglas: `orden` (patrones que
 
 `GeneracionesProcesoTest` (sección HU28, con una IA falsa) comprueba que un tema de patrones da `orden`, que uno de clasificar da `solo_clase` y que el guion cambia de verdad en cada nivel: otra regla, otra barra (una ficha por cada fruta del patrón, o por cada objeto que hay que juntar) y otras trampas (lo que no va en el patrón, o los objetos de la otra clase). No acredita que una IA real elija bien la regla: eso se mira a mano con Groq.
 
+## La propuesta por el taller
+
+Por defecto (`PROPUESTAS_POR=taller`), la propuesta no la escribe Spring: `crear`, `reintentar`, `observaciones` y `alternativa` dejan la solicitud en `generando` y un trabajo `proponer` en `trabajos_taller` (con `solicitud_id` en vez de `generacion_id`; el pedido va en `datos_entrada`: `{ entrada, versionBase, reglaHeredada, tipoHeredado, objetivoFijo }`, sin datos de estudiantes). El trabajador de la Mac lo toma con `POST /interno/taller/trabajos/siguiente` y entrega con `POST /interno/taller/trabajos/{id}/propuesta` un `{ propuesta, fuentes, evidencia }`.
+
+- **Revisión.** `PropuestasService.recibirDelTaller` revisa campo por campo (mismos límites que `ValidadorPropuesta`) y pide al menos 1 y hasta 10 `fuentes` con `documento` y `referencia` (página o enlace). Si algo falla: 422 con `motivos` y la solicitud sigue `generando`. Si pasa: una versión nueva (`proveedor` `taller`, `modelo` `proponedor`) con sus `fuentes` en `propuestas.fuentes` (interno: el docente no las ve) y el trabajo `listo`.
+- **Respaldo.** Si el taller avisa un fallo (`POST …/{id}/fallo`), si nadie toma el trabajo en `PROPUESTA_ESPERA_TALLER_SEG` (60) o si lo toma y no lo entrega en `PROPUESTA_TIEMPO_TALLER_SEG` (480), el trabajo queda `fallido` y la IA directa (Groq o Tecsup, si hay clave) escribe la propuesta en otro hilo, sin fuentes. Un reloj (`@Scheduled`, cada 10 s) revisa las esperas. Sin IA de respaldo, la solicitud queda `fallida` (o `generada` con sus versiones anteriores, si era un ajuste).
+- `PROPUESTAS_POR=ia` usa siempre la IA directa, como antes. Las pruebas la fijan así en `application-test.yml`; `PropuestasTallerTest` prueba el camino del taller.
+- La migración `V12__propuestas_por_el_taller_y_segundo_grado.sql` agrega `trabajos_taller.solicitud_id` (y quita el `NOT NULL` de `generacion_id`), el tipo `proponer`, `propuestas.fuentes` y deja las secciones de primero **o segundo** grado (`ck_seccion_grado`).
+
 ## El buzón del taller: dos caminos y las rutas del trabajador
 **Dos caminos.** Un laberinto (`tipo_juego` `laberinto` o vacío) se genera como siempre: el panel llama a `procesar` y Spring le pide el guion a la IA, sin pasar por el buzón. Un juego nuevo (`tipo_juego` `otro`) lo crea el taller: `generar` deja la generación `pendiente` con `taller: true` y un trabajo en `trabajos_taller`; `procesar` responde 409 y un segundo `generar` mientras el taller trabaja, también. La migración `V10__taller_caminos_y_piezas.sql` agrega `generaciones.taller`, cierra como `fallido` los trabajos de laberinto que quedaron abiertos (no borra nada) y crea `piezas_taller`.
 

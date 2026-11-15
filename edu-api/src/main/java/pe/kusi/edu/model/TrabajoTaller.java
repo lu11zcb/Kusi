@@ -16,8 +16,13 @@ public class TrabajoTaller {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "generacion_id", nullable = false)
+    // Un trabajo es de una generación (crear o corregir un juego) o de una solicitud
+    // (pedir una propuesta): exactamente uno de los dos.
+    @Column(name = "generacion_id")
     private UUID generacionId;
+
+    @Column(name = "solicitud_id")
+    private UUID solicitudId;
 
     @Column(nullable = false, length = 30)
     private String tipo;
@@ -60,8 +65,24 @@ public class TrabajoTaller {
         this.creadoEn = Instant.now();
     }
 
+    // El tipo del trabajo que pide una propuesta al taller.
+    public static final String TIPO_PROPONER = "proponer";
+
+    /**
+     * Un trabajo que pide al taller la propuesta de una solicitud. Los datos de entrada
+     * son lo que el taller necesita (curso, grado, tema…), nunca datos de estudiantes.
+     */
+    public static TrabajoTaller paraPropuesta(UUID solicitudId, String datosEntrada) {
+        TrabajoTaller trabajo = new TrabajoTaller(null, TIPO_PROPONER, datosEntrada);
+        trabajo.solicitudId = solicitudId;
+        return trabajo;
+    }
+
+    public boolean esDePropuesta() { return TIPO_PROPONER.equals(tipo); }
+
     public UUID getId() { return id; }
     public UUID getGeneracionId() { return generacionId; }
+    public UUID getSolicitudId() { return solicitudId; }
     public String getTipo() { return tipo; }
     public String getEstado() { return estado; }
     public String getDatosEntrada() { return datosEntrada; }

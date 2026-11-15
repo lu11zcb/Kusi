@@ -6,3 +6,5 @@ spring:
     driver-class-name: org.h2.Driver
 kusi:
   internal-key: clave-solo-para-pruebas-aisladas
+  # Las pruebas de propuestas usan la IA simulada; las del taller lo piden en su propia prueba.
+  propuestas-por: ia

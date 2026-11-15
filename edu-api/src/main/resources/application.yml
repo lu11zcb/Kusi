@@ -27,3 +27,9 @@ kusi:
   internal-key: ${CLAVE_INTERNA:}
   # Clave del trabajador del taller (encabezado X-Taller-Clave). Vacía: el buzón responde 503.
   taller-clave: ${TALLER_CLAVE:}
+  # Quién escribe la propuesta: «taller» (por el buzón; la IA directa queda de respaldo) o
+  # «ia» (siempre la IA directa, Groq o Tecsup).
+  propuestas-por: ${PROPUESTAS_POR:taller}
+  # Segundos que se espera a que el taller tome el pedido y a que lo entregue antes de usar el respaldo.
+  propuesta-espera-taller-seg: ${PROPUESTA_ESPERA_TALLER_SEG:60}
+  propuesta-tiempo-taller-seg: ${PROPUESTA_TIEMPO_TALLER_SEG:480}

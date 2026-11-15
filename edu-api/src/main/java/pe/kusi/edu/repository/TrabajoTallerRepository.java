@@ -36,11 +36,39 @@ public interface TrabajoTallerRepository extends JpaRepository<TrabajoTaller, UU
     @Query(value = """
         SELECT *
         FROM edu.trabajos_taller
-        WHERE estado = 'en_proceso' AND tomado_en < :limite
+        WHERE estado = 'en_proceso' AND tomado_en < :limite AND tipo <> 'proponer'
         ORDER BY tomado_en ASC, id ASC
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
     List<TrabajoTaller> bloquearVencidos(@Param("limite") Instant limite);
+
+    /**
+     * Las propuestas que nadie del taller tomó desde antes del límite (el taller está
+     * apagado o ocupado): el docente no puede esperar, entra el respaldo.
+     */
+    @Query(value = """
+        SELECT *
+        FROM edu.trabajos_taller
+        WHERE estado = 'pendiente' AND tipo = 'proponer' AND creado_en < :limite
+        ORDER BY creado_en ASC, id ASC
+        FOR UPDATE SKIP LOCKED
+        """, nativeQuery = true)
+    List<TrabajoTaller> bloquearPropuestasSinTomar(@Param("limite") Instant limite);
+
+    /**
+     * Las propuestas que el taller tomó y no entregó desde antes del límite. Se vencen
+     * mucho antes que un juego: una propuesta tarda minutos, no media hora.
+     */
+    @Query(value = """
+        SELECT *
+        FROM edu.trabajos_taller
+        WHERE estado = 'en_proceso' AND tipo = 'proponer' AND tomado_en < :limite
+        ORDER BY tomado_en ASC, id ASC
+        FOR UPDATE SKIP LOCKED
+        """, nativeQuery = true)
+    List<TrabajoTaller> bloquearPropuestasVencidas(@Param("limite") Instant limite);
+
+    Optional<TrabajoTaller> findFirstBySolicitudIdOrderByCreadoEnDesc(UUID solicitudId);
 
     /**
      * Reclama el trabajo pendiente más antiguo.
