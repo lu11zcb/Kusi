@@ -140,7 +140,7 @@ menos de 2,5 MB (el actual, 1,9 MB).
 3. **Sin texto, letras, números, logos ni marcas** dentro del dibujo.
 4. **Sin suelo, sombra ni escenario** alrededor.
 5. **Del mundo del niño peruano** cuando el tema lo permite: un objeto que un
-   niño de primer grado de Perú reconoce.
+   niño de primer o segundo grado de Perú reconoce.
 6. **Se entiende a 64 px y en gris.**
 
 ## 10. Fondos nuevos

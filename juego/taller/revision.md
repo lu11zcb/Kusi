@@ -62,6 +62,9 @@ enseñar algo equivocado.
       reglas?
 - [ ] ¿Las respuestas correctas son correctas? (Por ejemplo, si clasifica, cada
       objeto está en su grupo.)
+- [ ] ¿Lo que enseña y sus palabras son del grado de la solicitud (primero o
+      segundo), sin nombres que solo usan los especialistas y sin salirse del
+      tema?
 - [ ] ¿La consigna y las ayudas tienen 90 caracteres como máximo, en español
       sencillo y de tú?
 - [ ] ¿Las ayudas ayudan de verdad, sin decir la respuesta de golpe?

@@ -157,7 +157,7 @@ public class GeneradorGuionIa implements GeneradorGuion {
     // No lleva ejemplos con valores reales (ni un mapa ni un objeto de muestra): la
     // IA los copiaría. Solo describe la forma y los límites.
     private static final String INSTRUCCIONES = """
-        Eres el diseñador de niveles de Kusi, una app de juegos para niños de primer grado de primaria en Perú. A partir de la propuesta que aprobó el docente, escribes el guion de un juego de laberinto con 3 niveles. El niño mueve a un cuy por el laberinto, recoge frutas y verduras y llega a la puerta.
+        Eres el diseñador de niveles de Kusi, una app de juegos para niños de primer y segundo grado de primaria en Perú (de 6 a 8 años). A partir de la propuesta que aprobó el docente, escribes el guion de un juego de laberinto con 3 niveles. El niño mueve a un cuy por el laberinto, recoge frutas y verduras y llega a la puerta.
 
         Responde solo con un objeto JSON con estas claves:
         - "titulo": el nombre del juego, corto.
@@ -182,7 +182,7 @@ public class GeneradorGuionIa implements GeneradorGuion {
         - Con "tipo": "orden", el niño recoge los objetos en el orden de la "secuencia". La secuencia es un patrón que se repite, de 4 a 8 objetos, con al menos dos tipos distintos (por ejemplo, dos tipos que se alternan, o un grupo de tres que se repite). El mapa debe tener al menos los objetos que pide la secuencia; puedes sumar otros como trampas. Pon "clase": "" y "meta": 0.
         - Con "tipo": "solo_clase", el niño recoge solo objetos de una clase. "clase" es "fruta" o "verdura" y "meta" es cuántos debe recoger, de 3 a 6. El mapa debe tener al menos "meta" objetos de esa clase y al menos uno de la otra clase, como trampa. Pon "secuencia": [].
 
-        Los textos de cada nivel: una "consigna" que dice qué hacer y exactamente 2 "ayudas". Cada texto tiene 80 caracteres o menos, en español sencillo para un niño de 6 años. Las ayudas guían sin decir la respuesta: no nombran ninguna fruta ni verdura (ni en singular ni en plural) y no dicen el orden. Pueden hablar de «la fila de arriba», de «lo que se repite», de «las frutas» o de «las verduras» en general.
+        Los textos de cada nivel: una "consigna" que dice qué hacer y exactamente 2 "ayudas". Cada texto tiene 80 caracteres o menos, en español sencillo, con las palabras que conoce un niño del grado que dice el pedido. Las ayudas guían sin decir la respuesta: no nombran ninguna fruta ni verdura (ni en singular ni en plural) y no dicen el orden. Pueden hablar de «la fila de arriba», de «lo que se repite», de «las frutas» o de «las verduras» en general.
 
         Variedad: varía de verdad. No pongas todos los objetos en la misma fila ni en la misma columna, ni siempre en el mismo lado. Cada nivel debe tener otra forma de laberinto, otro lugar para el inicio y otro lugar para la puerta. Sigue el plan de variación que recibes.
 

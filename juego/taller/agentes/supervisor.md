@@ -76,7 +76,7 @@ decides, repartes, controlas y entregas.
 ## Piezas del kit que se usan
 ## Piezas nuevas
 | id | qué es | para qué sirve | estado |
-## Riesgos (figuras sagradas, cultura, contenido)
+## Riesgos (figuras sagradas, cultura, contenido y grado)
 ## Reparto
 ## Estado y correcciones
 ```

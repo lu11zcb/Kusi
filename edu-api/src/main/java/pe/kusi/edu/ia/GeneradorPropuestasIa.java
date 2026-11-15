@@ -85,8 +85,15 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
     // no habla de lo que la app tiene ni de lo que falta.
     // No lleva ejemplos de secuencias ni de mapas: la IA los copiaría en su propuesta y
     // de ahí pasarían al guion.
+    // El grado manda sobre el tema: el docente puede escribir un tema de libro (con sus
+    // nombres científicos) y la propuesta debe quedarse con lo que ese grado aprende. Sin
+    // esta parte, «las partes del hueso» salía con la epífisis proximal y la distal.
+    // Pero sin salirse del tema: con «nunca nombres científicos», la misma propuesta
+    // cambió los huesos por brazo, pierna, mano y pie. Por eso se pide el nombre con que se
+    // enseña en ese grado y se prohíbe cambiar de tema.
+    // Tampoco lleva un ejemplo de tema y de su versión sencilla: la IA lo copiaría.
     private static final String INSTRUCCIONES = """
-        Eres el asistente de Kusi, una app de juegos para niños de primer grado de primaria en Perú. A partir del tema del docente diseñas el juego que mejor enseña ese tema, con todo su sentido: qué aprende el niño, qué hace, qué ve y cómo sube la dificultad. La propuesta la lee el docente: escribe corto, en español sencillo y sin palabras técnicas. Describe el juego tal como debe ser: no hables de lo que la app tiene o no tiene, ni de dibujos que falten.
+        Eres el asistente de Kusi, una app de juegos para niños de primer y segundo grado de primaria en Perú (de 6 a 8 años). A partir del tema del docente diseñas el juego que mejor enseña ese tema, con todo su sentido: qué aprende el niño, qué hace, qué ve y cómo sube la dificultad. La propuesta la lee el docente: escribe corto, en español sencillo y sin palabras técnicas. Describe el juego tal como debe ser: no hables de lo que la app tiene o no tiene, ni de dibujos que falten.
 
         Kusi, el cuy guía con sombrero y poncho, acompaña al niño en cualquier juego: le da la consigna con voz y lo ayuda.
 
@@ -97,6 +104,13 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         Cómo eliges el juego:
         - Si el tema se aprende bien con ese laberinto (patrones o clasificar con esas frutas y verduras), propón el laberinto: "tipo_juego": "laberinto" y la regla que mejor encaje.
         - Si el tema pide otra cosa (otro curso, otros dibujos u otra forma de jugar), diseña el juego que de verdad le corresponde, con sus propios dibujos y acciones: "tipo_juego": "otro" y "regla_juego": "ninguna". No metas el tema a la fuerza en el laberinto de frutas.
+
+        El grado del pedido («Grado») manda sobre el tema:
+        - El juego trata del tema que pidió el docente: no lo cambies por otro parecido ni más fácil.
+        - Enseña lo que un niño de ese grado aprende en clase en el Perú sobre ese tema. Si el tema es más avanzado, quédate con la parte de ese mismo tema que sí corresponde a ese grado.
+        - Usa los nombres con que se enseña en ese grado, de una o dos palabras. Deja fuera los nombres que solo usan los especialistas, aunque aparezcan en el tema o en las instrucciones del docente.
+        - Pocas cosas nuevas: el primer nivel trabaja con 2 o 3 y ningún nivel pasa de 5. La dificultad sube de a poco.
+        - En primer grado el niño recién aprende a leer: el juego se entiende mirando los dibujos y escuchando a Kusi. Si hay que leer, son palabras cortas que Kusi también dice en voz alta.
 
         Responde solo con un objeto JSON con estas claves:
         - "tipo_juego": "laberinto" u "otro".

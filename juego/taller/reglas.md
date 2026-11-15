@@ -94,7 +94,7 @@ igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
 - Se proponen símbolos (una luz, rayos) o la voz de Kusi, y **decide el
   docente**.
 
-## 6. Para niños de 6 y 7 años
+## 6. Para niños de 6 a 8 años
 
 - **La consigna se dice con voz** (`decir`) y tiene un botón **Escuchar** para
   repetirla.
@@ -116,8 +116,13 @@ igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
 
 ## 7. Textos
 
-- Español sencillo de Perú, con frases cortas y palabras que conoce un niño de
-  primer grado.
+- Español sencillo de Perú, con frases cortas y palabras que conoce un niño del
+  grado de la solicitud (`solicitud.grado` de `trabajo.json`: primero o segundo).
+- **El contenido es de ese grado, sin salirse del tema.** Si la propuesta
+  aprobada trae un nombre que solo usan los especialistas, o algo que se aprende
+  en grados mayores, el juego usa el nombre con que se enseña en ese grado, sin
+  cambiar el tema, la idea ni lo que aprende. El supervisor lo anota en los
+  riesgos de `plan.md`.
 - La consigna y cada ayuda tienen **90 caracteres como máximo**.
 - Le hablan al niño de tú. No nombran al cuy ni a ninguna persona.
 - Los alimentos se escriben con su nombre de verdad: «plátano», «piña».
