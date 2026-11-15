@@ -14,7 +14,7 @@ const accesos: readonly { id: string; titulo: string; detalle: string; icono: No
   { id: 'registro', titulo: 'Registrar usuario', detalle: 'Docentes y estudiantes', icono: 'registrar', color: 'c-dorado' },
   { id: 'estudiantes', titulo: 'Estudiantes', detalle: 'Cuentas y secciones', icono: 'usuarios', color: 'c-rojo' },
   { id: 'cursos', titulo: 'Catálogo de cursos', detalle: 'Nombres de los cursos', icono: 'libro', color: 'c-cielo' },
-  { id: 'secciones', titulo: 'Crear sección', detalle: 'Primero de primaria', icono: 'aula', color: 'c-verde' },
+  { id: 'secciones', titulo: 'Crear sección', detalle: 'Primero y segundo de primaria', icono: 'aula', color: 'c-verde' },
   { id: 'docentes', titulo: 'Docentes', detalle: 'Cuentas y cursos asignados', icono: 'enlace', color: 'c-morado' },
   { id: 'administradores', titulo: 'Administradores', detalle: 'Datos, roles y acceso', icono: 'pizarra', color: 'c-rosa' },
 ]

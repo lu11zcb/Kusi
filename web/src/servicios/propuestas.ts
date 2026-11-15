@@ -5,7 +5,7 @@ const raiz = '/api/edu/'
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type ContextoPropuesta = {
-  curso_id: string; curso_nombre: string; grado: 1
+  curso_id: string; curso_nombre: string; grado: 1 | 2
   seccion_id: string | null; seccion_nombre: string | null; anio_escolar: number | null
 }
 export type ContextosPropuestas = { contextos: ContextoPropuesta[]; ia_configurada: boolean }
@@ -79,7 +79,7 @@ export async function obtenerContextosPropuestas(signal?: AbortSignal): Promise<
   const datos = await solicitar<unknown>(raiz + 'contexto/propuestas/', { signal })
   if (!objeto(datos) || typeof datos.ia_configurada !== 'boolean' || !Array.isArray(datos.contextos)
     || !datos.contextos.every((contexto: unknown) => objeto(contexto)
-      && identificador(contexto.curso_id) && texto(contexto.curso_nombre, 150) && contexto.grado === 1
+      && identificador(contexto.curso_id) && texto(contexto.curso_nombre, 150) && (contexto.grado === 1 || contexto.grado === 2)
       && (contexto.seccion_id === null
         ? contexto.seccion_nombre === null && contexto.anio_escolar === null
         : identificador(contexto.seccion_id) && texto(contexto.seccion_nombre, 80)

@@ -42,7 +42,7 @@ public class EducacionController {
     public ResponseEntity<?> crearSeccion(@RequestHeader(value="X-Clave-Interna", required=false) String clave,
         @RequestHeader(value="X-Sesion-Kusi", required=false) String sesion, @Valid @RequestBody CrearSeccion body) {
         autorizar(clave, sesion);
-        if (body.grado() != 1 || body.anio_escolar() < 1000 || body.anio_escolar() > 9999) return ResponseEntity.badRequest().body(Map.of("mensaje", "Indica primero de primaria y un año escolar de cuatro cifras."));
+        if ((body.grado() != 1 && body.grado() != 2) || body.anio_escolar() < 1000 || body.anio_escolar() > 9999) return ResponseEntity.badRequest().body(Map.of("mensaje", "Indica primero o segundo de primaria y un año escolar de cuatro cifras."));
         Seccion nueva = new Seccion(body.nombre(), body.grado(), body.anio_escolar());
         if (secciones.existsByNombreClaveAndAnioEscolar(nueva.getNombreClave(), body.anio_escolar())) return ResponseEntity.status(409).body(Map.of("mensaje", "Ya existe una sección con ese nombre en el mismo año escolar."));
         return ResponseEntity.status(201).body(Map.of("seccion", seccionDto(secciones.save(nueva))));
@@ -127,7 +127,7 @@ public class EducacionController {
     private Map<String,Object> vinculoDto(VinculoEstudiante v){return Map.of("id",v.getId(),"estudiante_id",v.getEstudianteId(),"seccion",seccionDto(v.getSeccion()),"anio_escolar",v.getAnioEscolar(),"creado_en",v.getCreadoEn());}
     private Map<String,Object> asignacionDto(AsignacionDocente a){return Map.of("id",a.getId(),"docente_id",a.getDocenteId(),"curso_id",a.getCursoId(),"seccion",seccionDto(a.getSeccion()),"anio_escolar",a.getAnioEscolar(),"creado_en",a.getCreadoEn());}
 
-    public record CrearSeccion(@NotBlank @Size(max=80) String nombre, @Min(1) @Max(1) int grado, @Min(1000) @Max(9999) int anio_escolar) {}
+    public record CrearSeccion(@NotBlank @Size(max=80) String nombre, @Min(1) @Max(2) int grado, @Min(1000) @Max(9999) int anio_escolar) {}
     public record VincularEstudiante(@NotNull UUID estudiante_id, @NotNull UUID seccion_id, @Min(1000) @Max(9999) int anio_escolar) {}
     public record AsignarDocente(@NotNull UUID docente_id, @NotNull UUID curso_id, @NotNull UUID seccion_id, @Min(1000) @Max(9999) int anio_escolar) {}
 }

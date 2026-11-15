@@ -20,6 +20,8 @@ export async function listarUsuariosEducativos(): Promise<UsuarioAdministrado[]>
   return [...usuarios.values()]
 }
 
+// «Primero de primaria» o «Segundo de primaria», según el grado de la sección.
+export const nombreGrado = (grado: number) => (grado === 2 ? 'Segundo' : 'Primero') + ' de primaria'
 export const nombreSeccion = (seccion: SeccionEducativa) => `${seccion.nombre} · ${seccion.grado}° de primaria · ${seccion.anio_escolar}`
 export const nombreCuenta = (usuario: UsuarioAdministrado) => `${usuario.nombre}${usuario.correo ? ' · ' + usuario.correo : usuario.dni ? ' · DNI ' + usuario.dni : ''}`
 

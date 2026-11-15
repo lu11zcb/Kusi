@@ -195,6 +195,17 @@ class EducacionPersistenciaTest {
         assertEquals(1L,secciones.count());
     }
 
+    // Las secciones son de primero o de segundo grado; otro grado se rechaza.
+    @Test
+    void seccionesDePrimeroYSegundoGradoSeGuardanYOtroGradoNo() throws Exception {
+        enviar("/interno/secciones/",Map.of("nombre","1ro A","grado",1,"anio_escolar",2026)).andExpect(status().isCreated());
+        enviar("/interno/secciones/",Map.of("nombre","2do A","grado",2,"anio_escolar",2026)).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.seccion.grado").value(2));
+        enviar("/interno/secciones/",Map.of("nombre","3ro A","grado",3,"anio_escolar",2026)).andExpect(status().isBadRequest());
+        enviar("/interno/secciones/",Map.of("nombre","0 A","grado",0,"anio_escolar",2026)).andExpect(status().isBadRequest());
+        assertEquals(2L,secciones.count());
+    }
+
     @Test
     void vinculoDeOtroAnioNoSeGuarda() throws Exception {
         Seccion seccion=seccion();

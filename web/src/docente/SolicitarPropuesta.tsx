@@ -6,6 +6,7 @@ import type { ContextosPropuestas, Proposito, SolicitudPropuesta } from '../serv
 import { CabeceraDocente, CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
 import { mensajeDocente } from './trabajosDocente'
+import { nombreGrado } from '../servicios/opcionesEducativas'
 
 export type BorradorPropuesta = { seleccion: string; tema: string; objetivo: string; proposito: Proposito; instrucciones: string }
 type Propiedades = { borrador: BorradorPropuesta; alCambiarBorrador: (valor: BorradorPropuesta) => void; alOcupar: (valor: boolean) => void; activo?: boolean; alSalir?: () => void }
@@ -75,7 +76,7 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
         </fieldset>
         <div className="doc-formulario-pie"><p>Primero revisarás la idea. Después podrás probar el juego y enviarlo a tu clase.</p><button type="submit" disabled={ocupado || revisando || cargando || !contextos?.contextos.length}><IconoDocente nombre={ocupado ? 'reloj' : 'editar'} />{ocupado ? 'Preparando tu idea…' : intentoPara === huella ? 'Recuperar mi idea' : 'Preparar propuesta'}</button></div>
         {ocupado && <p role="status">Estamos preparando tu idea. Espera un momento.</p>}
-      </form><aside className="doc-guia"><IconoCurso nombre={contexto?.curso_nombre ?? 'Curso'} /><h2>{contexto?.curso_nombre ?? 'Tu clase, tu idea'}</h2><p>{contexto?.seccion_nombre ?? 'Primero de primaria'}</p><hr /><h3>Empieza con lo que tu clase necesita</h3><p>Kusi preparará una idea para aprender jugando. Puedes pedirle cambios con tus palabras.</p><h3>Revísala y pruébala</h3><p>Tú decides cuándo el juego está listo para compartirlo con tus estudiantes.</p></aside></div>
+      </form><aside className="doc-guia"><IconoCurso nombre={contexto?.curso_nombre ?? 'Curso'} /><h2>{contexto?.curso_nombre ?? 'Tu clase, tu idea'}</h2><p>{contexto?.seccion_nombre ?? nombreGrado(contexto?.grado ?? 1)}</p><hr /><h3>Empieza con lo que tu clase necesita</h3><p>Kusi preparará una idea para aprender jugando. Puedes pedirle cambios con tus palabras.</p><h3>Revísala y pruébala</h3><p>Tú decides cuándo el juego está listo para compartirlo con tus estudiantes.</p></aside></div>
       <p className="doc-nota"><IconoDocente nombre="info" />Puedes cambiar de sección y volver a lo que estás escribiendo. Antes de cerrar el panel, prepara tu propuesta para guardarla.</p>
     </>}
   </section>

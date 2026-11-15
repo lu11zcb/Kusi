@@ -46,6 +46,17 @@ class SeccionesContratoTests(TestCase):
         self.assertIn("no-store", resultado.headers["Cache-Control"])
 
     @patch("cuentas.secciones_views.build_opener")
+    def test_acepta_segundo_grado(self, construir):
+        respuesta = MagicMock(status=201)
+        respuesta.read.return_value = json.dumps({"seccion": {"id": "00000000-0000-4000-8000-000000000002", "grado": 2, "nombre": "2.º A", "anio_escolar": 2026}}).encode()
+        construir.return_value.open.return_value.__enter__.return_value = respuesta
+        resultado = self.crear(grado=2, nombre="2.º A")
+        self.assertEqual(resultado.status_code, 201)
+        self.assertEqual(resultado.json()["seccion"]["grado"], 2)
+        peticion = construir.return_value.open.call_args.args[0]
+        self.assertEqual(json.loads(peticion.data), {"grado": 2, "nombre": "2.º A", "anio_escolar": 2026})
+
+    @patch("cuentas.secciones_views.build_opener")
     def test_no_configurado_falla_cerrado_sin_llamar(self, construir):
         for config in (
             {"EDU_API_URL": ""}, {"CLAVE_INTERNA": ""},
@@ -58,8 +69,8 @@ class SeccionesContratoTests(TestCase):
         construir.assert_not_called()
 
     @patch("cuentas.secciones_views.build_opener")
-    def test_valida_primero_nombre_y_anio(self, construir):
-        for datos in ({"grado": 2}, {"grado": True}, {"nombre": " "}, {"nombre": 3}, {"nombre": "x" * 81}, {"anio_escolar": "2026"}, {"anio_escolar": 26}, {"usuario_id": str(self.admin.pk)}):
+    def test_valida_grado_nombre_y_anio(self, construir):
+        for datos in ({"grado": 3}, {"grado": 0}, {"grado": True}, {"nombre": " "}, {"nombre": 3}, {"nombre": "x" * 81}, {"anio_escolar": "2026"}, {"anio_escolar": 26}, {"usuario_id": str(self.admin.pk)}):
             with self.subTest(datos=datos):
                 self.assertEqual(self.crear(**datos).status_code, 400)
         construir.assert_not_called()

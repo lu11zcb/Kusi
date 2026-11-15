@@ -60,8 +60,16 @@ test('SIMULADO: contexto autorizado y disponibilidad IA provienen del servidor',
   assert.equal((await obtenerContextosPropuestas()).ia_configurada, false)
 })
 
+test('SIMULADO: acepta contextos de primero y de segundo grado', async (t) => {
+  simular(t, () => json({ contextos: [
+    { curso_id: curso, curso_nombre: 'Matemática', grado: 1, seccion_id: seccion, seccion_nombre: 'A', anio_escolar: 2026 },
+    { curso_id: curso, curso_nombre: 'Ciencia y Tecnología', grado: 2, seccion_id: seccion, seccion_nombre: 'B', anio_escolar: 2026 },
+  ], ia_configurada: true }))
+  assert.deepEqual((await obtenerContextosPropuestas()).contextos.map((contexto) => contexto.grado), [1, 2])
+})
+
 test('SIMULADO: rechaza contextos inválidos y conserva el rechazo de permisos', async (t) => {
-  for (const datos of [{ contextos: [], ia_configurada: 'sí' }, { contextos: [{ curso_id: curso, curso_nombre: 'QA', grado: 2 }], ia_configurada: false }]) {
+  for (const datos of [{ contextos: [], ia_configurada: 'sí' }, { contextos: [{ curso_id: curso, curso_nombre: 'QA', grado: 3 }], ia_configurada: false }]) {
     t.mock.method(globalThis, 'fetch', async () => json(datos))
     await assert.rejects(obtenerContextosPropuestas(), /cursos autorizados/)
     t.mock.restoreAll()

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { cargarModulo } from './cargar-modulo.mjs'
 
-const { listarUsuariosEducativos, filtrarOpciones, nombreSeccion, opcionesCuentas } = await import(await cargarModulo(new URL('../src/servicios/opcionesEducativas.ts', import.meta.url)))
+const { listarUsuariosEducativos, filtrarOpciones, nombreGrado, nombreSeccion, opcionesCuentas } = await import(await cargarModulo(new URL('../src/servicios/opcionesEducativas.ts', import.meta.url)))
 const { listarSecciones } = await import(await cargarModulo(new URL('../src/servicios/educacion.ts', import.meta.url)))
 const json = (datos, status = 200) => new Response(JSON.stringify(datos), { status })
 
@@ -25,6 +25,12 @@ test('HU08: busca partes de nombres sin distinguir mayúsculas o tildes', () => 
   assert.deepEqual(filtrarOpciones(opciones, 'sin coincidencias'), [])
   assert.deepEqual(filtrarOpciones(opciones, ' '), opciones)
   assert.equal(nombreSeccion({ nombre: 'A', grado: 1, anio_escolar: 2027 }), 'A · 1° de primaria · 2027')
+  assert.equal(nombreSeccion({ nombre: 'B', grado: 2, anio_escolar: 2027 }), 'B · 2° de primaria · 2027')
+})
+
+test('Las secciones pueden ser de primero o de segundo de primaria', () => {
+  assert.equal(nombreGrado(1), 'Primero de primaria')
+  assert.equal(nombreGrado(2), 'Segundo de primaria')
 })
 
 test('HU08: carga nombres de todas las páginas y conserva las cuentas antiguas', async (t) => {

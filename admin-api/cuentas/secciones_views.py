@@ -33,9 +33,9 @@ def crear_seccion(request):
         return error
     nombre, grado, anio = (datos.get(campo) for campo in ("nombre", "grado", "anio_escolar"))
     if (set(datos) != {"nombre", "grado", "anio_escolar"} or not isinstance(nombre, str)
-            or not nombre.strip() or len(nombre.strip()) > 80 or type(grado) is not int or grado != 1
+            or not nombre.strip() or len(nombre.strip()) > 80 or type(grado) is not int or grado not in (1, 2)
             or type(anio) is not int or not 1000 <= anio <= 9999):
-        return JsonResponse({"mensaje": "Indica primero de primaria, un nombre de hasta 80 caracteres y un año escolar de cuatro cifras."}, status=400)
+        return JsonResponse({"mensaje": "Indica primero o segundo de primaria, un nombre de hasta 80 caracteres y un año escolar de cuatro cifras."}, status=400)
     datos["nombre"] = " ".join(nombre.split())
     destino = settings.EDU_API_URL.rstrip("/")
     try:

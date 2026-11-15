@@ -3,6 +3,7 @@ import type { ContextosPropuestas } from '../servicios/propuestas'
 import { CabeceraDocente, CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 import { identidadCurso, normalizarBusqueda } from './utilidadesDocente'
 import { IconoDocente } from './IconoDocente'
+import { nombreGrado } from '../servicios/opcionesEducativas'
 
 export function MisCursos({ contextos, error, crear, recargar }: { contextos: ContextosPropuestas | null; error: string; crear: (curso: string) => void; recargar: () => void }) {
   const [buscar, establecerBuscar] = useState('')
@@ -24,7 +25,7 @@ export function MisCursos({ contextos, error, crear, recargar }: { contextos: Co
       {!visibles.length && <MensajeDocente titulo="No encontramos ese curso"><p>Prueba otro nombre o vuelve a mostrar todos tus cursos.</p><button className="secundario" type="button" onClick={() => { establecerBuscar(''); establecerSeccion('') }}>Limpiar búsqueda y filtros</button></MensajeDocente>}
       <div className="doc-cursos">{visibles.map((c) => <article className={'doc-curso doc-tono-' + identidadCurso(c.curso_nombre).tono} key={c.curso_id + '/' + (c.seccion_id ?? '')}>
         <div className="doc-curso-cabecera"><IconoCurso nombre={c.curso_nombre} /><span>{c.anio_escolar ?? 'Primaria'}</span></div>
-        <h2>{c.curso_nombre}</h2><p>Primero de primaria{c.seccion_nombre ? ' · Sección ' + c.seccion_nombre : ''}</p>
+        <h2>{c.curso_nombre}</h2><p>{nombreGrado(c.grado)}{c.seccion_nombre ? ' · Sección ' + c.seccion_nombre : ''}</p>
         <button type="button" className="doc-boton-curso" onClick={() => crear(c.curso_id + '/' + (c.seccion_id ?? ''))}>Crear propuesta<IconoDocente nombre="flecha" /></button>
       </article>)}</div>
       <p className="doc-nota"><IconoDocente nombre="info" />El administrador te ayuda a organizar tus cursos y secciones.</p>
