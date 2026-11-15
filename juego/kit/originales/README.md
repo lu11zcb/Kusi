@@ -17,6 +17,16 @@ Los pasos intermedios (recortes, hojas reducidas y medidas) los escriben las
 herramientas en `preparacion/`, dentro de cada carpeta. Esa carpeta no se sube a
 GitHub: se rehace cada vez.
 
+## curriculo/
+
+La investigación de lo que enseñan 1.º y 2.º de primaria en el Perú: `temas_primaria_peru.json`
+(389 temas con su área, competencia, documento y página), `documentos_primaria_peru.json` (el
+catálogo de 23 documentos con su enlace y su verificación) e `curriculo-peruano-primaria.md` (el
+informe completo, con los desempeños). De ahí salen la lista de temas y los desempeños de
+[`../curriculo/`](../curriculo/README.md), que además trae el detalle de lo que se enseña, escrito
+leyendo los documentos. Los JSON llevan los enlaces de los PDF; los archivos de `curriculo/` no.
+Ningún programa usa estos originales.
+
 ## personajes/
 
 La corrección de las caminatas de espalda (28 de octubre de 2026). Solo cambió
