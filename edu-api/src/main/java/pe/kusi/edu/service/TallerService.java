@@ -43,9 +43,10 @@ public class TallerService {
 
     private static final Logger registro = LoggerFactory.getLogger(TallerService.class);
 
-    // El trabajador se limita a 25 minutos. Si a los 30 un trabajo sigue «en proceso»,
+    // El trabajador se limita a 75 minutos. Si a los 90 un trabajo sigue «en proceso»,
     // el trabajador se cayó: el trabajo vuelve a «pendiente» para intentarlo otra vez.
-    public static final Duration VENCIMIENTO = Duration.ofMinutes(30);
+    // Un juego con su cuento, sus piezas y sus correcciones tarda más de 25 minutos.
+    public static final Duration VENCIMIENTO = Duration.ofMinutes(90);
     // Al tercer vencimiento el trabajo queda «fallido»: algo lo traba siempre.
     public static final int MAX_VENCIMIENTOS = 3;
     public static final int MAX_CARACTERES_MOTIVO = 2000;
