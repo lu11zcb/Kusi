@@ -26,9 +26,9 @@ async function compilar() {
 
 // Devuelve lo que informó la herramienta ({ tipo, lado_mayor, instancias }) o lanza un
 // error con su motivo (por ejemplo, «No se encontró ninguna figura en la imagen»).
-export async function prepararPieza(original, destino, { apoyado = false, fondo = false } = {}) {
+export async function prepararPieza(original, destino, { apoyado = false, fondo = false, figura = false } = {}) {
   const programa = await compilar()
-  const opciones = fondo ? ['--fondo'] : apoyado ? ['--apoyado'] : []
+  const opciones = fondo ? ['--fondo'] : figura ? ['--figura'] : apoyado ? ['--apoyado'] : []
   try {
     const { stdout } = await ejecutar(programa, [original, destino, ...opciones], { timeout: 60_000 })
     return JSON.parse(stdout.trim().split('\n').at(-1))
@@ -40,12 +40,12 @@ export async function prepararPieza(original, destino, { apoyado = false, fondo 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [original, destino] = process.argv.slice(2)
   if (!original || !destino) {
-    console.error('Uso: node kit/herramientas/preparar_pieza.mjs <original.png> <pieza.png> [--apoyado | --fondo]')
+    console.error('Uso: node kit/herramientas/preparar_pieza.mjs <original.png> <pieza.png> [--apoyado | --fondo | --figura]')
     process.exit(2)
   }
   try {
     console.log(JSON.stringify(await prepararPieza(original, destino, {
-      apoyado: process.argv.includes('--apoyado'), fondo: process.argv.includes('--fondo'),
+      apoyado: process.argv.includes('--apoyado'), fondo: process.argv.includes('--fondo'), figura: process.argv.includes('--figura'),
     })))
   } catch (error) {
     console.error(error.message)

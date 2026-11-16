@@ -69,30 +69,77 @@ export function armarComando(rol, valores) {
     programa: reemplazar(rol.programa),
     argumentos: rol.argumentos.map(reemplazar),
     carpeta: rol.carpeta ? reemplazar(rol.carpeta) : valores.carpeta,
+    // Si el rol informa su avance por la salida (eventos JSON), «silencio_seg» es cuántos
+    // segundos sin ninguna salida se toman como un cuelgue. Sin el campo, no se vigila.
+    silencioMs: Number(rol.silencio_seg) > 0 ? Number(rol.silencio_seg) * 1000 : null,
   }
+}
+
+// Los grupos de procesos que siguen vivos. Cada rol corre en su propio grupo (detached), así que
+// al cerrar el taller con Ctrl+C no se enteraban y quedaban huérfanos: un supervisor gastando la
+// suscripción y un navegador sin pantalla jugando con sonido. «cortarActivos» los corta al salir.
+const activos = new Set()
+
+export function cortarActivos(senal = 'SIGTERM') {
+  const cortados = [...activos]
+  for (const pid of cortados) {
+    try { process.kill(-pid, senal) } catch { /* ya terminó */ }
+  }
+  activos.clear()
+  return cortados.length
 }
 
 // Lanza el programa sin pantalla y espera a que termine, como máximo «limiteMs». Corre
 // en su propio grupo de procesos: si se pasa del tiempo, se corta él y todo lo que abrió.
-export function lanzar({ programa, argumentos, carpeta }, { limiteMs, entorno = process.env }) {
+export function lanzar({ programa, argumentos, carpeta, silencioMs = null }, { limiteMs, entorno = process.env }) {
   return new Promise((resolver) => {
     const inicio = Date.now()
     const salida = []
     const errores = []
     let agotado = false
     const proceso = spawn(programa, argumentos, { cwd: carpeta, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: entorno })
-    proceso.stdout.on('data', (parte) => guardar(salida, parte))
-    proceso.stderr.on('data', (parte) => guardar(errores, parte))
+    if (proceso.pid) activos.add(proceso.pid)
+    let ultimaSalida = Date.now()
+    let silencio = false
+    proceso.stdout.on('data', (parte) => { ultimaSalida = Date.now(); guardar(salida, parte) })
+    proceso.stderr.on('data', (parte) => { ultimaSalida = Date.now(); guardar(errores, parte) })
     const cortar = (senal) => { try { process.kill(-proceso.pid, senal) } catch { /* ya terminó */ } }
+    let abandonar = null
     const temporizador = setTimeout(() => {
       agotado = true
       cortar('SIGTERM')
       setTimeout(() => cortar('SIGKILL'), 5000).unref()
+      // Un proceso hijo que se salió del grupo puede dejar abiertas las tuberías y entonces
+      // «close» nunca llega: el rol quedaría colgado para siempre (pasó con un programador que
+      // no contestó). Pasados unos segundos más, se da por cortado y se sigue.
+      abandonar = setTimeout(() => {
+        proceso.stdout.destroy()
+        proceso.stderr.destroy()
+        terminar(null)
+      }, 8000)
+      abandonar.unref()
     }, Math.max(0, limiteMs))
-    const terminar = (codigo, error = null) => {
+    // El rol dejó de responder (la conexión con su modelo se quedó esperando, por ejemplo):
+    // se corta antes de gastar todo el tiempo del trabajo, y quien lo lanzó puede reintentar.
+    const vigia = silencioMs ? setInterval(() => {
+      if (Date.now() - ultimaSalida < silencioMs) return
+      silencio = true
+      clearInterval(vigia)
       clearTimeout(temporizador)
+      agotado = true
+      cortar('SIGTERM')
+      setTimeout(() => cortar('SIGKILL'), 5000).unref()
+      abandonar = setTimeout(() => { proceso.stdout.destroy(); proceso.stderr.destroy(); terminar(null) }, 8000)
+      abandonar.unref()
+    }, Math.min(5000, silencioMs)) : null
+    vigia?.unref()
+    const terminar = (codigo, error = null) => {
+      activos.delete(proceso.pid)
+      clearTimeout(temporizador)
+      clearTimeout(abandonar)
+      clearInterval(vigia)
       resolver({
-        codigo, agotado, segundos: Math.round((Date.now() - inicio) / 1000),
+        codigo, agotado, silencio, segundos: Math.round((Date.now() - inicio) / 1000),
         salida: Buffer.concat(salida).toString('utf8'),
         errores: error ? String(error.message ?? error) : Buffer.concat(errores).toString('utf8'),
       })
@@ -143,5 +190,21 @@ export function consumoDe(salida) {
     }
   } catch {
     return { tokens_entrada: 0, tokens_salida: 0, costo_estimado_usd: 0, respuesta: salida.trim().slice(-2000) || null, con_error: false }
+  }
+}
+
+// Lo que el programa se negó a ejecutar por permisos (lista `permission_denials` de su
+// resumen en JSON), en una línea cada uno. Sirve para saber qué comando se negó y para
+// no tomar como «imposible» un trabajo que solo chocó con un permiso.
+export function negadosDe(salida) {
+  try {
+    const datos = JSON.parse(salida.trim().split('\n').at(-1))
+    return (Array.isArray(datos.permission_denials) ? datos.permission_denials : []).map((negado) => {
+      const entrada = negado?.tool_input ?? {}
+      const detalle = entrada.command ?? entrada.file_path ?? entrada.pattern ?? JSON.stringify(entrada)
+      return String(negado?.tool_name ?? 'herramienta') + ': ' + String(detalle).slice(0, 300)
+    })
+  } catch {
+    return []
   }
 }

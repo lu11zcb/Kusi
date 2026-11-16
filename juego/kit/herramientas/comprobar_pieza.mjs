@@ -2,7 +2,7 @@
 // No opina, solo mide: medidas, transparencia, márgenes, tamaño de la silueta, que sea
 // una sola figura, el contorno, los blancos de adentro, el peso y el nombre.
 //
-//   node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo]
+//   node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo | --figura]
 //
 // Responde un JSON { pasa, respuestas: [{ pregunta, si, motivo }] } y termina con 0 si
 // pasa o 1 si no. Lee el PNG con zlib, sin instalar nada.
@@ -13,6 +13,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const LADO_OBJETO = 256
+// Una figura entera (un muñeco, una casa, un animal quieto…) se dibuja grande y completa, y el
+// juego la corta en partes: por eso mide 768 × 768 en vez de 256 × 256.
+export const LADO_FIGURA = 768
+export const SILUETA_FIGURA = { minimo: 600, maximo: 720 }
+export const MARGEN_FIGURA = 24
+export const DESVIO_FIGURA = 48
+export const PESO_FIGURA = 600 * 1024
 export const FONDO = { ancho: 1672, alto: 941 }
 export const MARGEN = 8
 export const SILUETA = { minimo: 180, maximo: 215 }
@@ -131,7 +138,7 @@ function areaDeHuecos(imagen) {
   return huecos
 }
 
-export function comprobarPieza(archivo, { fondo = false } = {}) {
+export function comprobarPieza(archivo, { fondo = false, figura = false } = {}) {
   const respuestas = []
   const responder = (pregunta, si, motivo = null) => respuestas.push({ pregunta, si, motivo: si ? null : motivo })
   const id = path.basename(archivo, '.png')
@@ -154,34 +161,40 @@ export function comprobarPieza(archivo, { fondo = false } = {}) {
     return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas }
   }
 
-  const medidas = imagen.ancho === LADO_OBJETO && imagen.alto === LADO_OBJETO && imagen.canales === 4
-  responder('¿Es un PNG con transparencia (RGBA) de 256 × 256?', medidas,
+  // Un objeto mide 256 × 256; una figura entera, 768 × 768. Lo demás se mide sobre ese lado.
+  const L = figura ? LADO_FIGURA : LADO_OBJETO
+  const margen = figura ? MARGEN_FIGURA : MARGEN
+  const silueta = figura ? SILUETA_FIGURA : SILUETA
+  const desvio = figura ? DESVIO_FIGURA : DESVIO_CENTRO
+  const pesoMaximo = figura ? PESO_FIGURA : PESO_OBJETO
+  const medidas = imagen.ancho === L && imagen.alto === L && imagen.canales === 4
+  responder('¿Es un PNG con transparencia (RGBA) de ' + L + ' × ' + L + '?', medidas,
     'Mide ' + imagen.ancho + ' × ' + imagen.alto + (imagen.canales === 4 ? '' : ', sin canal de transparencia de 8 bits') + '.')
   if (!medidas) return { pasa: false, respuestas }
   const { pixeles } = imagen
-  const alfa = (x, y) => pixeles[(y * LADO_OBJETO + x) * 4 + 3]
+  const alfa = (x, y) => pixeles[(y * L + x) * 4 + 3]
 
-  const esquinas = [alfa(0, 0), alfa(255, 0), alfa(0, 255), alfa(255, 255)]
+  const esquinas = [alfa(0, 0), alfa(L - 1, 0), alfa(0, L - 1), alfa(L - 1, L - 1)]
   responder('¿Las cuatro esquinas son totalmente transparentes?', esquinas.every((valor) => valor === 0),
     'Alguna esquina no es transparente (el fondo no se quitó del todo).')
 
-  let minX = 256; let minY = 256; let maxX = -1; let maxY = -1
-  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+  let minX = L; let minY = L; let maxX = -1; let maxY = -1
+  for (let y = 0; y < L; y++) for (let x = 0; x < L; x++) {
     if (alfa(x, y) >= OPACO) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y) }
   }
   if (maxX < 0) {
     responder('¿Hay una figura?', false, 'La pieza está vacía: todo es transparente.')
     return { pasa: false, respuestas }
   }
-  responder('¿Quedan al menos 8 px transparentes en cada borde?',
-    minX >= MARGEN && minY >= MARGEN && maxX <= 255 - MARGEN && maxY <= 255 - MARGEN,
+  responder('¿Quedan al menos ' + margen + ' px transparentes en cada borde?',
+    minX >= margen && minY >= margen && maxX <= L - 1 - margen && maxY <= L - 1 - margen,
     'La silueta va de (' + minX + ', ' + minY + ') a (' + maxX + ', ' + maxY + ').')
   const ladoMayor = Math.max(maxX - minX + 1, maxY - minY + 1)
-  responder('¿El lado mayor de la silueta mide entre 180 y 215 px?', ladoMayor >= SILUETA.minimo && ladoMayor <= SILUETA.maximo,
+  responder('¿El lado mayor de la silueta mide entre ' + silueta.minimo + ' y ' + silueta.maximo + ' px?', ladoMayor >= silueta.minimo && ladoMayor <= silueta.maximo,
     'Mide ' + ladoMayor + ' px.')
   const centro = (minX + maxX + 1) / 2
-  responder('¿El centro de la silueta está a menos de 16 px del centro del lienzo, a lo ancho?',
-    Math.abs(centro - 128) < DESVIO_CENTRO, 'Su centro está en x = ' + centro + '.')
+  responder('¿El centro de la silueta está a menos de ' + desvio + ' px del centro del lienzo, a lo ancho?',
+    Math.abs(centro - L / 2) < desvio, 'Su centro está en x = ' + centro + '.')
 
   const { marca, areas } = manchas(imagen)
   const principal = areas.indexOf(Math.max(...areas))
@@ -191,8 +204,8 @@ export function comprobarPieza(archivo, { fondo = false } = {}) {
 
   // El borde: píxeles de la figura que tocan un píxel transparente.
   let borde = 0; let claros = 0
-  for (let y = 1; y < 255; y++) for (let x = 1; x < 255; x++) {
-    const i = y * 256 + x
+  for (let y = 1; y < L - 1; y++) for (let x = 1; x < L - 1; x++) {
+    const i = y * L + x
     if (marca[i] !== principal) continue
     if (alfa(x - 1, y) < OPACO || alfa(x + 1, y) < OPACO || alfa(x, y - 1) < OPACO || alfa(x, y + 1) < OPACO) {
       borde++
@@ -206,9 +219,10 @@ export function comprobarPieza(archivo, { fondo = false } = {}) {
   responder('¿Los blancos de adentro de la pieza siguen opacos (la herramienta que quita el fondo no los borró)?',
     huecos <= 0.05 * areas[principal], 'Hay ' + huecos + ' px transparentes encerrados dentro de la figura.')
 
-  responder('¿Pesa menos de 100 KB?', peso < PESO_OBJETO, 'Pesa ' + Math.round(peso / 1024) + ' KB.')
+  responder('¿Pesa menos de ' + Math.round(pesoMaximo / 1024) + ' KB?', peso < pesoMaximo, 'Pesa ' + Math.round(peso / 1024) + ' KB.')
   responder('¿El nombre del archivo está en minúsculas, sin tildes ni «ñ», con guiones, y es igual a su id?',
-    PATRON_NOMBRE.test(id) && !id.startsWith('fondo-'), 'Se llama «' + id + '.png».')
+    PATRON_NOMBRE.test(id) && (figura ? id.startsWith('figura-') : !id.startsWith('fondo-') && !id.startsWith('figura-')),
+    'Se llama «' + id + '.png»' + (figura ? ' (una figura se llama figura-<nombre>).' : '.'))
   return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas, silueta: { minX, minY, maxX, maxY, ladoMayor } }
 }
 
@@ -220,10 +234,10 @@ function opacoEntero(imagen) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const archivo = process.argv[2]
   if (!archivo) {
-    console.error('Uso: node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo]')
+    console.error('Uso: node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo | --figura]')
     process.exit(2)
   }
-  const resultado = comprobarPieza(archivo, { fondo: process.argv.includes('--fondo') })
+  const resultado = comprobarPieza(archivo, { fondo: process.argv.includes('--fondo'), figura: process.argv.includes('--figura') })
   console.log(JSON.stringify(resultado, null, 2))
   process.exit(resultado.pasa ? 0 : 1)
 }

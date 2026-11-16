@@ -1,6 +1,6 @@
 ---
 rol: dibujante
-descripcion: Dibuja solo las piezas quietas que faltan (objetos y, si el tema lo pide, un fondo) siguiendo la guía de estilo, y las prepara con la transparencia y las medidas del kit.
+descripcion: Dibuja las piezas quietas que faltan (objetos, figuras enteras y personajes secundarios, un fondo si el tema lo pide y las láminas del cuento de apertura) siguiendo la guía de estilo, y las prepara con la transparencia y las medidas del kit.
 ---
 
 # Dibujante
@@ -32,6 +32,8 @@ En la carpeta `piezas/` de tu trabajo:
    (contorno), 7 (lienzos), 9 (objetos nuevos), 10 (fondos nuevos), 11 (lo que
    no se dibuja) y 13 (cómo se pide un dibujo).
 2. [La lista de comprobación](../../kit/estilo/comprobacion.md).
+   Y la regla 13.4 de [../reglas.md](../reglas.md): dibujos grandes y alegres; las
+   piezas de un mismo juego se ven como un solo conjunto.
 3. [Las piezas modelo](../../kit/estilo/modelos.md) y la lámina.
 
 ## Paso a paso
@@ -52,7 +54,11 @@ completo por llamada (ver [../README.md](../README.md)):
    - Un objeto se recorta y se reduce, sin deformarlo, hasta que su lado mayor
      mide 200 px (la guía pide de 180 a 215). Va centrado en 256 × 256 y, con
      `--apoyado`, con su punto más bajo en y = 244.
-   - Un fondo (`--fondo`) se deja en 1672 × 941, sin transparencia.
+   - Una figura entera (`--figura`, id `figura-<nombre>`) se deja en 768 × 768 con transparencia, con
+     su lado mayor en 704 px: completa, de frente y con las partes bien separadas (guía de estilo, 9b).
+   - Un fondo (`--fondo`) y una lámina del cuento (`--cuento`, id `fondo-cuento-<n>`) se dejan
+     en 1672 × 941, sin transparencia. La lámina cuenta un momento de la historia, sin
+     personajes y con la esquina inferior izquierda tranquila (guía de estilo, 10b).
 6. **Pasa el filtro del código** (`kit/herramientas/comprobar_pieza.mjs`): medidas,
    transparencia, márgenes, silueta, manchas, contorno, blancos de adentro, peso
    y nombre. Una pieza que no pasa no queda en `piezas/`.

@@ -5,6 +5,7 @@
 //   preparar_pieza <original.png> <pieza.png>              un objeto centrado
 //   preparar_pieza <original.png> <pieza.png> --apoyado    un objeto con su punto más bajo en y = 244
 //   preparar_pieza <original.png> <fondo.png> --fondo      un fondo de 1672 × 941, sin transparencia
+//   preparar_pieza <original.png> <figura.png> --figura    una figura entera de 768 × 768 con transparencia
 //
 // No se usa directo: lo compila y lo llama kit/herramientas/preparar_pieza.mjs.
 
@@ -20,9 +21,13 @@ func fallar(_ texto: String) -> Never {
 }
 
 let argumentos = CommandLine.arguments
-guard argumentos.count >= 3 else { fallar("Uso: preparar_pieza <original.png> <pieza.png> [--apoyado | --fondo]") }
+guard argumentos.count >= 3 else { fallar("Uso: preparar_pieza <original.png> <pieza.png> [--apoyado | --fondo | --figura]") }
 let esFondo = argumentos.contains("--fondo")
 let apoyado = argumentos.contains("--apoyado")
+let esFigura = argumentos.contains("--figura")
+// Un objeto mide 256 × 256 (lado mayor 200); una figura entera, 768 × 768 (lado mayor 704).
+let lado = esFigura ? 768.0 : 256.0
+let ladoMayor = esFigura ? 704.0 : 200.0
 guard let fuente = CGImageSourceCreateWithURL(URL(fileURLWithPath: argumentos[1]) as CFURL, nil),
       let original = CGImageSourceCreateImageAtIndex(fuente, 0, nil) else { fallar("No se pudo leer el original.") }
 let colores = CGColorSpace(name: CGColorSpace.sRGB)!
@@ -65,13 +70,13 @@ guard let figura = CIContext().createCGImage(ciRecorte, from: ciRecorte.extent) 
 // 2. Se reduce sin deformarla: el lado mayor mide 200 px (la guía pide de 180 a 215) y
 // va centrada a lo ancho. En CoreGraphics el origen está abajo: «apoyado» deja su punto
 // más bajo en la fila 244, como los pies de los personajes.
-let escala = 200.0 / Double(max(figura.width, figura.height))
+let escala = ladoMayor / Double(max(figura.width, figura.height))
 let ancho = Double(figura.width) * escala, alto = Double(figura.height) * escala
-let y = apoyado ? 256.0 - 245.0 : (256.0 - alto) / 2.0
-guard let lienzo = CGContext(data: nil, width: 256, height: 256, bitsPerComponent: 8, bytesPerRow: 0,
+let y = apoyado && !esFigura ? 256.0 - 245.0 : (lado - alto) / 2.0
+guard let lienzo = CGContext(data: nil, width: Int(lado), height: Int(lado), bitsPerComponent: 8, bytesPerRow: 0,
   space: colores, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { fallar("Sin lienzo.") }
 lienzo.interpolationQuality = .high
-lienzo.draw(figura, in: CGRect(x: (256.0 - ancho) / 2.0, y: y, width: ancho, height: alto))
+lienzo.draw(figura, in: CGRect(x: (lado - ancho) / 2.0, y: y, width: ancho, height: alto))
 guard let pieza = lienzo.makeImage() else { fallar("No se pudo preparar la pieza.") }
 guardar(pieza)
-print("{\"tipo\":\"objeto\",\"lado_mayor\":\(Int(max(ancho, alto).rounded())),\"instancias\":\(resultado.allInstances.count)}")
+print("{\"tipo\":\"\(esFigura ? "figura" : "objeto")\",\"lado_mayor\":\(Int(max(ancho, alto).rounded())),\"instancias\":\(resultado.allInstances.count)}")

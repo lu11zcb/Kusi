@@ -8,8 +8,8 @@ import path from 'node:path'
 import { leerEnv, cargarConfiguracion } from '../../taller/trabajador/configuracion.js'
 import { crearBuzon } from '../../taller/trabajador/buzon.js'
 import { prepararCarpeta, piezasNuevas } from '../../taller/trabajador/carpeta.js'
-import { armarComando, leerAgentes, subagentes, consumoDe } from '../../taller/trabajador/roles.js'
-import { nombraAlCuy, importacionPermitida, revisarCodigo } from '../../taller/trabajador/comprobar.js'
+import { armarComando, leerAgentes, cortarActivos, subagentes, consumoDe, negadosDe, lanzar } from '../../taller/trabajador/roles.js'
+import { nombraAlCuy, importacionPermitida, revisarCodigo, comprobarJuego } from '../../taller/trabajador/comprobar.js'
 import { procesarTrabajo, pedidoParaElSupervisor, MAX_CORRECCIONES } from '../../taller/trabajador/procesar.js'
 
 // El trabajador del taller, sin programas reales: los roles, el buzón y las
@@ -30,7 +30,7 @@ test('lo que ya está en el entorno gana al archivo, y sin archivo hay valores p
   const configuracion = cargarConfiguracion({ TALLER_ENV: path.join(carpeta, '.env'), TALLER_CLAVE: 'del-entorno' })
   assert.equal(configuracion.eduApiUrl, 'http://del-archivo')
   assert.equal(configuracion.clave, 'del-entorno')
-  assert.equal(configuracion.limiteMs, 25 * 60 * 1000)
+  assert.equal(configuracion.limiteMs, 75 * 60 * 1000)
   assert.equal(cargarConfiguracion({ TALLER_ENV: path.join(carpeta, 'no-existe') }).clave, '')
   await rm(carpeta, { recursive: true })
 })
@@ -75,7 +75,7 @@ test('el buzón entrega la propuesta en su ruta y el fallo en la de siempre', as
 test('arma la línea de comando de un rol con sus marcadores, y un marcador sin valor es un error', () => {
   const rol = { programa: 'programa-del-rol', carpeta: '{temporal}', argumentos: ['--pedido', '{pedido}', 'Edit(/{carpeta}/**)'] }
   assert.deepEqual(armarComando(rol, { pedido: 'Haz el juego', carpeta: '/t/123', temporal: '/tmp/x' }), {
-    programa: 'programa-del-rol', argumentos: ['--pedido', 'Haz el juego', 'Edit(//t/123/**)'], carpeta: '/tmp/x',
+    programa: 'programa-del-rol', argumentos: ['--pedido', 'Haz el juego', 'Edit(//t/123/**)'], carpeta: '/tmp/x', silencioMs: null,
   })
   assert.throws(() => armarComando(rol, { pedido: 'x' }), /\{carpeta\} no tiene valor/)
 })
@@ -110,6 +110,80 @@ test('los eventos por línea conservan el mensaje final, el consumo y los fallos
   assert.equal(fallo.respuesta, 'No disponible')
 })
 
+test('un guion sin historia no pasa las comprobaciones: el reproductor no tendría qué contar', async () => {
+  const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-historia-'))
+  await mkdir(path.join(carpeta, 'juego'), { recursive: true })
+  const guion = { formato: 'kusi-paquete/0', familia: 'prueba', retos: [] }
+  await writeFile(path.join(carpeta, 'juego', 'guion-ejemplo.json'), JSON.stringify(guion))
+  assert.match((await comprobarJuego({ carpeta, trabajo: randomUUID(), juegoUrl: 'http://127.0.0.1:1/' })).motivos.join(' | '), /Falta la historia del guion/)
+  await writeFile(path.join(carpeta, 'juego', 'guion-ejemplo.json'), JSON.stringify({ ...guion, historia: 'Kusi necesita ayuda.' }))
+  assert.doesNotMatch((await comprobarJuego({ carpeta, trabajo: randomUUID(), juegoUrl: 'http://127.0.0.1:1/' })).motivos.join(' | '), /Falta la historia del guion/)
+  await rm(carpeta, { recursive: true })
+})
+
+test('un rol que se pasa del tiempo se corta aunque un hijo suyo deje abiertas las tuberías', { timeout: 30_000 }, async () => {
+  // El hijo sale del grupo (detached) y hereda la salida: «close» no llegaría hasta que él muera.
+  const codigo = "const { spawn } = require('node:child_process');" +
+    "spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { detached: true, stdio: 'inherit' }).unref();" +
+    "setTimeout(() => {}, 60000)"
+  const inicio = Date.now()
+  const resultado = await lanzar({ programa: process.execPath, argumentos: ['-e', codigo], carpeta: tmpdir() }, { limiteMs: 300 })
+  assert.equal(resultado.agotado, true)
+  assert.ok(Date.now() - inicio < 20_000, 'tardó ' + (Date.now() - inicio) + ' ms')
+})
+
+test('un rol que deja de dar salida se corta por silencio, y uno que sigue hablando no', { timeout: 40_000 }, async () => {
+  const mudo = await lanzar({ programa: process.execPath, argumentos: ['-e', 'setTimeout(() => {}, 60000)'], carpeta: tmpdir(), silencioMs: 700 }, { limiteMs: 60_000 })
+  assert.equal(mudo.silencio, true)
+  assert.equal(mudo.agotado, true)
+  const habla = await lanzar({ programa: process.execPath, carpeta: tmpdir(), silencioMs: 700, argumentos: ['-e',
+    "let n = 0; const t = setInterval(() => { console.log('avance ' + n); if (++n === 4) { clearInterval(t) } }, 300)"] }, { limiteMs: 60_000 })
+  assert.equal(habla.silencio, false)
+  assert.equal(habla.codigo, 0)
+  // El campo del rol pasa a milisegundos; sin el campo, no se vigila.
+  assert.equal(armarComando({ programa: 'p', argumentos: [], silencio_seg: 240 }, { carpeta: '/c' }).silencioMs, 240_000)
+  assert.equal(armarComando({ programa: 'p', argumentos: [] }, { carpeta: '/c' }).silencioMs, null)
+})
+
+test('al cerrar el taller se cortan los roles que seguían trabajando', async () => {
+  // Un rol que no termina solo (como un supervisor con su navegador abierto): sin cortarActivos quedaría huérfano.
+  const colgado = lanzar({ programa: process.execPath, argumentos: ['-e', 'setInterval(() => {}, 1000)'] }, { limiteMs: 60_000 })
+  await new Promise((listo) => setTimeout(listo, 400))
+  assert.equal(cortarActivos('SIGKILL'), 1)
+  const resultado = await colgado
+  assert.notEqual(resultado.codigo, 0)
+  assert.equal(resultado.agotado, false)
+  assert.equal(cortarActivos('SIGKILL'), 0)
+})
+
+test('un juego sin los controles ni la interfaz del kit, o con su propio entorno, no pasa el código', async () => {
+  const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-controles-'))
+  const juego = path.join(carpeta, 'juego')
+  await mkdir(path.join(juego, 'escenas'), { recursive: true })
+  for (const archivo of ['juego.js', 'guion-ejemplo.json', 'README.md']) await writeFile(path.join(juego, archivo), archivo.endsWith('.json') ? '{}' : '// x\n')
+  await writeFile(path.join(juego, 'escenas', 'E.js'), "import * as Phaser from 'phaser'\nexport class E extends Phaser.Scene {}\n")
+  const sin = (await revisarCodigo(juego)).join(' | ')
+  assert.match(sin, /no usa los controles del kit/)
+  assert.match(sin, /no usa la interfaz común del kit/)
+  await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n')
+  await writeFile(path.join(juego, 'index.html'), '<html></html>')
+  await mkdir(path.join(juego, 'kit'))
+  const ajeno = (await revisarCodigo(juego)).join(' | ')
+  assert.doesNotMatch(ajeno, /no usa/)
+  await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\nthis.cameras.main.setZoom(2)\n')
+  assert.match((await revisarCodigo(juego)).join(' | '), /usa zoom de cámara/)
+  // El truco que dejó un juego reducido a una tira de 350 px y con los botones del kit encimados.
+  await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n' +
+    'this.cameras.main.setViewport(0, 170, 1280, 350)\nthis.camaraHud = this.cameras.add(0, 0, 1280, 720)\n' +
+    'const interfaz = this.children.list.filter((p) => !mundo.includes(p))\nfor (const o of interfaz) { if (o.type === "Text") o.setFontSize(48) }\n')
+  const truco = (await revisarCodigo(juego)).join(' | ')
+  assert.match(truco, /recorta la cámara/)
+  assert.match(truco, /cambia el tamaño de todos los textos/)
+  assert.match(ajeno, /juego\/index\.html no debe estar/)
+  assert.match(ajeno, /juego\/kit no debe estar/)
+  await rm(carpeta, { recursive: true })
+})
+
 test('la búsqueda del cuy no confunde «cuyo» ni «cuya»', () => {
   for (const texto of ['el cuy', 'cuyAnimado', 'paso_cuy', 'CUY']) assert.equal(nombraAlCuy(texto), true, texto)
   for (const texto of ['cuyo nombre', 'cuya forma', 'cuyos', 'el protagonista']) assert.equal(nombraAlCuy(texto), false, texto)
@@ -138,7 +212,8 @@ test('la revisión del código encuentra lo prohibido, el cuy y las importacione
     'window.parent.postMessage(1)',
   ].join('\n'))
   const motivos = await revisarCodigo(juego)
-  assert.equal(motivos.length, 6, motivos.join('\n'))
+  // Cinco fallos del código y los cinco del kit: sin controles, interfaz, decorado, vida ni ambiente.
+  assert.equal(motivos.length, 11, motivos.join('\n'))
   assert.match(motivos[0], /Falta juego\/README\.md/)
   assert.ok(motivos.some((motivo) => /E\.js se conecta a la red/.test(motivo)))
   assert.ok(motivos.some((motivo) => /guarda datos en el navegador/.test(motivo)))
@@ -185,10 +260,10 @@ test('el pedido al supervisor dice la carpeta, la corrección y sus motivos, sin
 
 // ---------- procesarTrabajo, con dobles ----------
 
-async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, ahora } = {}) {
+async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, ahora, siguientes } = {}) {
   const trabajos = await mkdtemp(path.join(tmpdir(), 'kusi-procesar-'))
   const trabajo = { id: randomUUID(), tipo: 'crear_juego', intentos: 1, entrada: { solicitud: { tema: 'Parejas' } } }
-  const registro = { lanzados: [], resultados: [], fallos: [] }
+  const registro = { lanzados: [], resultados: [], fallos: [], siguientes }
   const buzon = {
     resultado: async (id, cuerpo) => { registro.resultados.push(cuerpo); return respuestasSpring.shift() ?? { estado: 200, datos: {} } },
     fallo: async (id, motivo) => { registro.fallos.push(motivo); return { estado: 200, datos: {} } },
@@ -198,6 +273,10 @@ async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, a
     registro.lanzados.push(comando.argumentos[0])
     const entrega = entregas.shift()
     if (entrega === 'agotado') return { codigo: null, agotado: true, salida: '', errores: '' }
+    if (entrega === 'negado') {
+      const negado = { tool_name: 'Bash', tool_input: { command: 'cat trabajo.json' } }
+      return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'FALLÓ: Bash denegado', permission_denials: [negado] }), errores: '' }
+    }
     if (entrega === 'no') return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'FALLÓ: figura sagrada' }), errores: '' }
     registro.siguientes = entrega
     return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'LISTO', usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.5 }), errores: '' }
@@ -264,11 +343,39 @@ test('si se acaba el tiempo, el trabajo falla sin más intentos', async () => {
   assert.equal(lento.registro.lanzados.length, 1)
 })
 
+test('si se acaba el tiempo pero lo que hay pasa las comprobaciones, se entrega igual con su nota', async () => {
+  const { final, registro } = await escenario({ entregas: ['agotado'], siguientes: [] })
+  assert.equal(final.resultado, 'listo')
+  assert.equal(registro.resultados.length, 1)
+  assert.equal(registro.fallos.length, 0)
+  assert.match(registro.resultados[0].evidencia.motivo, /sin su revisión final/)
+
+  // Y si lo que hay no pasa, falla con el motivo de las comprobaciones.
+  const mal = await escenario({ entregas: ['agotado'], siguientes: ['Faltan las pruebas.'] })
+  assert.equal(mal.final.resultado, 'falló')
+  assert.match(mal.registro.fallos[0], /Se acabó el tiempo[\s\S]*Faltan las pruebas\./)
+})
+
 test('si el supervisor dice que no se puede, se informa el fallo sin insistir', async () => {
   const { final, registro } = await escenario({ entregas: ['no'] })
   assert.equal(final.resultado, 'falló')
   assert.equal(registro.lanzados.length, 1)
   assert.match(registro.fallos[0], /figura sagrada/)
+})
+
+test('si el supervisor dice FALLÓ tras una negativa de permiso, se le dice qué se negó y reintenta', async () => {
+  const { final, registro } = await escenario({ entregas: ['negado', []] })
+  assert.equal(final.resultado, 'listo')
+  assert.equal(registro.lanzados.length, 2)
+  assert.match(registro.lanzados[1], /Se te negó este comando por permisos: Bash: cat trabajo\.json/)
+  assert.equal(registro.fallos.length, 0)
+})
+
+test('las negativas de permiso salen del resumen del programa, una línea cada una', () => {
+  const salida = JSON.stringify({ result: 'x', permission_denials: [{ tool_name: 'Bash', tool_input: { command: 'echo hola' } }] })
+  assert.deepEqual(negadosDe(salida), ['Bash: echo hola'])
+  assert.deepEqual(negadosDe('LISTO'), [])
+  assert.deepEqual(negadosDe(JSON.stringify({ result: 'x' })), [])
 })
 
 // ---------- La biblioteca crece sola ----------

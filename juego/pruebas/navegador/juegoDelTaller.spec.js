@@ -56,6 +56,7 @@ const ARCHIVOS = {
     formato: 'kusi-paquete/0',
     familia: FAMILIA,
     titulo: 'Prueba del taller',
+    historia: 'Kusi necesita ayuda. Toca la olla para empezar.',
     retos: [
       { id: 1, consigna: 'Toca la olla.', ayudas: ['Es redonda.', 'Está a la izquierda.'] },
       { id: 2, consigna: 'Toca la olla otra vez.', ayudas: ['Sigue ahí.', 'Mira abajo.'] },
@@ -109,7 +110,7 @@ test('?juego=<id> abre el juego del taller con su escena, sus piezas y el protag
   pagina.on('pageerror', (error) => errores.push(error.message))
   pagina.on('console', (mensaje) => { if (mensaje.type() === 'warning') advertencias.push(mensaje.text()) })
 
-  await pagina.goto('/?juego=' + TRABAJO + '&nivel=2&vida=0')
+  await pagina.goto('/?juego=' + TRABAJO + '&nivel=2&vida=0&historia=0')
   await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
 
   expect(await pagina.evaluate(() => window.kusi.juego)).toEqual({ familia: FAMILIA, trabajo: TRABAJO, clave: 'taller:' + TRABAJO })
@@ -125,9 +126,31 @@ test('?juego=<id> abre el juego del taller con su escena, sus piezas y el protag
   expect(errores).toEqual([])
 })
 
+test('la historia de la propuesta se cuenta antes del primer nivel y se puede saltar', async ({ page: pagina }) => {
+  const errores = []
+  pagina.on('pageerror', (error) => errores.push(error.message))
+
+  await pagina.goto('/?juego=' + TRABAJO + '&vida=0')
+  await pagina.waitForFunction(() => document.title === 'Kusi · La historia')
+  // Mientras Kusi cuenta, el juego todavía no abrió ni avisó «listo».
+  expect(await pagina.evaluate(() => window.kusi?.juego ?? null)).toBeNull()
+
+  // El cuento es corto (una sola página): el botón dice «¡Empezar!» y abre el nivel 1.
+  await pagina.mouse.click(1090, 611)
+  await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
+  expect((await pagina.evaluate(() => window.__pruebaTaller)).nivel).toBe(1)
+
+  // «Saltar» hace lo mismo desde el principio.
+  await pagina.goto('/?juego=' + TRABAJO + '&vida=0')
+  await pagina.waitForFunction(() => document.title === 'Kusi · La historia')
+  await pagina.mouse.click(1170, 56)
+  await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
+  expect(errores).toEqual([])
+})
+
 test('un guion con «trabajo» que llega por mensaje abre ese juego y la página se entera', async ({ page: pagina }) => {
   await escucharAvisos(pagina)
-  await pagina.goto('/?paquete=mensaje&vida=0')
+  await pagina.goto('/?paquete=mensaje&vida=0&historia=0')
   await pagina.waitForFunction(() => window.__avisosDelJuego.some((aviso) => aviso.tipo === 'listo'))
   const guion = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO }
 
@@ -147,7 +170,7 @@ test('un guion con «trabajo» que llega por mensaje abre ese juego y la página
 test('un id que no es un UUID no pide ningún archivo del taller', async ({ page: pagina }) => {
   const pedidos = []
   pagina.on('request', (pedido) => { if (pedido.url().includes('/taller/')) pedidos.push(pedido.url()) })
-  await pagina.goto('/?juego=../../kit&vida=0')
+  await pagina.goto('/?juego=../../kit&vida=0&historia=0')
   expect(await esperarFallo(pagina)).toMatch(/no es un id válido/)
   expect(pedidos).toEqual([])
   expect(await pagina.evaluate(() => window.kusi.listo)).toBe(false)
@@ -155,7 +178,7 @@ test('un id que no es un UUID no pide ningún archivo del taller', async ({ page
 
 test('el taller reabre el reto y la partida confirmados aunque listo ya se haya guardado', async ({ page: pagina }) => {
   await escucharAvisos(pagina)
-  await pagina.goto('/?paquete=mensaje&nivel=2&vida=0')
+  await pagina.goto('/?paquete=mensaje&nivel=2&vida=0&historia=0')
   await pagina.waitForFunction(() => window.__avisosDelJuego.some((aviso) => aviso.tipo === 'listo'))
   const paquete = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO }
   const partida = { id: 'taller-partida-confirmada', orden: 5, avisados: ['listo', 'inicio', 'reto_completado:1'], cerrada: false }
@@ -175,11 +198,11 @@ test('el taller reabre el reto y la partida confirmados aunque listo ya se haya 
 test('un trabajo que no existe y un guion que no pasa su validar muestran el error amable', async ({ page: pagina }) => {
   const inexistente = '00000000-0000-4000-8000-000000000000'
   // Con ?juego= lo primero que falta es su guion de ejemplo.
-  await pagina.goto('/?juego=' + inexistente + '&vida=0')
+  await pagina.goto('/?juego=' + inexistente + '&vida=0&historia=0')
   expect(await esperarFallo(pagina)).toMatch(/No llegó el guion/)
 
   // Con un guion que sí llega, lo que falta es el código del juego.
-  await pagina.goto('/?paquete=mensaje&vida=0')
+  await pagina.goto('/?paquete=mensaje&vida=0&historia=0')
   await pagina.waitForFunction(() => window.kusi?.avisos)
   const sinCodigo = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: inexistente }
   await pagina.evaluate((paquete) => window.postMessage({ tipo: 'paquete', paquete }, '*'), sinCodigo)
@@ -187,7 +210,7 @@ test('un trabajo que no existe y un guion que no pasa su validar muestran el err
   // El niño ve la salida amable de siempre, nunca el motivo técnico.
   expect(await pagina.evaluate(() => window.kusi.estado().error)).toContain('¡Vamos a intentarlo de nuevo!')
 
-  await pagina.goto('/?paquete=mensaje&vida=0')
+  await pagina.goto('/?paquete=mensaje&vida=0&historia=0')
   await pagina.waitForFunction(() => window.kusi?.avisos)
   const roto = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO, roto: true }
   await pagina.evaluate((paquete) => window.postMessage({ tipo: 'paquete', paquete }, '*'), roto)
@@ -196,7 +219,7 @@ test('un trabajo que no existe y un guion que no pasa su validar muestran el err
 })
 
 test('el guion de un trabajo no abre el código de otro', async ({ page: pagina }) => {
-  await pagina.goto('/?paquete=mensaje&vida=0')
+  await pagina.goto('/?paquete=mensaje&vida=0&historia=0')
   await pagina.waitForFunction(() => window.kusi?.avisos)
   // La ficha es de «prueba_taller» y el guion dice otra familia.
   const ajeno = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO, familia: 'otra_familia' }

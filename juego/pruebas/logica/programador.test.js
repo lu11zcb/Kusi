@@ -65,6 +65,30 @@ test('un encargo que termina deja el código en juego/, su pedido y su registro'
   await rm(path.dirname(carpeta), { recursive: true })
 })
 
+test('un FALLÓ que solo dice que el entorno bloqueó el build o el navegador no es un fallo del juego', async () => {
+  const carpeta = await trabajoDePrueba()
+  const { lanzarRol } = programadorDePrueba([
+    'FALLÓ: 8 pruebas aprobadas; compilación y Playwright bloqueados por permisos del entorno.',
+    'FALLÓ: 2 pruebas fallan; Playwright bloqueado por permisos del entorno.',
+    'FALLÓ: ReferenceError en la escena; el build quedó bloqueado por permisos.',
+  ])
+  const primero = await programar({ carpeta, tarea: 'Escribe el juego' }, { roles, agentes, lanzarRol })
+  assert.equal(primero.pasa, true, primero.motivo)
+  assert.equal(primero.siguiente, 'revisor')
+  const segundo = await programar({ carpeta, tarea: 'Escribe el juego' }, { roles, agentes, lanzarRol })
+  assert.equal(segundo.pasa, false)
+  const tercero = await programar({ carpeta, tarea: 'Escribe el juego' }, { roles, agentes, lanzarRol })
+  assert.equal(tercero.pasa, false)
+  await rm(path.dirname(carpeta), { recursive: true })
+})
+
+test('el pedido al programador no le pide el build ni el navegador y le dice que la historia es un texto', () => {
+  const pedido = pedidoDeCodigo({ carpeta: '/t/x', tarea: 'haz', correccion: null, juegoUrl: 'http://127.0.0.1:5174/', trabajo: 'x' })
+  assert.match(pedido, /NO corras npm run build ni abras el juego/)
+  assert.match(pedido, /es un TEXTO/)
+  assert.doesNotMatch(pedido, /abre el juego con Playwright una vez/)
+})
+
 test('si el programador dice que no pudo o se acaba su tiempo, toca corregir', async () => {
   const carpeta = await trabajoDePrueba()
   const { lanzarRol } = programadorDePrueba(['FALLÓ: falta la pieza olla', 'agotado'])

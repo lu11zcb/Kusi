@@ -143,6 +143,21 @@ menos de 2,5 MB (el actual, 1,9 MB).
    niño de primer o segundo grado de Perú reconoce.
 6. **Se entiende a 64 px y en gris.**
 
+## 9b. Figuras enteras
+
+Una figura es una sola imagen **grande y completa** (768 × 768, con transparencia, id
+`figura-<nombre>`) que el juego puede cortar en partes o usar como personaje secundario.
+
+- **Completa y de una pieza**, de frente (o un poco desde arriba), en una pose tranquila y
+  simétrica, con las partes bien separadas a la vista (brazos algo abiertos, piernas algo
+  separadas, nada tapado por otra parte): así se puede cortar con rectángulos.
+- **Con personalidad:** adornos, dibujos y colores propios del tema, y si es un muñeco o una
+  criatura, una cara amable sencilla (dos ojos de punto y una sonrisa pequeña).
+- Mismo estilo que los objetos: contorno café cálido grueso y cerrado, sombreado simple con un
+  color base, una sombra y una luz, colores vivos.
+- Lado mayor de la silueta entre 600 y 720 px, centrada, con 24 px libres en cada borde.
+- Fondo blanco liso al dibujarla; el taller lo quita.
+
 ## 10. Fondos nuevos
 
 Solo se dibujan si el tema lo pide; si no, se usa el patio andino del kit.
@@ -157,10 +172,29 @@ Solo se dibujan si el tema lo pide; si no, se usa el patio andino del kit.
 - Sin personas, animales, texto ni marcas.
 - Colores más suaves que los de los objetos.
 
+## 10b. Láminas del cuento
+
+El cuento con que empieza cada juego (taller/reglas.md, 13.1) tiene **una lámina por
+página**: de 1 a 3 ilustraciones, con los ids `fondo-cuento-1`, `fondo-cuento-2`…
+
+- Una escena que cuenta **ese momento de la historia** y se entiende de un vistazo
+  (la tienda con el estante vacío, la mesa con las piezas sueltas).
+- **Sin personas, animales ni personajes**: Kusi se agrega encima. Un animal o una
+  persona que haga falta para la historia se cuenta con el texto de la página.
+- **La esquina inferior izquierda y el 25 % de abajo quedan tranquilos**: ahí van
+  Kusi y la frase de la página.
+- Cámara libre (de frente o un poco desde arriba): no tiene que ser desde arriba
+  como los fondos del juego.
+- Mismo formato que un fondo: 1672 × 941, sin transparencia. Sin texto, letras,
+  números ni marcas; ni carteles con palabras.
+- Mismo estilo que el resto: cálido, contorno café en las cosas y verde oscuro en
+  las plantas; nada de miedo, burla ni estereotipos.
+
 ## 11. Lo que no se dibuja
 
-- **Personajes nuevos** o cambios a los personajes del kit (en este sprint).
-  Un animal quieto sí se dibuja, como objeto (sección 9).
+- **Cambios a los personajes del kit** (el protagonista, el zorro y Kusi).
+  Los personajes secundarios que pide un juego sí se dibujan, como **figuras enteras**
+  (sección 9b). Un animal quieto sí se dibuja, como objeto (sección 9).
 - **Figuras sagradas como personaje:** deidades, santos, vírgenes, ni apus,
   Pachamama o Inti con cara o cuerpo. Se proponen símbolos (una luz, rayos) o
   la voz de Kusi, y decide el docente.

@@ -21,7 +21,13 @@ No dibujas y no cambias el kit, el reproductor ni otros juegos.
 ## Qué lees primero
 
 1. [../reglas.md](../reglas.md), sobre todo las reglas 2 (el kit), 3 (el
-   protagonista), 6 (los niños), 7 (los textos) y 9 (la seguridad).
+   protagonista), 6 (los niños), 7 (los textos), 9 (la seguridad) y 13 (la aventura a la que
+   viajan Kusi y el niño, buscar y armar, figuras enteras cortadas con
+   `figuraCortada.js` creatividad, un solo mundo (13.10), moverse con sentido (13.11), tensión y sorpresa
+   (13.12), un mundo con vida (13.13), letras legibles (13.14), un mundo lleno y vivo con `mundoVivo.js` (13.22), una premisa con sentido y lugares a escala (13.18 y 13.19), viaje en vehículo (13.20: modelo
+   `kit/ejemplos/viaje/`), una sola mecánica sencilla pero entretenida, con la receta de `kit/recetas/` (13.21), controles y interfaz del kit (13.16 y 13.17; parte del modelo
+   `kit/ejemplos/exploracion/` (a pie, desde arriba), `kit/ejemplos/plataformas/` (de lado, con saltos pequeños) o `kit/ejemplos/viaje/` (varios lugares en vehículo), sin botones de «Ir a…» ni cajas hechas a mano) y un juego que se disfruta: la historia, el protagonista que hace la acción, el
+   escenario, los dibujos y la respuesta inmediata).
 2. [../entrega.md](../entrega.md): qué archivos entregas y qué avisos manda el
    juego.
 3. El laberinto como modelo:

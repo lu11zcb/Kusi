@@ -96,7 +96,7 @@ cada reto.
 | `formato` | siempre `kusi-paquete/0` |
 | `familia` | la familia del juego |
 | `trabajo` | el id del trabajo. El guion de ejemplo puede no traerlo; el trabajador lo agrega al entregar y Spring comprueba que sea el suyo. |
-| `titulo`, `curso`, `meta` e `historia` | lo que el docente ve del juego |
+| `titulo`, `curso`, `meta` e `historia` | lo que el docente ve del juego. La `historia` es obligatoria y es **un texto** (nunca una lista) de 1 a 3 frases cortas, de unos 110 caracteres cada una; las láminas `fondo-cuento-<n>` van en `piezas` de la ficha: el reproductor la cuenta al empezar como un cuento de páginas ([reglas.md](reglas.md), 13.1). |
 | `orientacion` | siempre `horizontal` |
 | `consigna` | la consigna general |
 | `retos` | de 1 a 5 niveles. Cada uno tiene `id`, `consigna`, exactamente 2 `ayudas` y los campos propios del juego. |
@@ -149,7 +149,7 @@ sus pruebas en `pruebas/logica/registroJuegos.test.js`) y lo usa
    escena se cae al empezar), el niño ve la salida amable de siempre y la
    página recibe un solo aviso `fallo` con el motivo.
 6. **Para probar un juego del taller** se abre
-   `http://localhost:5174/?juego=<trabajo>`, que carga su `guion-ejemplo.json`.
+   `http://localhost:5174/?juego=<trabajo>`, que carga su `guion-ejemplo.json` y cuenta primero su historia (con `&historia=0` se salta).
    También se le puede mandar un guion con `trabajo` por el puente
    (`?paquete=mensaje`), como hace el panel.
 

@@ -20,6 +20,10 @@ import { esIdTrabajo } from '#kit/reproductor/datos/registroJuegos.js'
 
 // Un encargo y hasta 2 correcciones, más un margen para dividir el trabajo en partes.
 export const MAX_ENCARGOS = 6
+// Palabras con que un programador dice que el entorno le bloqueó una comprobación.
+const ENTORNO = /permiso|bloquead|EPERM|sandbox|entorno|Permission denied|MachPort|Chromium|Playwright|npm run build/i
+// Y las que muestran que el problema es del juego mismo.
+const ERROR_DEL_JUEGO = /fall(a|an|aron) (las |\d+ )?pruebas|prueba[s]? (falla|fallan|fallida)|\d+ (pruebas )?fallan|SyntaxError|ReferenceError|TypeError|no (se )?(pudo|puede) escribir/i
 const LIMITE_ENCARGO_MS = Number(process.env.TALLER_LIMITE_PROGRAMADOR_MS ?? 12 * 60 * 1000)
 
 // Lo que se le pide al programador. Nombra roles, nunca programas.
@@ -36,6 +40,12 @@ export function pedidoDeCodigo({ carpeta, tarea, correccion, juegoUrl, trabajo }
   lineas.push(
     'Comprueba con node --test las pruebas de juego/pruebas/. El juego se abre en ' +
       new URL('?juego=' + trabajo, juegoUrl).href + ' (el servidor ya está encendido).',
+    'Tiempo: tienes como máximo 8 minutos. Escribe lo que te piden y corre node --test una vez. NO corras npm run build ni abras el juego ' +
+      'con Playwright o un navegador: en tu entorno no tienes permiso y las corre otro rol después. Si algo no se puede ejecutar por ' +
+      'permisos del entorno, eso NO es un fallo: responde LISTO y anótalo en juego/comprobaciones.md. No repitas comprobaciones que ya ' +
+      'pasaron ni pulas el código: después lo revisa otro rol, y si algo falla te lo devuelve con una corrección.',
+    'La «historia» del guion es un TEXTO (una cadena con 1 a 3 frases cortas), nunca una lista, y los ids de sus láminas fondo-cuento-<n> ' +
+      'van en «piezas» de juego.js.',
     'Al terminar, responde en una línea: LISTO, o FALLÓ: <motivo>.',
   )
   return lineas.join('\n')
@@ -92,13 +102,26 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
     pedido, instrucciones: agentes.programador.instrucciones,
     carpeta: carpetaReal, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
   })
-  const ejecucion = await lanzarRol(comando, { limiteMs: LIMITE_ENCARGO_MS })
+  // Si el programador deja de responder (silencio_seg en roles.local.json), se corta y se lanza
+  // otra vez, una sola vez, sin gastar una corrección: no es un error del encargo.
+  let ejecucion
+  for (let lanzamiento = 1; lanzamiento <= 2; lanzamiento += 1) {
+    // Los dos lanzamientos comparten el tiempo del encargo: el supervisor espera como máximo eso.
+    ejecucion = await lanzarRol(comando, { limiteMs: Math.max(60_000, LIMITE_ENCARGO_MS - (Date.now() - inicio)) })
+    if (!ejecucion.silencio) break
+    await appendFile(path.join(carpetaReal, 'programador', 'pedidos.md'),
+      'El programador dejó de responder' + (lanzamiento === 1 ? ': se lanza otra vez.' : ' dos veces seguidas.') + '\n\n')
+  }
   const consumo = consumoDe(ejecucion.salida)
   await rm(temporal, { recursive: true, force: true })
 
   const respuesta = (consumo.respuesta ?? '').trim()
-  const termino = ejecucion.codigo === 0 && !ejecucion.agotado && !consumo.con_error && !/^\s*FALL[OÓ]/i.test(respuesta)
+  // Un «FALLÓ» que solo dice que el entorno no le dejó correr el build o el navegador no es un fallo
+  // del juego: esas comprobaciones las hace otro rol (comprobar.js y el revisor).
+  const soloEntorno = /^\s*FALL[OÓ]/i.test(respuesta) && ENTORNO.test(respuesta) && !ERROR_DEL_JUEGO.test(respuesta)
+  const termino = ejecucion.codigo === 0 && !ejecucion.agotado && !consumo.con_error && (soloEntorno || !/^\s*FALL[OÓ]/i.test(respuesta))
   const motivo = termino ? null
+    : ejecucion.silencio ? 'El programador dejó de responder dos veces seguidas.'
     : ejecucion.agotado ? 'El programador no terminó en ' + Math.round(LIMITE_ENCARGO_MS / 60000) + ' minutos.'
       : respuesta || ejecucion.errores.slice(-500) || 'El programador terminó con un error.'
   const segundos = Math.round((Date.now() - inicio) / 1000)

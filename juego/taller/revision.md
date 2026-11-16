@@ -36,7 +36,8 @@ cuando todas sus respuestas son «sí».
 ### 2.2 Jugarlo
 
 Se abre en el navegador a 1280 × 720 y a 800 × 360 (un celular en horizontal),
-con los efectos y con `?vida=0`.
+con los efectos y con `?vida=0`. El reproductor cuenta primero la historia: se mira
+con la dirección normal y se juega con `&historia=0`.
 
 - [ ] ¿Carga sin errores en la consola?
 - [ ] ¿Kusi dice la consigna con voz, y **Escuchar** la repite?
@@ -44,6 +45,67 @@ con los efectos y con `?vida=0`.
 - [ ] ¿Un error es amable: no castiga y Kusi da una pista?
 - [ ] ¿Se puede terminar cada nivel y llegar al cierre?
 - [ ] ¿Funciona con el dedo y con el ratón?
+- [ ] ¿Es una aventura (regla 13.0)? El niño y Kusi viajan a un lugar y cumplen una
+      misión; Kusi es su compañero y nunca hay que cuidarlo, bañarlo ni alimentarlo.
+- [ ] ¿Empieza con el cuento (con `&historia=0` se salta)? Debe tener de 1 a 3
+      páginas con su lámina (`fondo-cuento-<n>`) y su frase, que expliquen por qué
+      se juega, y pasar con **Seguir** y **Saltar**. Se mira con la dirección
+      normal y se captura cada página. (regla 13.1)
+- [ ] ¿El protagonista es quien hace la acción —recoger, llevar, colocar, tocar o
+      señalar— y reacciona, y no solo mira? (regla 13.2)
+- [ ] ¿El escenario va con la historia y el tema, y lo que se toca resalta sobre el
+      fondo? (regla 13.3)
+- [ ] ¿Las piezas son grandes, alegres y se reconocen a 64 px, y las que forman algo
+      se ven como un solo dibujo y quedan unidas al terminar? (regla 13.4)
+- [ ] ¿Si hay que reunir o armar algo, primero **busca** por el lugar (las piezas no están
+      en fila a un lado) y después **arma**? (regla 13.7)
+- [ ] ¿Si el orden importa, la silueta marca el lugar de la siguiente parte, Kusi da pistas y
+      una pieza equivocada vuelve con un rebote amable? Si se juntan dos cosas dibujadas
+      aparte, ¿se cambia a la imagen del conjunto unido y no se ponen encima? (13.7 y 13.8)
+- [ ] ¿La figura armada se ve **idéntica** a la figura entera, sin huecos ni piezas
+      desencajadas, y las partes salen de esa misma imagen? Se compara una captura de la
+      figura armada con la figura entera. (regla 13.8)
+- [ ] ¿Tiene vida: piezas y personajes secundarios que se mueven, algo propio del tema y
+      una celebración al terminar, y se ve distinto a otros juegos? (regla 13.9)
+- [ ] ¿Todo es de **un solo mundo** (suelo, caminos, casas, canastas, objetos, fondo y
+      cuento), sin pasto, tierra ni cosas de otro lugar, y el juego se ve como lo que
+      promete el cuento? (13.10)
+- [ ] ¿Moverse por el mundo tiene sentido, con un camino con forma y cada nivel distinto? (13.11)
+- [ ] ¿Hay tensión y sorpresa: un adversario u obstáculo amable, cosas que no están
+      quietas y algo nuevo en cada nivel? (13.12)
+- [ ] ¿El mundo tiene vida: al menos cinco construcciones o detalles propios dibujados y
+      cosas que se mueven? (13.13)
+- [ ] ¿Las letras y números que crea el juego son grandes (48 px o más), oscuros, sobre etiqueta clara, y se
+      leen a 800 × 360? ¿Los botones Sonido, Escuchar y Ayuda se leen cada uno por separado, sin encimarse?
+      ¿Nada tapa lo que hay que encontrar (el globo, los botones)? (13.14)
+- [ ] **Veredicto de gusto:** jugado dos minutos con ojos de niño, ¿da ganas de seguir o
+      aburre? Si es feo, aburrido o incoherente, es «corregir», aunque lo demás pase. (13.15)
+- [ ] ¿Se **maneja de verdad** con el joystick (abajo a la izquierda), y con el botón de Saltar si es de plataformas, sin jugar
+      tocando casillas, hojas o botones de «Ir a…»? Se prueba moviendo y saltando. (13.16)
+- [ ] ¿El mundo cubre **toda la pantalla** (de borde a borde, sin una tira recortada, sin franjas celestes del
+      lienzo ni zoom de cámara; si la captura muestra bandas vacías arriba o abajo, es «corregir») y la interfaz se
+      ve de su tamaño normal, con el globo de Kusi y los textos completos, sin cortarse? (13.17)
+- [ ] ¿La interfaz es la común del kit (Kusi con su globo arriba a la izquierda, Sonido, Escuchar y
+      Ayuda arriba a la derecha, indicadores debajo, controles abajo), sin cajas ni botones
+      hechos a mano, y el mundo no pasa por esas zonas? (13.17)
+- [ ] ¿**No se salta entre lugares** (islas, nubes, hojas, planetas)? Entre lugares se viaja en vehículo; el salto es
+      pequeño, a escala y dentro de un lugar (charcos, escalones, cajas), y se puede hacer sin esfuerzo, sin nada
+      imposible. (13.11)
+- [ ] ¿La premisa tiene **sentido**: hay una necesidad o misión clara, lo que se reúne o descarta está ahí
+      por una causa creíble del lugar, y se entiende por qué el niño hace lo que hace? (13.18)
+- [ ] ¿La **escala** es correcta: un lugar (isla, valle, pueblo…) es chico y lleno (1 a 3 pantallas) y el
+      personaje es pequeño, y no son hojas o islas del tamaño del personaje cruzadas a saltos? (13.19)
+- [ ] ¿Si el juego es de viaje, se maneja **un vehículo del mundo** con el joystick hasta sus puertos, y esa es
+      su única mecánica? (13.20)
+- [ ] **Sencillo pero entretenido (13.21):** ¿una sola mecánica, con reto de habilidad, reacción inmediata,
+      reintento en menos de 3 s y algo nuevo en cada nivel? Se miden los puntos de `kit/recetas/diversion.md`
+      («Los puntos que se miden») jugando una vez; si dos o más son «no», es «corregir».
+- [ ] ¿Hay **8 piezas dibujadas o menos**, y no es un mandado (ir, esperar y volver)? (13.21)
+- [ ] ¿El mundo está **lleno y vivo** y no parece una sola imagen? Suelo trabajado, mucho decorado (14 por pantalla o más),
+      capas (se pasa detrás o delante de las cosas), sombras, cosas que se mueven y ambiente que flota. Si está
+      vacío o quieto, es «corregir». (13.22)
+- [ ] ¿Cada acción tiene respuesta inmediata, y un fallo de sonido o de efecto no
+      impide continuar? (regla 13.5)
 - [ ] ¿Todo lo que se toca mide al menos 64 px?
 - [ ] ¿El protagonista camina, se alegra y se asusta con los estados del molde?
 - [ ] ¿El juego funciona igual con un protagonista de prueba? (Se comprueba

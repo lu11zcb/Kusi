@@ -37,8 +37,8 @@ export function cargarConfiguracion(entorno = process.env) {
     juegoUrl: valor('TALLER_JUEGO_URL', 'http://127.0.0.1:5174/'),
     roles: entorno.TALLER_ROLES ?? path.join(CARPETA_TALLER, 'roles.local.json'),
     trabajos: entorno.TALLER_TRABAJOS ?? path.join(CARPETA_TALLER, 'trabajos'),
-    // 25 minutos por trabajo: Spring da por perdido uno que pasa 30 en proceso.
-    limiteMs: Number(entorno.TALLER_LIMITE_MS ?? 25 * 60 * 1000),
+    // 75 minutos por trabajo: Spring da por perdido uno que pasa 90 en proceso.
+    limiteMs: Number(entorno.TALLER_LIMITE_MS ?? 75 * 60 * 1000),
     // 5 minutos por propuesta: Spring pasa al respaldo si a los 8 no la entregan.
     limitePropuestaMs: Number(entorno.TALLER_LIMITE_PROPUESTA_MS ?? 5 * 60 * 1000),
     esperaMs: Number(entorno.TALLER_ESPERA_MS ?? 5000),

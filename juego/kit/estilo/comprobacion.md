@@ -72,6 +72,42 @@ Quién contesta cada parte:
 - [ ] ¿Es el lugar que corresponde al tema?
 - [ ] ¿Es apropiado para sus estudiantes?
 
+## Figura entera
+
+### Código
+
+- [ ] ¿Es un PNG con transparencia (RGBA) de 768 × 768, de menos de 600 KB?
+- [ ] ¿El lado mayor de la silueta mide entre 600 y 720 px, centrada y con 24 px libres en cada borde?
+- [ ] ¿Es una sola figura, con contorno oscuro y sin halo ni manchas?
+- [ ] ¿El nombre es `figura-<nombre>.png`?
+
+### Revisor
+
+- [ ] ¿Está completa, de frente, con sus partes bien separadas a la vista y nada tapado?
+- [ ] ¿Se puede cortar en partes con rectángulos sin cortar un detalle importante?
+- [ ] ¿Es simpática, creativa y tiene personalidad, sin ser una forma sosa?
+- [ ] ¿Parece del mismo mundo que el kit (contorno, colores, sombreado)?
+
+## Lámina del cuento
+
+### Código
+
+- [ ] ¿Es un PNG de 1672 × 941 (16:9) sin transparencia, de menos de 2,5 MB?
+- [ ] ¿El nombre es `fondo-cuento-<n>.png` (n del 1 al 9)?
+
+### Revisor
+
+- [ ] ¿Cuenta el momento de la historia que dice su página, y se entiende de un vistazo?
+- [ ] ¿No tiene personas, animales ni personajes?
+- [ ] ¿La esquina inferior izquierda y el 25 % de abajo están tranquilos, sin detalles importantes?
+- [ ] ¿No tiene texto, letras, números ni marcas?
+- [ ] ¿Las láminas de un mismo cuento parecen del mismo libro (mismo estilo y colores)?
+- [ ] ¿Es amable para niños de 6 a 8 años, sin miedo, burla ni estereotipos?
+
+### Docente
+
+- [ ] ¿Es apropiada para sus estudiantes?
+
 ## Si no pasa
 
 1. El revisor anota cada «no» con su motivo y lo que hay que cambiar.

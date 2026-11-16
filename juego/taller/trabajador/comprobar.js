@@ -10,7 +10,9 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { CARPETA_JUEGO } from './configuracion.js'
 import { comprobarPieza } from '#kit/herramientas/comprobar_pieza.mjs'
+import { partirHistoria } from '#kit/reproductor/logica/historia.js'
 import { huellasAprobadas } from './carpeta.js'
+import { motivosDePantalla } from './pantalla.js'
 
 // Regla 9: red, almacenamiento, texto como código y tocar la página o la app.
 export const PROHIBIDO = [
@@ -85,6 +87,36 @@ export async function revisarCodigo(carpetaJuego) {
       }
     }
   }
+  // Un juego se maneja con los controles del kit y usa su interfaz (reglas.md, 13.16 y 13.17), y no trae
+  // su propio entorno: el reproductor lo abre.
+  const codigo = []
+  for (const archivo of await archivosDe(carpetaJuego, ['.js', '.mjs'])) {
+    if (!path.relative(carpetaJuego, archivo).startsWith('pruebas' + path.sep)) codigo.push(await readFile(archivo, 'utf8'))
+  }
+  const todo = codigo.join('\n')
+  if (!/\bcrearControles\s*\(/.test(todo)) motivos.push('El juego no usa los controles del kit: llama a crearControles de #kit/reproductor/interfaz/controles.js (el joystick; reglas.md, 13.16).')
+  if (!/\bcrearHud\s*\(/.test(todo)) motivos.push('El juego no usa la interfaz común del kit: llama a crearHud de #kit/reproductor/interfaz/hud.js (reglas.md, 13.17).')
+  // Un mundo que se ve y se mueve (reglas.md, 13.22): decorado repartido, cosas que se mueven y ambiente.
+  if (!/\brepartirYColocar\s*\(|\brepartirDecorado\s*\(/.test(todo)) motivos.push('El juego no reparte el decorado del mundo: usa repartirYColocar de #kit/reproductor/efectos/mundoVivo.js para llenar el lugar (reglas.md, 13.22).')
+  if (!/\bdarVida\s*\(/.test(todo)) motivos.push('Nada del mundo se mueve: usa darVida de #kit/reproductor/efectos/mundoVivo.js en las piezas y los personajes (reglas.md, 13.22).')
+  if (!/\bambiente\s*\(/.test(todo)) motivos.push('Falta el ambiente del mundo: usa ambiente de #kit/reproductor/efectos/mundoVivo.js para cosas que flotan o pasan (reglas.md, 13.22).')
+  // El zoom de la cámara agranda la interfaz del kit y deja franjas del color del lienzo: el mundo se dibuja a su
+  // escala y cubre toda la pantalla (reglas.md, 13.17).
+  if (/\.setZoom\s*\(|\bcameras\.main\.zoom\b|\bzoom\s*[:=]\s*[^0\s]/.test(todo)) {
+    motivos.push('El juego usa zoom de cámara: no lo uses. Dibuja el mundo a su escala y que cubra toda la pantalla; el zoom agranda la interfaz del kit y deja franjas azules (reglas.md, 13.17).')
+  }
+  // El mundo llena la pantalla y la interfaz flota encima: recortar la cámara a una franja (setViewport) o sumar una
+  // segunda cámara deja bandas del color del lienzo y reduce el juego a una tira. Y los textos del kit (los botones
+  // Sonido, Escuchar y Ayuda) no se agrandan en bloque: se encimaban entre sí (reglas.md, 13.14 y 13.17).
+  if (/\.setViewport\s*\(|\bcameras\.add\s*\(/.test(todo)) {
+    motivos.push('El juego recorta la cámara (setViewport o una cámara extra): no lo hagas. El mundo llena toda la pantalla y la interfaz flota encima; mantén lo importante fuera de las franjas con la cámara que sigue al protagonista (reglas.md, 13.17).')
+  }
+  if (/children\.list[\s\S]{0,400}?\.setFontSize\s*\(/.test(todo)) {
+    motivos.push('El juego cambia el tamaño de todos los textos de la escena, incluidos los del kit: no lo hagas. Solo agranda los textos que el propio juego crea; los del kit ya vienen con su tamaño (reglas.md, 13.14).')
+  }
+  for (const ajeno of ['index.html', 'vite.config.js', 'package.json', 'kit']) {
+    if (existsSync(path.join(carpetaJuego, ajeno))) motivos.push('juego/' + ajeno + ' no debe estar: el reproductor abre el juego, no se arma otro entorno ni se copia el kit.')
+  }
   return motivos
 }
 
@@ -104,7 +136,7 @@ export async function revisarPiezas(carpeta) {
   const aprobadas = await huellasAprobadas(carpeta)
   for (const archivo of (await readdir(piezas)).filter((nombre) => nombre.endsWith('.png')).sort()) {
     const id = archivo.slice(0, -'.png'.length)
-    const resultado = comprobarPieza(path.join(piezas, archivo), { fondo: id.startsWith('fondo-') })
+    const resultado = comprobarPieza(path.join(piezas, archivo), { fondo: id.startsWith('fondo-'), figura: id.startsWith('figura-') })
     if (!resultado.pasa) {
       motivos.push('La pieza «' + id + '» no pasa el filtro del código: ' +
         resultado.respuestas.filter((respuesta) => !respuesta.si).map((respuesta) => respuesta.motivo).join(' '))
@@ -157,7 +189,7 @@ export async function abrirEnNavegador(trabajo, { juegoUrl, limiteMs = 30_000 })
     const pagina = await navegador.newPage({ viewport: { width: 1280, height: 720 } })
     const errores = []
     pagina.on('pageerror', (error) => errores.push(error.message))
-    await pagina.goto(new URL('?juego=' + trabajo + '&vida=0', juegoUrl).href)
+    await pagina.goto(new URL('?juego=' + trabajo + '&vida=0&historia=0', juegoUrl).href)
     try {
       await pagina.waitForFunction((id) => window.kusi?.juego?.trabajo === id ||
         window.kusi?.avisos?.some((aviso) => aviso.tipo === 'fallo'), trabajo, { timeout: limiteMs })
@@ -169,9 +201,54 @@ export async function abrirEnNavegador(trabajo, { juegoUrl, limiteMs = 30_000 })
     // Un momento más, por si la escena se cae justo después de empezar.
     await pagina.waitForTimeout(1000)
     if (errores.length) return ['El juego tiene errores en el navegador: ' + errores.slice(0, 3).join(' | ')]
-    return []
+    return await revisarPantalla(navegador, trabajo, juegoUrl)
   } finally {
     await navegador.close()
+  }
+}
+
+// La pantalla reducida a 320 × 180 como píxeles RGBA, para revisarla por código (pantalla.js).
+export async function capturar(pagina) {
+  const png = (await pagina.screenshot({ type: 'png' })).toString('base64')
+  const base64 = await pagina.evaluate(async (datos) => {
+    const imagen = new Image()
+    imagen.src = 'data:image/png;base64,' + datos
+    await imagen.decode()
+    const lienzo = document.createElement('canvas')
+    lienzo.width = 320
+    lienzo.height = 180
+    const contexto = lienzo.getContext('2d', { willReadFrequently: true })
+    contexto.drawImage(imagen, 0, 0, 320, 180)
+    const bytes = contexto.getImageData(0, 0, 320, 180).data
+    let texto = ''
+    for (let i = 0; i < bytes.length; i += 8192) texto += String.fromCharCode(...bytes.subarray(i, i + 8192))
+    return btoa(texto)
+  }, png)
+  return { ancho: 320, alto: 180, datos: Buffer.from(base64, 'base64') }
+}
+
+// El docente no revisa el juego: el taller mira la pantalla por él. Se abre otra vez, sin ?vida=0 (para ver si el
+// mundo se mueve), y se toman tres capturas: al empezar, un momento después sin tocar nada y tras mover el joystick.
+// Si algo falla al capturar, no se rechaza el juego: solo se rechaza lo que se vio con seguridad.
+async function revisarPantalla(navegador, trabajo, juegoUrl) {
+  try {
+    const pagina = await navegador.newPage({ viewport: { width: 1280, height: 720 } })
+    await pagina.goto(new URL('?juego=' + trabajo + '&historia=0', juegoUrl).href)
+    await pagina.waitForFunction((id) => window.kusi?.juego?.trabajo === id, trabajo, { timeout: 30_000 })
+    await pagina.waitForTimeout(3000)
+    const inicio = await capturar(pagina)
+    await pagina.waitForTimeout(1500)
+    const reposo = await capturar(pagina)
+    await pagina.keyboard.down('ArrowRight')
+    await pagina.keyboard.down('ArrowUp')
+    await pagina.waitForTimeout(900)
+    await pagina.keyboard.up('ArrowRight')
+    await pagina.keyboard.up('ArrowUp')
+    await pagina.waitForTimeout(150)
+    const conFlechas = await capturar(pagina)
+    return motivosDePantalla({ inicio, reposo, conFlechas })
+  } catch {
+    return []
   }
 }
 
@@ -184,6 +261,11 @@ export async function comprobarJuego({ carpeta, trabajo, juegoUrl }) {
   try {
     paquete = JSON.parse(await readFile(path.join(carpetaJuego, 'guion-ejemplo.json'), 'utf8'))
     paquete.trabajo = trabajo
+    // La historia de apertura la cuenta el reproductor (reglas.md, 13.1): sin ella el juego
+    // empezaría sin explicar por qué se juega.
+    if (partirHistoria(paquete.historia).length === 0) {
+      motivos.push('Falta la historia del guion (campo «historia» de guion-ejemplo.json): de 1 a 3 frases cortas que expliquen por qué se juega (reglas.md, 13.1).')
+    }
   } catch (error) {
     if (existsSync(path.join(carpetaJuego, 'guion-ejemplo.json'))) motivos.push('guion-ejemplo.json no es un JSON válido: ' + error.message)
   }

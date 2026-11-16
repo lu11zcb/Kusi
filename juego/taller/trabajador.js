@@ -13,7 +13,7 @@ import { existsSync } from 'node:fs'
 import { cargarConfiguracion, CARPETA_JUEGO } from './trabajador/configuracion.js'
 import { crearBuzon } from './trabajador/buzon.js'
 import { armarBiblioteca } from './trabajador/carpeta.js'
-import { leerAgentes, leerRoles, lanzar } from './trabajador/roles.js'
+import { leerAgentes, leerRoles, lanzar, cortarActivos } from './trabajador/roles.js'
 import { comprobarJuego } from './trabajador/comprobar.js'
 import { procesarTrabajo } from './trabajador/procesar.js'
 import { procesarPropuesta } from './trabajador/proponer.js'
@@ -64,6 +64,10 @@ if (!(await responde(configuracion.juegoUrl))) {
 let saliendo = false
 const salir = () => {
   saliendo = true
+  // Los roles corren en su propio grupo de procesos: sin esto, al cerrar con Ctrl+C quedaban vivos el supervisor
+  // (gastando la suscripción) y el navegador sin pantalla jugando el juego. Spring devuelve el trabajo a «pendiente».
+  const cortados = cortarActivos('SIGKILL')
+  if (cortados > 0) decir('Corté ' + cortados + ' proceso(s) de roles que seguían trabajando.')
   if (vite) try { process.kill(-vite.pid, 'SIGTERM') } catch { /* ya terminó */ }
 }
 process.on('SIGINT', () => { decir('Saliendo.'); salir(); process.exit(0) })

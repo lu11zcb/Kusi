@@ -34,9 +34,17 @@ dónde sale ese contenido.
 1. [../../kit/curriculo/README.md](../../kit/curriculo/README.md) y el archivo
    del grado y el área del pedido (por ejemplo, `2-matematica.md`). Dicen qué
    se enseña en cada grado, con su documento y su página.
-2. [../../kit/catalogo.json](../../kit/catalogo.json): lo que el kit ya tiene
+2. [../../kit/generos/README.md](../../kit/generos/README.md): los géneros de juego y sus
+   mecánicas. Elige **una mecánica que haga que el niño demuestre lo que aprende con lo que
+   hace** (contar, ordenar, clasificar, armar…), distinta de «recorrer y recoger», y cuéntala
+   con tus palabras en las `acciones` y las `reglas`: sin nombrar juegos ni copiar sus
+   dibujos, personajes o niveles. Lee la ficha del género elegido.
+   **Luego lee [../../kit/recetas/README.md](../../kit/recetas/README.md) y
+   [diversion.md](../../kit/recetas/diversion.md)** y elige **una sola receta** (exploración, plataformas o
+   viaje): la propuesta se hace pensando en un juego **sencillo pero entretenido, como los de Friv**.
+3. [../../kit/catalogo.json](../../kit/catalogo.json): lo que el kit ya tiene
    dibujado. Sirve para decidir si el juego es el que Kusi ya sabe construir.
-3. [../reglas.md](../reglas.md): el español del grado y lo que no se hace.
+4. [../reglas.md](../reglas.md): el español del grado y lo que no se hace.
 
 ## Paso a paso
 
@@ -91,6 +99,55 @@ dónde sale ese contenido.
 
 Spring revisa cada campo. Si algo no pasa, te devuelve los motivos y te
 pide una corrección (hasta 2).
+
+## La aventura
+
+Kusi **no es un bebé ni una mascota a la que se cuida**: es el **compañero de aventuras**
+del niño. Cada juego es una aventura: Kusi y el niño **viajan a otro lugar** y allí
+cumplen una misión pequeña que es, por dentro, el tema de la clase. La imaginación
+tiene que volar: el lugar puede ser otro mundo o un planeta, un lugar o un momento
+histórico (del Perú o del mundo), el fondo del mar, la selva, el espacio, el interior
+de algo, un reino, una isla… el que mejor haga sentir el tema.
+
+- La historia sigue siempre este camino: **(1)** Kusi anuncia la aventura de hoy y
+  adónde viajan; **(2)** en ese lugar hay algo que hacer, resolver o descubrir;
+  **(3)** el niño lo hace con su personaje, y lo que hace es lo que enseña el tema.
+- Elige el lugar **por el tema y por lo que el niño imagina al oírlo**, no por
+  costumbre: cada tema tiene su propia aventura, y dos temas distintos no repiten
+  lugar ni misión.
+- **Nunca** hay que cuidar, bañar, curar, vestir ni darle de comer a Kusi: él
+  propone, guía, anima y celebra. Quien actúa es el niño con su personaje.
+- La misión explica el tema sin forzarlo: el niño siente que hace algo que sirve en
+  ese lugar y, sin darse cuenta, practica lo que aprende en clase.
+- Si el juego trata de armar o reunir algo, el niño primero **busca** las partes recorriendo el
+  lugar y después las **arma**. Hazlo creativo y entretenido: puede haber un personaje
+  secundario (un habitante del lugar, un ayudante) y detalles que se mueven.
+- El mundo es **coherente**: todo lo que el niño verá y tocará es de ese lugar (si es un reino de
+  nubes, todo es de nubes). El camino tiene sentido (se rodea, se cruza por un puente o una puerta), hay
+  algo emocionante (un adversario amable, un obstáculo, una sorpresa) y cada nivel trae
+  algo nuevo; lo que se busca no está quieto.
+- **La historia tiene sentido.** Hay una necesidad o misión clara dentro del mundo, ligada al tema, que explica por qué
+  el niño hace lo que hace. Nada de «un viento mezcló todo»: lo que hay que distinguir o reunir está en el lugar por
+  una causa creíble (las piedras y herramientas están en el jardín porque es un jardín). Pregúntate: ¿por qué el
+  niño hace esto, y tiene sentido en ese mundo?
+- **Nunca se salta de un lugar a otro** (de una isla a otra, de una nube a otra): se viaja en un vehículo y en el lugar se
+  camina. **El salto sí vale en un juego de plataformas**, pequeño y a escala (charcos, escalones, cajas, huecos de un paso).
+- **Cada lugar es chico y lleno** (de una a tres pantallas): una isla, un valle o un pueblo se **explora caminando**, con
+  cosas por encontrar en medio de él (no es una hoja ni una plataforma pequeña, ni una explanada vacía). Solo si el
+  juego es de **viaje**, el niño **maneja un vehículo** del mundo (barco flotante, globo, carreta, balsa…) entre
+  lugares, y eso es toda su mecánica. Cada nivel cambia la vuelta del mismo verbo; no suma otra actividad.
+- **El niño maneja a su personaje** con un joystick (y un botón de saltar si es de plataformas), como en un videojuego, y
+  recorre el lugar él mismo (sin tocar casillas ni botones de «ir»). Las `acciones` de la propuesta
+  deben describir qué hace el niño con su personaje: caminar, manejar, saltar un charco, esquivar, recoger, llevar.
+- La `historia` de la propuesta cuenta esa aventura (adónde viajan y qué misión tienen),
+  en 2 o 3 oraciones cortas, y las `acciones`, los `retos` y las `ayudas` pasan en ese lugar.
+
+## Una sola mecánica
+
+Las `acciones` de la propuesta describen **un solo verbo** (recoger, saltar o manejar), con su reto de habilidad
+(qué se esquiva, salta o decide por el camino). **No mezcles** manejar un vehículo, explorar a pie y armar algo en
+el mismo juego: pasó, y salió un mandado aburrido. Lo educativo es lo que el niño busca o a dónde llega, no una
+pregunta aparte. Cada nivel cambia la vuelta del mismo verbo. Pide pocos dibujos (ocho o menos).
 
 ## Cómo eliges el juego
 

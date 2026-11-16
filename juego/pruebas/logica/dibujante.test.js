@@ -104,6 +104,31 @@ test('el pedido sigue la guía de estilo, pide fondo blanco y nunca nombra progr
   assert.match(pedidoDeDibujo({ id: 'fondo-chacra', que: 'a farm', fondo: true, intento: 1 }), /top-down camera[\s\S]*central 75%/)
 })
 
+test('el pedido de una figura entera la pide completa, con sus partes separadas y con personalidad', () => {
+  const pedido = pedidoDeDibujo({ id: 'figura-muneco', que: 'a clay doll', figura: true, intento: 1 })
+  for (const frase of ['COMPLETE and in one piece', 'a clay doll', 'arms slightly away from the body', 'will cut it into pieces',
+    'creative', 'plain flat white', 'figura-muneco-intento-1.png']) assert.ok(pedido.includes(frase), frase)
+})
+
+test('el mundo de la aventura se le dice a cada pieza para que nada sea de otro mundo', () => {
+  for (const tipo of [{}, { fondo: true }, { cuento: true }, { figura: true }]) {
+    const id = tipo.fondo ? 'fondo-cielo' : tipo.cuento ? 'fondo-cuento-1' : tipo.figura ? 'figura-nube' : 'cometa'
+    const pedido = pedidoDeDibujo({ id, que: 'x', ...tipo, mundo: 'a kingdom made only of soft white clouds', intento: 1 })
+    assert.ok(pedido.includes('World of this game: a kingdom made only of soft white clouds.'), JSON.stringify(tipo))
+    assert.ok(pedido.includes('do not add anything from another world'), JSON.stringify(tipo))
+  }
+  assert.doesNotMatch(pedidoDeDibujo({ id: 'cometa', que: 'x', intento: 1 }), /World of this game/)
+})
+
+test('el pedido de una lámina del cuento pide una escena sin personajes y deja libre la esquina de Kusi', () => {
+  const pedido = pedidoDeDibujo({ id: 'fondo-cuento-1', que: 'a small shop with an empty shelf', cuento: true, intento: 1 })
+  for (const frase of ['storybook illustration', 'a small shop with an empty shelf', 'No people, no animals and no characters',
+    'lower-left corner and the bottom 25%', 'No text', 'fondo-cuento-1-intento-1.png']) {
+    assert.ok(pedido.includes(frase), frase)
+  }
+  assert.doesNotMatch(pedido, /top-down/)
+})
+
 // Una carpeta de trabajo de mentira y un dibujante de mentira, que «dibuja» lo que se le pida.
 async function trabajoDePrueba() {
   const carpeta = path.join(await carpetaTemporal(), randomUUID())
@@ -168,6 +193,12 @@ test('el dibujante solo trabaja en la carpeta de un trabajo y con un id válido'
   assert.match((await dibujar({ carpeta, id: 'Olla Grande', que: 'x' }, { roles, lanzarRol })).motivo, /id/)
   assert.match((await dibujar({ carpeta, id: 'chacra', que: 'x', fondo: true }, { roles, lanzarRol })).motivo, /fondo-/)
   assert.match((await dibujar({ carpeta, id: 'olla', que: '' }, { roles, lanzarRol })).motivo, /--que/)
+  // Una lámina del cuento es «fondo-cuento-<n>»; ni un fondo del juego ni un objeto pueden llamarse así.
+  for (const mal of [{ id: 'fondo-tienda', cuento: true }, { id: 'fondo-cuento-1', fondo: true }, { id: 'fondo-cuento-1' },
+    { id: 'fondo-cuento-0', cuento: true }, { id: 'fondo-cuento-1', cuento: true, fondo: true },
+    { id: 'muneco', figura: true }, { id: 'figura-', figura: true }, { id: 'figura-muneco' }, { id: 'figura-muneco', figura: true, fondo: true }]) {
+    assert.match((await dibujar({ carpeta, que: 'x', ...mal }, { roles, lanzarRol })).motivo, /fondo-cuento-<n>/, JSON.stringify(mal))
+  }
   assert.equal(pedidos.length, 0)
   await rm(path.dirname(carpeta), { recursive: true })
 })

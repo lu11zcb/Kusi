@@ -88,8 +88,8 @@ npm run taller -- --una-vez
   nombre al cuy, las importaciones y `node --test`, y abre el juego en un
   navegador sin pantalla con el `validar` de su ficha. Si algo falla, o si Spring
   responde 422, el supervisor recibe los motivos y corrige, hasta 2 veces; si no,
-  o si se acaban los 25 minutos (`TALLER_LIMITE_MS`), informa el fallo. Spring da por
-  perdido un trabajo a los 30.
+  o si se acaban los 75 minutos (`TALLER_LIMITE_MS`), informa el fallo. Spring da por
+  perdido un trabajo a los 90.
 - **El dibujante** también es un rol de `roles.local.json`. El supervisor le pide
   cada pieza con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"
   [--apoyado] [--fondo] [--correccion "<motivos>"]`. Cada llamada es un intento: el
@@ -114,6 +114,11 @@ npm run taller -- --una-vez
   rol `proponedor` (puede leer `juego/` y buscar en internet; escribe solo
   `propuesta.json` y notas en la carpeta del trabajo; sin Bash). Sin ese rol el
   trabajo falla y entra el respaldo. Sus pruebas están en `pruebas/logica/proponer.test.js`.
+- **El taller mira la pantalla por el docente.** Además de las comprobaciones de código, `trabajador/pantalla.js`
+  abre el juego, toma tres capturas (al empezar, un momento después y tras mover el joystick) y se las devuelve al
+  supervisor como corrección si ve **franjas vacías del color del lienzo** (cámara recortada), un **mundo liso y vacío**
+  o un **juego congelado**. Solo rechaza lo que ve con seguridad: una falsa alarma gastaría una de las 2 correcciones.
+  Sus pruebas: `pruebas/logica/pantalla.test.js` y `pruebas/navegador/pantallaDelTaller.spec.js`.
 - Pruebas: `pruebas/logica/trabajador.test.js` y, de punta a punta con un
   Spring falso y un supervisor de prueba sin IA,
   `pruebas/navegador/trabajador.spec.js`.
