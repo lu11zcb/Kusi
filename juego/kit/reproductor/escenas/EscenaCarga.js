@@ -22,6 +22,7 @@ import {
   clasificarPiezas, rutaGuionEjemplo, rutaPieza, claveEscena,
 } from '../datos/registroJuegos.js'
 import { cargarFicha, escenaDelTrabajo, dibujarFiguraSimple } from './juegosDelTaller.js'
+import { partirHistoria, debeContarHistoria } from '../logica/historia.js'
 import {
   pedirManifiestoProtagonista, prepararProtagonista, registrarProtagonista,
 } from '../dibujos/protagonista.js'
@@ -211,7 +212,14 @@ export class EscenaCarga extends Phaser.Scene {
           indiceNivel: nivelPedido(window.location.search, paquete.retos.length),
         }
         this.atenderPuenteDelJuego(clave, datos)
-        this.scene.start(clave, datos)
+        // La historia de la propuesta se cuenta primero, como un cuento, salvo que no haya, que se pida
+        // un nivel o ?historia=0, o que la partida se reanude donde se dejó.
+        const paginas = partirHistoria(paquete.historia)
+        if (debeContarHistoria({ busqueda: window.location.search, partida: datos.partida, paginas })) {
+          this.scene.start('historia', { paginas, piezas: ficha.piezas, siguiente: { clave, datos } })
+        } else {
+          this.scene.start(clave, datos)
+        }
       } catch (error) {
         this.mostrarError(error)
       }
@@ -227,6 +235,8 @@ export class EscenaCarga extends Phaser.Scene {
     const puente = this.puente
     const escenas = this.game.scene
     const alRecibir = (orden) => {
+      // Un guion nuevo o el reinicio también cierran la historia, si se estaba contando.
+      escenas.stop('historia')
       if (orden.tipo === MENSAJE_PAQUETE) {
         escenas.stop(clave)
         escenas.start('carga', { paquete: orden.paquete, partida: orden.partida })
