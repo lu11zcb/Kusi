@@ -34,3 +34,8 @@ cuentas_0001.sql
 .vscode/
 .impeccable/review/
 .DS_Store
+
+# Herramientas, credenciales y firmas locales
+.local/
+*.keystore
+*.jks
