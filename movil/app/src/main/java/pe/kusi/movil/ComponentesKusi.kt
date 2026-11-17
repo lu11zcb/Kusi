@@ -48,7 +48,7 @@ fun BotonKusi(texto: String, alPulsar: () -> Unit, modifier: Modifier = Modifier
     val colores = MaterialTheme.colorScheme
     val fondo = if (secundario) colores.secondaryContainer else colores.primaryContainer
     val tinta = if (secundario) colores.onSecondaryContainer else colores.onPrimaryContainer
-    val base = if (!habilitado) colores.outlineVariant else if (secundario) colores.secondary.copy(alpha = .55f) else Color(0xFFD18A21)
+    val base = if (!habilitado) colores.outlineVariant else if (secundario) colores.secondary.copy(alpha = .55f) else Color(0xFF176B34)
     // La base permanece fija y solo baja la cara pulsable. Button conserva sus roles, foco y bloqueo nativos.
     Box(modifier.padding(bottom = relieve)) {
         Box(Modifier.matchParentSize().offset(y = relieve).background(base, MaterialTheme.shapes.medium))
@@ -151,7 +151,8 @@ fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
         onDispose { cerrado = true; lista = false; instancia.stop(); instancia.shutdown(); motor.value = null }
     }
     return VozKusi(lista, hablar = { texto ->
-        if (!lista || motor.value?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "ayuda-kusi") == TextToSpeech.ERROR) {
+        if (contexto.getSharedPreferences("kusi_mi_cuy", android.content.Context.MODE_PRIVATE).getBoolean("voz", true) &&
+            (!lista || motor.value?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "ayuda-kusi") == TextToSpeech.ERROR)) {
             avisoActual("La voz no está disponible en este celular. También puedes leer la ayuda.")
         }
     }, callar = { motor.value?.stop() })

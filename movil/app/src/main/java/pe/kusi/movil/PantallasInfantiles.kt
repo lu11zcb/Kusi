@@ -76,14 +76,14 @@ fun AplicacionInfantil(
                 AnimatedContent(destino, transitionSpec = { (fadeIn(tween(220)) + slideInHorizontally(tween(260)) { it / 14 }).togetherWith(fadeOut(tween(120))) }, label = "cambio-pantalla", modifier = Modifier.weight(1f)) { pantalla ->
                     when (pantalla) {
                         "arranque" -> ArranqueInfantil(voz)
-                        "bienvenida" -> BienvenidaInfantil(voz) { entrada = "ingreso" }
+                        "bienvenida" -> BienvenidaReferencia(voz) { entrada = "ingreso" }
                         "ingreso" -> IngresoInfantil(estado, ingresar) { ayuda = true }
                         "clave" -> NuevaClaveInfantil(estado, cambiarClave) { confirmarSalida = true }
                         "adulto" -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { AvisoKusi("Esta app es para estudiantes. Para enseñar o administrar, entra desde la web."); BotonKusi("Salir de Kusi", salir, habilitado = !estado.ocupado) }
                         "mision" -> aventura?.let { MisionInfantil(it, voz) { paso = "juego" } }
                         "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { paso = "mision" }) }
                         "cierre" -> aventura?.let { CierreInfantil(it, cierre, voz, { aventuraId = null }, { paso = "juego" }, reintentarGuardado) }
-                        else -> estado.cuenta?.let { InicioAventurasInfantil(it, estado, biblioteca, voz, { aventuraElegida = it; aventuraId = it.id; paso = "mision" }, reintentarBiblioteca, comprobar) { confirmarSalida = true } }
+                        else -> estado.cuenta?.let { InicioReferencia(it, estado, biblioteca, voz, { aventuraElegida = it; aventuraId = it.id; paso = "mision" }, reintentarBiblioteca, comprobar, salir) }
                     }
                 }
             }
@@ -139,7 +139,8 @@ private fun BienvenidaInfantil(voz: VozKusi, entrar: () -> Unit) {
 private fun IngresoInfantil(estado: EstadoEntradaKusi, ingresar: (String, String, Boolean) -> Unit, ayuda: () -> Unit) {
     var dni by rememberSaveable { mutableStateOf("") }; var clave by remember { mutableStateOf("") }; var recordar by rememberSaveable { mutableStateOf(true) }
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) { InsigniaKusi(R.drawable.ic_kusi_key, Modifier.size(72.dp)); Column(Modifier.weight(1f)) { Text("¡Vamos a entrar!", style = MaterialTheme.typography.headlineLarge); Text("Entra con tu cuenta", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
+        Image(painterResource(R.drawable.kusi_referencia), "Kusi te da la bienvenida", Modifier.fillMaxWidth().height(170.dp), contentScale = ContentScale.Fit)
+        Text("¡Vamos a entrar!", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
         TarjetaKusi(Modifier.fillMaxWidth()) {
             OutlinedTextField(dni, { dni = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("Mi DNI") }, supportingText = { Text("Los 8 números de tu DNI") }, singleLine = true, enabled = !estado.ocupado, shape = MaterialTheme.shapes.medium, colors = coloresCampoKusi(), textStyle = MaterialTheme.typography.titleMedium, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next), modifier = Modifier.fillMaxWidth())
             CampoClaveKusi(clave, { clave = it }, "Mi contraseña", !estado.ocupado)

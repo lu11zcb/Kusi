@@ -23,22 +23,22 @@ private val Nunito = FontFamily(
 @OptIn(ExperimentalTextApi::class)
 private val Baloo = FontFamily(Font(R.font.baloo2, weight = FontWeight.Bold, variationSettings = FontVariation.Settings(FontVariation.weight(700))))
 private val ClaroKusi = lightColorScheme(
-    primary = Color(0xFF6541A0), onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFBE45), onPrimaryContainer = Color(0xFF4D3016),
+    primary = Color(0xFF218D45), onPrimary = Color.White,
+    primaryContainer = Color(0xFF218D45), onPrimaryContainer = Color.White,
     secondary = Color(0xFF216A59), onSecondary = Color.White,
     secondaryContainer = Color(0xFFDFF5ED), onSecondaryContainer = Color(0xFF205749),
     tertiary = Color(0xFF7452AF), onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFEEE5FF), onTertiaryContainer = Color(0xFF594084),
-    background = Color(0xFFFFF9EE), onBackground = Color(0xFF37304D),
-    surface = Color(0xFFFFFFFF), onSurface = Color(0xFF37304D),
+    tertiaryContainer = Color(0xFFF2EBD8), onTertiaryContainer = Color(0xFF593629),
+    background = Color(0xFFFFF9EE), onBackground = Color(0xFF593629),
+    surface = Color(0xFFFFFFFF), onSurface = Color(0xFF593629),
     surfaceVariant = Color(0xFFF4EEE5), onSurfaceVariant = Color(0xFF706579),
-    outline = Color(0xFF8E7E9B), outlineVariant = Color(0xFFE6DDEB),
+    outline = Color(0xFF8E7E9B), outlineVariant = Color(0xFFEADBC4),
     error = Color(0xFFA73324), onError = Color.White,
     errorContainer = Color(0xFFFFEAE3), onErrorContainer = Color(0xFF7D281D)
 )
 private val OscuroKusi = darkColorScheme(
     primary = Color(0xFFD5BEFF), onPrimary = Color(0xFF382358),
-    primaryContainer = Color(0xFFFFBE45), onPrimaryContainer = Color(0xFF4D3016),
+    primaryContainer = Color(0xFF218D45), onPrimaryContainer = Color.White,
     secondary = Color(0xFF8BD8BE), onSecondary = Color(0xFF153C31),
     secondaryContainer = Color(0xFF244A41), onSecondaryContainer = Color(0xFFB8ECD9),
     tertiary = Color(0xFFD5BEFF), onTertiary = Color(0xFF382358),
