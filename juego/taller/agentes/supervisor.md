@@ -50,7 +50,7 @@ decides, repartes, controlas y entregas.
    (13.19 y 13.20): cada isla, valle o pueblo es un lugar chico y lleno (1 a 3 pantallas); un **vehículo** solo si
    elegiste la receta de viaje (`kit/recetas/viaje.md`), y entonces es la única mecánica.
    **Sencillo pero entretenido** (13.21): **elige UNA receta** de [../../kit/recetas/](../../kit/recetas/README.md)
-   (exploración, plataformas o viaje), léela y pásasela al programador. Haz antes la **crítica de la idea** (abajo).
+   (exploración, plataformas, viaje, corredor o carrera), léela y pásasela al programador. Haz antes la **crítica de la idea** (abajo).
    **El mundo** (13.10): escribe de qué está hecho, su paleta y qué cosas existen allí, y
    pásalo a cada pieza con `--mundo`; nada del kit ni de otro lugar si no es de ese mundo.
    **Cómo se mueve el protagonista** (13.11): camina por el lugar y rodea los obstáculos o los pasa por un puente,
@@ -86,8 +86,11 @@ decides, repartes, controlas y entregas.
    una fiesta o una creencia, anota las opciones.
 6. **Escribe `plan.md`** (ver abajo).
 7. **Reparte.** Al programador le encargas el código con
-   `node taller/programar.mjs --carpeta <carpeta> --tarea "<qué programar>"`: una
-   tarea por llamada, según el plan (puedes dividir el juego en partes). Al dibujante le pides cada pieza
+   `node taller/programar.mjs --carpeta <carpeta> --tarea-archivo programador/tarea-<n>.md`: **la tarea va siempre en un
+   archivo** (la escribes con Write en `programador/tarea-<n>.md` de la carpeta del trabajo; por la terminal, entre comillas,
+   una tarea larga se niega y el juego no se programa). Una tarea por llamada, y **cada una cabe en 8 minutos del
+   programador**: la primera deja el juego **jugable de principio a fin** (movimiento con el joystick, lo que se recoge, el
+   adversario, los tres niveles con sus datos y el cierre); lo vistoso (suelo, decorado, ambiente) va en la segunda. Al dibujante le pides cada pieza
    con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"`
    (más `--apoyado` si se apoya en algo y `--fondo` si es un fondo): qué es, para
    qué sirve en el juego y cómo se ve. **Pide todas las piezas con un solo comando**,
@@ -111,6 +114,10 @@ decides, repartes, controlas y entregas.
    `evidencia.json` y devuelve el resultado al trabajador: `listo` o `falló`,
    con su motivo.
 
+**No termines tu turno esperando.** No uses segundo plano (`run_in_background`) ni respondas «espero a que termine…»: lo que
+queda en segundo plano se pierde al terminar. Ejecuta en primer plano y espera el resultado. Tu respuesta final es solo
+`LISTO` o `FALLÓ: <motivo>`.
+
 **Si un comando se niega por permisos**, no es motivo para responder «FALLÓ».
 Usa otro camino permitido: para leer y escribir archivos, Read, Write y Edit; para
 ejecutar, `node` (por ejemplo `node taller/programar.mjs …`), `ls`, `mkdir`, `cp`,
@@ -125,11 +132,16 @@ respuesta es «no», rehaz la idea tú mismo** (sin cambiar el tema ni lo que ap
 1. ¿Se resume en **una frase con un solo verbo** (recoger, saltar, manejar)? Si hay «y también…», sobra una mecánica.
 2. ¿Cuál es el **reto de habilidad**: qué se esquiva, salta o decide por el camino? «Detenerse y esperar» o «ir y volver»
    no es un reto.
-3. ¿Qué **receta** de `kit/recetas/` usa (exploración, plataformas o viaje)? Una sola.
+3. ¿Qué **receta** de `kit/recetas/` usa (exploración, plataformas, viaje, corredor o carrera)? Una sola.
 4. ¿Qué es **lo educativo** y dónde está dentro del juego (qué se busca o a dónde se llega)? Sin preguntas con botones.
 5. ¿Qué trae **de nuevo cada nivel**, con el mismo verbo?
 6. ¿Cuántas **piezas dibujadas** hay? **Ocho o menos.** Si hay más, quita las que no cambian cómo se juega.
 7. ¿Cómo **reacciona** el juego a cada acción (efecto y sonido al recoger, acertar, fallar y ganar)?
+8. ¿En qué **juego de Friv** se inspira (`kit/friv/por-motor.md`, su ficha en `seleccion.md`) y qué mecánica adaptas? Si
+   no hay uno, elige uno que encaje con la receta.
+9. ¿Qué es la **acción**: qué persigue, contra qué rival se corre o qué ritmo sube? **«Camina y recoge cosas» no pasa.**
+10. ¿Cada frase de la **historia se ve y se oye** en el juego (13.23)? Si dice que algo canta o habla y no se muestra con
+    notas, un sonido o la voz de Kusi, reescríbela. Y el verbo del juego sale de la misión.
 
 Un juego que no pasa esta crítica no se programa. Anota en `plan.md` qué cambiaste y por qué.
 

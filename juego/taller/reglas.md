@@ -487,11 +487,17 @@ globo, carreta, caballos, balsa, submarino, cohete, trineo…), nunca saltando n
 - El modelo es `kit/ejemplos/viaje/` (vehículo de viaje y exploración a pie en un mismo mundo grande) y la lógica
   está en `logica/vehiculo.js`.
 
-**13.21 Sencillo pero entretenido, como los juegos de Friv.** Cada juego tiene **una sola mecánica**, elegida de
-`kit/recetas/` (`exploracion`, `plataformas` o `viaje`), y se mide con `kit/recetas/diversion.md`: una idea que se
-entiende en 5 segundos, un reto de habilidad, reacción inmediata a cada acción, errores amables que se reintentan en
-menos de 3 segundos y algo nuevo en cada nivel.
+**13.21 Sencillo pero entretenido, como los juegos de Friv.** Cada juego **se inspira en UN juego de Friv concreto**
+(`kit/friv/por-motor.md`; su ficha en `kit/friv/seleccion.md`): se toma cómo se juega y se adapta al tema, sin copiar
+dibujos, personajes ni niveles. Se escribe con **una sola receta** de `kit/recetas/` (`exploracion`, `plataformas`,
+`viaje`, `corredor` o `carrera`) y se mide con `kit/recetas/diversion.md`: una idea que se entiende en 5 segundos,
+**acción** (algo que persigue, un rival o un ritmo que sube), reacción inmediata a cada acción, errores amables que se
+reintentan en menos de 3 segundos y algo nuevo en cada nivel.
 
+- **Recoger cosas del suelo no es un juego.** Recoger sirve **dentro** de un juego con acción (algo que se esquiva, una
+  carrera, un ritmo). «Camina y junta las hojas» se rechaza.
+- **Lo que se aprende es la mecánica**, no una pregunta: el niño demuestra lo que sabe con lo que hace (elegir el carril
+  de las vocales fuertes, cruzar el portal de la sílaba correcta).
 - **Mezclar mecánicas se rechaza** (conducir y explorar y armar en el mismo juego). Cada nivel cambia **la vuelta del
   mismo verbo** (un obstáculo nuevo, un atajo, un adversario que se mueve distinto), no suma otra actividad.
 - **Un mandado se rechaza** (regla 13.15): ir, detenerse a esperar y volver. Tiene que haber algo que esquivar,
@@ -516,6 +522,17 @@ animados**; uno vacío o quieto se rechaza. El kit trae las herramientas (`#kit/
   responde con un efecto.
 - **Sin zoom y a toda pantalla** (13.17), y la cámara sigue al protagonista dentro de los límites del mundo.
 - El revisor rechaza («corregir») un juego que **parece una sola imagen, está vacío o quieto**, aunque cumpla lo demás.
+
+**13.23 Lo que cuenta la historia se ve y se oye.** El cuento y la `historia` del guion solo afirman lo que el juego
+muestra. Si dicen que algo canta, habla, brilla o se mueve, **eso se ve y se oye**: notas musicales que salen y un
+sonido, un brillo, un balanceo, la voz de Kusi. Lo que no se pueda mostrar (un árbol que «canta» sin que se vea ni se
+oiga cantar) **no se cuenta**: se cambia la historia, sin cambiar el tema ni lo que se aprende.
+
+- Los objetos y los animales quietos **no tienen boca** (guía de estilo): no hablan. «Hablan» con el globo de Kusi o
+  con efectos (notas, ondas, destellos).
+- La historia explica **por qué se juega a esto** (13.18): el verbo del juego sale de la misión. Si la historia dice
+  «ayuda a cruzar el río», el juego es cruzar el río, no juntar hojas.
+- El supervisor revisa cada frase de la historia contra lo que se ve y se juega; la que no se muestra, se reescribe.
 
 ## 12. Nombres neutrales
 

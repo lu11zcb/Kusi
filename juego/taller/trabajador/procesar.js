@@ -30,7 +30,13 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
     'Tú diriges y compruebas: escribes plan.md, evidencia.json y, con tu revisor, revision/. No escribes el código del juego ' +
       'ni dibujas: el código se lo encargas al programador, una tarea por llamada (puedes dividir el juego en partes):',
     '  node ' + path.join(CARPETA_TALLER, 'programar.mjs') + ' --carpeta ' + carpeta +
-      ' --tarea "<qué programar, según el plan>" [--correccion "<lo que dijo el revisor>"]',
+      ' --tarea-archivo programador/tarea-<n>.md [--correccion-archivo programador/correccion-<n>.md]',
+    'La tarea va SIEMPRE en un archivo: escríbela con Write en programador/tarea-<n>.md de la carpeta del trabajo y pásala con ' +
+      '--tarea-archivo. No la pases entre comillas por la terminal: una tarea larga hizo que el comando se negara y el juego nunca se programó. ' +
+      'Cada tarea cabe en 8 minutos del programador: la primera deja el juego JUGABLE de principio a fin (el movimiento con el joystick, lo que se recoge, ' +
+      'el adversario, los tres niveles con sus datos, el cierre); lo vistoso (suelo, decorado, ambiente) va en una segunda tarea.',
+    'No termines tu turno mientras esperas algo: no uses segundo plano (run_in_background) ni respondas «espero a que termine…». ' +
+      'Ejecuta cada comando en primer plano y espera su resultado. Tu respuesta final es solo LISTO o FALLÓ.',
     'Cada encargo puede tardar varios minutos: dale 13 minutos de espera. Responde un JSON: con «siguiente»: «revisor», ' +
       'pásale el juego a tu revisor; con «corregir», vuelve a llamarlo con --correccion y los «no» del revisor.',
     'El kit, la biblioteca y el resto de juego/ son de solo lectura para todos.',
@@ -153,6 +159,12 @@ export async function procesarTrabajo(trabajo, dependencias) {
       registrar('Trabajo ' + trabajo.id + ': comprobando lo que entregó el supervisor.')
       revision = await comprobar({ carpeta, trabajo: trabajo.id, juegoUrl })
       motivos = revision.motivos
+      // Terminó su turno sin decir LISTO (por ejemplo «espero a que termine el programador»): lo que dejó en segundo plano
+      // se pierde al terminar. Si lo que hay no pasa, se le dice por qué.
+      if (motivos.length > 0 && !/^\s*LISTO/i.test(consumo.respuesta ?? '')) {
+        motivos = ['Terminaste tu turno sin responder LISTO («' + String(consumo.respuesta ?? '').trim().slice(0, 120) + '»): lo que dejas en segundo plano se pierde. ' +
+          'Ejecuta cada comando en primer plano, espera su resultado y no termines hasta que el juego esté completo.', ...motivos]
+      }
     }
     if (revision && motivos.length === 0) {
       const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado: 'listo', motivo: notaDeEntrega, intento, pasos, correcciones })

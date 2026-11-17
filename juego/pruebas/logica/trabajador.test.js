@@ -278,6 +278,10 @@ async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, a
       return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'FALLÓ: Bash denegado', permission_denials: [negado] }), errores: '' }
     }
     if (entrega === 'no') return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'FALLÓ: figura sagrada' }), errores: '' }
+    if (entrega === 'espera') {
+      registro.siguientes = ['Faltan las pruebas.']
+      return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'Espero a que terminen el programador (B1) y el revisor de piezas.' }), errores: '' }
+    }
     registro.siguientes = entrega
     return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'LISTO', usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.5 }), errores: '' }
   }
@@ -354,6 +358,16 @@ test('si se acaba el tiempo pero lo que hay pasa las comprobaciones, se entrega 
   const mal = await escenario({ entregas: ['agotado'], siguientes: ['Faltan las pruebas.'] })
   assert.equal(mal.final.resultado, 'falló')
   assert.match(mal.registro.fallos[0], /Se acabó el tiempo[\s\S]*Faltan las pruebas\./)
+})
+
+test('si el supervisor termina su turno esperando en segundo plano, se le dice que no lo haga', async () => {
+  const { final, registro } = await escenario({ entregas: ['espera', []] })
+  assert.equal(final.resultado, 'listo')
+  assert.equal(registro.lanzados.length, 2)
+  assert.match(registro.lanzados[1], /Terminaste tu turno sin responder LISTO[\s\S]*Espero a que terminen el programador[\s\S]*Faltan las pruebas\./)
+  // El pedido ya lo advierte, y manda la tarea larga en un archivo.
+  assert.match(registro.lanzados[0], /No termines tu turno mientras esperas/)
+  assert.match(registro.lanzados[0], /--tarea-archivo programador\/tarea-<n>\.md/)
 })
 
 test('si el supervisor dice que no se puede, se informa el fallo sin insistir', async () => {

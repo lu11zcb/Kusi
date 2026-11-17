@@ -8,6 +8,16 @@ Inspirada en Bad Ice-Cream y los juegos de laberinto. **Modelo:** `kit/ejemplos/
 El niño recorre un lugar pequeño y decide el camino mientras un adversario lento lo obliga a pensar por dónde
 ir. La tensión viene de **elegir la ruta**, no de ir rápido.
 
+## Que el adversario importe (si no, es solo recoger)
+
+Recoger cosas del suelo sin más aburre. En esta receta **el adversario es el juego**: lo que se recoge está repartido
+de modo que el niño **tenga que decidir cuándo arriesgarse** y por dónde escapar. Dos estilos de Friv que funcionan:
+
+- **Persecución** (como Bad Ice-Cream y los juegos de laberinto): el adversario patrulla, avisa y persigue; hay cosas
+  que solo se alcanzan cruzando su zona, y el niño espera a que se canse (descansa 2 s) para pasar.
+- **Barreras** (como Bad Ice-Cream): el niño **se detiene en un pedestal** para poner o quitar una barrera y así
+  desviar al adversario o abrirse un camino hacia lo que busca.
+
 ## Cómo se arma
 
 - **El lugar:** pequeño y con forma (calles, pasillos, estantes, surcos), no una explanada. Lo que se reúne está

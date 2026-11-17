@@ -101,6 +101,10 @@ con la dirección normal y se juega con `&historia=0`.
       reintento en menos de 3 s y algo nuevo en cada nivel? Se miden los puntos de `kit/recetas/diversion.md`
       («Los puntos que se miden») jugando una vez; si dos o más son «no», es «corregir».
 - [ ] ¿Hay **8 piezas dibujadas o menos**, y no es un mandado (ir, esperar y volver)? (13.21)
+- [ ] **Acción y competencia (13.21):** ¿hay algo que persigue, un rival o un ritmo que sube? «Camina y recoge cosas»
+      es «corregir». ¿El plan dice en qué juego de Friv se inspira y qué adapta?
+- [ ] **La historia se ve y se oye (13.23):** cada cosa que dice el cuento (que canta, habla, brilla…) se ve en pantalla y
+      se oye; si no, es «corregir». ¿El verbo del juego sale de la misión de la historia?
 - [ ] ¿El mundo está **lleno y vivo** y no parece una sola imagen? Suelo trabajado, mucho decorado (14 por pantalla o más),
       capas (se pasa detrás o delante de las cosas), sombras, cosas que se mueven y ambiente que flota. Si está
       vacío o quieto, es «corregir». (13.22)

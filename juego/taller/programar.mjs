@@ -2,6 +2,11 @@
 //
 //   node juego/taller/programar.mjs --carpeta <carpeta del trabajo> --tarea "<qué hacer>" \
 //     [--correccion "<lo que dijo el revisor>"]
+//   node juego/taller/programar.mjs --carpeta <carpeta del trabajo> --tarea-archivo programador/tarea-1.md \
+//     [--correccion-archivo programador/correccion-1.md]
+//
+// Una tarea larga va en un archivo de la carpeta del trabajo (--tarea-archivo): pasar diez mil caracteres entre
+// comillas por la terminal hizo que los permisos del supervisor negaran el comando y el juego nunca se programó.
 //
 // Cada llamada lanza el rol «programador» (taller/roles.local.json) con sus instrucciones
 // (taller/agentes/programador.md). El programador escribe solo en juego/ de la carpeta
@@ -69,6 +74,18 @@ async function archivosDelJuego(carpeta) {
 }
 
 // «lanzarRol» permite probarlo sin el programa real.
+// El texto de un archivo de la carpeta del trabajo (la tarea o la corrección). Nunca sale de esa carpeta.
+export async function textoDeArchivo(carpeta, ruta) {
+  const base = path.resolve(carpeta ?? '')
+  const archivo = path.resolve(base, ruta ?? '')
+  const relativo = path.relative(base, archivo)
+  if (!ruta || relativo === '' || relativo.startsWith('..') || path.isAbsolute(relativo)) {
+    throw new Error('El archivo «' + ruta + '» debe estar dentro de la carpeta del trabajo.')
+  }
+  if (!existsSync(archivo)) throw new Error('No existe el archivo «' + ruta + '» en la carpeta del trabajo.')
+  return (await readFile(archivo, 'utf8')).trim()
+}
+
 export async function programar({ carpeta, tarea, correccion = null }, { roles, agentes, lanzarRol = lanzar,
   juegoUrl = 'http://127.0.0.1:5174/' } = {}) {
   const inicio = Date.now()
@@ -136,7 +153,17 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
-  const { values } = parseArgs({ options: { carpeta: { type: 'string' }, tarea: { type: 'string' }, correccion: { type: 'string' } } })
+  const { values } = parseArgs({ options: {
+    carpeta: { type: 'string' }, tarea: { type: 'string' }, correccion: { type: 'string' },
+    'tarea-archivo': { type: 'string' }, 'correccion-archivo': { type: 'string' },
+  } })
+  try {
+    if (values['tarea-archivo']) values.tarea = await textoDeArchivo(values.carpeta, values['tarea-archivo'])
+    if (values['correccion-archivo']) values.correccion = await textoDeArchivo(values.carpeta, values['correccion-archivo'])
+  } catch (error) {
+    console.log(JSON.stringify({ pasa: false, motivo: error.message }))
+    process.exit(0)
+  }
   const roles = await leerRoles(process.env.TALLER_ROLES ?? path.join(CARPETA_TALLER, 'roles.local.json'))
   const agentes = await leerAgentes()
   console.log(JSON.stringify(await programar(values, { roles, agentes, juegoUrl: process.env.TALLER_JUEGO_URL ?? 'http://127.0.0.1:5174/' })))

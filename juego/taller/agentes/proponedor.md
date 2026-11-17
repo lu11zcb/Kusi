@@ -142,12 +142,31 @@ de algo, un reino, una isla… el que mejor haga sentir el tema.
 - La `historia` de la propuesta cuenta esa aventura (adónde viajan y qué misión tienen),
   en 2 o 3 oraciones cortas, y las `acciones`, los `retos` y las `ayudas` pasan en ese lugar.
 
-## Una sola mecánica
+## Inspírate en un juego de Friv (y que tenga acción)
 
-Las `acciones` de la propuesta describen **un solo verbo** (recoger, saltar o manejar), con su reto de habilidad
-(qué se esquiva, salta o decide por el camino). **No mezcles** manejar un vehículo, explorar a pie y armar algo en
-el mismo juego: pasó, y salió un mandado aburrido. Lo educativo es lo que el niño busca o a dónde llega, no una
-pregunta aparte. Cada nivel cambia la vuelta del mismo verbo. Pide pocos dibujos (ocho o menos).
+Antes de escribir las `acciones`, abre [../../kit/friv/README.md](../../kit/friv/README.md) y elige **UN juego de Friv**
+de `por-motor.md` (solo los que tienen receta: plataformas, exploración, vehículo; o los de correr y competir, con las
+recetas `corredor` y `carrera`). Lee solo su ficha en `seleccion.md`. Adapta **cómo se juega** al tema, sin copiar
+dibujos, personajes ni niveles, y escribe las `acciones` con palabras propias.
+
+- **Tiene acción.** Algo que se esquiva o persigue, una carrera contra un rival amable, o un ritmo que sube.
+  **«Camina y recoge cosas» (hojas, letras, frutas del suelo) no es un juego**: recoger sirve dentro de uno con acción.
+  Las vocales no se «juntan del suelo»: por ejemplo, se **corre** y se elige el carril de las vocales fuertes, o se
+  **gana una carrera** pasando por el portal de la sílaba correcta.
+- **Lo que se aprende es lo que el niño hace**, no una pregunta aparte. La respuesta es el carril, el portal, el lugar a
+  donde llega.
+- **Un solo verbo** (correr, saltar, manejar o esquivar), con su reto de habilidad. **No mezcles** manejar un vehículo,
+  explorar a pie y armar algo en el mismo juego: pasó, y salió un mandado aburrido. Cada nivel cambia la vuelta del
+  mismo verbo. Pide pocos dibujos (ocho o menos).
+- Anota en `evidencia` el juego de Friv elegido y qué adaptaste (`juego_inspirado`).
+
+## La historia se ve y se oye
+
+La `historia` solo cuenta **lo que el juego muestra** (regla 13.23). Si dice que algo canta, habla o brilla, tiene que
+verse y oírse (notas musicales, un sonido, un destello, la voz de Kusi); si no se puede mostrar, **no lo cuentes**. Los
+objetos y los animales quietos no tienen boca: no «hablan». Y la historia explica **por qué se juega a esto**: el verbo del
+juego sale de la misión («ayuda a cruzar el río», no «junta hojas»). Nunca escribas «árboles que cantan» si no se van a ver
+cantar.
 
 ## Cómo eliges el juego
 

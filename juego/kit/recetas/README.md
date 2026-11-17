@@ -9,10 +9,14 @@ números empezar. La IA las lee y escribe el juego: aquí no hay código.
 | [exploracion.md](exploracion.md) | Recoger y esquivar desde arriba, con un adversario amable. | `kit/ejemplos/exploracion/` |
 | [plataformas.md](plataformas.md) | Correr y saltar de lado, con saltos pequeños. | `kit/ejemplos/plataformas/` |
 | [viaje.md](viaje.md) | Manejar un vehículo hasta paradas y bajar a explorar. | `kit/ejemplos/viaje/` |
+| [corredor.md](corredor.md) | Correr sin parar por tres carriles: agarrar lo correcto y esquivar lo demás. **Acción.** | (se escribe con el kit) |
+| [carrera.md](carrera.md) | Carrera contra un rival amable, con impulso al elegir bien. **Competencia.** | (se escribe con el kit) |
 
-Qué hay que pedir de más: la lista de juegos de Friv y qué motor necesita cada uno está en
-[../generos/](../generos/). **Casi todo lo que falta son juegos de tablero** (emparejar, ordenar, armar una palabra,
-buscar entre distractores): un motor nuevo de tablero con cursor movido por el joystick cubriría la mayoría.
+**Cada juego se inspira en un juego de Friv concreto** ([../friv/](../friv/README.md): la lista, el motor que sirve para
+cada uno y su ficha). Se elige uno y se adapta su mecánica al tema, con una sola receta de esta carpeta.
+
+Qué falta: casi todo lo que no tiene receta son juegos de tablero (emparejar, ordenar, armar una palabra, buscar entre
+distractores) y de lanzar; todavía no se pueden hacer.
 
 ## Cómo se usan
 

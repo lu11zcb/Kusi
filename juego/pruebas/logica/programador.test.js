@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
-import { programar, pedidoDeCodigo, MAX_ENCARGOS } from '../../taller/programar.mjs'
+import { programar, pedidoDeCodigo, textoDeArchivo, MAX_ENCARGOS } from '../../taller/programar.mjs'
 import { leerAgentes } from '../../taller/trabajador/roles.js'
 import { pedidoParaElSupervisor } from '../../taller/trabajador/procesar.js'
 
@@ -119,4 +119,17 @@ test('el supervisor encarga el código con programar.mjs y no lo escribe él', (
   assert.match(pedido, /No escribes el código del juego ni dibujas/)
   assert.match(pedido, /programar\.mjs --carpeta \/t\/.+ --tarea/)
   assert.match(pedido, /dibujar\.mjs --carpeta/)
+})
+
+test('una tarea larga se lee de un archivo de la carpeta del trabajo y nunca de fuera', async () => {
+  const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-tarea-'))
+  await mkdir(path.join(carpeta, 'programador'), { recursive: true })
+  const larga = 'TAREA B: ' + 'la escena completa; (con comillas \'simples\' y \"dobles\"); $x `y` | z > w. '.repeat(200)
+  await writeFile(path.join(carpeta, 'programador', 'tarea-1.md'), larga + '\n')
+  assert.equal(await textoDeArchivo(carpeta, 'programador/tarea-1.md'), larga.trim())
+  await assert.rejects(textoDeArchivo(carpeta, '../fuera.md'), /dentro de la carpeta del trabajo/)
+  await assert.rejects(textoDeArchivo(carpeta, '/etc/hosts'), /dentro de la carpeta del trabajo/)
+  await assert.rejects(textoDeArchivo(carpeta, ''), /dentro de la carpeta del trabajo/)
+  await assert.rejects(textoDeArchivo(carpeta, 'programador/no-existe.md'), /No existe el archivo/)
+  await rm(carpeta, { recursive: true })
 })
