@@ -10,6 +10,7 @@ aprobada del kit contradice la guía, manda la pieza y se corrige la guía.
 | [comprobacion.md](comprobacion.md) | La lista de sí o no que pasa cada pieza nueva. |
 | [modelos.md](modelos.md) y [lamina-modelos.png](lamina-modelos.png) | Las piezas modelo del kit, para comparar lado a lado. |
 | [molde-personaje.md](molde-personaje.md) | Cómo está hecho un personaje y qué necesita el reproductor. |
+| [correcciones.md](correcciones.md) | Cada corrección del equipo a los juegos, el estilo que se quiere y los juegos que se hacen juntos. |
 
 **El protagonista, el zorro y Kusi no se dibujan ni se cambian.** Lo demás sí: objetos, fondos, figuras enteras y, si el
 juego lo pide, **personajes secundarios, enemigos y objetos nuevos**. Lo que se mueve es una **criatura animada**: una
