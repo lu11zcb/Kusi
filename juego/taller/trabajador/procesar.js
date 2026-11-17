@@ -44,8 +44,10 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
       '«piezas_aprobadas» trae el archivo de cada pieza aprobada: cópialo tal cual a piezas/ y no necesita revisión). Si falta una pieza quieta (un objeto o, si el tema lo pide, un fondo; ' +
       'nunca un personaje), pídesela al dibujante. Una pieza sola (por ejemplo, una corrección):',
     '  node ' + path.join(CARPETA_TALLER, 'dibujar.mjs') + ' --carpeta ' + carpeta +
-      ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo | --cuento | --figura] [--correccion "<lo que dijo el revisor>"]',
+      ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo | --cuento | --figura | --criatura] [--correccion "<lo que dijo el revisor>"]',
     'Con --figura pides una figura entera (id figura-<nombre>, lo que se arma o un personaje secundario; reglas.md 13.7 a 13.9): nunca pidas las partes de lo que se arma por separado. ' +
+      'Con --criatura pides un personaje secundario o un enemigo que se MUEVE (id criatura-<nombre>, reglas.md 13.25): el dibujante la dibuja 3 veces en una tira (los 3 cuadros de su ciclo) y la prepara sola. ' +
+      'En «que» di qué es, cómo es su cara y cómo se mueve (camina, salta, vuela). Los enemigos son amables, lentos y del tema del juego. ' +
       'Con --cuento pides la lámina de una página del cuento de apertura (id fondo-cuento-1, fondo-cuento-2…): una escena sin personajes de ese momento de la historia (reglas.md, 13.1).',
     'Antes de pedir piezas, escribe en plan.md el mundo de la aventura (de qué está hecho y qué existe allí; reglas.md 13.10). Pásalo a cada pieza con --mundo "<el mundo, en inglés>" (dibujar.mjs y dibujar_varias.mjs): nada de otro mundo.',
     'Pídelas todas con UN solo comando (se dibujan a la vez; tarda unos 3 minutos, dale 8 de espera):',

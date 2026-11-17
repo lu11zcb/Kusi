@@ -142,6 +142,20 @@ de algo, un reino, una isla… el que mejor haga sentir el tema.
 - La `historia` de la propuesta cuenta esa aventura (adónde viajan y qué misión tienen),
   en 2 o 3 oraciones cortas, y las `acciones`, los `retos` y las `ayudas` pasan en ese lugar.
 
+## El tema es el juego (se aprende jugando)
+
+Antes de elegir un juego de Friv, piensa **qué hace el niño con el contenido del tema**: arma, clasifica, ordena, lleva,
+cura, construye, atraviesa, compara. Esa acción **es** la mecánica; después buscas qué juego de Friv se le parece (no al
+revés). Reglas (regla 13.24 de [../reglas.md](../reglas.md)):
+
+- **Prueba del cambio de tema:** si cambias el tema por otro y la propuesta queda igual, el tema es decoración: rehazla.
+  El mundo, los personajes, los enemigos y los obstáculos son **cosas del tema**. Nada de una historia ajena pegada al tema.
+- **Enseñar antes de preguntar:** descubrir (Kusi nombra y dice qué es o para qué sirve), practicar y aplicar. Un juego que
+  solo nombra algo y pide elegirlo es un cuestionario: no lo propongas.
+- **Al terminar, el niño sabe algo que no sabía**; dilo en «Qué aprenderán».
+- Puedes proponer **personajes, enemigos y objetos nuevos** del tema (el dibujante los crea y los anima): que tengan
+  cara amable y no asusten.
+
 ## Inspírate en un juego de Friv (y que tenga acción)
 
 Antes de escribir las `acciones`, abre [../../kit/friv/README.md](../../kit/friv/README.md) y elige **UN juego de Friv**

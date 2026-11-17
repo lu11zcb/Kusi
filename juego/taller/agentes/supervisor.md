@@ -79,8 +79,9 @@ decides, repartes, controlas y entregas.
    `fondo-cuento-2`…) y pásale al programador las frases de la `historia`, una por
    página.
 4. **Lista las piezas.** Compara lo que necesita el juego con el catálogo y con
-   las piezas ya aprobadas. Solo pueden faltar **piezas quietas**: objetos y, si
-   el tema lo pide, un fondo. Nunca personajes.
+   las piezas ya aprobadas. Pueden faltar objetos, un fondo y, si el juego lo pide, **personajes secundarios, enemigos y
+   objetos nuevos** (regla 13.25): lo que se mueve es una `criatura-<nombre>` (tira de 3 cuadros); lo que casi no se mueve, una
+   `figura-<nombre>`. El protagonista no se dibuja: lo da el reproductor. Los enemigos y personajes son del tema.
 5. **Busca riesgos.** Si el tema pide una figura sagrada, planea un símbolo (una
    luz, rayos) o la voz de Kusi, y anótalo para que decida el docente. Si toca
    una fiesta o una creencia, anota las opciones.
@@ -142,6 +143,10 @@ respuesta es «no», rehaz la idea tú mismo** (sin cambiar el tema ni lo que ap
 9. ¿Qué es la **acción**: qué persigue, contra qué rival se corre o qué ritmo sube? **«Camina y recoge cosas» no pasa.**
 10. ¿Cada frase de la **historia se ve y se oye** en el juego (13.23)? Si dice que algo canta o habla y no se muestra con
     notas, un sonido o la voz de Kusi, reescríbela. Y el verbo del juego sale de la misión.
+11. **Prueba del cambio de tema (13.24):** si cambias el tema por otro, ¿el juego es igual? Si sí, el tema es decoración:
+    rehaz la idea. ¿Qué hace el niño **con el contenido del tema** (arma, clasifica, ordena, lleva, cura, construye…)?
+12. ¿Dónde **se enseña antes de preguntar** (descubrir, practicar, aplicar)? Escribe en `plan.md` una línea: «Al terminar el
+    niño sabe…».
 
 Un juego que no pasa esta crítica no se programa. Anota en `plan.md` qué cambiaste y por qué.
 

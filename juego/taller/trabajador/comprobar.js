@@ -114,6 +114,16 @@ export async function revisarCodigo(carpetaJuego) {
   if (/children\.list[\s\S]{0,400}?\.setFontSize\s*\(/.test(todo)) {
     motivos.push('El juego cambia el tamaño de todos los textos de la escena, incluidos los del kit: no lo hagas. Solo agranda los textos que el propio juego crea; los del kit ya vienen con su tamaño (reglas.md, 13.14).')
   }
+  // Una criatura animada que el dibujante dejó en piezas/ se reproduce con crearCriatura (kit/reproductor/dibujos/criaturaAnimada.js):
+  // si no, se vería la tira de 3 cuadros entera, uno al lado del otro (reglas.md, 13.25).
+  const carpetaPiezas = path.join(path.dirname(carpetaJuego), 'piezas')
+  if (existsSync(carpetaPiezas)) {
+    const criaturas = (await readdir(carpetaPiezas)).filter((nombre) => /^criatura-.+\.png$/.test(nombre))
+    if (criaturas.length > 0 && !/\bcrearCriatura\s*\(/.test(todo)) {
+      motivos.push('Hay criaturas animadas en piezas/ (' + criaturas.join(', ') + ') y el juego no las usa: llama a crearCriatura de ' +
+        '#kit/reproductor/dibujos/criaturaAnimada.js para cada una (si no, se ve la tira de 3 cuadros entera; reglas.md, 13.25).')
+    }
+  }
   for (const ajeno of ['index.html', 'vite.config.js', 'package.json', 'kit']) {
     if (existsSync(path.join(carpetaJuego, ajeno))) motivos.push('juego/' + ajeno + ' no debe estar: el reproductor abre el juego, no se arma otro entorno ni se copia el kit.')
   }
@@ -136,7 +146,7 @@ export async function revisarPiezas(carpeta) {
   const aprobadas = await huellasAprobadas(carpeta)
   for (const archivo of (await readdir(piezas)).filter((nombre) => nombre.endsWith('.png')).sort()) {
     const id = archivo.slice(0, -'.png'.length)
-    const resultado = comprobarPieza(path.join(piezas, archivo), { fondo: id.startsWith('fondo-'), figura: id.startsWith('figura-') })
+    const resultado = comprobarPieza(path.join(piezas, archivo), { fondo: id.startsWith('fondo-'), figura: id.startsWith('figura-'), criatura: id.startsWith('criatura-') })
     if (!resultado.pasa) {
       motivos.push('La pieza «' + id + '» no pasa el filtro del código: ' +
         resultado.respuestas.filter((respuesta) => !respuesta.si).map((respuesta) => respuesta.motivo).join(' '))

@@ -10,6 +10,7 @@ import { prepararPieza } from '../../kit/herramientas/preparar_pieza.mjs'
 import { dibujar, pedidoDeDibujo, MAX_INTENTOS_PIEZA } from '../../taller/dibujar.mjs'
 import { guardarPng } from '../../kit/herramientas/animaciones/png_rgba.mjs'
 import { revisarPiezas } from '../../taller/trabajador/comprobar.js'
+import { tiraSobreBlanco } from '../ayudas/tira.js'
 
 const escribirPng = (ruta, ancho, alto, pixeles) => guardarPng(ruta, { ancho, alto, datos: Buffer.from(pixeles) })
 
@@ -147,6 +148,8 @@ function dibujanteDePrueba(entregas) {
       const entrega = entregas.shift()
       if (entrega === 'bien') dibujoSobreBlanco(path.join(comando.carpeta, archivo))
       if (entrega === 'vacio') dibujoSobreBlanco(path.join(comando.carpeta, archivo), { radio: 0 })
+      if (entrega === 'tira') tiraSobreBlanco(path.join(comando.carpeta, archivo))
+      if (entrega === 'tira-sin-un-cuadro') tiraSobreBlanco(path.join(comando.carpeta, archivo), { vacio: 2 })
       return { codigo: 0, agotado: false, salida: 'GUARDADO ' + archivo + '\ntokens used\n1,234', errores: '' }
     },
   }
@@ -261,4 +264,32 @@ test('dos piezas que terminan juntas conservan ambos registros y el consumo de s
     assert.equal(registro.olla.tokens, 246)
     assert.equal(registro.cuchara.tokens, 123)
   } finally { await rm(path.dirname(carpeta), { recursive: true }) }
+})
+
+test('una criatura animada se pide como tira de 3 cuadros y queda en piezas/ como una hoja de 768 × 256', { timeout: 240_000 }, async () => {
+  const pedido = pedidoDeDibujo({ id: 'criatura-bicho', que: 'a friendly beetle that walks', criatura: true, mundo: 'a garden of clay', intento: 1 })
+  for (const frase of ['THREE times side by side', 'facing RIGHT', 'SAME character', 'wide image', 'never scary', 'plain flat white',
+    'World of this game: a garden of clay', 'criatura-bicho-intento-1.png']) assert.ok(pedido.includes(frase), frase)
+
+  const carpeta = await trabajoDePrueba()
+  const { lanzarRol } = dibujanteDePrueba(['tira'])
+  const resultado = await dibujar({ carpeta, id: 'criatura-bicho', que: 'a friendly beetle that walks', criatura: true }, { roles, lanzarRol })
+  assert.equal(resultado.pasa, true, JSON.stringify(resultado))
+  assert.equal(resultado.siguiente, 'revisor')
+  assert.equal(comprobarPieza(path.join(carpeta, 'piezas', 'criatura-bicho.png'), { criatura: true }).pasa, true)
+  const registro = JSON.parse(await readFile(path.join(carpeta, 'piezas', 'registro.json'), 'utf8'))
+  assert.equal(registro['criatura-bicho'].tipo, 'criatura')
+
+  // Un cuadro sin figura se corrige (con el motivo), y no queda pieza.
+  const mala = await trabajoDePrueba()
+  const segundo = await dibujar({ carpeta: mala, id: 'criatura-bicho', que: 'beetle', criatura: true }, { roles, lanzarRol: dibujanteDePrueba(['tira-sin-un-cuadro']).lanzarRol })
+  assert.equal(segundo.pasa, false)
+  assert.equal(segundo.siguiente, 'corregir')
+  assert.match(segundo.motivo, /Cuadro 3/)
+  assert.equal(existsSync(path.join(mala, 'piezas', 'criatura-bicho.png')), false)
+
+  // El id tiene que ser criatura-<nombre>, y no se mezcla con otro tipo.
+  assert.match((await dibujar({ carpeta, id: 'bicho', que: 'beetle', criatura: true }, { roles, lanzarRol })).motivo, /criatura-<nombre>/)
+  assert.equal((await dibujar({ carpeta, id: 'criatura-otro', que: 'x', criatura: true, figura: true }, { roles, lanzarRol })).pasa, false)
+  assert.equal((await dibujar({ carpeta, id: 'criatura-otro', que: 'x' }, { roles, lanzarRol })).pasa, false, 'un objeto no se llama criatura-…')
 })

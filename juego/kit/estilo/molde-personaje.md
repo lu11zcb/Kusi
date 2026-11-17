@@ -1,9 +1,10 @@
 # El molde de un personaje
 
 Cómo está hecho un personaje animado del kit y qué necesita el reproductor para
-usarlo. **En este sprint no se dibujan personajes:** este documento sirve para
+usarlo. **El protagonista, el zorro y Kusi no se redibujan:** este documento sirve para
 entender los que hay y es la base de las opciones que elegirá el niño en el
-Sprint 4, dibujadas todas sobre el molde del cuy.
+Sprint 4, dibujadas todas sobre el molde del cuy. Los personajes secundarios y los enemigos de cada
+juego son más simples: una tira de 3 cuadros de lado (`criatura-<nombre>`, regla 13.25).
 
 ## 1. La hoja
 

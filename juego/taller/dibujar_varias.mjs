@@ -3,7 +3,7 @@
 //
 //   node taller/dibujar_varias.mjs --carpeta <carpeta del trabajo> --piezas '<JSON>' --mundo "<el mundo de la aventura>"
 //
-// <JSON> es una lista de { id, que, fondo?, cuento?, apoyado? }, con lo mismo que
+// <JSON> es una lista de { id, que, fondo?, cuento?, figura?, criatura?, apoyado? }, con lo mismo que
 // recibe dibujar.mjs por pieza. Responde un JSON con una lista de los resultados, uno por
 // pieza y en el mismo orden (cada uno trae «siguiente»: revisor, corregir o respaldo).
 // «--mundo» describe el mundo de la aventura (por ejemplo, de qué está hecho): se le dice a cada pieza

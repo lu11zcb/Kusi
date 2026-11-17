@@ -49,8 +49,8 @@ Antes del juego está la **propuesta**: lo que el docente lee y aprueba. La escr
 4. **El supervisor** lee la propuesta, revisa la biblioteca, decide qué falta y
    reparte el trabajo:
    - el **programador** escribe el juego con el kit;
-   - el **dibujante** dibuja solo las piezas quietas que falten (objetos y, si el
-     tema lo pide, un fondo);
+   - el **dibujante** dibuja lo que falte para que el juego no se vea plano (objetos, fondos y, si
+     el juego lo pide, personajes secundarios, enemigos y criaturas animadas de 3 cuadros);
    - el **revisor** juega el juego, mira capturas y revisa cada pieza.
 5. **Hay hasta 2 correcciones.** Si el juego no pasa, el trabajo termina en
    `falló`. Si una pieza no pasa, se usa una pieza que ya existe o una figura
@@ -136,7 +136,7 @@ npm run taller -- --una-vez
 | --- | --- | --- |
 | Supervisor | Lee la propuesta, revisa la biblioteca, decide qué falta, reparte, controla las correcciones y entrega. | No programa ni dibuja. |
 | Programador | Escribe el juego con el kit, su guion de ejemplo y sus pruebas. | No dibuja ni cambia el kit. |
-| Dibujante | Dibuja las piezas quietas que faltan y las prepara. | No dibuja personajes ni cambia piezas del kit. |
+| Dibujante | Dibuja lo que falta (objetos, fondos, personajes secundarios, enemigos y criaturas animadas de 3 cuadros) y lo prepara. | No redibuja al protagonista, al zorro ni a Kusi, ni cambia piezas del kit. |
 | Revisor | Juega el juego, mira capturas, revisa el código, el contenido y cada pieza. | No corrige: dice qué está mal y por qué. |
 
 **Quién dirige y quién hace.** El trabajador lanza al supervisor, que trae al

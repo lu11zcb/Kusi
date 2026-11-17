@@ -103,6 +103,9 @@ con la dirección normal y se juega con `&historia=0`.
 - [ ] ¿Hay **8 piezas dibujadas o menos**, y no es un mandado (ir, esperar y volver)? (13.21)
 - [ ] **Acción y competencia (13.21):** ¿hay algo que persigue, un rival o un ritmo que sube? «Camina y recoge cosas»
       es «corregir». ¿El plan dice en qué juego de Friv se inspira y qué adapta?
+- [ ] **El tema es el juego (13.24):** ¿pasa la prueba del cambio de tema (si cambias el tema, el juego ya no es el mismo)? ¿Hay
+      descubrir (Kusi nombra y explica), practicar y aplicar? Jugado, ¿el niño sabe al final algo que no sabía? Un
+      cuestionario disfrazado (elegir el arco o el carril con el nombre) es «corregir».
 - [ ] **La historia se ve y se oye (13.23):** cada cosa que dice el cuento (que canta, habla, brilla…) se ve en pantalla y
       se oye; si no, es «corregir». ¿El verbo del juego sale de la misión de la historia?
 - [ ] ¿El mundo está **lleno y vivo** y no parece una sola imagen? Suelo trabajado, mucho decorado (14 por pantalla o más),

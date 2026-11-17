@@ -26,9 +26,9 @@ async function compilar() {
 
 // Devuelve lo que informó la herramienta ({ tipo, lado_mayor, instancias }) o lanza un
 // error con su motivo (por ejemplo, «No se encontró ninguna figura en la imagen»).
-export async function prepararPieza(original, destino, { apoyado = false, fondo = false, figura = false } = {}) {
+export async function prepararPieza(original, destino, { apoyado = false, fondo = false, figura = false, recorte = false } = {}) {
   const programa = await compilar()
-  const opciones = fondo ? ['--fondo'] : figura ? ['--figura'] : apoyado ? ['--apoyado'] : []
+  const opciones = recorte ? ['--recorte'] : fondo ? ['--fondo'] : figura ? ['--figura'] : apoyado ? ['--apoyado'] : []
   try {
     const { stdout } = await ejecutar(programa, [original, destino, ...opciones], { timeout: 60_000 })
     return JSON.parse(stdout.trim().split('\n').at(-1))

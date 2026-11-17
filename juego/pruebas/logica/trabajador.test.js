@@ -168,6 +168,13 @@ test('un juego sin los controles ni la interfaz del kit, o con su propio entorno
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n')
   await writeFile(path.join(juego, 'index.html'), '<html></html>')
   await mkdir(path.join(juego, 'kit'))
+  // Una criatura animada en piezas/ que el juego no reproduce con crearCriatura se rechaza.
+  await mkdir(path.join(carpeta, 'piezas'), { recursive: true })
+  await writeFile(path.join(carpeta, 'piezas', 'criatura-llama.png'), 'x')
+  assert.match((await revisarCodigo(juego)).join(' | '), /criaturas animadas en piezas\/ \(criatura-llama\.png\)[\s\S]*crearCriatura/)
+  await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\ncrearCriatura(this, "criatura-llama")\n')
+  assert.doesNotMatch((await revisarCodigo(juego)).join(' | '), /criaturas animadas/)
+  await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n')
   const ajeno = (await revisarCodigo(juego)).join(' | ')
   assert.doesNotMatch(ajeno, /no usa/)
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\nthis.cameras.main.setZoom(2)\n')

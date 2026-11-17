@@ -11,9 +11,10 @@ aprobada del kit contradice la guía, manda la pieza y se corrige la guía.
 | [modelos.md](modelos.md) y [lamina-modelos.png](lamina-modelos.png) | Las piezas modelo del kit, para comparar lado a lado. |
 | [molde-personaje.md](molde-personaje.md) | Cómo está hecho un personaje y qué necesita el reproductor. |
 
-**En este sprint solo se dibujan piezas quietas:** objetos y, si el tema lo
-pide, un fondo. Los personajes (el protagonista, el zorro y Kusi) no se
-dibujan ni se cambian.
+**El protagonista, el zorro y Kusi no se dibujan ni se cambian.** Lo demás sí: objetos, fondos, figuras enteras y, si el
+juego lo pide, **personajes secundarios, enemigos y objetos nuevos**. Lo que se mueve es una **criatura animada**: una
+tira de 3 cuadros (`criatura-<nombre>`, 768 × 256) que se dibuja con cara amable y en el mismo estilo del kit; nunca
+asusta (regla 13.25 de `taller/reglas.md`).
 
 ## 1. Para qué sirve
 

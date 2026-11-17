@@ -6,6 +6,8 @@
 //   preparar_pieza <original.png> <pieza.png> --apoyado    un objeto con su punto más bajo en y = 244
 //   preparar_pieza <original.png> <fondo.png> --fondo      un fondo de 1672 × 941, sin transparencia
 //   preparar_pieza <original.png> <figura.png> --figura    una figura entera de 768 × 768 con transparencia
+//   preparar_pieza <original.png> <recorte.png> --recorte  la figura recortada a su tamaño, sin cambiarle la escala
+//                                                           (un cuadro de una criatura animada: preparar_criatura.mjs)
 //
 // No se usa directo: lo compila y lo llama kit/herramientas/preparar_pieza.mjs.
 
@@ -25,6 +27,7 @@ guard argumentos.count >= 3 else { fallar("Uso: preparar_pieza <original.png> <p
 let esFondo = argumentos.contains("--fondo")
 let apoyado = argumentos.contains("--apoyado")
 let esFigura = argumentos.contains("--figura")
+let esRecorte = argumentos.contains("--recorte")
 // Un objeto mide 256 × 256 (lado mayor 200); una figura entera, 768 × 768 (lado mayor 704).
 let lado = esFigura ? 768.0 : 256.0
 let ladoMayor = esFigura ? 704.0 : 200.0
@@ -66,6 +69,11 @@ guard let recorte = try? resultado.generateMaskedImage(ofInstances: resultado.al
   else { fallar("No se pudo recortar la figura.") }
 let ciRecorte = CIImage(cvPixelBuffer: recorte)
 guard let figura = CIContext().createCGImage(ciRecorte, from: ciRecorte.extent) else { fallar("No se pudo convertir la figura.") }
+if esRecorte {
+  guardar(figura)
+  print("{\"tipo\":\"recorte\",\"ancho\":\(figura.width),\"alto\":\(figura.height),\"instancias\":\(resultado.allInstances.count)}")
+  exit(0)
+}
 
 // 2. Se reduce sin deformarla: el lado mayor mide 200 px (la guía pide de 180 a 215) y
 // va centrada a lo ancho. En CoreGraphics el origen está abajo: «apoyado» deja su punto

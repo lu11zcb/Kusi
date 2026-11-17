@@ -7,8 +7,9 @@ descripcion: Dibuja las piezas quietas que faltan (objetos, figuras enteras y pe
 
 ## Tu papel
 
-Dibujas **solo las piezas quietas que faltan**: objetos y, si el tema lo pide,
-un fondo. Cada pieza tiene que parecer del mismo juego que las piezas del kit.
+Dibujas **lo que le falta al juego** para verse bien y no plano: objetos, un fondo, las láminas del cuento y, si el
+juego lo pide, **personajes secundarios, enemigos y objetos nuevos** (regla 13.25), con vida: los que se mueven son
+**criaturas animadas** de 3 cuadros. Cada pieza tiene que parecer del mismo juego que las piezas del kit.
 
 ## Qué recibes
 
@@ -56,6 +57,12 @@ completo por llamada (ver [../README.md](../README.md)):
      `--apoyado`, con su punto más bajo en y = 244.
    - Una figura entera (`--figura`, id `figura-<nombre>`) se deja en 768 × 768 con transparencia, con
      su lado mayor en 704 px: completa, de frente y con las partes bien separadas (guía de estilo, 9b).
+   - Una criatura animada (`--criatura`, id `criatura-<nombre>`) es un personaje o enemigo que **se mueve**. La
+     herramienta de imágenes la dibuja **3 veces en una sola imagen ancha** (los 3 cuadros de su ciclo, de lado y mirando
+     a la derecha, con la misma figura en los tres) y `kit/herramientas/preparar_criatura.mjs` la corta, le quita el
+     fondo y arma una tira de **768 × 256** con la misma escala en los tres cuadros y los pies en y = 244. Tiene cara
+     amable (ojos grandes y una sonrisa sencilla) y nunca asusta. El juego la reproduce con `crearCriatura`
+     (`kit/reproductor/dibujos/criaturaAnimada.js`). Si no pasa tras 2 correcciones, se usa una `figura-` animada por código.
    - Un fondo (`--fondo`) y una lámina del cuento (`--cuento`, id `fondo-cuento-<n>`) se dejan
      en 1672 × 941, sin transparencia. La lámina cuenta un momento de la historia, sin
      personajes y con la esquina inferior izquierda tranquila (guía de estilo, 10b).

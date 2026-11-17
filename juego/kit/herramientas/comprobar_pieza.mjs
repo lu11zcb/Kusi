@@ -2,7 +2,7 @@
 // No opina, solo mide: medidas, transparencia, márgenes, tamaño de la silueta, que sea
 // una sola figura, el contorno, los blancos de adentro, el peso y el nombre.
 //
-//   node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo | --figura]
+//   node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo | --figura | --criatura]
 //
 // Responde un JSON { pasa, respuestas: [{ pregunta, si, motivo }] } y termina con 0 si
 // pasa o 1 si no. Lee el PNG con zlib, sin instalar nada.
@@ -20,6 +20,8 @@ export const SILUETA_FIGURA = { minimo: 600, maximo: 720 }
 export const MARGEN_FIGURA = 24
 export const DESVIO_FIGURA = 48
 export const PESO_FIGURA = 600 * 1024
+// Una criatura animada (un personaje o enemigo que se mueve) es una tira de 3 cuadros de 256 × 256, lado a lado: 768 × 256.
+export const CRIATURA = { ancho: 768, alto: 256, cuadros: 3, pies: 244, margenPies: 6, ladoMayor: { minimo: 150, maximo: 215 }, variacionMaxima: 1.3, peso: 300 * 1024 }
 export const FONDO = { ancho: 1672, alto: 941 }
 export const MARGEN = 8
 export const SILUETA = { minimo: 180, maximo: 215 }
@@ -138,7 +140,7 @@ function areaDeHuecos(imagen) {
   return huecos
 }
 
-export function comprobarPieza(archivo, { fondo = false, figura = false } = {}) {
+export function comprobarPieza(archivo, { fondo = false, figura = false, criatura = false } = {}) {
   const respuestas = []
   const responder = (pregunta, si, motivo = null) => respuestas.push({ pregunta, si, motivo: si ? null : motivo })
   const id = path.basename(archivo, '.png')
@@ -160,6 +162,8 @@ export function comprobarPieza(archivo, { fondo = false, figura = false } = {}) 
       id.startsWith('fondo-') && PATRON_NOMBRE.test(id), 'Se llama «' + id + '.png».')
     return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas }
   }
+
+  if (criatura) return comprobarCriatura(imagen, id, peso, responder, respuestas)
 
   // Un objeto mide 256 × 256; una figura entera, 768 × 768. Lo demás se mide sobre ese lado.
   const L = figura ? LADO_FIGURA : LADO_OBJETO
@@ -226,6 +230,61 @@ export function comprobarPieza(archivo, { fondo = false, figura = false } = {}) 
   return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas, silueta: { minX, minY, maxX, maxY, ladoMayor } }
 }
 
+// Una criatura animada: 3 cuadros de 256 × 256 con los pies en la misma fila, del mismo tamaño y con movimiento.
+function comprobarCriatura(imagen, id, peso, responder, respuestas) {
+  const C = CRIATURA
+  const medidasOk = imagen.ancho === C.ancho && imagen.alto === C.alto && imagen.pixeles !== null
+  responder('¿Es un PNG de ' + C.ancho + ' × ' + C.alto + ' con transparencia (3 cuadros de 256 × 256)?', medidasOk,
+    'Mide ' + imagen.ancho + ' × ' + imagen.alto + (imagen.pixeles === null ? ' y no tiene transparencia' : '') + '.')
+  responder('¿Pesa menos de 300 KB?', peso < C.peso, 'Pesa ' + Math.round(peso / 1024) + ' KB.')
+  responder('¿El nombre es criatura-<nombre>.png, en minúsculas, sin tildes y con guiones?',
+    id.startsWith('criatura-') && id.length > 'criatura-'.length && PATRON_NOMBRE.test(id), 'Se llama «' + id + '.png».')
+  if (!medidasOk) return { pasa: false, respuestas }
+
+  // Lo opaco de cada cuadro: su caja y su máscara.
+  const cuadros = []
+  for (let c = 0; c < C.cuadros; c += 1) {
+    let minX = 256, minY = 256, maxX = -1, maxY = -1, cuenta = 0
+    const mascara = new Uint8Array(256 * 256)
+    for (let y = 0; y < 256; y += 1) {
+      for (let x = 0; x < 256; x += 1) {
+        if (imagen.pixeles[((y * C.ancho) + c * 256 + x) * 4 + 3] < OPACO) continue
+        mascara[y * 256 + x] = 1
+        cuenta += 1
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+    }
+    cuadros.push({ minX, minY, maxX, maxY, cuenta, mascara, ladoMayor: Math.max(maxX - minX + 1, maxY - minY + 1) })
+  }
+  const vacios = cuadros.map((cuadro, i) => [cuadro, i + 1]).filter(([cuadro]) => cuadro.cuenta < 400).map(([, i]) => i)
+  responder('¿Los 3 cuadros tienen una figura?', vacios.length === 0, 'Los cuadros ' + vacios.join(', ') + ' están vacíos o casi.')
+  if (vacios.length) return { pasa: false, respuestas }
+
+  const lejos = cuadros.map((cuadro, i) => [cuadro, i + 1]).filter(([cuadro]) => Math.abs(cuadro.maxY - C.pies) > C.margenPies).map(([cuadro, i]) => i + ' (pies en y = ' + cuadro.maxY + ')')
+  responder('¿Los pies (el punto más bajo) están en y = ' + C.pies + ', igual en los 3 cuadros?', lejos.length === 0,
+    'Los pies no están donde deben en el cuadro ' + lejos.join(', ') + '.')
+  const lados = cuadros.map((cuadro) => cuadro.ladoMayor)
+  responder('¿La figura mide entre ' + C.ladoMayor.minimo + ' y ' + C.ladoMayor.maximo + ' px (su lado mayor, en el cuadro más grande)?',
+    Math.max(...lados) >= C.ladoMayor.minimo && Math.max(...lados) <= C.ladoMayor.maximo, 'El cuadro más grande mide ' + Math.max(...lados) + ' px.')
+  const areas = cuadros.map((cuadro) => cuadro.cuenta)
+  responder('¿Los 3 cuadros son del mismo tamaño (ninguno más de un 30 % más grande que otro)?', Math.max(...areas) / Math.min(...areas) <= C.variacionMaxima * C.variacionMaxima,
+    'Las áreas cambian de ' + Math.min(...areas) + ' a ' + Math.max(...areas) + ' px: parecen dibujos de distinto tamaño.')
+  const tocan = cuadros.map((cuadro, i) => [cuadro, i + 1]).filter(([cuadro]) => cuadro.minX < 3 || cuadro.maxX > 252 || cuadro.minY < 3).map(([, i]) => i)
+  responder('¿La figura no toca el borde de su cuadro?', tocan.length === 0, 'Toca el borde en el cuadro ' + tocan.join(', ') + '.')
+  // Que haya movimiento: la máscara de algún par de cuadros cambia al menos un 3 %.
+  let mayorCambio = 0
+  for (const [a, b] of [[0, 1], [1, 2], [0, 2]]) {
+    let distintos = 0
+    for (let i = 0; i < 256 * 256; i += 1) if (cuadros[a].mascara[i] !== cuadros[b].mascara[i]) distintos += 1
+    mayorCambio = Math.max(mayorCambio, distintos / Math.max(1, Math.max(cuadros[a].cuenta, cuadros[b].cuenta)))
+  }
+  responder('¿Los cuadros son distintos entre sí (hay movimiento)?', mayorCambio >= 0.03, 'Los 3 cuadros son casi iguales: no se vería moverse.')
+  return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas, cuadros: cuadros.map(({ minX, minY, maxX, maxY, cuenta }) => ({ minX, minY, maxX, maxY, cuenta })) }
+}
+
 function opacoEntero(imagen) {
   for (let i = 3; i < imagen.pixeles.length; i += 4) if (imagen.pixeles[i] !== 255) return false
   return true
@@ -234,10 +293,10 @@ function opacoEntero(imagen) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const archivo = process.argv[2]
   if (!archivo) {
-    console.error('Uso: node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo | --figura]')
+    console.error('Uso: node kit/herramientas/comprobar_pieza.mjs <pieza.png> [--fondo | --figura | --criatura]')
     process.exit(2)
   }
-  const resultado = comprobarPieza(archivo, { fondo: process.argv.includes('--fondo'), figura: process.argv.includes('--figura') })
+  const resultado = comprobarPieza(archivo, { fondo: process.argv.includes('--fondo'), figura: process.argv.includes('--figura'), criatura: process.argv.includes('--criatura') })
   console.log(JSON.stringify(resultado, null, 2))
   process.exit(resultado.pasa ? 0 : 1)
 }

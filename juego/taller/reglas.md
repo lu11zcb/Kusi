@@ -90,9 +90,10 @@ igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
   cambian su forma, su ropa ni sus colores.
 - **Personajes secundarios: sí, cuando el juego los pide** (un habitante del lugar,
   un ayudante, un muñeco que cobra vida, un animal del mundo al que viajan). El
-  dibujante los dibuja como **figura entera** (`figura-<nombre>`, regla 13.8), de
-  frente, con el estilo del kit y con personalidad, y el juego los **anima con
-  código** (saltito, balanceo, saludo, parpadeo: regla 13.9). No se parecen al
+  dibujante los dibuja como **figura entera** (`figura-<nombre>`, regla 13.8) o, si
+  se mueven, como **criatura animada** de 3 cuadros (`criatura-<nombre>`, regla 13.25),
+  con el estilo del kit y con personalidad, y el juego los **anima**
+  (cuadros, saltito, balanceo, saludo, parpadeo: reglas 13.9 y 13.25). No se parecen al
   protagonista, al zorro ni a Kusi, y nunca son figuras sagradas (regla 5).
 - Un **animal quieto** que no es un personaje del juego es un objeto: lo dibuja
   el dibujante con ojos simples, sin boca ni expresión.
@@ -533,6 +534,38 @@ oiga cantar) **no se cuenta**: se cambia la historia, sin cambiar el tema ni lo 
 - La historia explica **por qué se juega a esto** (13.18): el verbo del juego sale de la misión. Si la historia dice
   «ayuda a cruzar el río», el juego es cruzar el río, no juntar hojas.
 - El supervisor revisa cada frase de la historia contra lo que se ve y se juega; la que no se muestra, se reescribe.
+
+**13.24 El tema es el juego: se aprende jugando.** El juego tiene que ver con el tema y el niño tiene que aprender algo
+al jugarlo. No es una carrera ni una aventura cualquiera con el tema pegado encima.
+
+- **Prueba del cambio de tema.** Cambia el tema por otro cualquiera. Si el juego queda igual (solo cambian los nombres),
+  el tema era decoración y el juego se rehace. El **mundo, los objetos, los personajes y los obstáculos son cosas del
+  tema**; una historia ajena pegada al tema (mensajeros, piratas, carreras con arcos…) no es el tema.
+- **La mecánica se elige para el tema.** Primero se piensa **qué hace el niño con el contenido** (arma, clasifica, ordena,
+  lleva, cura, construye, atraviesa, compara) y después se busca qué juego de Friv se le parece (regla 13.21). Elegir
+  primero la carrera y poner el tema encima es al revés.
+- **Enseñar antes de preguntar.** Cada contenido nuevo pasa por tres pasos: **(1) descubrir**: aparece grande y Kusi lo nombra
+  y dice qué es o para qué sirve, con voz y texto; **(2) practicar**: el niño lo usa dentro de la acción; **(3) aplicar**: se
+  pide por lo que hace o cómo es, sin nombrarlo. Un juego que solo dice el nombre y pide elegirlo es un cuestionario y se
+  rechaza.
+- **Kusi explica el porqué**, también cuando el niño se equivoca: la pista dice por qué («las manos sirven para agarrar»),
+  no solo «otra vez». Al acertar, una frase de lo aprendido.
+- **No se gana por azar.** Hay tres opciones o más, o una secuencia, y lo correcto se sabe por el contenido del tema.
+- **Al terminar, el niño sabe algo que no sabía.** El supervisor lo escribe en una línea en `plan.md` («Al terminar el niño
+  sabe…») y el revisor lo comprueba jugando.
+
+**13.25 Personajes, enemigos y objetos nuevos, con vida.** Si el juego lo pide, el dibujante crea **personajes secundarios,
+enemigos y objetos nuevos** y se **animan** para que el juego no se vea plano:
+
+- **Criatura animada** (`criatura-<nombre>`, `dibujar.mjs --criatura`): un personaje o enemigo que se mueve (camina,
+  vuela, se arrastra, salta). Se dibuja como una tira de **3 cuadros** de lado, mirando a la derecha; el juego la
+  reproduce con `kit/reproductor/dibujos/criaturaAnimada.js` y la voltea al ir a la izquierda.
+- **Figura entera** (`figura-<nombre>`): lo que se arma, un habitante o un ayudante que casi no se mueve; se anima con código.
+- **Objeto nuevo** (id normal): lo que se toca o se recoge; se anima con `darVida`.
+- Tienen **cara amable** (ojos grandes y simples y, si hablan, una boca sencilla), el mismo estilo del kit y **nunca asustan**.
+  Un enemigo es lento, avisa, se cansa y no castiga (13.12). Nunca son figuras sagradas (regla 5) y no se parecen al
+  protagonista, al zorro ni a Kusi.
+- Un enemigo o personaje del tema vale más que uno genérico: si el tema es un animal, sus compañeros y peligros son de su mundo.
 
 ## 12. Nombres neutrales
 
