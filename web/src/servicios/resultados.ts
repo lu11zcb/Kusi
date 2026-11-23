@@ -1,7 +1,7 @@
 import { enviar, solicitar } from './http'
 import { ErrorApi } from './django'
 
-export type ActividadResultado = { id: string; titulo: string; seccion: string }
+export type ActividadResultado = { id: string; titulo: string; seccion: string; retirada?: boolean }
 export type DestinatarioActividad = { id: string; nombre: string; asignado: boolean }
 export type EstadoResultado = 'sin_iniciar' | 'en_curso' | 'completada'
 export type EstudianteResultado = { id: string; nombre: string; estado: EstadoResultado; partidas: number; ayudas_usadas: number }
@@ -49,4 +49,9 @@ export async function respuestasResultados(actividad: string, estudiante: string
   return lista(await solicitar<unknown>(base + encodeURIComponent(actividad) + '/estudiantes/' + encodeURIComponent(estudiante) + '/', { signal }), 'partidas',
     d => objeto(d) && texto(d.juego_id) && texto(d.enviado_en) && Number.isFinite(Date.parse(d.enviado_en)) && cantidad(d.envio) && Number(d.envio) > 0 && estado(d.estado) && cantidad(d.ayudas_usadas)
       && Array.isArray(d.retos) && d.retos.every(r => objeto(r) && texto(r.reto) && Array.isArray(r.respuestas) && r.respuestas.every(respuestaValida))) as PartidaResultado[]
+}
+
+export async function retirarActividad(actividad: string): Promise<void> {
+  const datos = await enviar<{ guardado: boolean }>(base + encodeURIComponent(actividad) + '/retirar/', {})
+  if (datos.guardado !== true) throw new ErrorApi('Actualiza la actividad para confirmar su retiro.', 502)
 }

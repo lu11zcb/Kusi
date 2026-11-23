@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { actividadesResultados, estudiantesResultados, respuestasResultados } from '../servicios/resultados'
+import { actividadesResultados, estudiantesResultados, respuestasResultados, retirarActividad } from '../servicios/resultados'
 import type { ActividadResultado, EstadoResultado, EstudianteResultado, PartidaResultado } from '../servicios/resultados'
 import { CabeceraDocente, CargandoDocente, MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
@@ -46,6 +46,8 @@ function RespuestasEstudiante({ actividad, estudiante }: { actividad: string; es
 }
 
 function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) {
+  const [retirada, establecerRetirada] = useState(!!actividad.retirada)
+  const [retirando, establecerRetirando] = useState(false)
   const [asignando, establecerAsignando] = useState(false)
   const [estudiantes, establecerEstudiantes] = useState<EstudianteResultado[] | null>(null)
   const [elegido, establecerElegido] = useState<EstudianteResultado | null>(null)
@@ -59,12 +61,21 @@ function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) 
       .catch(fallo => { if (!controlador.signal.aborted) establecerError(mensajeDocente(fallo, 'No pudimos cargar esta actividad. Intenta otra vez.')) })
     return () => controlador.abort()
   }, [actividad.id, recarga])
+  async function retirar() {
+    if (retirando || retirada || !window.confirm('¿Retirar esta actividad? Ya no se podrá abrir ni retomar. Los resultados se conservan.')) return
+    establecerRetirando(true); establecerError('')
+    try { await retirarActividad(actividad.id); establecerRetirada(true); establecerAsignando(false) }
+    catch (fallo) { establecerError(mensajeDocente(fallo, 'No pudimos retirar la actividad.')) }
+    finally { establecerRetirando(false) }
+  }
   const visibles = (estudiantes ?? []).filter(e => (!filtro || e.estado === filtro) && normalizarBusqueda(e.nombre).includes(normalizarBusqueda(buscar)))
   return <>
     <div className="doc-resultado-cabecera"><div><h2>{actividad.titulo}</h2><p>Sección {actividad.seccion}</p></div><div className="doc-resultado-acciones">
-      <button type="button" className="secundario" aria-expanded={asignando} onClick={() => establecerAsignando(valor => !valor)}>Asignar a estudiantes nuevos</button>
+      <button type="button" className="secundario" disabled={retirada || retirando} aria-expanded={asignando} onClick={() => establecerAsignando(valor => !valor)}>Asignar a estudiantes nuevos</button>
       <button type="button" className="secundario" onClick={() => { establecerError(''); establecerEstudiantes(null); establecerElegido(null); establecerRecarga(n => n + 1) }}>Actualizar</button>
+      <button type="button" className="secundario" disabled={retirada || retirando} onClick={() => void retirar()}>{retirada ? 'Actividad retirada' : retirando ? 'Retirando…' : 'Retirar actividad'}</button>
     </div></div>
+    {retirada && <p role="status">Actividad retirada. Ya no se puede abrir ni retomar. Los resultados se conservan.</p>}
     {asignando && <AsignacionesActividad actividad={actividad.id} alAsignar={() => { establecerElegido(null); establecerRecarga(n => n + 1) }} />}
     {error ? <MensajeDocente titulo="No pudimos cargar los resultados" error><p>{error}</p></MensajeDocente> : estudiantes === null ? <CargandoDocente texto="Buscando el avance de tu clase…" /> : <>
       <div className="doc-filtros-estado" role="group" aria-label="Filtrar por avance"><button type="button" className="secundario" aria-pressed={!filtro} onClick={() => establecerFiltro('')}>Todos <span>{estudiantes.length}</span></button>{Object.entries(estados).map(([clave, nombre]) => <button type="button" className="secundario" aria-pressed={filtro === clave} key={clave} onClick={() => establecerFiltro(clave)}>{nombre} <span>{estudiantes.filter(e => e.estado === clave).length}</span></button>)}</div>

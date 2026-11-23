@@ -28,8 +28,8 @@ public class ResultadosService {
             + "and exists (select 1 from edu.generaciones g where g.solicitud_id = s.id and g.publicada = true) ";
 
     public List<Map<String, Object>> actividades(UUID docente) {
-        return jdbc.query("select s.id, s.tema, sec.nombre " + ALCANCE + "order by s.creado_en desc, s.id",
-                (fila, indice) -> Map.<String, Object>of("id", fila.getObject(1, UUID.class), "titulo", fila.getString(2), "seccion", fila.getString(3)), docente, docente);
+        return jdbc.query("select s.id, s.tema, sec.nombre, s.retirada_en " + ALCANCE + "order by s.creado_en desc, s.id",
+                (fila, indice) -> Map.<String, Object>of("id", fila.getObject(1, UUID.class), "titulo", fila.getString(2), "seccion", fila.getString(3), "retirada", fila.getTimestamp(4) != null), docente, docente);
     }
 
     private UUID seccion(UUID docente, UUID actividad) {

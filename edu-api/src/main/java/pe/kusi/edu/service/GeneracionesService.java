@@ -267,6 +267,7 @@ public class GeneracionesService {
                     HttpStatus.CONFLICT,
                     "Solo se puede enviar a los estudiantes un juego listo");
         }
+        actividades.comprobarPublicacion(generacion.getSolicitudId());
         generacion.publicar();
         Generacion enviada = generacionRepository.saveAndFlush(generacion);
         actividades.materializar(enviada.getId());

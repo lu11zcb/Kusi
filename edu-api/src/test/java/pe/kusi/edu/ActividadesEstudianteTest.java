@@ -291,4 +291,27 @@ class ActividadesEstudianteTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.partidas.length()").value(1));
     }
 
+    @Test void hu45RetiroAbarcaTodasLasVersionesConservaResultadosYNoSePuedeRepublicar() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "reto_completado", 1));
+        enviar(ruta(juego), "estudiante", checkpoint(partida, 1, 2)).andExpect(status().isOk());
+        Generacion nueva = enviar(new Generacion(actividad, juego.getPropuestaId(), 2), 3);
+        String retiro = "/api/edu/resultados/actividades/" + actividad + "/retirar/";
+        enviar(retiro, "ajeno", json.createObjectNode()).andExpect(status().isNotFound());
+        enviar(retiro, "estudiante", json.createObjectNode()).andExpect(status().isForbidden());
+        enviar(retiro, "admin", json.createObjectNode()).andExpect(status().isForbidden());
+        mvc.perform(post(retiro).cookie(new Cookie("sessionid", "docente"))).andExpect(status().isForbidden());
+        for (int i = 0; i < 2; i++) enviar(retiro, "docente", json.createObjectNode()).andExpect(status().isOk());
+        leer("/api/edu/estudiante/juegos/", "estudiante").andExpect(jsonPath("$.juegos.length()").value(0));
+        leer(ruta(juego), "estudiante").andExpect(status().isNotFound());
+        leer(ruta(nueva), "estudiante").andExpect(status().isNotFound());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> partidas.guardar(estudiante, false, aviso(juego, partida, 2, "inicio", 2)));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> actividades.comprobarPublicacion(actividad));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.partidas.length()").value(1));
+        assertEquals(1, jdbc.queryForObject("select count(*) from edu.avances_actividad where partida_id = ?", Integer.class, partida));
+        assertEquals(7, jdbc.queryForObject("select sum(puntos) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
+    }
+
 }

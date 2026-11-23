@@ -79,7 +79,7 @@ public class PartidasService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este juego entre tus actividades.");
         String acceso = pruebaDocente ? "s.docente_id = ?" : "exists (select 1 from edu.destinatarios_actividad d where d.generacion_id = g.id and d.estudiante_id = ?)";
         Integer permitidos = jdbc.queryForObject("select count(*) from edu.generaciones g join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
-                + "where g.id = ? and g.publicada = true and g.estado = 'lista' and " + acceso, Integer.class, juego, usuario);
+                + "where g.id = ? and g.publicada = true and g.estado = 'lista' and s.retirada_en is null and " + acceso, Integer.class, juego, usuario);
         if (permitidos == null || permitidos == 0)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este juego entre tus actividades.");
         com.fasterxml.jackson.databind.node.ObjectNode completo = aviso.deepCopy();

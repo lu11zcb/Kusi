@@ -68,7 +68,7 @@ public class ActividadesEstudianteService {
 
     private Juego juego(UUID id) {
         List<Juego> juegos = jdbc.query("select g.id, g.solicitud_id, g.paquete, s.seccion_id from edu.generaciones g "
-                + "join edu.solicitudes_propuesta s on s.id = g.solicitud_id where g.id = ? and g.publicada = true and g.estado = 'lista'",
+                + "join edu.solicitudes_propuesta s on s.id = g.solicitud_id where g.id = ? and g.publicada = true and g.estado = 'lista' and s.retirada_en is null",
                 (fila, indice) -> new Juego(fila.getObject(1, UUID.class), fila.getObject(2, UUID.class), fila.getString(3), fila.getObject(4, UUID.class)), id);
         if (juegos.isEmpty()) throw noEncontrado();
         return juegos.get(0);
@@ -78,7 +78,7 @@ public class ActividadesEstudianteService {
     public boolean permitido(UUID estudiante, UUID juego) {
         materializar(juego);
         Integer cantidad = jdbc.queryForObject("select count(*) from edu.generaciones g join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
-                + "where g.id = ? and g.publicada = true and g.estado = 'lista' "
+                + "where g.id = ? and g.publicada = true and g.estado = 'lista' and s.retirada_en is null "
                 + "and exists (select 1 from edu.destinatarios_actividad d where d.generacion_id = g.id and d.estudiante_id = ?) "
                 + "and exists (select 1 from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
                 + "where v.estudiante_id = ? and v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar and v.retirado_en is null)",
@@ -98,7 +98,7 @@ public class ActividadesEstudianteService {
         return jdbc.query("select g.id, s.tema, g.paquete, d.vista_en from edu.generaciones g "
                 + "join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
                 + "join edu.destinatarios_actividad d on d.generacion_id = g.id and d.estudiante_id = ? "
-                + "where g.publicada = true and g.estado = 'lista' and exists (select 1 from edu.vinculos_estudiante v "
+                + "where g.publicada = true and g.estado = 'lista' and s.retirada_en is null and exists (select 1 from edu.vinculos_estudiante v "
                 + "join edu.secciones sec on sec.id = v.seccion_id where v.estudiante_id = ? and v.seccion_id = s.seccion_id "
                 + "and v.anio_escolar = sec.anio_escolar and v.retirado_en is null) and (exists (select 1 from edu.avances_actividad a "
                 + "where a.estudiante_id = ? and a.actividad_id = s.id and a.generacion_id = g.id and a.completada = false) "
@@ -281,8 +281,10 @@ public class ActividadesEstudianteService {
         List<String> contenido = jdbc.query("select contenido from edu.avisos_partida where partida_id = ? order by orden fetch first 1 rows only",
                 (fila, indice) -> fila.getString(1), partida);
         if (contenido.isEmpty() || !leer(contenido.get(0)).hasNonNull("juego_id")) return 0;
-        Juego juego = juego(UUID.fromString(leer(contenido.get(0)).path("juego_id").asText()));
-        return puntos(estudiante, juego.actividad());
+        UUID juego = UUID.fromString(leer(contenido.get(0)).path("juego_id").asText());
+        List<UUID> actividad = jdbc.query("select solicitud_id from edu.generaciones where id = ?",
+                (fila, indice) -> fila.getObject(1, UUID.class), juego);
+        return actividad.isEmpty() ? 0 : puntos(estudiante, actividad.get(0));
     }
 
     public List<Map<String, Object>> asignaciones(UUID docente, UUID actividad) {
@@ -324,9 +326,30 @@ public class ActividadesEstudianteService {
         });
     }
 
+    public void comprobarPublicacion(UUID actividad) {
+        List<Boolean> retirada = jdbc.query("select retirada_en is not null from edu.solicitudes_propuesta where id = ? for update",
+                (fila, indice) -> fila.getBoolean(1), actividad);
+        if (retirada.isEmpty()) throw noEncontrado();
+        if (retirada.get(0)) throw conflicto("Esta actividad fue retirada. Sus resultados se conservan.");
+    }
+
+    public void retirar(UUID docente, UUID actividad) {
+        materializarPendientes();
+        transaccion.executeWithoutResult(estado -> {
+            jdbc.query("select id from edu.solicitudes_propuesta where id = ? for update", fila -> {}, actividad);
+            Integer permitido = jdbc.queryForObject("select count(*) from edu.solicitudes_propuesta s join edu.secciones sec on sec.id = s.seccion_id "
+                    + "where s.id = ? and s.docente_id = ? and exists (select 1 from edu.asignaciones_docente a where a.docente_id = ? "
+                    + "and a.curso_id = s.curso_id and a.seccion_id = s.seccion_id and a.anio_escolar = sec.anio_escolar) "
+                    + "and exists (select 1 from edu.generaciones g where g.solicitud_id = s.id and g.publicada = true)", Integer.class, actividad, docente, docente);
+            if (permitido == null || permitido == 0) throw noEncontrado();
+            jdbc.update("update edu.solicitudes_propuesta set retirada_en = ?, retirada_por = ? where id = ? and retirada_en is null",
+                    Timestamp.from(Instant.now()), docente, actividad);
+        });
+    }
+
     private Juego ultimoDelDocente(UUID docente, UUID actividad) {
         List<UUID> juegos = jdbc.query("select g.id from edu.generaciones g join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
-                + "join edu.secciones sec on sec.id = s.seccion_id where s.id = ? and s.docente_id = ? and g.publicada = true and g.estado = 'lista' "
+                + "join edu.secciones sec on sec.id = s.seccion_id where s.id = ? and s.docente_id = ? and g.publicada = true and g.estado = 'lista' and s.retirada_en is null "
                 + "and exists (select 1 from edu.asignaciones_docente a where a.docente_id = ? and a.curso_id = s.curso_id "
                 + "and a.seccion_id = s.seccion_id and a.anio_escolar = sec.anio_escolar) order by g.publicada_en desc, g.id desc fetch first 1 rows only",
                 (fila, indice) -> fila.getObject(1, UUID.class), actividad, docente, docente);
