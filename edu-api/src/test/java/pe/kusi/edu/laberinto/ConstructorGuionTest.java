@@ -46,7 +46,7 @@ class ConstructorGuionTest {
         assertEquals("laberinto", guion.get("familia").asText());
         assertEquals("horizontal", guion.get("orientacion").asText());
         assertEquals(CURSO, guion.get("curso").asText());
-        assertEquals("¡Lo lograste! Gracias por recorrer los caminos con Kusi.", guion.get("cierre").get("mensaje").asText());
+        assertEquals("¡Lo lograste! Gracias por recorrer los caminos conmigo.", guion.get("cierre").get("mensaje").asText());
         List<String> ids = new ArrayList<>();
         guion.get("retos").forEach(reto -> ids.add(reto.get("id").asText()));
         assertEquals(List.of("laberinto-1", "laberinto-2", "laberinto-3"), ids);
