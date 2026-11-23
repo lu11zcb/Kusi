@@ -329,4 +329,17 @@ class ActividadesEstudianteTest {
                 .andExpect(jsonPath("$.partidas[0].estado").value("sin_iniciar"));
     }
 
+    @Test void hu40PruebaDocenteCompletaNoApareceEnResultadosNiGeneraPuntos() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(docente, true, aviso(juego, partida, 1, "inicio", 1));
+        partidas.guardar(docente, true, aviso(juego, partida, 2, "accion", 1).put("respuesta", "llama").put("correcto", true));
+        partidas.guardar(docente, true, aviso(juego, partida, 3, "reto_completado", 1));
+        assertEquals(0, puntos(partidas.guardar(docente, true, aviso(juego, partida, 4, "fin", 3))));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/", "docente")
+                .andExpect(jsonPath("$.estudiantes.length()").value(1)).andExpect(jsonPath("$.estudiantes[0].partidas").value(0))
+                .andExpect(jsonPath("$.estudiantes[0].estado").value("sin_iniciar"));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(jsonPath("$.partidas.length()").value(0));
+    }
 }

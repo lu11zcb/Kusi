@@ -46,6 +46,9 @@ public class PartidasService {
                     (fila, indice) -> fila.getObject(1, UUID.class), partida);
             if (propietarios.isEmpty() || !usuario.equals(propietarios.get(0)))
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró esta partida de tu cuenta.");
+            Boolean pruebaGuardada = jdbc.queryForObject("select prueba_docente from edu.partidas where id = ?", Boolean.class, partida);
+            if (!Boolean.valueOf(pruebaDocente).equals(pruebaGuardada))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El tipo de esta partida no puede cambiar.");
             JsonNode original = conJuego(usuario, pruebaDocente, partida, aviso);
             List<String> existentes = jdbc.query("select contenido from edu.avisos_partida where partida_id = ? and orden = ?",
                     (fila, indice) -> fila.getString(1), partida, aviso.path("orden").asInt());
