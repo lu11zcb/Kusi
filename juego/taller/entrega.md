@@ -105,6 +105,24 @@ cada reto.
 La consigna y cada ayuda tienen 90 caracteres como máximo. Los objetos se
 nombran con su id del catálogo (`platano`, `pina`).
 
+### La voz de Kusi
+
+Cuando el juego tiene frases adicionales, `juego/frases.js` exporta `frasesDeKusi()`.
+Devuelve una lista con todas esas frases, incluidas las variantes que el juego construye
+al contar objetos, dar pistas o responder a lo que hace el niño. El grabador añade por
+su cuenta las páginas del cuento, las consignas, las ayudas y el cierre del guion.
+
+```bash
+node taller/grabar_voz.mjs --carpeta taller/trabajos/<id> [--voz "<nombre>"]
+```
+
+El comando se ejecuta desde `juego/` en la Mac. Guarda el índice y los audios en `voz/`
+del trabajo. Los archivos de la misma voz se reutilizan al repetir el comando.
+
+Si aún falta `voz/voz.json`, el servidor del taller responde con un índice vacío
+(`{"voz":null,"frases":{}}`) y el juego usa la voz de respaldo. En cuanto se graba
+la voz, la misma ruta sirve el índice publicado por el grabador.
+
 ## 5. Los avisos de la partida
 
 El juego avisa lo que pasa con `avisarPartida(partida, tipo, datos)`, de

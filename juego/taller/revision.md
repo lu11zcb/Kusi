@@ -134,12 +134,38 @@ enseñar algo equivocado.
 - [ ] ¿Lo que enseña y sus palabras son del grado de la solicitud (primero o
       segundo), sin nombres que solo usan los especialistas y sin salirse del
       tema?
-- [ ] ¿La consigna y las ayudas tienen 90 caracteres como máximo, en español
-      sencillo y de tú?
+- [ ] ¿La consigna y las ayudas tienen 90 caracteres como máximo (y lo que Kusi dice
+      en el juego, 60), en español sencillo y de tú?
 - [ ] ¿Las ayudas ayudan de verdad, sin decir la respuesta de golpe?
 - [ ] ¿Los textos no nombran al cuy, a niños ni a personas reales?
 - [ ] ¿Respeta la cultura y la regla de las figuras sagradas?
 - [ ] ¿No tiene nada que dé miedo, se burle o castigue?
+
+### 2.4 Lo que el equipo ya corrigió (reglas 14)
+
+Se juega **como un niño, de punta a punta y sin atajos** (regla 14.6), con la consola abierta y oyendo la voz. Cada punto dice la regla
+y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/correcciones.md`).
+
+- [ ] **La voz:** cada frase de Kusi deja `[Kusi] voz: …` en la consola y ninguna `voz sin sonido` ni `voz trabada`; «Escuchar» repite al
+      instante; el cuento se oye página por página y pasa solo, sin botones (14.1) [60, 61, 65, 71, 76].
+- [ ] **Lo que dice Kusi:** frases de 60 caracteres o menos, una idea cada una, en primera persona, sin nombrar cosas que no están en la
+      pantalla; la respuesta a cada acción suena al instante y lo que enseña se oye completo (14.1) [63, 70, 72, 73].
+- [ ] **Nada promete aprendizaje:** el informe y los textos dicen qué presenta, practica y comprueba el juego; si se puede ganar sin saber,
+      hay un repaso sin pistas al final (14.2) [78].
+- [ ] **Personajes:** ninguno tieso; los gestos son dibujos (no brazos recortados que giran); lo que aparece tiene explicación; darles algo
+      tiene una reacción con sentido (14.3) [6, 38, 51, 52, 56, 57, 62, 68].
+- [ ] **Ropa y estados:** lo que se pone un personaje se ve puesto (dibujo entero del estado, no una pieza pegada) y entra con su
+      movimiento (14.4) [44, 47, 48, 50, 54].
+- [ ] **Buscar, tocar y soltar:** lo que se busca brilla (también en el escondite) y el decorado no; se elige tocando; «Soltar» deja la cosa
+      a los pies; ninguna trampa sin salida (14.5) [35, 37, 40, 55, 74, 75, 77].
+- [ ] **Niveles:** al cumplir la meta se pasa al instante; los peligros avisan, se conectan con la historia y no traban el paso; la historia
+      se juega desde el primer minuto (14.6) [18, 20, 22, 46, 58, 67].
+- [ ] **El mundo:** todo lo de pie se apoya en el suelo con sombra, lo echado queda debajo de los personajes, cada cosa en su lugar real,
+      nada repetido ni flotando, el viento no dobla lo rígido (14.7) [7, 8, 24, 28, 29, 30, 31, 32, 33, 42, 43, 53].
+- [ ] **La interfaz:** indicadores chicos que no tapan; botones dibujados del kit; globos que no se cortan ni se cruzan con nada (14.8)
+      [45, 59, 66, 69].
+- [ ] **Capturas cuadro a cuadro** de cada animación importante (ponerse algo, un gesto, celebrar) en `revision/`: lo que se ve bien en una
+      foto quieta puede verse mal en movimiento [48].
 
 ## 3. El informe del revisor
 

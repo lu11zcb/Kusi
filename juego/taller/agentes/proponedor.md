@@ -112,6 +112,7 @@ de algo, un reino, una isla… el que mejor haga sentir el tema.
 - La historia sigue siempre este camino: **(1)** Kusi anuncia la aventura de hoy y
   adónde viajan; **(2)** en ese lugar hay algo que hacer, resolver o descubrir;
   **(3)** el niño lo hace con su personaje, y lo que hace es lo que enseña el tema.
+- Si escribes diálogo de Kusi, él habla en primera persona y nunca se refiere a sí mismo como «Kusi».
 - Elige el lugar **por el tema y por lo que el niño imagina al oírlo**, no por
   costumbre: cada tema tiene su propia aventura, y dos temas distintos no repiten
   lugar ni misión.

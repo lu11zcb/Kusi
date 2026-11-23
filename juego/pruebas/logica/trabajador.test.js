@@ -162,7 +162,7 @@ test('un juego sin los controles ni la interfaz del kit, o con su propio entorno
   await mkdir(path.join(juego, 'escenas'), { recursive: true })
   for (const archivo of ['juego.js', 'guion-ejemplo.json', 'README.md']) await writeFile(path.join(juego, archivo), archivo.endsWith('.json') ? '{}' : '// x\n')
   await writeFile(path.join(juego, 'escenas', 'E.js'), "import * as Phaser from 'phaser'\nexport class E extends Phaser.Scene {}\n")
-  const sin = (await revisarCodigo(juego)).join(' | ')
+  const sin = (await revisarCodigo(juego)).motivos.join(' | ')
   assert.match(sin, /no usa los controles del kit/)
   assert.match(sin, /no usa la interfaz común del kit/)
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n')
@@ -171,19 +171,19 @@ test('un juego sin los controles ni la interfaz del kit, o con su propio entorno
   // Una criatura animada en piezas/ que el juego no reproduce con crearCriatura se rechaza.
   await mkdir(path.join(carpeta, 'piezas'), { recursive: true })
   await writeFile(path.join(carpeta, 'piezas', 'criatura-llama.png'), 'x')
-  assert.match((await revisarCodigo(juego)).join(' | '), /criaturas animadas en piezas\/ \(criatura-llama\.png\)[\s\S]*crearCriatura/)
+  assert.match((await revisarCodigo(juego)).motivos.join(' | '), /criaturas animadas en piezas\/ \(criatura-llama\.png\)[\s\S]*crearCriatura/)
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\ncrearCriatura(this, "criatura-llama")\n')
-  assert.doesNotMatch((await revisarCodigo(juego)).join(' | '), /criaturas animadas/)
+  assert.doesNotMatch((await revisarCodigo(juego)).motivos.join(' | '), /criaturas animadas/)
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n')
-  const ajeno = (await revisarCodigo(juego)).join(' | ')
+  const ajeno = (await revisarCodigo(juego)).motivos.join(' | ')
   assert.doesNotMatch(ajeno, /no usa/)
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\nthis.cameras.main.setZoom(2)\n')
-  assert.match((await revisarCodigo(juego)).join(' | '), /usa zoom de cámara/)
+  assert.match((await revisarCodigo(juego)).motivos.join(' | '), /usa zoom de cámara/)
   // El truco que dejó un juego reducido a una tira de 350 px y con los botones del kit encimados.
   await writeFile(path.join(juego, 'escenas', 'E.js'), 'crearControles(this)\ncrearHud(this)\nrepartirYColocar(this, {})\ndarVida(this, x)\nambiente(this, {})\n' +
     'this.cameras.main.setViewport(0, 170, 1280, 350)\nthis.camaraHud = this.cameras.add(0, 0, 1280, 720)\n' +
     'const interfaz = this.children.list.filter((p) => !mundo.includes(p))\nfor (const o of interfaz) { if (o.type === "Text") o.setFontSize(48) }\n')
-  const truco = (await revisarCodigo(juego)).join(' | ')
+  const truco = (await revisarCodigo(juego)).motivos.join(' | ')
   assert.match(truco, /recorta la cámara/)
   assert.match(truco, /cambia el tamaño de todos los textos/)
   assert.match(ajeno, /juego\/index\.html no debe estar/)
@@ -194,6 +194,18 @@ test('un juego sin los controles ni la interfaz del kit, o con su propio entorno
 test('la búsqueda del cuy no confunde «cuyo» ni «cuya»', () => {
   for (const texto of ['el cuy', 'cuyAnimado', 'paso_cuy', 'CUY']) assert.equal(nombraAlCuy(texto), true, texto)
   for (const texto of ['cuyo nombre', 'cuya forma', 'cuyos', 'el protagonista']) assert.equal(nombraAlCuy(texto), false, texto)
+})
+
+test('la búsqueda del cuy admite patrones de validación y detecta menciones fuera de ellos', () => {
+  const validar = 'if (/(^|[^a-záéíóúñ])(cuy|mal|perdiste)([^a-záéíóúñ]|$)/i.test(frase)) errores.push("Palabra no permitida")'
+  const prueba = 'assert.doesNotMatch(frase,/cuy|mal|error|incorrecto|perdiste/i)'
+  for (const texto of [validar, prueba, String.raw`const prohibidas = /["'/]cuy\/mal/i`]) {
+    assert.equal(nombraAlCuy(texto), false, texto)
+  }
+  for (const texto of [validar + '\ncuyAnimado()', prueba + '; hablar("Ayuda al cuy")',
+    'const texto = "La frase incluye /cuy|mal/"', 'const proporcion = alto / cuy / ancho']) {
+    assert.equal(nombraAlCuy(texto), true, texto)
+  }
 })
 
 test('un juego solo importa del kit, de phaser y de su carpeta (y las pruebas, de Node)', () => {
@@ -218,9 +230,9 @@ test('la revisión del código encuentra lo prohibido, el cuy y las importacione
     "localStorage.setItem('a', 1)",
     'window.parent.postMessage(1)',
   ].join('\n'))
-  const motivos = await revisarCodigo(juego)
-  // Cinco fallos del código y los cinco del kit: sin controles, interfaz, decorado, vida ni ambiente.
-  assert.equal(motivos.length, 11, motivos.join('\n'))
+  const { motivos } = await revisarCodigo(juego)
+  // Cinco fallos del código, cinco del kit y dos archivos obligatorios ausentes.
+  assert.equal(motivos.length, 12, motivos.join('\n'))
   assert.match(motivos[0], /Falta juego\/README\.md/)
   assert.ok(motivos.some((motivo) => /E\.js se conecta a la red/.test(motivo)))
   assert.ok(motivos.some((motivo) => /guarda datos en el navegador/.test(motivo)))
@@ -267,10 +279,10 @@ test('el pedido al supervisor dice la carpeta, la corrección y sus motivos, sin
 
 // ---------- procesarTrabajo, con dobles ----------
 
-async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, ahora, siguientes } = {}) {
+async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, ahora, siguientes, avisos = [] } = {}) {
   const trabajos = await mkdtemp(path.join(tmpdir(), 'kusi-procesar-'))
   const trabajo = { id: randomUUID(), tipo: 'crear_juego', intentos: 1, entrada: { solicitud: { tema: 'Parejas' } } }
-  const registro = { lanzados: [], resultados: [], fallos: [], siguientes }
+  const registro = { lanzados: [], resultados: [], fallos: [], consola: [], siguientes }
   const buzon = {
     resultado: async (id, cuerpo) => { registro.resultados.push(cuerpo); return respuestasSpring.shift() ?? { estado: 200, datos: {} } },
     fallo: async (id, motivo) => { registro.fallos.push(motivo); return { estado: 200, datos: {} } },
@@ -292,9 +304,9 @@ async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, a
     registro.siguientes = entrega
     return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'LISTO', usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.5 }), errores: '' }
   }
-  const comprobar = async () => ({ motivos: registro.siguientes, paquete: { formato: 'kusi-paquete/0', trabajo: trabajo.id } })
+  const comprobar = async () => ({ motivos: registro.siguientes, avisos, paquete: { formato: 'kusi-paquete/0', trabajo: trabajo.id } })
   const final = await procesarTrabajo(trabajo, {
-    buzon, lanzar, comprobar, trabajos, limiteMs, ahora, registrar: () => {},
+    buzon, lanzar, comprobar, trabajos, limiteMs, ahora, registrar: (texto) => registro.consola.push(texto),
     roles: { supervisor: { programa: 'p', argumentos: ['{pedido}'] } },
     agentes: await leerAgentes(), biblioteca: { ejemplos: [] }, juegoUrl: 'http://127.0.0.1:5174/',
   })
@@ -323,6 +335,17 @@ test('si no pasa, el supervisor recibe los motivos y corrige', async () => {
   assert.match(registro.lanzados[1], /Corrección 1 de 2[\s\S]*- Faltan las pruebas\./)
   assert.equal(registro.resultados[0].evidencia.intentos.juego, 2)
   assert.equal(registro.resultados[0].evidencia.correcciones.length, 1)
+})
+
+test('los avisos llegan al supervisor y quedan en evidencia sin impedir la entrega', async () => {
+  const avisos = ['Revisa el botón «Volver» (reglas.md, regla 14.8).']
+  const { final, registro } = await escenario({ entregas: [['Faltan las pruebas.'], []], avisos })
+  assert.equal(final.resultado, 'listo')
+  assert.equal(registro.lanzados.length, 2)
+  assert.match(registro.lanzados[1], /Pide al revisor confirmar estos avisos[\s\S]*- Revisa el botón «Volver»/)
+  assert.ok(registro.consola.some((linea) => linea.includes(avisos[0])))
+  assert.deepEqual(registro.resultados[0].evidencia.avisos_comprobacion, avisos)
+  assert.equal(final.evidencia.correcciones.length, 1)
 })
 
 test('después de 2 correcciones sin pasar, se informa el fallo con su motivo', async () => {

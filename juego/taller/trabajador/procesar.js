@@ -14,7 +14,7 @@ import { CARPETA_JUEGO, CARPETA_RAIZ, CARPETA_TALLER } from './configuracion.js'
 export const MAX_CORRECCIONES = 2
 
 // Lo que se le pide al supervisor. Nombra roles, nunca programas.
-export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion, intento }) {
+export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion, intento, avisos = [] }) {
   const lineas = [
     'Eres el supervisor del taller de Kusi. Sigue tus instrucciones y las de juego/taller/.',
     'Trabajo: ' + trabajo.id + ' (' + trabajo.tipo + '). Carpeta del trabajo: ' + carpeta,
@@ -41,18 +41,18 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
       'pásale el juego a tu revisor; con «corregir», vuelve a llamarlo con --correccion y los «no» del revisor.',
     'El kit, la biblioteca y el resto de juego/ son de solo lectura para todos.',
     'Usa las piezas del kit y de la biblioteca (biblioteca.json: «taller» son juegos ya enviados a una clase, con su carpeta; ' +
-      '«piezas_aprobadas» trae el archivo de cada pieza aprobada: cópialo tal cual a piezas/ y no necesita revisión). Si falta una pieza quieta (un objeto o, si el tema lo pide, un fondo; ' +
-      'nunca un personaje), pídesela al dibujante. Una pieza sola (por ejemplo, una corrección):',
+      '«piezas_aprobadas» trae el archivo de cada pieza aprobada: cópialo tal cual a piezas/ y no necesita revisión). Si falta una pieza, pídesela al dibujante. Una pieza sola (por ejemplo, una corrección):',
     '  node ' + path.join(CARPETA_TALLER, 'dibujar.mjs') + ' --carpeta ' + carpeta +
-      ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo | --cuento | --figura | --criatura] [--correccion "<lo que dijo el revisor>"]',
+      ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo | --cuento | --figura | --criatura | --tira <2-4>] [--correccion "<lo que dijo el revisor>"]',
     'Con --figura pides una figura entera (id figura-<nombre>, lo que se arma o un personaje secundario; reglas.md 13.7 a 13.9): nunca pidas las partes de lo que se arma por separado. ' +
       'Con --criatura pides un personaje secundario o un enemigo que se MUEVE (id criatura-<nombre>, reglas.md 13.25): el dibujante la dibuja 3 veces en una tira (los 3 cuadros de su ciclo) y la prepara sola. ' +
       'En «que» di qué es, cómo es su cara y cómo se mueve (camina, salta, vuela). Los enemigos son amables, lentos y del tema del juego. ' +
+      'Con --tira 2, --tira 3 o --tira 4 pides las poses de un gesto dibujado (reglas.md 14.3). Describe cada pose en «que» y usa cuadros de 768 × 768 al reproducirla. ' +
       'Con --cuento pides la lámina de una página del cuento de apertura (id fondo-cuento-1, fondo-cuento-2…): una escena sin personajes de ese momento de la historia (reglas.md, 13.1).',
     'Antes de pedir piezas, escribe en plan.md el mundo de la aventura (de qué está hecho y qué existe allí; reglas.md 13.10). Pásalo a cada pieza con --mundo "<el mundo, en inglés>" (dibujar.mjs y dibujar_varias.mjs): nada de otro mundo.',
     'Pídelas todas con UN solo comando (se dibujan a la vez; tarda unos 3 minutos, dale 8 de espera):',
     '  node ' + path.join(CARPETA_TALLER, 'dibujar_varias.mjs') + ' --carpeta ' + carpeta +
-      ' --mundo "<el mundo, en inglés>" --piezas \'[{"id":"<id>","que":"<qué es, en inglés>"},{"id":"fondo-<lugar>","que":"…","fondo":true},{"id":"fondo-cuento-1","que":"…","cuento":true},{"id":"figura-<nombre>","que":"…","figura":true}]\'',
+      ' --mundo "<el mundo, en inglés>" --piezas \'[{"id":"<id>","que":"<qué es, en inglés>"},{"id":"fondo-<lugar>","que":"…","fondo":true},{"id":"fondo-cuento-1","que":"…","cuento":true},{"id":"figura-<nombre>","que":"…","figura":true},{"id":"comer-manzana","que":"…","tira":2}]\'',
     'Responde una lista de JSON, uno por pieza: con «siguiente»: «revisor», el revisor la mira con kit/estilo/comprobacion.md; con «corregir», ' +
       'vuelve a pedirla sola con dibujar.mjs --correccion; con «respaldo», usa una pieza del kit o deja que el reproductor ponga una figura simple. ' +
       'Pide las piezas antes que el código, para que el programador ya las tenga, y mientras se dibujan encárgale ya el código al programador.',
@@ -75,6 +75,10 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
       ...correccion.map((motivo) => '- ' + motivo),
     )
   }
+  if (avisos.length) {
+    lineas.push('', 'Pide al revisor confirmar estos avisos. Por sí solos permiten entregar el juego.',
+      ...avisos.map((aviso) => '- ' + aviso))
+  }
   return lineas.join('\n')
 }
 
@@ -89,14 +93,22 @@ export async function procesarTrabajo(trabajo, dependencias) {
   const correcciones = []
   let intento = 0
   let motivos = null
+  let avisos = []
 
   const { carpeta, anterior } = await prepararCarpeta(trabajo, { trabajos, biblioteca })
   registrar('Trabajo ' + trabajo.id + ' (' + trabajo.tipo + '): carpeta lista.')
   const temporal = path.join(tmpdir(), 'kusi-taller', trabajo.id)
   await mkdir(temporal, { recursive: true })
 
+  const comprobarEntrega = async () => {
+    const revision = await comprobar({ carpeta, trabajo: trabajo.id, juegoUrl })
+    avisos = revision?.avisos ?? []
+    for (const aviso of avisos) registrar('Trabajo ' + trabajo.id + ' (aviso para el revisor). ' + aviso)
+    return revision
+  }
+
   const terminar = async (resultado, motivo, entrega = null) => {
-    const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado, motivo, intento, pasos, correcciones })
+    const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado, motivo, intento, pasos, correcciones, avisos })
     await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia)
     if (resultado === 'listo') return { resultado, evidencia, entrega }
     const respuesta = await buzon.fallo(trabajo.id, motivo)
@@ -111,7 +123,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
 
     registrar('Trabajo ' + trabajo.id + ': el supervisor empieza el intento ' + intento + '.')
     const comando = armarComando(roles.supervisor, {
-      pedido: pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion: motivos, intento }),
+      pedido: pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion: motivos, intento, avisos }),
       instrucciones: agentes.supervisor.instrucciones,
       // El revisor es un subagente del supervisor; el programador y el dibujante se
       // lanzan aparte, con programar.mjs y dibujar.mjs, como otros roles.
@@ -139,7 +151,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
     if (ejecucion.agotado) {
       const minutos = Math.round(limiteMs / 60000)
       registrar('Trabajo ' + trabajo.id + ': se acabó el tiempo; compruebo lo que el supervisor dejó en la carpeta.')
-      revision = await comprobar({ carpeta, trabajo: trabajo.id, juegoUrl }).catch(() => null)
+      revision = await comprobarEntrega().catch(() => null)
       if (!revision || !Array.isArray(revision.motivos) || revision.motivos.length > 0) {
         const faltas = revision?.motivos?.length ? ' Lo que había no pasa las comprobaciones: ' + revision.motivos.join(' | ').slice(0, 1200) : ''
         return terminar('falló', 'Se acabó el tiempo del trabajo (' + minutos + ' minutos) mientras trabajaba el supervisor.' + faltas)
@@ -159,7 +171,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
       return terminar('falló', 'El supervisor no pudo hacer el juego: ' + consumo.respuesta.trim().slice(0, 1500))
     } else {
       registrar('Trabajo ' + trabajo.id + ': comprobando lo que entregó el supervisor.')
-      revision = await comprobar({ carpeta, trabajo: trabajo.id, juegoUrl })
+      revision = await comprobarEntrega()
       motivos = revision.motivos
       // Terminó su turno sin decir LISTO (por ejemplo «espero a que termine el programador»): lo que dejó en segundo plano
       // se pierde al terminar. Si lo que hay no pasa, se le dice por qué.
@@ -169,7 +181,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
       }
     }
     if (revision && motivos.length === 0) {
-      const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado: 'listo', motivo: notaDeEntrega, intento, pasos, correcciones })
+      const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado: 'listo', motivo: notaDeEntrega, intento, pasos, correcciones, avisos })
       const piezas = await piezasNuevas(carpeta, anterior)
       const respuesta = await buzon.resultado(trabajo.id, { paquete: revision.paquete, piezas, evidencia })
       if (respuesta.estado === 200) {
@@ -197,7 +209,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
 
 // La evidencia (entrega.md §8). Si el supervisor ya escribió una, se conservan sus
 // datos y se completan los que conoce el trabajador: tiempos, intentos, pasos y costo.
-async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo, intento, pasos, correcciones }) {
+async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo, intento, pasos, correcciones, avisos }) {
   const archivo = path.join(carpeta, 'evidencia.json')
   let delSupervisor = {}
   try {
@@ -244,6 +256,7 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
       piezas: { ...(delSupervisor.intentos?.piezas ?? {}), ...Object.fromEntries(Object.entries(delDibujante).map(([pieza, registro]) => [pieza, registro.intentos])) },
     },
     correcciones: [...(Array.isArray(delSupervisor.correcciones) ? delSupervisor.correcciones : []), ...correcciones],
+    avisos_comprobacion: avisos,
     pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []), ...pasos, ...pasosDelProgramador, ...pasosDelDibujante],
     costo_estimado_usd: Number([...pasos, ...pasosDelProgramador, ...pasosDelDibujante]
       .reduce((suma, paso) => suma + paso.costo_estimado_usd, 0).toFixed(4)),

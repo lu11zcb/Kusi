@@ -111,8 +111,8 @@ igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
 
 ## 6. Para niños de 6 a 8 años
 
-- **La consigna se dice con voz** (`decir`) y tiene un botón **Escuchar** para
-  repetirla.
+- **La consigna se dice con voz** (`decir`). El botón **Escuchar** repite lo
+  último que se oyó.
 - Cada nivel tiene **2 ayudas** con el botón **Ayuda**.
 - **Los errores son amables:** el objeto rebota o vuelve a su lugar y Kusi da
   una pista. Nunca dice «perdiste», «mal» ni «incorrecto». No hay vidas, ni fin
@@ -138,8 +138,9 @@ igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
   en grados mayores, el juego usa el nombre con que se enseña en ese grado, sin
   cambiar el tema, la idea ni lo que aprende. El supervisor lo anota en los
   riesgos de `plan.md`.
-- La consigna y cada ayuda tienen **90 caracteres como máximo**.
+- La consigna y cada ayuda tienen **90 caracteres como máximo**; lo que Kusi dice en el juego, **60** (regla 14.1).
 - Le hablan al niño de tú. No nombran al cuy ni a ninguna persona.
+- Kusi habla siempre en primera persona y nunca dice «Kusi» de sí mismo. El narrador del cuento puede nombrarlo.
 - Los alimentos se escriben con su nombre de verdad: «plátano», «piña».
 
 ## 8. Datos de los niños
@@ -208,10 +209,11 @@ actúa con su personaje.
 corto que cuenta la aventura de hoy (regla 13.0): adónde viajan Kusi y el niño y qué
 misión tienen allí.
 
-- Es como las páginas de un libro: de **1 a 3 páginas** que pasan una tras otra.
-  Cada una tiene su **ilustración**, Kusi y una frase abajo. No habla ni lleva
-  globo: se lee y se mira. El niño pasa de página con **Seguir** (o tocando la
-  imagen) y puede **Saltar**. Lo cuenta el reproductor: el juego no lo dibuja.
+- El reproductor muestra una **portada** con la primera lámina, Kusi y el botón redondo **Empezar**.
+  Ese toque habilita la voz y abre la primera página.
+- El cuento tiene de **1 a 3 páginas**, cada una con su **ilustración**, Kusi y una frase abajo que se lee en voz alta al aparecer.
+  El cuento avanza solo 1,2 s después de que termina la voz de cada página.
+  Si la voz no suena, la página dura 90 ms por letra, con un mínimo de 3 s.
 - **Las ilustraciones son láminas que dibuja el dibujante**, una por página, con
   los ids `fondo-cuento-1`, `fondo-cuento-2`… (`dibujar.mjs --cuento`, guía de
   estilo 10b). Muestran el lugar y los objetos de ese momento de la historia, **sin
@@ -437,6 +439,12 @@ juegos (`#kit/reproductor/interfaz/hud.js`, `crearHud(this, {…})`).
   **arriba a la derecha**, los botones redondos de **Sonido, Escuchar y Ayuda**; **debajo**, los
   **indicadores** (`hud.indicador({ icono, texto })`: un dibujo y un número) para el nivel y lo que se
   reúne; **abajo**, los controles.
+- `hud.decir(frase)` da una respuesta o una explicación. Espera a que termine la respuesta activa
+  y solo conserva la respuesta pendiente más reciente. Si la voz lleva más de 7 s, la nueva respuesta toma el turno.
+  Usa `{ tipo: 'pregunta' }` para una pregunta que queda desactualizada al llegar otra frase del reto.
+  Usa `{ tipo: 'comentario' }` (o `{ esperar: true }`) para un aviso del mundo que puede esperar hasta 4 s.
+  Los comentarios esperan a que la voz quede libre. El globo cambia cuando empieza el audio, y las frases
+  del reto aparecen al cabo de 1,5 s si el audio todavía no empieza. «Escuchar» repite al instante lo último que sonó.
 - **Prohibido**: cajas de texto sueltas con «Frasco: 0», botones de «Ir: …», paneles propios para
   Kusi y barras hechas a mano. Si falta algo, se agrega al kit, no al juego.
 - **El mundo llena la pantalla y la interfaz flota encima.** La franja de abajo (unos 200 px) es de los
@@ -505,7 +513,7 @@ reintentan en menos de 3 segundos y algo nuevo en cada nivel.
   saltar o decidir por el camino. Detenerse junto a una cosa no es recogerla: recoger es tocarla.
 - Lo educativo es **lo que se busca o a dónde se llega**, nunca una pregunta con botones aparte.
 - Un encuentro con un personaje del lugar o un cierre de aventura suma color, pero no cambia el verbo.
-- **Como máximo 8 piezas dibujadas** (objetos, fondo, cuento y figuras). Menos piezas, mejor hechas.
+- **Unas 20 piezas sueltas como guía** (objetos, fondo, cuento y figuras), en tandas y revisadas una por una; los estados y gestos de un personaje, aparte (regla 14.9).
 
 **13.22 Un mundo que se ve y se mueve, no una imagen.** Los juegos de cámara desde arriba que gustan están **llenos y
 animados**; uno vacío o quieto se rechaza. El kit trae las herramientas (`#kit/reproductor/efectos/mundoVivo.js` y
@@ -566,6 +574,95 @@ enemigos y objetos nuevos** y se **animan** para que el juego no se vea plano:
   Un enemigo es lento, avisa, se cansa y no castiga (13.12). Nunca son figuras sagradas (regla 5) y no se parecen al
   protagonista, al zorro ni a Kusi.
 - Un enemigo o personaje del tema vale más que uno genérico: si el tema es un animal, sus compañeros y peligros son de su mundo.
+
+## 14. Lo que corrigió el equipo
+
+Estas reglas salen de las correcciones del equipo al jugar los juegos hechos juntos (`kit/estilo/correcciones.md`; el número entre
+corchetes es la fila). Valen para todo juego. El revisor las comprueba con `revision.md` (2.4) y, las que se pueden, el código con
+`trabajador/comprobar.js`.
+
+**14.1 Kusi habla, y se le entiende.** Los niños de 1.º y 2.º grado no siempre leen.
+- **Todo lo que dice Kusi se oye siempre** (consignas, ayudas, respuestas, cuento); si la voz no suena, es un error grave [60, 64].
+  «Escuchar» repite en voz alta, al instante, lo último que dijo Kusi [61].
+- Kusi habla **poco y corto**: una idea por frase y **60 caracteres como máximo** cada frase que dice en el juego [73]. La consigna y las
+  ayudas del guion también se escriben cortas (el tope del guion sigue siendo 90).
+- La **respuesta a lo que hizo el niño suena al instante**; lo que enseña se dice completo y no lo corta otra frase; una pregunta que el niño
+  ya respondió se corta; los comentarios del mundo (el viento, lo que hace un personaje) esperan un momento libre o se callan
+  (`decir(frase, { tipo })`: `'respuesta'`, `'pregunta'` o `'comentario'`) [70, 73]. El globo muestra lo que suena.
+- Cada personaje habla con su propio globo; Kusi no dice las frases de otro [39]. Kusi habla en primera persona (regla 7) [63].
+- Kusi solo pide cosas que el niño puede **ver y hacer** en ese juego: ningún texto nombra algo que no está en la pantalla («busca un
+  refugio» sin refugios) [72].
+- El juego exporta `frasesDeKusi()` (en `frases.js`) con **todas** las frases que puede decir Kusi, para grabarlas con
+  `taller/grabar_voz.mjs` cuando haya voz elegida [49].
+- El cuento se narra solo, sin botones (regla 13.1) [65, 71, 76].
+
+**14.2 Nada promete lo que el juego no hace.** La propuesta, el guion y el informe no aseguran que el niño aprenderá: dicen qué
+**presenta**, qué **practica** y qué **comprueba** el juego, qué se puede ganar sin saber y qué conviene que haga el docente. Si se puede
+ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el docente ve en los avisos [78].
+
+**14.3 Personajes vivos.**
+- Ningún personaje se queda tieso: respira, mira al protagonista, reacciona y muestra lo que siente con el cuerpo y la cara (con frío se
+  abraza y se frota los brazos; contento, salta) [6, 38, 57].
+- **Los gestos se dibujan** (cuadros propios para cada acción: comer, tocar, celebrar, tener frío); nunca se hacen girando pedazos
+  recortados del dibujo, porque el brazo se deforma. Celebrar no es deslizar ni voltear una figura plana [52, 56, 62].
+- Todo personaje que aparece hace algo que se entiende y se presenta [41]. **Nada aparece sin explicación**: si un personaje tiene algo,
+  el niño vio cómo lo consiguió [68].
+- Todo lo que se le puede dar a un personaje tiene una reacción con sentido (la manzana se come, la flauta se toca), aunque no sea lo
+  que se busca; nada se rechaza en seco, y no cuenta como error [51].
+- Los personajes del mundo tienen la escala del mundo; lo que necesita verse grande (vestir, armar) va en un **acercamiento** aparte [34].
+
+**14.4 La ropa y lo que se pone un personaje.**
+- La pieza que se busca en el mundo **no** es la que se ve puesta. Un personaje que cambia de ropa se **dibuja entero en cada estado**
+  (editando la misma figura en cadena, con el mismo marco) y el juego cambia el dibujo; las capas sueltas quedan de respaldo [44, 47, 54].
+- La ropa se dibuja como se lleva de verdad (la tela cae desde los hombros, cubre lo que cubriría) y tiene la medida de esa parte del
+  cuerpo [48, 50].
+- **Nombres:** los dibujos de estado y las capas se llaman `figura-<personaje>-<estado>` y `figura-<personaje>-puesta-<prenda>`, y los
+  gestos `figura-<personaje>-<gesto>-<estado>` (tiras de 2 a 4 cuadros de 768 × 768, `dibujar.mjs --tira`), para que el filtro de piezas
+  los trate como figuras de 768.
+- Ponerse algo **se ve como ponérselo**: la pieza que se lleva se desvanece y la prenda entra con su movimiento (el sombrero cae, el
+  pantalón sube); nunca un dibujo que cambia de golpe por otro [48].
+
+**14.5 Lo que se busca, se toca y se carga.**
+- Lo que el niño busca o puede tomar **brilla de verdad** (halo dorado que late y destellos), también cuando asoma de un escondite; el
+  decorado nunca brilla. Si está fuera de la pantalla, una flecha en el borde dice hacia dónde [37, 75, 77].
+- Elegir un lugar sobre un objeto o un personaje se hace **tocándolo**, no deteniéndose encima [35].
+- Lo que se carga se puede **soltar** con el botón «Soltar» del `hud`, y queda **a los pies** del protagonista, nunca vuelve solo a otro
+  lugar [55, 74].
+- Siempre hay una salida que funciona al primer toque y el protagonista nunca queda atrapado [40].
+
+**14.6 Niveles, peligros y ritmo.**
+- Cada nivel tiene una meta visible y algo nuevo, y el ritmo sube [10]. **Al cumplir la meta, se pasa de nivel al instante** y siempre;
+  repetir lo mismo varias veces se vive como «no pasa» [46].
+- Hay algo que **empuja o persigue** al niño (viento con aviso, un personaje travieso que no lastima), y cada uno dice en una línea qué le
+  hace al niño y cómo se esquiva [18, 20]. Los peligros **se conectan** entre sí y con la historia (el viento suelta la prenda y la llama la
+  esconde) y afectan lo logrado de forma visible y recuperable, sin trabar el paso de nivel [58, 67].
+- La historia tiene una causa simple que un niño de 6 años entiende [19] y **se juega desde el primer minuto**: no se muestra un juego al
+  que le falta lo que la historia promete [22]. Cada página del cuento tiene su propia lámina [27].
+- **Cada nivel se prueba de punta a punta como lo jugaría un niño** antes de mostrarlo; si algo lo traba, no se muestra [36].
+
+**14.7 El mundo.**
+- Las cosas grandes del mundo hacen algo y tienen vida y volumen (se mecen, sueltan hojas, esconden algo); el lugar se llena con sentido,
+  no con imágenes repetidas, y se ve como el lugar de la historia, con variedad de suelo [7, 9, 12, 24, 25].
+- El suelo se ve y el protagonista siempre pisa algo visible [8]. Todo lo que está de pie **se apoya en el suelo** (sin margen
+  transparente debajo y con sombra de contacto) [29]; lo que está echado en el suelo queda **debajo** de los personajes [32].
+- Cada cosa va donde crece o se usa en la realidad (árboles en el pasto, puestos en la plaza) [42]. No se repite la misma pieza de adorno
+  [30]. Las plantas chicas se ven parte del suelo o no se ponen [31]. El borde del mundo lo cierran cosas del lugar, no muros repetidos [33].
+- Con el viento, lo rígido no se dobla (troncos, postes): se mueven las hojas y la tela, y todo empieza y termina de a poco [28, 43]. El
+  agua de una fuente sale de su boca y cae en arco dentro de la pila [53].
+
+**14.8 La interfaz.**
+- La interfaz ocupa lo mínimo: indicadores chicos en el borde, que no tapan el mundo ni lo que se busca [21, 59].
+- Los botones son **dibujos** con el estilo del kit (`boton-empezar`, `boton-soltar`, `boton-escuchar`, …), nunca círculos de código; van
+  donde no tapan lo importante; si la pantalla pide «toca para…», se puede tocar en cualquier parte [66].
+- Un globo sale de la boca o la cabeza de quien habla, nunca se corta en el borde ni se cruza con otra cosa (sombrero, brazos, botones)
+  durante toda la animación [45, 69].
+
+**14.9 La idea del juego y las piezas.**
+- Se toma el bucle de juego de una referencia y se adapta al contenido del tema; el gusto se aprende, no se copia; el tipo de juego sale de
+  **lo que el niño hace con el contenido**, y la acción central la hace el niño con sus manos [11, 14, 15, 17].
+- Un mundo lleno y vivo necesita sus propias piezas: **unas 20 piezas sueltas** como guía (personajes, objetos, escondites, adornos,
+  láminas), pedidas en tandas y revisadas una por una; los dibujos de estados o gestos de un personaje cuentan aparte y se piden solo si
+  el juego los usa. Antes de pedir una pieza, se mira si el kit ya la tiene [26].
 
 ## 12. Nombres neutrales
 

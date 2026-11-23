@@ -72,6 +72,31 @@ test('el filtro del código encuentra un fondo sin quitar, manchas sueltas, un h
   await rm(carpeta, { recursive: true })
 })
 
+test('el filtro reconoce tiras de 2 a 4 poses y mide la transparencia, el margen y los pies por cuadro', async (t) => {
+  const carpeta = await carpetaTemporal()
+  t.after(() => rm(carpeta, { recursive: true, force: true }))
+  const archivo = path.join(carpeta, 'gesto.png')
+  const revisar = (cuadros, { vacio, borde, desalineado, fondo = false } = {}) => {
+    const ancho = 768 * cuadros
+    const datos = Buffer.alloc(ancho * 768 * 4, fondo ? 255 : 0)
+    const fila = Buffer.alloc(300 * 4, Buffer.from([75, 33, 14, 255]))
+    for (let cuadro = 0; cuadro < cuadros; cuadro++) {
+      if (cuadro + 1 === vacio) continue
+      const inicio = cuadro * 768 + (cuadro + 1 === borde ? 768 - 300 : 234)
+      const desfase = cuadro + 1 === desalineado ? -8 : 0
+      for (let y = 32 + desfase; y < 736 + desfase; y++) fila.copy(datos, (y * ancho + inicio) * 4)
+    }
+    guardarPng(archivo, { ancho, alto: 768, datos })
+    return comprobarPieza(archivo)
+  }
+  for (const cuadros of [2, 3, 4]) assert.equal(revisar(cuadros).pasa, true, 'Tira de ' + cuadros)
+  assert.equal(revisar(5).pasa, false)
+  assert.match(noes(revisar(2, { vacio: 2 })).join(' '), /Cuadro 2.*Hay una figura/)
+  assert.match(noes(revisar(2, { borde: 1 })).join(' '), /Cuadro 1.*24 px transparentes/)
+  assert.match(noes(revisar(2, { fondo: true })).join(' '), /Cuadro 2.*esquinas.*transparentes/)
+  assert.match(noes(revisar(2, { desalineado: 2 })).join(' '), /pies.*misma fila/)
+})
+
 test('la pieza se recorta con la visión de macOS, se centra en 256 × 256 y pasa el filtro', { timeout: 240_000 }, async () => {
   const carpeta = await carpetaTemporal()
   dibujoSobreBlanco(path.join(carpeta, 'original.png'))
@@ -103,6 +128,14 @@ test('el pedido sigue la guía de estilo, pide fondo blanco y nunca nombra progr
   // El pedido habla de «la herramienta de imágenes», nunca de un programa con nombre.
   assert.match(pedido, /^Use your image generation tool/)
   assert.match(pedidoDeDibujo({ id: 'fondo-chacra', que: 'a farm', fondo: true, intento: 1 }), /top-down camera[\s\S]*central 75%/)
+})
+
+test('el pedido de un fondo trabaja el suelo en toda la imagen y nunca lo pide vacío', () => {
+  const pedido = pedidoDeDibujo({ id: 'fondo-plaza', que: 'a village plaza', fondo: true, intento: 1 })
+  assert.match(pedido, /fills the WHOLE picture[\s\S]*never one flat color/)
+  assert.match(pedido, /also in the middle/)
+  assert.match(pedido, /nothing tall standing up/)
+  assert.doesNotMatch(pedido, /calm and empty/)
 })
 
 test('el pedido de una figura entera la pide completa, con sus partes separadas y con personalidad', () => {
@@ -150,6 +183,7 @@ function dibujanteDePrueba(entregas) {
       if (entrega === 'vacio') dibujoSobreBlanco(path.join(comando.carpeta, archivo), { radio: 0 })
       if (entrega === 'tira') tiraSobreBlanco(path.join(comando.carpeta, archivo))
       if (entrega === 'tira-sin-un-cuadro') tiraSobreBlanco(path.join(comando.carpeta, archivo), { vacio: 2 })
+      if (entrega === 'gesto') tiraSobreBlanco(path.join(comando.carpeta, archivo), { patas: [[-90, 90], [-124, 60]] })
       return { codigo: 0, agotado: false, salida: 'GUARDADO ' + archivo + '\ntokens used\n1,234', errores: '' }
     },
   }
@@ -292,4 +326,26 @@ test('una criatura animada se pide como tira de 3 cuadros y queda en piezas/ com
   assert.match((await dibujar({ carpeta, id: 'bicho', que: 'beetle', criatura: true }, { roles, lanzarRol })).motivo, /criatura-<nombre>/)
   assert.equal((await dibujar({ carpeta, id: 'criatura-otro', que: 'x', criatura: true, figura: true }, { roles, lanzarRol })).pasa, false)
   assert.equal((await dibujar({ carpeta, id: 'criatura-otro', que: 'x' }, { roles, lanzarRol })).pasa, false, 'un objeto no se llama criatura-…')
+})
+
+test('el dibujante prepara una tira de gestos y el trabajador la reconoce por su tamaño', { timeout: 240_000 }, async (t) => {
+  const carpeta = await trabajoDePrueba()
+  t.after(() => rm(path.dirname(carpeta), { recursive: true, force: true }))
+  const { lanzarRol, pedidos } = dibujanteDePrueba(['gesto'])
+  const opcion = { carpeta, id: 'comer-manzana', que: 'Inti lifts an apple and takes one bite' }
+  for (const tira of [1, 2.5, 5]) {
+    assert.match((await dibujar({ ...opcion, tira }, { roles, lanzarRol })).motivo, /entre 2 y 4/)
+  }
+  assert.equal((await dibujar({ ...opcion, tira: 2, figura: true }, { roles, lanzarRol })).pasa, false)
+  assert.equal(pedidos.length, 0)
+
+  const resultado = await dibujar({ ...opcion, tira: 2 }, { roles, lanzarRol })
+  assert.equal(resultado.pasa, true, JSON.stringify(resultado))
+  assert.equal(resultado.siguiente, 'revisor')
+  assert.match(pedidos[0], /2 equally sized square panels.*Inti lifts an apple.*feet on one shared imaginary ground line/)
+  const registro = JSON.parse(await readFile(path.join(carpeta, 'piezas', 'registro.json'), 'utf8'))
+  assert.equal(registro['comer-manzana'].tipo, 'tira-figura')
+  const motivos = await revisarPiezas(carpeta)
+  assert.equal(motivos.length, 1, motivos.join('\n'))
+  assert.match(motivos[0], /comer-manzana.*aprobación del revisor/)
 })

@@ -23,13 +23,16 @@ import { CARPETA_JUEGO, CARPETA_RAIZ, CARPETA_TALLER } from './trabajador/config
 import { armarComando, consumoDe, lanzar, leerAgentes, leerRoles } from './trabajador/roles.js'
 import { esIdTrabajo } from '#kit/reproductor/datos/registroJuegos.js'
 
-// Un encargo y hasta 2 correcciones, más un margen para dividir el trabajo en partes.
-export const MAX_ENCARGOS = 6
+// Un encargo y hasta 2 correcciones, más un margen para dividir el trabajo en partes. Un juego grande hecho con el
+// equipo necesita más tareas: TALLER_MAX_ENCARGOS lo sube solo para esa terminal (por ejemplo, 10).
+export const MAX_ENCARGOS = Number(process.env.TALLER_MAX_ENCARGOS ?? 6)
 // Palabras con que un programador dice que el entorno le bloqueó una comprobación.
 const ENTORNO = /permiso|bloquead|EPERM|sandbox|entorno|Permission denied|MachPort|Chromium|Playwright|npm run build/i
 // Y las que muestran que el problema es del juego mismo.
 const ERROR_DEL_JUEGO = /fall(a|an|aron) (las |\d+ )?pruebas|prueba[s]? (falla|fallan|fallida)|\d+ (pruebas )?fallan|SyntaxError|ReferenceError|TypeError|no (se )?(pudo|puede) escribir/i
 const LIMITE_ENCARGO_MS = Number(process.env.TALLER_LIMITE_PROGRAMADOR_MS ?? 12 * 60 * 1000)
+// Cuánto se espera antes de relanzar a un programador que se quedó callado (3 minutos).
+const ESPERA_REINTENTO_MS = Number(process.env.TALLER_ESPERA_REINTENTO_MS ?? 3 * 60 * 1000)
 
 // Lo que se le pide al programador. Nombra roles, nunca programas.
 export function pedidoDeCodigo({ carpeta, tarea, correccion, juegoUrl, trabajo }) {
@@ -87,7 +90,7 @@ export async function textoDeArchivo(carpeta, ruta) {
 }
 
 export async function programar({ carpeta, tarea, correccion = null }, { roles, agentes, lanzarRol = lanzar,
-  juegoUrl = 'http://127.0.0.1:5174/' } = {}) {
+  juegoUrl = 'http://127.0.0.1:5174/', esperaReintentoMs = ESPERA_REINTENTO_MS } = {}) {
   const inicio = Date.now()
   const carpetaReal = path.resolve(carpeta ?? '')
   const trabajo = path.basename(carpetaReal)
@@ -120,7 +123,9 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
     carpeta: carpetaReal, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
   })
   // Si el programador deja de responder (silencio_seg en roles.local.json), se corta y se lanza
-  // otra vez, una sola vez, sin gastar una corrección: no es un error del encargo.
+  // otra vez, una sola vez, sin gastar una corrección: no es un error del encargo. Antes de
+  // relanzarlo se espera un rato: el reintento inmediato se quedaba colgado detrás de la llamada
+  // trabada (juego 1, 20 de noviembre, kit/estilo/juego-1-el-traje-de-inti.md).
   let ejecucion
   for (let lanzamiento = 1; lanzamiento <= 2; lanzamiento += 1) {
     // Los dos lanzamientos comparten el tiempo del encargo: el supervisor espera como máximo eso.
@@ -128,6 +133,7 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
     if (!ejecucion.silencio) break
     await appendFile(path.join(carpetaReal, 'programador', 'pedidos.md'),
       'El programador dejó de responder' + (lanzamiento === 1 ? ': se lanza otra vez.' : ' dos veces seguidas.') + '\n\n')
+    if (lanzamiento === 1) await new Promise((listo) => setTimeout(listo, esperaReintentoMs))
   }
   const consumo = consumoDe(ejecucion.salida)
   await rm(temporal, { recursive: true, force: true })

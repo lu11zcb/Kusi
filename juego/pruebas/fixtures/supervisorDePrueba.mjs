@@ -7,6 +7,8 @@
 //   modo «roto»     siempre olvida las pruebas.
 //   modo «lento»    no termina nunca (para probar el límite de tiempo).
 //   modo «no»       responde que no se puede hacer.
+//   modo «mudo»     muestra la consigna sin usar la voz del kit.
+//   modo «errores-con-vida» deja errores cuando el juego abre con los efectos.
 
 import { mkdir, writeFile, copyFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -22,8 +24,9 @@ else await trabajar()
 async function trabajar() {
   if (modo === 'no') return responder('FALLÓ: el tema pide dibujar una figura sagrada como personaje.')
 
-  const conPruebas = ['bien', 'sin-revision', 'revision-vieja'].includes(modo) || (modo === 'corrige' && esCorreccion)
+  const conPruebas = ['bien', 'sin-revision', 'revision-vieja', 'mudo', 'errores-con-vida'].includes(modo) || (modo === 'corrige' && esCorreccion)
   const archivos = {
+    'juego/frases.js': 'export const frasesDeKusi = () => []\n',
     'juego/juego.js': [
       "import { EscenaParejas } from './escenas/EscenaParejas.js'",
       "import { validarParejas } from './datos/validarParejas.js'",
@@ -50,6 +53,17 @@ async function trabajar() {
       '    this.add.text(ANCHO / 2, 80, reto.consigna, estiloTexto(32)).setOrigin(0.5)',
       '    this.controles = crearControles(this)',
       '    this.hud = crearHud(this)',
+      ...(modo === 'mudo' ? [] : ['    this.hud.decir(reto.consigna)']),
+      ...(modo === 'errores-con-vida' ? [
+        "    if (new URLSearchParams(location.search).get('vida') !== '0') {",
+        "      console.error('Error de consola al abrir')",
+        "      this.input.once('pointerdown', () => setTimeout(() => {",
+        "        console.warn('[Kusi] voz sin sonido: prueba')",
+        "        console.warn('[Kusi] voz trabada: prueba')",
+        "        throw new Error('Error del juego después del toque')",
+        '      }, 100))',
+        '    }',
+      ] : []),
       "    repartirYColocar(this, { area: { x: 0, y: 0, ancho: 1280, alto: 720 }, cantidad: 4, claves: ['fresa'] })",
       "    darVida(this, this.add.circle(200, 200, 10, 0xffffff), 'flotar')",
       "    ambiente(this, { area: { x: 0, y: 0, ancho: 1280, alto: 720 }, cantidad: 4 })",

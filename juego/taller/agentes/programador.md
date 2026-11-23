@@ -52,7 +52,8 @@ No dibujas y no cambias el kit, el reproductor ni otros juegos.
    - `Scale.EXPAND` sobre una base de 1280 × 720, y `?vida=0` para apagar los
      efectos;
    - errores amables, sin reloj, sin vidas y sin castigo.
-5. **Escribe `guion-ejemplo.json`**, completo y que se pueda terminar.
+5. **Escribe `guion-ejemplo.json`**, completo y que se pueda terminar. Escribe en primera
+   persona las intervenciones de Kusi, como la consigna, las ayudas y el cierre (regla 7).
 6. **Escribe la ficha `juego.js`** y el `README.md` del juego.
 7. **Comprueba:** las pruebas con `node --test`, `npm run build` desde `juego/`
    y la búsqueda de `cuy` en tu carpeta. Anota lo que corriste y su resultado.

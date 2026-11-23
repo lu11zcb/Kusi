@@ -113,6 +113,26 @@ test('si nunca pasa, después de 2 correcciones se informa el fallo', async () =
   expect(consola.match(/el supervisor empieza el intento/g)).toHaveLength(3)
 })
 
+test('no entrega un juego que muestra la consigna pero sigue mudo después del toque', async () => {
+  const { codigo, consola, recibido } = await correrTrabajador({ modo: 'mudo' })
+  expect(codigo, consola).toBe(0)
+  expect(recibido.resultados).toEqual([])
+  expect(recibido.fallos).toHaveLength(1)
+  expect(recibido.fallos[0]).toMatch(/No apareció «\[Kusi\] voz:» después de tocar la pantalla.*reglas\.md, regla 14\.1/)
+})
+
+test('recoge errores de consola y de voz al abrir y al tocar con los efectos encendidos', async () => {
+  const { codigo, consola, recibido } = await correrTrabajador({ modo: 'errores-con-vida' })
+  expect(codigo, consola).toBe(0)
+  expect(recibido.resultados).toEqual([])
+  expect(recibido.fallos).toHaveLength(1)
+  const [motivo] = recibido.fallos
+  expect(motivo).toMatch(/con efectos \(console\.error\).*Error de consola al abrir.*reglas\.md, regla 14\.6/)
+  expect(motivo).toMatch(/con efectos \(pageerror\).*Error del juego después del toque.*reglas\.md, regla 14\.6/)
+  expect(motivo).toMatch(/\[Kusi\] voz sin sonido: prueba.*reglas\.md, regla 14\.1/)
+  expect(motivo).toMatch(/\[Kusi\] voz trabada: prueba.*reglas\.md, regla 14\.1/)
+})
+
 test('un supervisor que no termina se corta al acabarse el tiempo', async () => {
   const inicio = Date.now()
   const { codigo, consola, recibido } = await correrTrabajador({ modo: 'lento', limiteMs: 3000 })
