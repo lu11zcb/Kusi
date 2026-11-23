@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { instalarVozInmediata } from '../ayudas/laberinto.js'
 
 const RUTA_PAQUETE = new URL('../../kit/recursos/paquete-laberinto-ejemplo.json', import.meta.url)
 const CLAVE_MANO = 'kusi-laberinto-tocar-v1'
@@ -87,6 +88,7 @@ test('come las cuatro frutas del nivel real, abre la puerta y entra al nivel 2',
 
 test('la fruta equivocada permanece, el cuy sigue su camino y Kusi da las dos ayudas', async ({ page: pagina }) => {
   const paquete = await leerPaquete()
+  await instalarVozInmediata(pagina)
   await abrirLaberinto(pagina)
   await pagina.keyboard.press('ArrowRight')
   await esperarCasilla(pagina, 1, 9)
@@ -97,14 +99,14 @@ test('la fruta equivocada permanece, el cuy sigue su camino y Kusi da las dos ay
   const primerError = await esperarCasilla(pagina, 5, 5)
   expect(primerError.regla.recogidos).toBe(2)
   expect(primerError.regla.errores).toBe(1)
-  expect(primerError.consigna).toBe(paquete.retos[0].ayudas[0])
+  await expect.poll(async () => (await estado(pagina)).consigna).toBe(paquete.retos[0].ayudas[0])
   expect(primerError.regla.objetos.find((objeto) => objeto.fila === 5 && objeto.columna === 7).recogido)
     .toBe(false)
   await pagina.keyboard.press('ArrowRight')
   const segundoError = await esperarCasilla(pagina, 5, 9)
   expect(segundoError.regla.recogidos).toBe(2)
   expect(segundoError.regla.errores).toBe(2)
-  expect(segundoError.consigna).toBe(paquete.retos[0].ayudas[1])
+  await expect.poll(async () => (await estado(pagina)).consigna).toBe(paquete.retos[0].ayudas[1])
   expect(segundoError.puertaAbierta).toBe(false)
   const avisos = await pagina.evaluate(() => window.kusi.avisos)
   expect(avisos.filter((aviso) => aviso.tipo === 'accion' && !aviso.correcto).map((aviso) => aviso.objeto))
@@ -113,12 +115,13 @@ test('la fruta equivocada permanece, el cuy sigue su camino y Kusi da las dos ay
   comprobarOrdenDeAvisos(avisos)
 })
 
-test('la voz dice la consigna al entrar y Escuchar la repite después de una ayuda', async ({ page: pagina }) => {
+test('la voz dice la consigna al primer toque y Escuchar repite la última ayuda que sonó', async ({ page: pagina }) => {
   const paquete = await leerPaquete()
   // Se observa la salida del navegador, sin sustituir decir() ni acceder a la
   // escena: la misma llamada queda lista para conectar KusiPuente en el futuro.
   await pagina.addInitScript(() => {
     window.frasesKusi = []
+    window.cortesDeVoz = 0
     Object.defineProperty(window, 'SpeechSynthesisUtterance', {
       configurable: true,
       value: class {
@@ -127,16 +130,35 @@ test('la voz dice la consigna al entrar y Escuchar la repite después de una ayu
     })
     Object.defineProperty(window, 'speechSynthesis', {
       configurable: true,
-      value: { cancel() {}, speak(frase) { window.frasesKusi.push({ texto: frase.text, idioma: frase.lang }) } },
+      value: {
+        getVoices: () => [{ name: 'Mónica', lang: 'es-ES', localService: true }],
+        cancel() { window.cortesDeVoz += 1 },
+        speak(frase) {
+          window.frasesKusi.push({ texto: frase.text, idioma: frase.lang })
+          window.fraseActiva = frase
+          if (window.frasesKusi.length === 1) frase.onstart()
+        },
+      },
     })
   })
   await abrirLaberinto(pagina)
+  expect(await pagina.evaluate(() => window.frasesKusi)).toEqual([])
+  await pagina.keyboard.press('Enter')
   await expect.poll(() => pagina.evaluate(() => window.frasesKusi.map((frase) => frase.texto)))
     .toEqual([paquete.retos[0].consigna])
   await tocar(pagina, 'ayuda')
+  expect(await pagina.evaluate(() => window.fraseActiva.text)).toBe(paquete.retos[0].consigna)
+  expect((await estado(pagina)).consigna).toBe(paquete.retos[0].consigna)
+  await pagina.evaluate(() => window.fraseActiva.onend())
+  await expect.poll(() => pagina.evaluate(() => window.fraseActiva.text)).toBe(paquete.retos[0].ayudas[0])
+  expect((await estado(pagina)).consigna).toBe(paquete.retos[0].consigna)
+  await pagina.evaluate(() => window.fraseActiva.onstart())
+  expect((await estado(pagina)).consigna).toBe(paquete.retos[0].ayudas[0])
   await tocar(pagina, 'sonido')
   expect(await pagina.evaluate(() => window.frasesKusi.map((frase) => frase.texto)))
-    .toEqual([paquete.retos[0].consigna, paquete.retos[0].ayudas[0], paquete.retos[0].consigna])
+    .toEqual([paquete.retos[0].consigna, paquete.retos[0].ayudas[0], paquete.retos[0].ayudas[0]])
+  // La síntesis se limpia al habilitarla y se corta al pulsar Escuchar.
+  expect(await pagina.evaluate(() => window.cortesDeVoz)).toBe(2)
   expect(await pagina.evaluate(() => window.frasesKusi.every((frase) => frase.idioma.startsWith('es')))).toBe(true)
 })
 

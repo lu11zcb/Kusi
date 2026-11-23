@@ -15,8 +15,8 @@ import { crearRegla, comerEnCasilla } from '../logica/reglasLaberinto.js'
 import {
   crearZorro, avanzarZorro, restablecerZorro, posicionEnCasillas, seAtrapan,
 } from '../logica/zorrosLaberinto.js'
-import { decir } from '../../../kit/reproductor/logica/voz.js'
-import { crearHablaKusi, avanzarHablaKusi, iniciarHablaKusi } from '../../../kit/reproductor/logica/hablaKusi.js'
+import { callarVoz, decir, repetirVoz } from '../../../kit/reproductor/logica/voz.js'
+import { animarVozKusi, crearHablaKusi, avanzarHablaKusi } from '../../../kit/reproductor/logica/hablaKusi.js'
 import {
   crearMovimiento, pedirDireccion, avanzarMovimiento, detenerEnCentro,
 } from '../logica/movimientoLaberinto.js'
@@ -167,6 +167,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.scene.start('carga', { paquete: orden.paquete })
     } else if (orden.tipo === MENSAJE_REINICIAR) {
       // Igual que «Jugar otra vez»: el primer nivel del mismo guion, con una partida nueva.
+      callarVoz()
       this.scene.restart(this.datosParaNivel(0, crearPartidaLaberinto()))
     }
   }
@@ -233,7 +234,9 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.tituloBarra = tituloDeBarra(this.reto.regla)
     const { escuchar, ayuda } = this.barraFrutas.datos.botones
     this.botones = {
-      sonido: this.crearBotonPanel(escuchar, 'boton-voz', () => this.hablarKusi(this.reto.consigna)),
+      sonido: this.crearBotonPanel(escuchar, 'boton-escuchar', () => {
+        this.hablarKusi(this.ultimaFraseOida ?? this.textoGlobo.text, repetirVoz)
+      }),
       ayuda: this.crearBotonPanel(ayuda, 'boton-ayuda', () => this.mostrarAyuda()),
     }
   }
@@ -305,6 +308,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       estiloTexto(24, '#4b210e', { align: 'left', wordWrap: { width: 266 } }))
     this.panelKusi = this.add.container(0, 0, [this.dibujoFranja, this.dibujoKusi, this.textoGlobo]).setDepth(1010)
     this.hablaKusi = crearHablaKusi(this.vida)
+    this.ultimaFraseOida = null
     this.ajustarTextoKusi()
   }
 
@@ -315,22 +319,22 @@ export class EscenaLaberinto extends Phaser.Scene {
     this.dibujoFranja.setTexture('globo-dialogo-' + globo.alto).setPosition(globo.x, globo.y)
   }
 
-  hablarKusi(texto) {
-    this.textoGlobo.setText(texto)
-    this.ajustarTextoKusi()
-    iniciarHablaKusi(this.hablaKusi, texto)
-    const turno = this.turnoVoz = (this.turnoVoz ?? 0) + 1
-    decir(texto, { alEmpezar: () => {
-        if (this.turnoVoz !== turno) return
-        iniciarHablaKusi(this.hablaKusi, texto)
-        // La voz web informa su final. El puente Android conserva su duración estimada.
-        this.hablaKusi.vozActiva = typeof window.KusiPuente?.decir !== 'function'
+  hablarKusi(texto, reproducir = decir) {
+    const animacion = animarVozKusi(this.hablaKusi, texto)
+    const mostrar = () => {
+      if (!this.textoGlobo.scene) return
+      this.textoGlobo.setText(texto)
+      this.ajustarTextoKusi()
+    }
+    reproducir(texto, {
+      ...animacion,
+      alEmpezar: () => {
+        this.ultimaFraseOida = texto
+        mostrar()
+        animacion.alEmpezar()
       },
-      alTerminar: () => {
-        if (this.turnoVoz !== turno) return
-        this.hablaKusi.vozActiva = false
-        this.hablaKusi.restante = 0
-      } })
+      alSinVoz: mostrar,
+    })
   }
 
   actualizarKusi(segundos) {
@@ -341,10 +345,9 @@ export class EscenaLaberinto extends Phaser.Scene {
   mostrarAyuda(numero = null) {
     if (this.terminada || this.cambiandoNivel) return
     const indice = numero === null ? Math.min(this.indiceAyuda, this.reto.ayudas.length - 1) : numero - 1
-    this.textoGlobo.setText(this.reto.ayudas[indice])
     this.indiceAyuda += 1
     avisarPartida(this.partida, 'ayuda', { nivel: this.indiceNivel + 1, ayuda: indice + 1 })
-    this.hablarKusi(this.textoGlobo.text)
+    this.hablarKusi(this.reto.ayudas[indice])
   }
 
   crearPersonajes() {
@@ -619,7 +622,7 @@ export class EscenaLaberinto extends Phaser.Scene {
       this.scene.restart({ ...this.datosParaNivel(this.indiceNivel + 1), anunciarNivel: true })
     } else {
       this.terminada = true
-      this.mensajeCierre = this.paquete.cierre?.mensaje ?? '¡Lo lograste! Gracias por ayudar a Kusi.'
+      this.mensajeCierre = this.paquete.cierre?.mensaje ?? '¡Lo lograste! Gracias por ayudarme.'
       this.sonidos.reproducir('nivel')
       decir(this.mensajeCierre)
       avisarPartida(this.partida, 'fin', { niveles: this.paquete.retos.length })
@@ -641,7 +644,10 @@ export class EscenaLaberinto extends Phaser.Scene {
     })).setOrigin(0.5).setDepth(2001)
     this.botones.repetir = crearBoton(this, centro.x, 554, {
       ancho: 320, alto: 82, texto: 'Jugar otra vez', tamano: 32,
-      alTocar: () => this.scene.restart(this.datosParaNivel(0, crearPartidaLaberinto())),
+      alTocar: () => {
+        callarVoz()
+        this.scene.restart(this.datosParaNivel(0, crearPartidaLaberinto()))
+      },
     }).setDepth(2002)
   }
 

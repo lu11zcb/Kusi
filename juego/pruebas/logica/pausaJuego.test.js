@@ -28,19 +28,19 @@ function juegoDePrueba() {
   const avisos = []
   let ordenar = null
   const puente = { controlar(funcion) { ordenar = funcion }, avisar(aviso) { avisos.push(aviso) } }
-  const ventana = { speechSynthesis: { cancelada: false, cancel() { this.cancelada = true } } }
-  instalarPausaJuego(juego, puente, ventana)
-  return { escena, juego, avisos, ventana, ordenar: (tipo) => ordenar({ tipo }) }
+  const voz = { callada: false }
+  instalarPausaJuego(juego, puente, () => { voz.callada = true })
+  return { escena, juego, avisos, voz, ordenar: (tipo) => ordenar({ tipo }) }
 }
 
 test('al avisar «pausado» la escena ya está detenida, sin esperar al cuadro siguiente', () => {
-  const { escena, juego, avisos, ventana, ordenar } = juegoDePrueba()
+  const { escena, juego, avisos, voz, ordenar } = juegoDePrueba()
   ordenar('pausar')
   assert.equal(escena.estado, 'pausada')
   assert.deepEqual(escena.anotadas, [])
   assert.equal(juego.input.enabled, false)
   assert.equal(juego.sound.pausado, true)
-  assert.equal(ventana.speechSynthesis.cancelada, true)
+  assert.equal(voz.callada, true)
   assert.deepEqual(avisos, [{ tipo: 'pausado', partida: 'partida-de-prueba', orden: 3, nivel: 2 }])
 })
 

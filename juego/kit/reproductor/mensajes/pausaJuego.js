@@ -1,7 +1,9 @@
+import { callarVoz } from '../logica/voz.js'
+
 // Pausa común para todas las familias: no exige código especial a cada juego.
 // El anfitrión guarda después el reto confirmado; mientras la página sigue abierta
 // las escenas pausadas conservan también su estado dentro de ese reto.
-export function instalarPausaJuego(juego, puente, ventana = window) {
+export function instalarPausaJuego(juego, puente, callar = callarVoz) {
   let pausadas = []
   let entradaAnterior = true
   let pausado = false
@@ -28,7 +30,7 @@ export function instalarPausaJuego(juego, puente, ventana = window) {
       // aunque la página ya recibió «pausado».
       for (const actual of escenas) juego.scene.pause(actual)
       juego.sound.pauseAll()
-      try { ventana.speechSynthesis?.cancel() } catch { /* La pausa no depende de voz disponible. */ }
+      callar()
       pausado = true
     }
     const nivel = (escena.indiceNivel ?? escena.sys.settings.data?.indiceNivel ?? 0) + 1

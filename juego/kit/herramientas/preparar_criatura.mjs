@@ -8,12 +8,14 @@
 // más grande mide 200 px), los pies en y = 244 y el cuerpo centrado en su cuadro. El ciclo se reproduce con
 // kit/reproductor/dibujos/criaturaAnimada.js.
 
+import { readFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { guardarPng, leerRgba, recortar } from './animaciones/png_rgba.mjs'
+import { guardarPng, leerRgba, medirSilueta, recortar } from './animaciones/png_rgba.mjs'
 import { prepararPieza } from './preparar_pieza.mjs'
+import { cantidadValidaDeCuadros, LADO_FIGURA, leerPng, OPACO } from './comprobar_pieza.mjs'
 
 export const CUADRO = 256
 export const CUADROS = 3
@@ -75,14 +77,27 @@ function pegar(hoja, cuadro, x0, y0) {
 
 // Devuelve { tipo, cuadros, lado_mayor, alturas } o lanza un error con su motivo (por ejemplo, «Cuadro 2: No se
 // encontró ninguna figura en la imagen»).
-export async function prepararCriatura(original, destino) {
-  const tira = leerRgba(original)
-  const ancho = Math.floor(tira.ancho / CUADROS)
-  if (ancho < 64 || tira.alto < 64) throw new Error('La imagen es muy chica para tres cuadros: mide ' + tira.ancho + ' × ' + tira.alto + '.')
+export function prepararCriatura(original, destino) {
+  return prepararTira(original, destino, { tipo: 'criatura', cuadros: CUADROS, lado: CUADRO, ladoMayor: LADO_MAYOR, pies: PIES })
+}
+
+// Las poses del gesto conservan su escala relativa y el punto de apoyo de una figura de 768 px.
+export async function prepararTiraFigura(original, destino, cuadros) {
+  if (!cantidadValidaDeCuadros(cuadros)) throw new Error('Una tira de figura necesita de 2 a 4 cuadros.')
+  return prepararTira(original, destino, { tipo: 'tira-figura', cuadros, lado: LADO_FIGURA, ladoMayor: 704, pies: 735 })
+}
+
+async function prepararTira(original, destino, { tipo, cuadros, lado, ladoMayor, pies }) {
+  // La herramienta de imágenes entrega un PNG RGB (sin transparencia): se lee con el lector que acepta RGB y RGBA.
+  const imagen = leerPng(readFileSync(original))
+  if (!imagen.pixeles) throw new Error('La imagen original debe ser un PNG de 8 bits sin entrelazado (RGB o RGBA).')
+  const tira = { ancho: imagen.ancho, alto: imagen.alto, datos: Buffer.from(imagen.pixeles) }
+  const ancho = Math.floor(tira.ancho / cuadros)
+  if (ancho < 64 || tira.alto < 64) throw new Error('La imagen es muy chica para ' + cuadros + ' cuadros: mide ' + tira.ancho + ' × ' + tira.alto + '.')
   const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-criatura-'))
   try {
     const recortes = []
-    for (let i = 0; i < CUADROS; i += 1) {
+    for (let i = 0; i < cuadros; i += 1) {
       const entrada = path.join(carpeta, 'celda-' + (i + 1) + '.png')
       const salida = path.join(carpeta, 'recorte-' + (i + 1) + '.png')
       guardarPng(entrada, recortar(tira, i * ancho, 0, ancho, tira.alto))
@@ -93,18 +108,21 @@ export async function prepararCriatura(original, destino) {
       }
       recortes.push(leerRgba(salida))
     }
-    // La misma escala para los tres: si no, la criatura «respiraría» de tamaño al caminar.
+    // Con una misma escala, la figura conserva su tamaño al cambiar de pose.
     const mayor = Math.max(...recortes.map((recorte) => Math.max(recorte.ancho, recorte.alto)))
-    const escala = LADO_MAYOR / mayor
-    const hoja = { ancho: CUADRO * CUADROS, alto: CUADRO, datos: Buffer.alloc(CUADRO * CUADROS * CUADRO * 4) }
+    const escala = ladoMayor / mayor
+    const hoja = { ancho: lado * cuadros, alto: lado, datos: Buffer.alloc(lado * cuadros * lado * 4) }
     const alturas = []
     recortes.forEach((recorte, i) => {
       const cuadro = escalar(recorte, escala)
-      pegar(hoja, cuadro, i * CUADRO + Math.round((CUADRO - cuadro.ancho) / 2), PIES + 1 - cuadro.alto)
+      // Para el gesto se alinea el último píxel visible: el recorte puede tener
+      // una fila de borde semitransparente distinta en cada pose.
+      const filaPies = tipo === 'tira-figura' ? medirSilueta(cuadro, OPACO).maxY : cuadro.alto - 1
+      pegar(hoja, cuadro, i * lado + Math.round((lado - cuadro.ancho) / 2), pies - filaPies)
       alturas.push(cuadro.alto)
     })
     guardarPng(destino, hoja)
-    return { tipo: 'criatura', cuadros: CUADROS, lado_mayor: Math.round(mayor * escala), alturas }
+    return { tipo, cuadros, lado_mayor: Math.round(mayor * escala), alturas }
   } finally {
     await rm(carpeta, { recursive: true, force: true })
   }

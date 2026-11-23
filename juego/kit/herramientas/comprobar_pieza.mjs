@@ -20,6 +20,7 @@ export const SILUETA_FIGURA = { minimo: 600, maximo: 720 }
 export const MARGEN_FIGURA = 24
 export const DESVIO_FIGURA = 48
 export const PESO_FIGURA = 600 * 1024
+export const CUADROS_TIRA_FIGURA = { minimo: 2, maximo: 4 }
 // Una criatura animada (un personaje o enemigo que se mueve) es una tira de 3 cuadros de 256 × 256, lado a lado: 768 × 256.
 export const CRIATURA = { ancho: 768, alto: 256, cuadros: 3, pies: 244, margenPies: 6, ladoMayor: { minimo: 150, maximo: 215 }, variacionMaxima: 1.3, peso: 300 * 1024 }
 export const FONDO = { ancho: 1672, alto: 941 }
@@ -30,7 +31,11 @@ export const PESO_OBJETO = 100 * 1024
 export const PESO_FONDO = 2.5 * 1024 * 1024
 const PATRON_NOMBRE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 // Un píxel cuenta como de la pieza con alfa de 128 o más.
-const OPACO = 128
+export const OPACO = 128
+
+export function cantidadValidaDeCuadros(cantidad) {
+  return Number.isInteger(cantidad) && cantidad >= CUADROS_TIRA_FIGURA.minimo && cantidad <= CUADROS_TIRA_FIGURA.maximo
+}
 
 // Lee un PNG de 8 bits por canal, RGB o RGBA, sin entrelazar. Devuelve
 // { ancho, alto, canales, tipo, pixeles } con los píxeles en RGBA.
@@ -165,6 +170,12 @@ export function comprobarPieza(archivo, { fondo = false, figura = false, criatur
 
   if (criatura) return comprobarCriatura(imagen, id, peso, responder, respuestas)
 
+  const cuadros = imagen.ancho / LADO_FIGURA
+  if (imagen.alto === LADO_FIGURA && cantidadValidaDeCuadros(cuadros)) {
+    comprobarTiraFigura(imagen, cuadros, id, responder)
+    return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas }
+  }
+
   // Un objeto mide 256 × 256; una figura entera, 768 × 768. Lo demás se mide sobre ese lado.
   const L = figura ? LADO_FIGURA : LADO_OBJETO
   const margen = figura ? MARGEN_FIGURA : MARGEN
@@ -177,28 +188,8 @@ export function comprobarPieza(archivo, { fondo = false, figura = false, criatur
   if (!medidas) return { pasa: false, respuestas }
   const { pixeles } = imagen
   const alfa = (x, y) => pixeles[(y * L + x) * 4 + 3]
-
-  const esquinas = [alfa(0, 0), alfa(L - 1, 0), alfa(0, L - 1), alfa(L - 1, L - 1)]
-  responder('¿Las cuatro esquinas son totalmente transparentes?', esquinas.every((valor) => valor === 0),
-    'Alguna esquina no es transparente (el fondo no se quitó del todo).')
-
-  let minX = L; let minY = L; let maxX = -1; let maxY = -1
-  for (let y = 0; y < L; y++) for (let x = 0; x < L; x++) {
-    if (alfa(x, y) >= OPACO) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y) }
-  }
-  if (maxX < 0) {
-    responder('¿Hay una figura?', false, 'La pieza está vacía: todo es transparente.')
-    return { pasa: false, respuestas }
-  }
-  responder('¿Quedan al menos ' + margen + ' px transparentes en cada borde?',
-    minX >= margen && minY >= margen && maxX <= L - 1 - margen && maxY <= L - 1 - margen,
-    'La silueta va de (' + minX + ', ' + minY + ') a (' + maxX + ', ' + maxY + ').')
-  const ladoMayor = Math.max(maxX - minX + 1, maxY - minY + 1)
-  responder('¿El lado mayor de la silueta mide entre ' + silueta.minimo + ' y ' + silueta.maximo + ' px?', ladoMayor >= silueta.minimo && ladoMayor <= silueta.maximo,
-    'Mide ' + ladoMayor + ' px.')
-  const centro = (minX + maxX + 1) / 2
-  responder('¿El centro de la silueta está a menos de ' + desvio + ' px del centro del lienzo, a lo ancho?',
-    Math.abs(centro - L / 2) < desvio, 'Su centro está en x = ' + centro + '.')
+  const limites = comprobarSilueta(alfa, L, margen, silueta, desvio, responder)
+  if (!limites) return { pasa: false, respuestas }
 
   const { marca, areas } = manchas(imagen)
   const principal = areas.indexOf(Math.max(...areas))
@@ -227,7 +218,61 @@ export function comprobarPieza(archivo, { fondo = false, figura = false, criatur
   responder('¿El nombre del archivo está en minúsculas, sin tildes ni «ñ», con guiones, y es igual a su id?',
     PATRON_NOMBRE.test(id) && (figura ? id.startsWith('figura-') : !id.startsWith('fondo-') && !id.startsWith('figura-')),
     'Se llama «' + id + '.png»' + (figura ? ' (una figura se llama figura-<nombre>).' : '.'))
-  return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas, silueta: { minX, minY, maxX, maxY, ladoMayor } }
+  return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas, silueta: limites }
+}
+
+// Se miden las mismas proporciones en una figura quieta y en cada pose de una tira.
+function comprobarSilueta(alfa, lado, margen, silueta, desvio, responder) {
+  const esquinas = [alfa(0, 0), alfa(lado - 1, 0), alfa(0, lado - 1), alfa(lado - 1, lado - 1)]
+  responder('¿Las cuatro esquinas son totalmente transparentes?', esquinas.every((valor) => valor === 0),
+    'Alguna esquina no es transparente (el fondo no se quitó del todo).')
+
+  let minX = lado, minY = lado, maxX = -1, maxY = -1
+  for (let y = 0; y < lado; y++) for (let x = 0; x < lado; x++) {
+    if (alfa(x, y) < OPACO) continue
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    maxX = Math.max(maxX, x)
+    maxY = Math.max(maxY, y)
+  }
+  if (maxX < 0) {
+    responder('¿Hay una figura?', false, 'La pieza está vacía: todo es transparente.')
+    return null
+  }
+  responder('¿Quedan al menos ' + margen + ' px transparentes en cada borde?',
+    minX >= margen && minY >= margen && maxX <= lado - 1 - margen && maxY <= lado - 1 - margen,
+    'La silueta va de (' + minX + ', ' + minY + ') a (' + maxX + ', ' + maxY + ').')
+  const ladoMayor = Math.max(maxX - minX + 1, maxY - minY + 1)
+  responder('¿El lado mayor de la silueta mide entre ' + silueta.minimo + ' y ' + silueta.maximo + ' px?', ladoMayor >= silueta.minimo && ladoMayor <= silueta.maximo,
+    'Mide ' + ladoMayor + ' px.')
+  const centro = (minX + maxX + 1) / 2
+  responder('¿El centro de la silueta está a menos de ' + desvio + ' px del centro del lienzo, a lo ancho?',
+    Math.abs(centro - lado / 2) < desvio, 'Su centro está en x = ' + centro + '.')
+  return { minX, minY, maxX, maxY, ladoMayor }
+}
+
+function comprobarTiraFigura(imagen, cuadros, id, responder) {
+  const transparencia = imagen.canales === 4
+  responder('¿La tira de figura es un PNG con transparencia (RGBA)?', transparencia, 'La tira no tiene canal de transparencia de 8 bits.')
+  if (!transparencia) return
+
+  const pies = []
+  for (let cuadro = 0; cuadro < cuadros; cuadro++) {
+    const inicio = cuadro * LADO_FIGURA
+    const alfa = (x, y) => imagen.pixeles[(y * imagen.ancho + inicio + x) * 4 + 3]
+    const nombre = 'Cuadro ' + (cuadro + 1) + ': '
+    // Una pose puede incluir un objeto del gesto separado de la figura. El revisor
+    // visual comprueba ese detalle y aquí se mide el conjunto dentro de su cuadro.
+    const limites = comprobarSilueta(alfa, LADO_FIGURA, MARGEN_FIGURA, SILUETA_FIGURA, DESVIO_FIGURA,
+      (pregunta, si, motivo) => responder(nombre + pregunta, si, nombre + motivo))
+    if (limites) pies.push(limites.maxY)
+  }
+  if (pies.length === cuadros) {
+    responder('¿Los pies están en la misma fila en todos los cuadros?', pies.every((fila) => fila === pies[0]),
+      'Las filas de los pies son ' + pies.join(', ') + ' (en orden de cuadro).')
+  }
+  responder('¿El nombre de la tira está en minúsculas, sin tildes ni «ñ», con guiones, y es igual a su id?',
+    PATRON_NOMBRE.test(id), 'Se llama «' + id + '.png».')
 }
 
 // Una criatura animada: 3 cuadros de 256 × 256 con los pies en la misma fila, del mismo tamaño y con movimiento.

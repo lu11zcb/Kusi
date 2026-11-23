@@ -4,7 +4,7 @@
 // ../datos/registroJuegos.js, que se prueba sin navegador.
 
 import { COLOR } from '../medidas.js'
-import { rutaFicha } from '../datos/registroJuegos.js'
+import { rutaFicha, rutaVoz } from '../datos/registroJuegos.js'
 import { avisarPartida } from '../../../juegos/laberinto/logica/partidaLaberinto.js'
 import { leerPuente, AVISO_CARGADO } from '../mensajes/puenteGuion.js'
 
@@ -19,6 +19,17 @@ export async function cargarFicha(trabajo) {
   } catch (error) {
     throw new Error('No se pudo abrir el juego del trabajo ' + trabajo + ': ' + (error?.message ?? error))
   }
+}
+
+export async function cargarGrabaciones(trabajo, signal) {
+  const ruta = new URL(rutaVoz(trabajo), document.baseURI).href
+  try {
+    const respuesta = await fetch(ruta + 'voz.json', { signal })
+    if (!respuesta.ok) return null
+    const indice = await respuesta.json()
+    if (indice?.frases && typeof indice.frases === 'object') return { indice, ruta }
+  } catch { /* Un trabajo sin índice válido puede usar la voz de respaldo. */ }
+  return null
 }
 
 // Phaser usa la clave que la escena pone en su constructor y no acepta dos escenas con

@@ -6,6 +6,19 @@ const RUTA_PAQUETE = new URL('../../kit/recursos/paquete-laberinto-ejemplo.json'
 export const leerPaquete = async () => JSON.parse(await readFile(RUTA_PAQUETE, 'utf8'))
 export const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 
+// Los casos de movimiento pueden comprobar qué texto se muestra sin depender
+// de las voces instaladas ni de la duración de la consigna en cada navegador.
+export async function instalarVozInmediata(pagina) {
+  await pagina.addInitScript(() => {
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: class { constructor(texto) { this.text = texto } },
+    })
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: { speak(frase) { frase.onstart(); frase.onend() } },
+    })
+  })
+}
+
 // La escena publica la transformación real de cámara. EXPAND puede añadir
 // espacio alrededor del mundo de 1280 × 720; dividir por ese tamaño ya no basta.
 export async function puntoEnLienzo(pagina, x, y) {

@@ -1,19 +1,29 @@
 import { test, expect } from '@playwright/test'
 import { abrir, estado, leerPaquete, servirPaquete, muestrear } from '../ayudas/laberinto.js'
 test('Kusi y el globo están a la derecha, el mando a la izquierda y la barra arriba',async({page})=>{
- await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{cancel(){},speak(frase){frase.onstart?.();setTimeout(()=>frase.onend?.(),2500)}}}))
+ await page.addInitScript(() => {
+  Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+   value: class { constructor(texto) { this.text = texto } },
+  })
+  Object.defineProperty(window, 'speechSynthesis', { value: {
+   getVoices: () => [{ name: 'Paulina', lang: 'es-MX', localService: true }],
+   cancel() {},
+   speak(frase) { frase.onstart(); setTimeout(() => frase.onend(), 2500) },
+  } })
+ })
  const e=await abrir(page,'&nivel=2')
  expect(e.casilla).toBe(70);expect(e.origenMapa).toEqual({x:200,y:88})
  expect(e.presentacion.guia.x).toBeGreaterThan(e.presentacion.mapa.x+e.presentacion.mapa.ancho)
  expect(e.presentacion.barra.y).toBe(4)
  expect(e.joystick.centro.x+e.joystick.radio).toBeLessThan(e.presentacion.mapa.x)
  const ayuda=await page.evaluate(()=>window.kusi.ubicar('ayuda'));await page.mouse.click(ayuda.x,ayuda.y)
- expect((await estado(page)).consigna).not.toBe(e.consigna)
+ const textoAyuda = (await leerPaquete()).retos[1].ayudas[0]
+ await expect.poll(async () => (await estado(page)).consigna).toBe(textoAyuda)
  await page.waitForFunction(()=>window.kusi.estado().kusiAnimado.animacion==='hablar')
  const boca=await muestrear(page,650,s=>s.kusiAnimado.cuadro)
  expect(new Set(boca).size).toBe(3);expect(boca.every(f=>f>=0&&f<3)).toBe(true)
  const escuchar=await page.evaluate(()=>window.kusi.ubicar('sonido'));await page.mouse.click(escuchar.x,escuchar.y)
- expect((await estado(page)).consigna).toBe(e.consigna)
+ expect((await estado(page)).consigna).toBe(textoAyuda)
 })
 test('la consigna de 90 caracteres cabe completa con margen en la columna derecha',async({page})=>{
  const larga='Sigue el patrón de la barra y busca el camino. Mira con calma antes de llegar a la puerta.'

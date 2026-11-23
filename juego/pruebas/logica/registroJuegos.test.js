@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 // Se importa con el atajo #kit/ a propósito: es el mismo que usan los juegos del taller,
 // así que esta prueba también comprueba que el atajo funciona con node --test.
 import {
-  esIdTrabajo, rutaFicha, rutaGuionEjemplo, rutaPieza, claveEscena, trabajoPedido,
+  esIdTrabajo, rutaFicha, rutaGuionEjemplo, rutaPieza, rutaVoz, claveEscena, trabajoPedido,
   elegirJuego, revisarFicha, clasificarPiezas, erroresDelValidar,
 } from '#kit/reproductor/datos/registroJuegos.js'
 import { OBJETOS_KIT } from '#kit/reproductor/dibujos/kitFinal.js'
@@ -33,12 +33,14 @@ test('las rutas del trabajo están dentro de taller/trabajos/<id>/', () => {
   assert.equal(rutaFicha(TRABAJO), 'taller/trabajos/' + TRABAJO + '/juego/juego.js')
   assert.equal(rutaGuionEjemplo(TRABAJO), 'taller/trabajos/' + TRABAJO + '/juego/guion-ejemplo.json')
   assert.equal(rutaPieza(TRABAJO, 'olla-de-barro'), 'taller/trabajos/' + TRABAJO + '/piezas/olla-de-barro.png')
+  assert.equal(rutaVoz(TRABAJO), 'taller/trabajos/' + TRABAJO + '/voz/')
   assert.equal(claveEscena(TRABAJO), 'taller:' + TRABAJO)
 })
 
 test('con un id que no es un UUID o una pieza mal escrita no se arma ninguna ruta', () => {
   assert.throws(() => rutaFicha('../../kit'), /no es un id válido/)
   assert.throws(() => rutaGuionEjemplo('x'), /no es un id válido/)
+  assert.throws(() => rutaVoz('../../kit'), /no es un id válido/)
   assert.throws(() => claveEscena('laberinto'), /no es un id válido/)
   for (const pieza of ['../cuy', 'Olla', 'olla de barro', 'olla.png', '']) {
     assert.throws(() => rutaPieza(TRABAJO, pieza), /no tiene un nombre válido/)

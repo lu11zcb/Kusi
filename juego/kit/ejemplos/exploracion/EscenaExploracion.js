@@ -119,7 +119,7 @@ export class EscenaExploracion extends Phaser.Scene {
     avanzarAdversario(this.adversario, this.posicion, segundos, { velocidadProtagonista: VELOCIDAD, obstaculos: OBSTACULOS, limites: LIMITES })
     this.dibujoAdversario.setPosition(this.adversario.x, this.adversario.y)
     this.dibujoAdversario.setScale(this.adversario.mira, this.adversario.estado === 'descansa' ? 0.85 : 1)
-    if (this.adversario.alerto) this.hud.decir('¡Cuidado, viene el rojo!')
+    if (this.adversario.alerto) this.hud.decir('¡Cuidado, viene el rojo!', { esperar: true })
     if (this.adversario.capturo) this.alCapturar()
 
     for (const cosa of this.cosas) {

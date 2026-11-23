@@ -1,12 +1,12 @@
 import { guardarPng } from '../../kit/herramientas/animaciones/png_rgba.mjs'
 
 // Una tira como la que entrega la herramienta de imágenes: la misma criatura (un cuerpo redondo con dos patas) dibujada
-// tres veces sobre fondo blanco, con las patas en otro sitio en cada cuadro. La visión de macOS la recorta de verdad.
+// sobre fondo blanco, con las patas en otro sitio en cada cuadro. La visión de macOS la recorta de verdad.
 export function tiraSobreBlanco(ruta, { cuadro = 700, alto = 700, cuerpo = 180, patas = [[-90, 90], [0, 0], [90, -90]], vacio = null } = {}) {
-  const ancho = cuadro * 3
+  const ancho = cuadro * patas.length
   const pixeles = new Uint8Array(ancho * alto * 4).fill(255)
   const poner = (x, y, color) => { if (x >= 0 && y >= 0 && x < ancho && y < alto) pixeles.set(color, (y * ancho + x) * 4) }
-  for (let c = 0; c < 3; c += 1) {
+  for (let c = 0; c < patas.length; c += 1) {
     if (c === vacio) continue
     const cx = c * cuadro + cuadro / 2
     const cy = alto / 2 - 40

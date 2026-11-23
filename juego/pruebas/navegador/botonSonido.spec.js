@@ -152,7 +152,10 @@ test('el botón Escuchar sigue leyendo la consigna aunque los sonidos estén apa
       configurable: true, value: class { constructor(texto) { this.text = texto } },
     })
     Object.defineProperty(window, 'speechSynthesis', {
-      configurable: true, value: { cancel() {}, speak(frase) { window.frasesKusi.push(frase.text) } },
+      configurable: true, value: {
+        getVoices: () => [{ name: 'Paulina', lang: 'es-MX' }],
+        cancel() {}, speak(frase) { window.frasesKusi.push(frase.text) },
+      },
     })
   })
   const inicial = await abrir(pagina)

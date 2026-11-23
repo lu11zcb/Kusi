@@ -8,7 +8,7 @@ desde la carpeta `juego/`.
 | `armar_lamina.mjs` | Arma la [lámina de piezas modelo](../estilo/lamina-modelos.png) de la guía de estilo. | Node |
 | `preparar_pieza.mjs` | Quita el fondo blanco de una pieza nueva con la visión de macOS y la deja en 256 × 256 (`--apoyado`: pies en y = 244) o como fondo de 1672 × 941 (`--fondo`). Compila `preparar_pieza.swift` la primera vez en `.compilado/`, que no se sube. | Node y macOS (Swift viene con las herramientas de línea de comandos) |
 | `preparar_criatura.mjs` | Prepara una criatura animada: corta la imagen con 3 poses del personaje, quita el fondo de cada una con la visión de macOS y arma la tira de 768 × 256 (3 cuadros, misma escala, pies en y = 244). | Node y macOS |
-| `comprobar_pieza.mjs` | El filtro del código de una pieza nueva (`--fondo` para un fondo, `--figura` o `--criatura`): responde la lista de [comprobacion.md](../estilo/comprobacion.md) en JSON. | Node |
+| `comprobar_pieza.mjs` | Filtro de una pieza nueva (`--fondo`, `--figura` o `--criatura`). Reconoce las tiras de figura por sus medidas y devuelve las comprobaciones en JSON. | Node |
 | `preparar_fondo_cenital.mjs` | Separa la hoja de plantas de `originales/mundo/` en sus cuatro tiras animadas. | Node y `sips` |
 | `animaciones/preparar_espaldas.mjs` | Reemplaza la fila de espalda del cuy y del zorro a partir de `originales/personajes/`. | Node y `sips` |
 | `animaciones/armar_hoja.py` | Arma una hoja de personaje desde una tira o una carpeta de cuadros. | Python 3 y Pillow |
@@ -21,6 +21,27 @@ desde la carpeta `juego/`.
 
 Las tres últimas necesitan el juego abierto con `npm run dev` y escriben sus
 resultados en `evidencias/`, una carpeta que no se sube a GitHub.
+
+## Tiras de gestos
+
+Pide de 2 a 4 poses dibujadas con `--tira`. Describe cada pose en `--que`.
+
+```sh
+node taller/dibujar.mjs --carpeta taller/trabajos/ID_DEL_TRABAJO --id comer-manzana \
+  --tira 2 --que "Inti lifts the apple to his mouth, then takes a bite"
+```
+
+El dibujante quita el fondo de cada pose y arma un PNG transparente con
+cuadros de 768 × 768, a la misma escala y con los pies en la fila 735.
+En un pedido de varias piezas se indica `"tira": 2` en el JSON de la pieza.
+
+```sh
+node kit/herramientas/comprobar_pieza.mjs comer-manzana.png
+```
+
+El filtro reconoce el PNG de 1536, 2304 o 3072 px de ancho por 768 px de alto.
+Revisa la figura de cada cuadro, sus esquinas transparentes, su tamaño y su
+margen de 24 px. Los pies deben quedar en la misma fila en todos los cuadros.
 
 ## La lámina de piezas modelo
 

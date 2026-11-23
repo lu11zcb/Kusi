@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-import { puntoEnLienzo, seSuperponen } from '../ayudas/laberinto.js'
+import { instalarVozInmediata, puntoEnLienzo, seSuperponen } from '../ayudas/laberinto.js'
 
 const estado = (pagina) => pagina.evaluate(() => window.kusi.estado())
 
@@ -99,6 +99,7 @@ test('un toque sin arrastre no manda al cuy hasta la casilla tocada', async ({ p
 })
 
 test('Escuchar y Ayuda se pueden tocar sin elegir una dirección', async ({ page: pagina }) => {
+  await instalarVozInmediata(pagina)
   const inicial = await abrirLaberinto(pagina)
   await tocarBoton(pagina, 'sonido')
   await tocarBoton(pagina, 'ayuda')

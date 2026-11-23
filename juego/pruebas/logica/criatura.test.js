@@ -1,12 +1,51 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { deflateSync } from 'node:zlib'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { guardarPng, leerRgba } from '../../kit/herramientas/animaciones/png_rgba.mjs'
 import { tiraSobreBlanco } from '../ayudas/tira.js'
 import { prepararCriatura, escalar, PIES } from '../../kit/herramientas/preparar_criatura.mjs'
 import { comprobarPieza } from '../../kit/herramientas/comprobar_pieza.mjs'
+
+// Convierte un PNG RGBA en uno RGB de 8 bits sin transparencia, que es lo que entrega la herramienta de imágenes.
+function aRgbSinTransparencia(rgba) {
+  const { ancho, alto, datos } = rgba
+  const crudo = Buffer.alloc(alto * (1 + ancho * 3))
+  for (let y = 0; y < alto; y += 1) for (let x = 0; x < ancho; x += 1) {
+    const o = (y * ancho + x) * 4
+    const d = y * (1 + ancho * 3) + 1 + x * 3
+    // Sobre blanco: lo transparente queda blanco, como el fondo que se le pide a la herramienta.
+    const a = datos[o + 3] / 255
+    for (let k = 0; k < 3; k += 1) crudo[d + k] = Math.round(datos[o + k] * a + 255 * (1 - a))
+  }
+  const trozo = (tipo, cuerpo) => {
+    const largo = Buffer.alloc(4); largo.writeUInt32BE(cuerpo.length)
+    const crcEntrada = Buffer.concat([Buffer.from(tipo, 'latin1'), cuerpo])
+    let crc = 0xffffffff
+    for (const byte of crcEntrada) { crc ^= byte; for (let i = 0; i < 8; i += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1)) }
+    const fin = Buffer.alloc(4); fin.writeUInt32BE((crc ^ 0xffffffff) >>> 0)
+    return Buffer.concat([largo, crcEntrada, fin])
+  }
+  const cabecera = Buffer.alloc(13)
+  cabecera.writeUInt32BE(ancho, 0); cabecera.writeUInt32BE(alto, 4); cabecera[8] = 8; cabecera[9] = 2
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), trozo('IHDR', cabecera), trozo('IDAT', deflateSync(crudo)), trozo('IEND', Buffer.alloc(0))])
+}
+
+test('una imagen RGB sin transparencia, como la entrega la herramienta de imágenes, también se prepara', async () => {
+  const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-criatura-rgb-'))
+  try {
+    const rgba = path.join(carpeta, 'rgba.png')
+    tiraSobreBlanco(rgba)
+    const rgb = path.join(carpeta, 'original-rgb.png')
+    await writeFile(rgb, aRgbSinTransparencia(leerRgba(rgba)))
+    const hoja = path.join(carpeta, 'criatura-bicho.png')
+    const informe = await prepararCriatura(rgb, hoja)
+    assert.equal(informe.cuadros, 3)
+    assert.equal(leerRgba(hoja).ancho, 768)
+  } finally { await rm(carpeta, { recursive: true, force: true }) }
+})
 
 test('una tira de tres poses se convierte en una hoja de 768 × 256 con los pies en y = 244', async () => {
   const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-criatura-prueba-'))

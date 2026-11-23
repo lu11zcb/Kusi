@@ -1,7 +1,18 @@
 import { test, expect } from '@playwright/test'
 import { abrir, estado, muestrear, servirPasillo } from '../ayudas/laberinto.js'
 const LEJANA={objetos:[{tipo:'fresa',fila:1,columna:10}],regla:{tipo:'orden',secuencia:['fresa']}}
-async function vozBreve(page){await page.addInitScript(()=>Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{cancel(){},speak(frase){frase.onstart?.();setTimeout(()=>frase.onend?.(),20)}}}))}
+async function vozBreve(page) {
+ await page.addInitScript(() => {
+  Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+   value: class { constructor(texto) { this.text = texto } },
+  })
+  Object.defineProperty(window, 'speechSynthesis', { value: {
+   getVoices: () => [{ name: 'Paulina', lang: 'es-MX' }],
+   cancel() {},
+   speak(frase) { frase.onstart(); setTimeout(() => frase.onend(), 20) },
+  } })
+ })
+}
 test('Kusi saluda al entrar y luego respira y parpadea con sus filas ilustradas',async({page})=>{
  await vozBreve(page);await abrir(page)
  const saludo=await muestrear(page,1050,e=>e.kusiAnimado)

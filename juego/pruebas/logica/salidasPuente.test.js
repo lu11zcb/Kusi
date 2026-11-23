@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { emitirAlAnfitrion } from '../../kit/reproductor/logica/salidasPuente.js'
-import { decir } from '../../kit/reproductor/logica/voz.js'
+import { callarVoz, decir, habilitarVoz } from '../../kit/reproductor/logica/voz.js'
 import { avisar } from '../../kit/reproductor/logica/avisos.js'
 
 test('HU48: el mismo aviso viaja a la web y Android como texto JSON', () => {
@@ -23,8 +23,10 @@ test('HU48: avisar conserva partida y orden y usa la voz nativa si está disponi
     const aviso = avisar('inicio', { partida: 'prueba', orden: 1 })
     assert.deepEqual(mensajes[0], { tipo: 'aviso', aviso })
     assert.equal(decir('Mira el camino.'), true)
+    assert.deepEqual(textos, [])
+    habilitarVoz()
     assert.deepEqual(textos, ['Mira el camino.'])
-  } finally { globalThis.window = anterior }
+  } finally { callarVoz(); globalThis.window = anterior }
 })
 
 test('HU46: listo, cargado y error también llegan por el puente nativo', async () => {

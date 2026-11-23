@@ -10,6 +10,18 @@ export function iniciarHablaKusi(estado, texto) {
   estado.vozActiva = false
 }
 export function terminarHablaKusi(estado) { estado.restante = 0; estado.vozActiva = false }
+
+export function animarVozKusi(estado, texto) {
+  return {
+    alEmpezar() {
+      iniciarHablaKusi(estado, texto)
+      estado.saludo = 0
+      estado.vozActiva = true
+    },
+    alTerminar: () => terminarHablaKusi(estado),
+  }
+}
+
 export function avanzarHablaKusi(estado, segundos) {
   if (!estado.activo) return { entrada: 0, rebote: 0, boca: false, cuadro: 9, animacion: 'respirar', hablando: false }
   const dt = Number.isFinite(segundos) ? Math.max(0, segundos) : 0

@@ -21,8 +21,9 @@ import {
   trabajoPedido, esIdTrabajo, elegirJuego, revisarFicha, erroresDelValidar,
   clasificarPiezas, rutaGuionEjemplo, rutaPieza, claveEscena,
 } from '../datos/registroJuegos.js'
-import { cargarFicha, escenaDelTrabajo, dibujarFiguraSimple } from './juegosDelTaller.js'
+import { cargarFicha, cargarGrabaciones, escenaDelTrabajo, dibujarFiguraSimple } from './juegosDelTaller.js'
 import { partirHistoria, debeContarHistoria } from '../logica/historia.js'
+import { callarVoz, configurarVoz } from '../logica/voz.js'
 import {
   pedirManifiestoProtagonista, prepararProtagonista, registrarProtagonista,
 } from '../dibujos/protagonista.js'
@@ -55,6 +56,8 @@ export class EscenaCarga extends Phaser.Scene {
   }
 
   preload() {
+    callarVoz()
+    configurarVoz(null)
     // El ejemplo se abre directamente; el modo mensaje espera el guion del panel.
     // La partida existe desde la carga para registrar también cualquier fallo.
     const parametros = new URLSearchParams(window.location.search)
@@ -167,7 +170,20 @@ export class EscenaCarga extends Phaser.Scene {
     paquete.trabajo = trabajo
     this.familiaAbierta = String(paquete.familia ?? 'taller')
 
-    const ficha = await cargarFicha(trabajo)
+    const control = new AbortController()
+    const cancelar = () => control.abort()
+    this.events.once('shutdown', cancelar)
+    let ficha, grabaciones
+    try {
+      [ficha, grabaciones] = await Promise.all([cargarFicha(trabajo), cargarGrabaciones(trabajo, control.signal)])
+    } catch (error) {
+      if (control.signal.aborted) return
+      cancelar()
+      throw error
+    } finally {
+      this.events.off('shutdown', cancelar)
+    }
+    if (control.signal.aborted) return
     const revision = revisarFicha(ficha, paquete)
     if (!revision.valido) throw new Error(revision.errores.join('; '))
     // El validar es código del juego: si se cae, cuenta como un guion que no pasa.
@@ -205,6 +221,7 @@ export class EscenaCarga extends Phaser.Scene {
 
         const clave = claveEscena(trabajo)
         if (!this.scene.get(clave)) this.scene.add(clave, escenaDelTrabajo(ficha.escena, clave), false)
+        configurarVoz(grabaciones)
         const datos = {
           paquete,
           partida: this.partidaLaberinto,
@@ -241,6 +258,7 @@ export class EscenaCarga extends Phaser.Scene {
         escenas.stop(clave)
         escenas.start('carga', { paquete: orden.paquete, partida: orden.partida })
       } else if (orden.tipo === MENSAJE_REINICIAR) {
+        callarVoz()
         escenas.start(clave, { ...datos, indiceNivel: 0, partida: crearPartidaLaberinto() })
       }
     }

@@ -29,6 +29,7 @@ function carpetaDelTrabajo(trabajo) {
 // Las rutas son relativas a la página del juego, igual que dibujos/ y sonidos/.
 export const rutaFicha = (trabajo) => carpetaDelTrabajo(trabajo) + 'juego/juego.js'
 export const rutaGuionEjemplo = (trabajo) => carpetaDelTrabajo(trabajo) + 'juego/guion-ejemplo.json'
+export const rutaVoz = (trabajo) => carpetaDelTrabajo(trabajo) + 'voz/'
 export function rutaPieza(trabajo, pieza) {
   if (typeof pieza !== 'string' || !PATRON_PIEZA.test(pieza)) {
     throw new Error('La pieza «' + String(pieza) + '» no tiene un nombre válido.')

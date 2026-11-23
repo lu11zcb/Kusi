@@ -2,8 +2,11 @@ export const OBJETOS_KIT = Object.freeze(['fresa', 'platano', 'mango', 'mandarin
 // Los muros son dos cubos de adobe sueltos: «a», el de siempre, y «b», una variante
 // con otra textura. Cada «#» del mapa es un cubo; la semilla del nivel elige cuál.
 export const PIEZAS_MURO = Object.freeze(['muro-a', 'muro-b'])
-export const PIEZAS_PANEL = Object.freeze(['barra-frutas', 'globo-dialogo-160', 'globo-dialogo-232', 'globo-dialogo-304', 'boton-voz', 'boton-ayuda',
-  'boton-silencio', 'boton-sonido', 'check-fruta', 'joystick-base', 'joystick-perilla'])
+export const PIEZAS_PANEL = Object.freeze([
+  'barra-frutas', 'globo-dialogo-160', 'globo-dialogo-232', 'globo-dialogo-304',
+  'boton-voz', 'boton-ayuda', 'boton-silencio', 'boton-sonido', 'boton-empezar', 'boton-soltar', 'boton-escuchar',
+  'check-fruta', 'joystick-base', 'joystick-perilla',
+])
 // Dónde está cada pieza dentro de dibujos/: el mundo o la interfaz. La clave de
 // Phaser no cambia aunque el archivo esté en otra carpeta.
 export const RUTAS_KIT = Object.freeze({

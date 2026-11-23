@@ -12,6 +12,7 @@ import { elegirRenderizador } from '../../juegos/laberinto/logica/parametrosLabe
 import { CLAVE_RENDERIZADOR_PEDIDO } from './renderizador.js'
 import { crearPuente, CLAVE_PUENTE } from './mensajes/puenteGuion.js'
 import { instalarPausaJuego } from './mensajes/pausaJuego.js'
+import { instalarActivacionVoz } from './logica/voz.js'
 
 // Sin parámetros, o con ?paquete=laberinto, se usa el guion de ejemplo.
 // ?paquete=mensaje espera el guion de la página que contiene el juego.
@@ -19,6 +20,7 @@ import { instalarPausaJuego } from './mensajes/pausaJuego.js'
 // El puente escucha desde el primer momento, antes de cargar la letra y de arrancar
 // Phaser: un guion que llegue mientras el juego carga espera su turno y no se pierde.
 const puente = crearPuente(window)
+instalarActivacionVoz()
 
 async function empezar() {
   // Primero se carga la letra; si no, los textos del lienzo saldrían con otra letra.

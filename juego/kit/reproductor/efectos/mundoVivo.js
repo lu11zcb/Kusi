@@ -78,6 +78,9 @@ export function sombraBajo(escena, objeto, { ancho = 70, alto = 22, alfa = 0.28 
   const seguir = () => { if (objeto.active) sombra.setPosition(objeto.x, objeto.y).setDepth(objeto.depth - 0.001) }
   escena.events.on('update', seguir)
   escena.events.once('shutdown', () => escena.events.off('update', seguir))
+  // Si el objeto se destruye (una prenda que se entrega, una fruta que se come), la sombra se va con él:
+  // antes quedaba en el suelo como una mancha negra y su «update» seguía corriendo (juego 1, 20 de noviembre).
+  objeto.once?.('destroy', () => { escena.events.off('update', seguir); sombra.destroy() })
   return sombra
 }
 

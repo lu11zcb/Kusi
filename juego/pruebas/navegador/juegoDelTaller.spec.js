@@ -37,7 +37,7 @@ const ARCHIVOS = {
     '    this.add.text(ANCHO / 2, 80, reto.consigna, estiloTexto(32)).setOrigin(0.5)',
     '    crearProtagonista(this, { alto: 120 }).setPosition(ANCHO / 2, ALTO / 2)',
     "    this.add.image(320, 420, 'olla-de-prueba')",
-    "    const claves = ['protagonista', 'kusi-animado', 'boton-ayuda', 'fresa', 'olla-de-prueba', 'pieza-que-falta']",
+    "    const claves = ['protagonista', 'kusi-animado', 'boton-ayuda', 'boton-empezar', 'boton-escuchar', 'boton-soltar', 'fresa', 'olla-de-prueba', 'pieza-que-falta']",
     '    const texturas = Object.fromEntries(claves.map((clave) => [clave, this.textures.exists(clave)]))',
     '    window.__pruebaTaller = { trabajo: this.datos.trabajo, nivel: this.datos.indiceNivel + 1, consigna: reto.consigna, texturas }',
     '  }',
@@ -118,7 +118,11 @@ test('?juego=<id> abre el juego del taller con su escena, sus piezas y el protag
   // Tiene lo común, la pieza del kit, la del trabajo y una figura simple para la que falta.
   expect(await pagina.evaluate(() => window.__pruebaTaller)).toEqual({
     trabajo: TRABAJO, nivel: 2, consigna: 'Toca la olla otra vez.',
-    texturas: { protagonista: true, 'kusi-animado': true, 'boton-ayuda': true, fresa: true, 'olla-de-prueba': true, 'pieza-que-falta': true },
+    texturas: {
+      protagonista: true, 'kusi-animado': true, 'boton-ayuda': true,
+      'boton-empezar': true, 'boton-escuchar': true, 'boton-soltar': true,
+      fresa: true, 'olla-de-prueba': true, 'pieza-que-falta': true,
+    },
   })
   // El aviso «listo» lo manda el reproductor cuando el juego no lo hizo.
   expect(await avisosDePartida(pagina)).toEqual([{ tipo: 'listo', familia: FAMILIA, nivel: 2, motivo: undefined }])
@@ -126,25 +130,33 @@ test('?juego=<id> abre el juego del taller con su escena, sus piezas y el protag
   expect(errores).toEqual([])
 })
 
-test('la historia de la propuesta se cuenta antes del primer nivel y se puede saltar', async ({ page: pagina }) => {
+test('el cuento sin voz deja tiempo para leer y ?historia=0 abre el juego directamente', async ({ page: pagina }) => {
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
+  await pagina.addInitScript(() => {
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', { value: undefined })
+  })
 
   await pagina.goto('/?juego=' + TRABAJO + '&vida=0')
   await pagina.waitForFunction(() => document.title === 'Kusi · La historia')
-  // Mientras Kusi cuenta, el juego todavía no abrió ni avisó «listo».
+  // La portada todavía no abre el juego ni avisa «listo».
   expect(await pagina.evaluate(() => window.kusi?.juego ?? null)).toBeNull()
 
-  // El cuento es corto (una sola página): el botón dice «¡Empezar!» y abre el nivel 1.
-  await pagina.mouse.click(1090, 611)
+  await pagina.evaluate(() => {
+    window.addEventListener('pointerup', () => { window.inicioDeLectura = performance.now() }, { capture: true, once: true })
+  })
+  await pagina.locator('canvas').click({ position: { x: 640, y: 610 } })
+  expect(await pagina.evaluate(() => window.kusi?.juego ?? null)).toBeNull()
+  // Este cuento tiene una sola página. Se abre el nivel 1 al cumplirse su tiempo de lectura.
   await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
+  const { historia } = JSON.parse(ARCHIVOS['juego/guion-ejemplo.json'])
+  const duracion = Math.max(3000, historia.length * 90)
+  expect(await pagina.evaluate(() => performance.now() - window.inicioDeLectura)).toBeGreaterThanOrEqual(duracion - 100)
   expect((await pagina.evaluate(() => window.__pruebaTaller)).nivel).toBe(1)
 
-  // «Saltar» hace lo mismo desde el principio.
-  await pagina.goto('/?juego=' + TRABAJO + '&vida=0')
-  await pagina.waitForFunction(() => document.title === 'Kusi · La historia')
-  await pagina.mouse.click(1170, 56)
+  await pagina.goto('/?juego=' + TRABAJO + '&vida=0&historia=0')
   await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
+  expect(await pagina.title()).not.toBe('Kusi · La historia')
   expect(errores).toEqual([])
 })
 
