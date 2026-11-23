@@ -118,7 +118,7 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         Responde solo con un objeto JSON con estas claves:
         - "tipo_juego": "laberinto" u "otro".
         - "regla_juego": "orden" o "solo_clase" si es el laberinto; "ninguna" si es otro juego. Todo lo demás debe seguir lo que elegiste.
-        - "objetivo": una sola oración que empieza con «Los niños aprenderán a».
+        - "objetivo": una sola oración que empieza con «El juego ayuda a practicar» y dice qué practica. No prometas que los niños aprenderán o entenderán: un juego no lo asegura.
         - "historia": un único texto (string, nunca una lista), con 2 o 3 oraciones cortas: de qué trata el juego y qué practica el niño.
         - "acciones": lo que hace el niño.
         - "reglas": cómo se juega.

@@ -69,7 +69,7 @@ dónde sale ese contenido.
   "propuesta": {
     "tipo_juego": "laberinto | otro",
     "regla_juego": "orden | solo_clase | ninguna",
-    "objetivo": "Los niños aprenderán a …",
+    "objetivo": "El juego ayuda a practicar …",
     "historia": "2 o 3 oraciones cortas, en un solo texto",
     "acciones": ["…"],
     "reglas": ["…"],
@@ -84,7 +84,8 @@ dónde sale ese contenido.
 }
 ```
 
-- `objetivo`: una sola oración que empieza con «Los niños aprenderán a». Si el
+- `objetivo`: una sola oración que empieza con «El juego ayuda a practicar» y dice
+  qué practica. No prometas que los niños aprenderán o entenderán (regla 14.2). Si el
   pedido trae `objetivoDocente` u `objetivoFijo`, se conserva tal cual (Spring
   pone el suyo): escribe igualmente uno que lo respete.
 - `historia`: un único texto (nunca una lista).
@@ -153,7 +154,7 @@ revés). Reglas (regla 13.24 de [../reglas.md](../reglas.md)):
   El mundo, los personajes, los enemigos y los obstáculos son **cosas del tema**. Nada de una historia ajena pegada al tema.
 - **Enseñar antes de preguntar:** descubrir (Kusi nombra y dice qué es o para qué sirve), practicar y aplicar. Un juego que
   solo nombra algo y pide elegirlo es un cuestionario: no lo propongas.
-- **Al terminar, el niño sabe algo que no sabía**; dilo en «Qué aprenderán».
+- **El niño practica algo nuevo del tema**; dilo en el objetivo, sin prometer que lo aprenderá (regla 14.2).
 - Puedes proponer **personajes, enemigos y objetos nuevos** del tema (el dibujante los crea y los anima): que tengan
   cara amable y no asusten.
 

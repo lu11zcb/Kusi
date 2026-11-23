@@ -559,8 +559,8 @@ al jugarlo. No es una carrera ni una aventura cualquiera con el tema pegado enci
 - **Kusi explica el porqué**, también cuando el niño se equivoca: la pista dice por qué («las manos sirven para agarrar»),
   no solo «otra vez». Al acertar, una frase de lo aprendido.
 - **No se gana por azar.** Hay tres opciones o más, o una secuencia, y lo correcto se sabe por el contenido del tema.
-- **Al terminar, el niño sabe algo que no sabía.** El supervisor lo escribe en una línea en `plan.md` («Al terminar el niño
-  sabe…») y el revisor lo comprueba jugando.
+- **El juego trabaja algo nuevo del tema.** El supervisor escribe en `plan.md` qué **presenta**, qué **practica** y qué
+  **comprueba** el juego, y qué se puede ganar sin saber (regla 14.2); el revisor lo comprueba jugando.
 
 **13.25 Personajes, enemigos y objetos nuevos, con vida.** Si el juego lo pide, el dibujante crea **personajes secundarios,
 enemigos y objetos nuevos** y se **animan** para que el juego no se vea plano:

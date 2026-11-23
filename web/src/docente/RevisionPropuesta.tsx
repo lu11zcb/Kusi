@@ -11,7 +11,7 @@ import { estadoTrabajo, mensajeDocente } from './trabajosDocente'
 import { CambiosPropuesta } from './cambiosPropuesta'
 
 const campos = [
-  { campo: 'objetivo', etiqueta: 'Qué aprenderán', icono: 'check' },
+  { campo: 'objetivo', etiqueta: 'Qué practicarán', icono: 'check' },
   { campo: 'historia', etiqueta: 'De qué trata', icono: 'cursos' },
   { campo: 'acciones', etiqueta: 'Cómo jugarán', icono: 'personas' },
   { campo: 'reglas', etiqueta: 'Reglas del juego', icono: 'info' },
