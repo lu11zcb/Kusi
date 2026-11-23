@@ -6,7 +6,8 @@ export type DestinatarioActividad = { id: string; nombre: string; asignado: bool
 export type EstadoResultado = 'sin_iniciar' | 'en_curso' | 'completada'
 export type EstudianteResultado = { id: string; nombre: string; estado: EstadoResultado; partidas: number; ayudas_usadas: number }
 export type RespuestaResultado = { respuesta: string; correcto: boolean | null; tipo: 'primera' | 'correccion' | 'siguiente'; ayudas: number[] }
-export type PartidaResultado = { juego_id: string; enviado_en: string; envio: number; estado: EstadoResultado; ayudas_usadas: number; retos: { reto: string; respuestas: RespuestaResultado[] }[] }
+export type IncidenciaResultado = { orden: number; momento: string; detalle: string; nivel: number }
+export type PartidaResultado = { incidencias?: IncidenciaResultado[]; juego_id: string; enviado_en: string; envio: number; estado: EstadoResultado; ayudas_usadas: number; retos: { reto: string; respuestas: RespuestaResultado[] }[] }
 const objeto = (dato: unknown): dato is Record<string, unknown> => !!dato && typeof dato === 'object' && !Array.isArray(dato)
 const texto = (dato: unknown): dato is string => typeof dato === 'string' && dato.trim().length > 0
 const cantidad = (dato: unknown) => Number.isSafeInteger(dato) && Number(dato) >= 0
@@ -48,6 +49,7 @@ function respuestaValida(d: unknown): boolean {
 export async function respuestasResultados(actividad: string, estudiante: string, signal?: AbortSignal): Promise<PartidaResultado[]> {
   return lista(await solicitar<unknown>(base + encodeURIComponent(actividad) + '/estudiantes/' + encodeURIComponent(estudiante) + '/', { signal }), 'partidas',
     d => objeto(d) && texto(d.juego_id) && texto(d.enviado_en) && Number.isFinite(Date.parse(d.enviado_en)) && cantidad(d.envio) && Number(d.envio) > 0 && estado(d.estado) && cantidad(d.ayudas_usadas)
+      && (d.incidencias === undefined || (Array.isArray(d.incidencias) && d.incidencias.every(i => objeto(i) && cantidad(i.orden) && texto(i.detalle) && texto(i.momento) && Number.isFinite(Date.parse(i.momento)) && cantidad(i.nivel))))
       && Array.isArray(d.retos) && d.retos.every(r => objeto(r) && texto(r.reto) && Array.isArray(r.respuestas) && r.respuestas.every(respuestaValida))) as PartidaResultado[]
 }
 

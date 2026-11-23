@@ -12,11 +12,17 @@ public final class RespuestasPartida {
         Map<String, List<Map<String, Object>>> respuestas = new LinkedHashMap<>();
         Map<String, SortedSet<Integer>> ayudas = new HashMap<>();
         Set<Integer> ordenes = new HashSet<>();
+        List<Map<String, Object>> incidencias = new ArrayList<>();
         int cantidadAyudas = 0;
         // El orden del emisor es la cronología: la red puede entregar un aviso tarde.
         for (JsonNode aviso : avisos.stream().sorted(Comparator.comparingInt(a -> a.path("orden").asInt())).toList()) {
             if (!ordenes.add(aviso.path("orden").asInt())) continue;
             String tipo = aviso.path("tipo").asText();
+            if (tipo.equals("incidencia")) {
+                incidencias.add(Map.of("orden", aviso.path("orden").asInt(), "momento", aviso.path("momento").asText(),
+                        "detalle", aviso.path("detalle").asText(), "nivel", aviso.path("nivel").asInt(0)));
+                continue;
+            }
             String reto = aviso.hasNonNull("reto") ? texto(aviso.path("reto")) : aviso.has("nivel") ? aviso.path("nivel").asText() : "";
             if (List.of("inicio", "accion", "ayuda", "reto_completado", "fin").contains(tipo)) iniciada = true;
             // Un fallo o cargar la pantalla nunca acreditan completar la actividad.
@@ -39,7 +45,7 @@ public final class RespuestasPartida {
         List<Map<String, Object>> retos = respuestas.entrySet().stream().map(entrada -> Map.<String, Object>of(
                 "reto", entrada.getKey(), "respuestas", entrada.getValue())).toList();
         return Map.of("estado", completada ? "completada" : iniciada ? "en_curso" : "sin_iniciar",
-                "ayudas_usadas", cantidadAyudas, "retos", retos);
+                "ayudas_usadas", cantidadAyudas, "retos", retos, "incidencias", incidencias);
     }
 
     private static String texto(JsonNode valor) {

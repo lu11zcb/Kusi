@@ -18,7 +18,7 @@ import java.util.UUID;
 // respuesta perdida sin contar dos ayudas ni completar dos veces el mismo nivel.
 @Service
 public class PartidasService {
-    private static final List<String> TIPOS = List.of("listo", "inicio", "accion", "ayuda", "reto_completado", "fin", "fallo");
+    private static final List<String> TIPOS = List.of("listo", "inicio", "accion", "ayuda", "reto_completado", "fin", "fallo", "incidencia");
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final TransactionTemplate transaccion;
@@ -120,6 +120,9 @@ public class PartidasService {
         try { Instant.parse(aviso.path("momento").asText()); }
         catch (RuntimeException error) { throw new IllegalArgumentException("El aviso necesita una fecha válida."); }
         String tipo = aviso.path("tipo").asText();
+        if (tipo.equals("incidencia") && (!aviso.path("detalle").isTextual() || aviso.path("detalle").asText().isBlank()
+                || aviso.path("detalle").asText().length() > 500 || aviso.has("correcto") || aviso.has("respuesta")))
+            throw new IllegalArgumentException("La incidencia necesita un detalle de hasta 500 caracteres y no es una respuesta.");
         if (aviso.has("reto") && !((aviso.path("reto").isTextual() && !aviso.path("reto").asText().isBlank() && aviso.path("reto").asText().length() <= 120)
                 || entero(aviso.path("reto"), 1, 100000))) throw new IllegalArgumentException("El reto del aviso no es válido.");
         if (aviso.has("juego_id") && (!aviso.path("juego_id").isTextual()

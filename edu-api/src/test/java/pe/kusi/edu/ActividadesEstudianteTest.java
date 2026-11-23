@@ -314,4 +314,19 @@ class ActividadesEstudianteTest {
         assertEquals(7, jdbc.queryForObject("select sum(puntos) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
     }
 
+    @Test void hu60IncidenciaValidadaIdempotenteSinRespuestaIncorrectaNiPuntos() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        ObjectNode incidencia = aviso(juego, partida, 1, "incidencia", 1).put("detalle", "Un toque no respondió");
+        assertEquals(0, puntos(partidas.guardar(estudiante, false, incidencia)));
+        assertEquals(true, partidas.guardar(estudiante, false, incidencia).get("duplicado"));
+        assertThrows(IllegalArgumentException.class, () -> partidas.guardar(estudiante, false, incidencia.deepCopy().put("correcto", false)));
+        assertThrows(IllegalArgumentException.class, () -> partidas.guardar(estudiante, false, incidencia.deepCopy().put("detalle", " ")));
+        assertThrows(IllegalArgumentException.class, () -> partidas.guardar(estudiante, false, incidencia.deepCopy().put("detalle", "x".repeat(501))));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(jsonPath("$.partidas[0].incidencias.length()").value(1))
+                .andExpect(jsonPath("$.partidas[0].incidencias[0].detalle").value("Un toque no respondió"))
+                .andExpect(jsonPath("$.partidas[0].retos.length()").value(0))
+                .andExpect(jsonPath("$.partidas[0].estado").value("sin_iniciar"));
+    }
+
 }

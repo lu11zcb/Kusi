@@ -17,6 +17,7 @@ export function PartidasEstudiante({ partidas }: { partidas: PartidaResultado[] 
     <div className="doc-resultado-cabecera"><h3>Partida {indice + 1}</h3><Estado valor={partida.estado} /></div>
     <p>Juego recibido: envío {partida.envio} · {fecha.format(new Date(partida.enviado_en))}</p>
     <p className="doc-nota">Ayudas utilizadas: {partida.ayudas_usadas}. Las ayudas se muestran aparte de los puntos.</p>
+    {!!partida.incidencias?.length && <section aria-label="Incidencias técnicas"><h4>Incidencias técnicas</h4><p>Estos avisos no cuentan como respuestas incorrectas ni descuentan puntos.</p><ul>{partida.incidencias.map(aviso => <li key={aviso.orden}>{aviso.detalle}{aviso.nivel > 0 ? ' · Nivel ' + aviso.nivel : ''} · {fecha.format(new Date(aviso.momento))}</li>)}</ul></section>}
     {!partida.retos.length && <p>Todavía no hay respuestas registradas en esta partida.</p>}
     {partida.retos.map((reto, numeroReto) => <section key={reto.reto}><h4>Reto {/^[1-9]\d{0,4}$/.test(reto.reto) ? reto.reto : numeroReto + 1}</h4>
       <table className="doc-tabla"><caption className="solo-lectores">Respuestas de este reto</caption><thead><tr><th scope="col">Intento</th><th scope="col">Respuesta</th><th scope="col">Resultado</th><th scope="col">Ayudas</th></tr></thead><tbody>
