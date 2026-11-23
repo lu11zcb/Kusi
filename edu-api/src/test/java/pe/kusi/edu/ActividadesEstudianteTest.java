@@ -265,4 +265,30 @@ class ActividadesEstudianteTest {
                 .andExpect(jsonPath("$.juegos[0].id").value(siguiente.getId().toString()))
                 .andExpect(jsonPath("$.juegos[0].nuevo").value(true));
     }
+
+    @Test void hu10RetirarEstudianteImpideAbrirRetomarYRecibirSinPerderHistorial() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "reto_completado", 1));
+        enviar(ruta(juego), "estudiante", checkpoint(partida, 1, 2)).andExpect(status().isOk());
+        UUID vinculo = vinculos.findAllByEstudianteId(estudiante).get(0).getId();
+        String retiro = "/interno/vinculos-estudiantes/" + vinculo + "/retirar/";
+        when(django.validarAdministrador("admin")).thenReturn(Map.of("id", docente.toString()));
+        mvc.perform(post(retiro).header("X-Clave-Interna", "incorrecta").header("X-Sesion-Kusi", "admin"))
+                .andExpect(status().isForbidden());
+        for (int i = 0; i < 2; i++) mvc.perform(post(retiro).header("X-Clave-Interna", "clave-solo-para-pruebas-aisladas")
+                .header("X-Sesion-Kusi", "admin")).andExpect(status().isCreated()).andExpect(jsonPath("$.vinculo.retirado").value(true));
+        leer("/api/edu/estudiante/juegos/", "estudiante").andExpect(jsonPath("$.juegos.length()").value(0));
+        leer(ruta(juego), "estudiante").andExpect(status().isNotFound());
+        enviar(ruta(juego), "estudiante", checkpoint(partida, 1, 2)).andExpect(status().isNotFound());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> partidas.guardar(estudiante, false, aviso(juego, partida, 2, "inicio", 2)));
+        Generacion nueva = enviar(new Generacion(actividad, juego.getPropuestaId(), 2), 3);
+        assertFalse(actividades.permitido(estudiante, nueva.getId()));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.destinatarios_actividad where generacion_id = ?", Integer.class, nueva.getId()));
+        assertEquals(1, jdbc.queryForObject("select count(*) from edu.avances_actividad where partida_id = ?", Integer.class, partida));
+        assertEquals(7, jdbc.queryForObject("select sum(puntos) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.partidas.length()").value(1));
+    }
+
 }

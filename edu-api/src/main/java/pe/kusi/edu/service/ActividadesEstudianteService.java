@@ -48,7 +48,7 @@ public class ActividadesEstudianteService {
             String base = "insert into edu.destinatarios_actividad(generacion_id, estudiante_id, asignado_por, asignado_en) "
                     + "select g.id, v.estudiante_id, s.docente_id, g.publicada_en from edu.generaciones g "
                     + "join edu.solicitudes_propuesta s on s.id = g.solicitud_id join edu.secciones sec on sec.id = s.seccion_id "
-                    + "join edu.vinculos_estudiante v on v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar ";
+                    + "join edu.vinculos_estudiante v on v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar and v.retirado_en is null ";
             if (anteriores.isEmpty()) {
                 jdbc.update(base + "where g.id = ? and v.creado_en <= g.publicada_en and not exists (select 1 from edu.destinatarios_actividad d "
                         + "where d.generacion_id = g.id and d.estudiante_id = v.estudiante_id)", juego);
@@ -81,7 +81,7 @@ public class ActividadesEstudianteService {
                 + "where g.id = ? and g.publicada = true and g.estado = 'lista' "
                 + "and exists (select 1 from edu.destinatarios_actividad d where d.generacion_id = g.id and d.estudiante_id = ?) "
                 + "and exists (select 1 from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
-                + "where v.estudiante_id = ? and v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar)",
+                + "where v.estudiante_id = ? and v.seccion_id = s.seccion_id and v.anio_escolar = sec.anio_escolar and v.retirado_en is null)",
                 Integer.class, juego, estudiante, estudiante);
         return cantidad != null && cantidad > 0;
     }
@@ -100,7 +100,7 @@ public class ActividadesEstudianteService {
                 + "join edu.destinatarios_actividad d on d.generacion_id = g.id and d.estudiante_id = ? "
                 + "where g.publicada = true and g.estado = 'lista' and exists (select 1 from edu.vinculos_estudiante v "
                 + "join edu.secciones sec on sec.id = v.seccion_id where v.estudiante_id = ? and v.seccion_id = s.seccion_id "
-                + "and v.anio_escolar = sec.anio_escolar) and (exists (select 1 from edu.avances_actividad a "
+                + "and v.anio_escolar = sec.anio_escolar and v.retirado_en is null) and (exists (select 1 from edu.avances_actividad a "
                 + "where a.estudiante_id = ? and a.actividad_id = s.id and a.generacion_id = g.id and a.completada = false) "
                 + "or (not exists (select 1 from edu.avances_actividad a where a.estudiante_id = ? and a.actividad_id = s.id and a.completada = false) "
                 + "and not exists (select 1 from edu.generaciones nueva join edu.destinatarios_actividad dn on dn.generacion_id = nueva.id "
@@ -291,7 +291,7 @@ public class ActividadesEstudianteService {
         List<Map<String, Object>> estudiantes = jdbc.query("select v.estudiante_id, case when d.estudiante_id is null then false else true end "
                 + "from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
                 + "left join edu.destinatarios_actividad d on d.estudiante_id = v.estudiante_id and d.generacion_id = ? "
-                + "where v.seccion_id = ? and v.anio_escolar = sec.anio_escolar", (fila, indice) -> {
+                + "where v.seccion_id = ? and v.anio_escolar = sec.anio_escolar and v.retirado_en is null", (fila, indice) -> {
             UUID estudiante = fila.getObject(1, UUID.class);
             return Map.<String, Object>of("id", estudiante, "nombre", django.validarCuenta(estudiante, "estudiante").getOrDefault("nombre", "Estudiante"),
                     "asignado", fila.getBoolean(2));
@@ -315,7 +315,7 @@ public class ActividadesEstudianteService {
             jdbc.query("select id from edu.generaciones where id = ? for update", fila -> {}, juego.id());
             for (UUID estudiante : seleccionados) {
                 Integer vinculado = jdbc.queryForObject("select count(*) from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
-                        + "where v.estudiante_id = ? and v.seccion_id = ? and v.anio_escolar = sec.anio_escolar", Integer.class, estudiante, juego.seccion());
+                        + "where v.estudiante_id = ? and v.seccion_id = ? and v.anio_escolar = sec.anio_escolar and v.retirado_en is null", Integer.class, estudiante, juego.seccion());
                 if (vinculado == null || vinculado == 0) throw noEncontrado();
             }
             for (UUID estudiante : seleccionados) jdbc.update("insert into edu.destinatarios_actividad(generacion_id, estudiante_id, asignado_por) "

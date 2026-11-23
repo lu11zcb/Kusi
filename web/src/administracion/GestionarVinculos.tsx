@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ListaBuscable } from '../componentes/ListaBuscable'
-import { crearVinculo, listarSecciones, listarVinculos } from '../servicios/educacion'
+import { crearVinculo, listarSecciones, listarVinculos, retirarEstudiante } from '../servicios/educacion'
 import type { SeccionEducativa, VinculoEstudiante } from '../servicios/educacion'
 import type { UsuarioAdministrado } from '../servicios/usuarios'
 import { listarUsuariosEducativos, nombreSeccion, opcionesCuentas } from '../servicios/opcionesEducativas'
@@ -48,6 +48,16 @@ export function GestionarVinculos({ estudianteInicial = '', alCambiarBloqueo, bl
     } catch (fallo) { setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar el vínculo.') }
     finally { bloqueo.current = false; setOcupado(false) }
   }
+  async function retirar(vinculo: VinculoEstudiante) {
+    if (bloqueo.current || bloqueadoExterno) return
+    bloqueo.current = true; setOcupado(true); setError(''); setMensaje('')
+    try {
+      const datos = await retirarEstudiante(vinculo.id)
+      setVinculos(anteriores => anteriores.map(v => v.id === vinculo.id ? datos.vinculo : v))
+      setMensaje('Estudiante retirado. Sus partidas y resultados se conservan.')
+    } catch (fallo) { setError(fallo instanceof Error ? fallo.message : 'No se pudo retirar al estudiante.') }
+    finally { bloqueo.current = false; setOcupado(false) }
+  }
   return <section className="admin-relacion"><h1>{estudianteInicial ? 'Su sección' : 'Vincular estudiantes a secciones'}</h1><p>{estudianteInicial ? 'Elige la sección que le corresponde a este estudiante.' : 'Busca al estudiante y elige su sección.'}</p>
     {cargando && <p role="status">Cargando estudiantes y secciones…</p>}
     {errorCarga && <p role="alert" className="error-resumen">{errorCarga}</p>}
@@ -62,9 +72,10 @@ export function GestionarVinculos({ estudianteInicial = '', alCambiarBloqueo, bl
     {error && <p role="alert" className="error-resumen">{error}</p>}{mensaje && <p role="status">{mensaje}</p>}
     <h2>Vínculos existentes</h2>
     {!cargando && !errorCarga && !vinculos.length && <p>Aún no hay estudiantes vinculados.</p>}
-    <ul className="lista-gestion">{vinculos.map((vinculo) => <li key={vinculo.id}>
+    <ul className="lista-gestion">{vinculos.filter(v => !estudianteInicial || v.estudiante_id === estudianteInicial).map((vinculo) => <li key={vinculo.id}>
       <div><strong>{usuarios.find((usuario) => usuario.id === vinculo.estudiante_id)?.nombre ?? vinculo.estudiante_nombre ?? 'Estudiante no disponible'}</strong>
-        <span>{nombreSeccion(vinculo.seccion)}</span></div>
+        <span>{nombreSeccion(vinculo.seccion)}{vinculo.retirado ? ' · Retirado' : ''}</span></div>
+      {!vinculo.retirado && <button type="button" className="secundario" disabled={ocupado || bloqueadoExterno} onClick={() => { if (window.confirm('¿Retirar al estudiante de esta sección? Dejará de recibir y abrir sus actividades. Sus partidas y resultados se conservan.')) void retirar(vinculo) }}>Retirar de la sección</button>}
     </li>)}</ul>
   </section>
 }
