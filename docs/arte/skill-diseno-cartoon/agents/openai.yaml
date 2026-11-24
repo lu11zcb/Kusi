@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diseño cartoon"
+  short_description: "Imágenes cartoon con color plano y expresividad"
+  default_prompt: "Usa $diseno-cartoon para crear o editar una imagen cartoon siguiendo mi pedido y mis referencias."

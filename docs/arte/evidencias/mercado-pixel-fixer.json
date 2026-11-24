@@ -1,0 +1,44 @@
+{
+  "repository": "https://github.com/Retro-Diffusion/pixel-art-fixer",
+  "commit": "ef376e57e1c272633ca2dbf5f29ec3fcf6596465",
+  "method": "pixelfixer.api.process, mode=full, default reconstruction",
+  "input_path": "C:\\Users\\luis\\.codex\\generated_images\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\exec-ed72998d-8b68-46ee-b003-373b9be53289.png",
+  "input_sha256": "b6b1936c8c946920fbd13531d0fb8b4f66a5a551ae06a7c6dd6b7f3afd391926",
+  "detector": {
+    "cols": 298,
+    "rows": 164,
+    "step_x": 5.6107,
+    "step_y": 5.7378,
+    "consensus": "fast:ac+rl+ss",
+    "confidence": "high",
+    "detect_s": 2.891,
+    "recon_s": 1.84
+  },
+  "input": {
+    "width": 1672,
+    "height": 941,
+    "mode": "RGBA",
+    "visible_rgb_colors": 382149,
+    "alpha_values": [
+      255
+    ]
+  },
+  "output": {
+    "width": 298,
+    "height": 164,
+    "mode": "RGBA",
+    "visible_rgb_colors": 27115,
+    "alpha_values": [
+      255
+    ]
+  },
+  "preview_integer_scale": 5,
+  "native_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\market-results\\mercado-fixed-native.png",
+  "preserved_in_kusi": {
+    "input": "../referencias/mercado-animales-original.png",
+    "native": "../referencias/mercado-animales-native.png",
+    "preview": "../referencias/mercado-animales-preview.png",
+    "preview_integer_scale": 5,
+    "status": "Referencia visual procesada; no recurso de producción ni paleta indexada final."
+  }
+}

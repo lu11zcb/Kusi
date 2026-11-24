@@ -1,0 +1,54 @@
+{
+  "passed": true,
+  "health": {
+    "api_version": 9,
+    "pixelorama_version": "v1.2.3-stable",
+    "server": "pix-mcp-bridge",
+    "status": "ok",
+    "version": "0.2.0"
+  },
+  "toolCount": 105,
+  "security": {
+    "unauthorizedStatus": 401,
+    "browserOriginStatus": 403,
+    "arbitraryScriptTool": false
+  },
+  "results": [
+    {
+      "name": "create_canvas",
+      "message": "✅ Canvas created: 16×16 pixels, name: \"Prueba-conexion-Kusi\""
+    },
+    {
+      "name": "draw_pixel",
+      "message": "✅ Pixel at (2, 3) set to #ED725E on [frame:0, layer:0]"
+    },
+    {
+      "name": "get_pixels",
+      "message": "🔍 Inspected 1 pixels [frame:0, layer:0]:\n(2,3): #ed725eff"
+    },
+    {
+      "name": "add_frame",
+      "message": "✅ Frame added (total: 2)\n🎯 Active: frame 0, layer 0 (\"Capa 1\")"
+    },
+    {
+      "name": "draw_pixel",
+      "message": "✅ Pixel at (3, 3) set to #F6DDBE on [frame:1, layer:0]"
+    },
+    {
+      "name": "get_canvas_info",
+      "message": "Canvas Info:\n- Name: Prueba-conexion-Kusi\n- Size: 16×16\n- Layers: 1\n- Frames: 2\n- Active layer: 0\n- Active frame: 1"
+    },
+    {
+      "name": "save_project",
+      "message": "✅ Project saved to: C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\22\\01a16598-c7d1-7310-8edd-1052663828ab\\pixelorama-mcp\\connection-test\\conexion-kusi.pxo (2072 bytes)"
+    },
+    {
+      "name": "export_image",
+      "message": "✅ Image exported to: C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\22\\01a16598-c7d1-7310-8edd-1052663828ab\\pixelorama-mcp\\connection-test\\conexion-kusi.png (16×16px, scale: 1x)"
+    },
+    {
+      "name": "export_animation",
+      "message": "✅ Spritesheet exported: C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\22\\01a16598-c7d1-7310-8edd-1052663828ab\\pixelorama-mcp\\connection-test/conexion-kusi_spritesheet.png\n  2 frames, 2×1 grid"
+    }
+  ]
+}
