@@ -214,6 +214,19 @@ class AccesoApi(private val django: String, private val edu: String, private val
         }
     }
 
+    fun logrosEstudiante(): ResumenLogrosInfantil {
+        val datos = solicitar(edu, "/api/edu/estudiante/logros/")
+        val cursos = datos.getJSONArray("cursos")
+        return ResumenLogrosInfantil(
+            puntos = datos.getLong("puntos"),
+            retos = datos.getLong("retos"),
+            cursos = List(cursos.length()) { indice ->
+                val curso = cursos.getJSONObject(indice)
+                ProgresoCursoInfantil(curso.getString("nombre"), curso.getLong("puntos"), curso.getLong("retos"))
+            },
+        )
+    }
+
     fun consultarAvanceJuego(juegoId: String): AvanceJuego? {
         val datos = solicitar(edu, rutaJuego(juegoId) + "avance/")
         return datos.optJSONObject("avance")?.let(::leerAvanceJuego)

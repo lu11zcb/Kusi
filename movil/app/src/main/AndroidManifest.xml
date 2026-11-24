@@ -4,8 +4,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
-    <application android:label="Kusi" android:icon="@drawable/cuy_amigo" android:allowBackup="false" android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar" android:usesCleartextTraffic="${traficoLocal}">
+    <application android:label="Kusi" android:icon="@mipmap/ic_kusi" android:roundIcon="@mipmap/ic_kusi" android:allowBackup="false" android:supportsRtl="true"
+        android:theme="@style/Theme.Kusi" android:usesCleartextTraffic="${traficoLocal}">
         <activity android:name=".MainActivity" android:configChanges="orientation|screenSize" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>

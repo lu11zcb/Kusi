@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kusi_fondo_carga">#D2F0DB</color>
+    <style name="Theme.Kusi" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/kusi_ventana_inicio</item>
+    </style>
+</resources>

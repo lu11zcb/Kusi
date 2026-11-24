@@ -84,7 +84,7 @@ fun CuyInteractivo(voz: VozKusi, modifier: Modifier = Modifier, mensaje: String 
 @Composable
 fun MarcaKusi(modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Image(painterResource(R.drawable.kusi_guia), null, Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).padding(2.dp), contentScale = ContentScale.Crop)
+        EmblemaKusi(Modifier.size(44.dp))
         Text("Kusi", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
     }
 }
@@ -131,15 +131,33 @@ fun TarjetaKusi(modifier: Modifier = Modifier, contenido: @Composable ColumnScop
         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp), content = contenido)
     }
 }
-data class VozKusi(val disponible: Boolean, val hablar: (String) -> Unit, val callar: () -> Unit = {})
+/**
+ * Voz de Kusi. [hablando] es verdadero solo mientras el teléfono está pronunciando una frase:
+ * lo usa la animación de Rive para mover la boca de Kusi al mismo tiempo que se oye la voz.
+ */
+data class VozKusi(val disponible: Boolean, val hablar: (String) -> Unit, val callar: () -> Unit = {}, val hablando: Boolean = false)
 @Composable
 fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
     val contexto = LocalContext.current
+    val preferencias = remember(contexto) { contexto.getSharedPreferences("kusi_mi_cuy", android.content.Context.MODE_PRIVATE) }
     var lista by remember { mutableStateOf(false) }
+    var hablando by remember { mutableStateOf(false) }
+    var fraseActiva by remember { mutableStateOf<String?>(null) }
+    var numeroFrase by remember { mutableLongStateOf(0L) }
     val motor = remember { mutableStateOf<TextToSpeech?>(null) }
     val avisoActual by rememberUpdatedState(avisar)
     DisposableEffect(contexto) {
         var cerrado = false
+        // El motor de voz avisa desde otro hilo; el estado de la pantalla se cambia en el principal.
+        val principal = android.os.Handler(android.os.Looper.getMainLooper())
+        fun marcar(id: String?, valor: Boolean) {
+            principal.post {
+                if (!cerrado && id != null && id == fraseActiva) {
+                    hablando = valor
+                    if (!valor) fraseActiva = null
+                }
+            }
+        }
         val instancia = TextToSpeech(contexto) { estado ->
             if (!cerrado && estado == TextToSpeech.SUCCESS) {
                 val idioma = motor.value?.setLanguage(Locale.forLanguageTag("es-PE")) ?: TextToSpeech.LANG_NOT_SUPPORTED
@@ -147,13 +165,38 @@ fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
                 motor.value?.setSpeechRate(0.88f)
             }
         }
+        // Empieza a hablar al sonar la primera sílaba y termina al acabar, al fallar o al callarla.
+        instancia.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(id: String?) = marcar(id, true)
+            override fun onDone(id: String?) = marcar(id, false)
+            override fun onStop(id: String?, interrumpida: Boolean) = marcar(id, false)
+            @Deprecated("Requerido por versiones antiguas de Android")
+            override fun onError(id: String?) = marcar(id, false)
+            override fun onError(id: String?, codigo: Int) = marcar(id, false)
+        })
         motor.value = instancia
-        onDispose { cerrado = true; lista = false; instancia.stop(); instancia.shutdown(); motor.value = null }
+        onDispose {
+            cerrado = true
+            lista = false
+            fraseActiva = null
+            hablando = false
+            instancia.stop()
+            instancia.shutdown()
+            motor.value = null
+        }
     }
-    return VozKusi(lista, hablar = { texto ->
-        if (contexto.getSharedPreferences("kusi_mi_cuy", android.content.Context.MODE_PRIVATE).getBoolean("voz", true) &&
-            (!lista || motor.value?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "ayuda-kusi") == TextToSpeech.ERROR)) {
+    return VozKusi(lista, hablando = hablando, hablar = hablar@{ texto ->
+        if (!preferencias.getBoolean("voz", true)) return@hablar
+        val id = "frase-kusi-${++numeroFrase}"
+        fraseActiva = id
+        hablando = false
+        if (!lista || motor.value?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
+            fraseActiva = null
             avisoActual("La voz no está disponible en este celular. También puedes leer la ayuda.")
         }
-    }, callar = { motor.value?.stop() })
+    }, callar = {
+        fraseActiva = null
+        hablando = false
+        motor.value?.stop()
+    })
 }

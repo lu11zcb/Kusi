@@ -33,6 +33,10 @@ public class JuegosEstudianteController {
     public ResponseEntity<Map<String, Object>> juegos(@CookieValue(value = "sessionid", required = false) String sesion) {
         return sinCache(Map.of("juegos", actividades.juegos(estudiante(sesion))));
     }
+    @GetMapping("/logros/")
+    public ResponseEntity<Map<String, Object>> logros(@CookieValue(value = "sessionid", required = false) String sesion) {
+        return sinCache(actividades.logros(estudiante(sesion)));
+    }
     @GetMapping("/juegos/{id}/avance/")
     public ResponseEntity<Map<String, Object>> avance(@CookieValue(value = "sessionid", required = false) String sesion, @PathVariable UUID id) {
         Map<String, Object> cuerpo = new LinkedHashMap<>();

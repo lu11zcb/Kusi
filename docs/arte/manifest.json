@@ -1,0 +1,339 @@
+{
+  "updated": "2026-10-22",
+  "project": "Kusi",
+  "maintainer": "lui11zcb <luiscb.once@gmail.com>",
+  "status": "Referencias conservadas y primera producción del cuy jugador integrada en el prototipo Phaser; nuevas vistas y movimiento pendientes de revisión visual de Luis.",
+  "character_role_confirmation": {
+    "date": "2026-10-22",
+    "confirmed_by": "Luis",
+    "new_cuy_design": "Avatar del niño/jugador; conservar el pañuelo del diseño aceptado.",
+    "kusi_guide": "Personaje distinto; el diseño nuevo no la reemplaza.",
+    "first_production_block": "Preparar y animar reposo/caminar del cuy del niño e integrarlo en Phaser.",
+    "plan": "../PLAN_ANIMACION_CUY_NINO.md",
+    "status": "Identidad de referencia aprobada; primera versión de reposo/caminar integrada el 22 de octubre, pendiente de revisión visual de sus nuevas vistas y movimiento."
+  },
+  "briefs_are": "Resúmenes del encargo y preferencias, no transcripciones literales de prompts.",
+  "briefs": {
+    "cuy_cartoon": "Un cuy bípedo cartoon expresivo, marrón natural y beige piel claro, pañuelo coral, anatomía coherente y mechón cerrado; evitar acabado plástico, brillos y sombras del cuerpo. La referencia aprobada conserva suaves variaciones de tono, pendientes de simplificar para pixel art.",
+    "cuy_pixel": "Solo el personaje del cuy en pixel art cartoon; conservar identidad y simplificar pelaje/colores, revisar bordes y grupos de píxeles. Una sola figura.",
+    "mercado": "Mercado andino con el cuy y puestos atendidos por animales; alpaca panadera, oso de anteojos con productos y zorro con frutas. Escena infantil expresiva; procesar después con Pixel Art Fixer para comparar."
+  },
+  "processor": {
+    "repository": "https://github.com/Retro-Diffusion/pixel-art-fixer",
+    "commit": "ef376e57e1c272633ca2dbf5f29ec3fcf6596465",
+    "license": "MIT",
+    "method": "pixelfixer.api.process(bytes, mode=\"full\"), default reconstruction",
+    "no_palette_guarantee": true
+  },
+  "files": [
+    {
+      "file": "referencias/cuy-cartoon-aprobado.png",
+      "sha256": "8ba7ae4adbd053e9cea8de53168714486d76389f4bb56f0ef5c20c118f16bad3",
+      "bytes": 1500606,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "origin": "Generación/edición de imagen del chat; referencia de identidad aprobada por Luis.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\generated_images\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\exec-41070e0c-6090-470d-a5ed-59e66d446344.png"
+    },
+    {
+      "file": "referencias/cuy-pixel-original.png",
+      "sha256": "5de4f323832df4883d9ee24320b957877f6f446a47a4c17ecc25f7c03012179f",
+      "bytes": 1158348,
+      "width": 1287,
+      "height": 1222,
+      "mode": "RGB",
+      "origin": "Generación de imagen del chat; exploración pixel art del cuy, no sprite terminado.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\generated_images\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\exec-9343d2b2-9341-455c-ab00-1ade4b325d06.png",
+      "visible_rgb_colors": 37847,
+      "alpha_values": [
+        255
+      ]
+    },
+    {
+      "file": "referencias/cuy-pixel-native.png",
+      "sha256": "66b4f458b279e505c8ed3b2b7125d83edf8b5aefbf3cf6d2c7530b665874b2cd",
+      "bytes": 10282,
+      "width": 111,
+      "height": 107,
+      "mode": "RGBA",
+      "origin": "Pixel Art Fixer sobre cuy-pixel-original.png.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\results\\cuy-fixed-native.png",
+      "visible_rgb_colors": 826,
+      "alpha_values": [
+        255
+      ]
+    },
+    {
+      "file": "referencias/cuy-pixel-preview.png",
+      "sha256": "1b60d269e3abc6a5d9dd67206138b06d725adeeed27316e03be285a2577bf8e6",
+      "bytes": 20427,
+      "width": 888,
+      "height": 856,
+      "mode": "RGBA",
+      "origin": "Ampliación nearest neighbor 8x del resultado nativo.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\results\\cuy-fixed-preview.png"
+    },
+    {
+      "file": "referencias/cuy-pixel-comparacion.png",
+      "sha256": "9461b6b71e2bfd0e1b7ad1abe3d9e28e0b85e395f78d5ad0bf44ecfbda09ff3a",
+      "bytes": 317286,
+      "width": 1272,
+      "height": 770,
+      "mode": "RGB",
+      "origin": "Comparación del laboratorio; original frente a procesado.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\results\\cuy-comparison.png"
+    },
+    {
+      "file": "referencias/mercado-animales-original.png",
+      "sha256": "b6b1936c8c946920fbd13531d0fb8b4f66a5a551ae06a7c6dd6b7f3afd391926",
+      "bytes": 1931339,
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB",
+      "origin": "Generación de imagen del chat; escena plana de referencia con vendedores animales.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\generated_images\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\exec-ed72998d-8b68-46ee-b003-373b9be53289.png",
+      "visible_rgb_colors": 382149,
+      "alpha_values": [
+        255
+      ]
+    },
+    {
+      "file": "referencias/mercado-animales-native.png",
+      "sha256": "3da9c97401caaa415b87d23a3d31a8a9888e1175fc7b589dfc439dbdfeaa5aea",
+      "bytes": 108014,
+      "width": 298,
+      "height": 164,
+      "mode": "RGBA",
+      "origin": "Pixel Art Fixer sobre mercado-animales-original.png.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\market-results\\mercado-fixed-native.png",
+      "visible_rgb_colors": 27115,
+      "alpha_values": [
+        255
+      ]
+    },
+    {
+      "file": "referencias/mercado-animales-preview.png",
+      "sha256": "c816f73ad44dad0d3a62bd7aa74200e3890fd01f4941e18956a814957ea63223",
+      "bytes": 153470,
+      "width": 1490,
+      "height": 820,
+      "mode": "RGBA",
+      "origin": "Ampliación nearest neighbor 5x del resultado nativo.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\market-results\\mercado-fixed-preview.png"
+    },
+    {
+      "file": "referencias/mercado-animales-comparacion.png",
+      "sha256": "e5336803135f22ffbc46a345fbd98eba597307f702b0d964fbce13a432ba603c",
+      "bytes": 1246317,
+      "width": 1248,
+      "height": 1566,
+      "mode": "RGB",
+      "origin": "Comparación del laboratorio; original frente a procesado.",
+      "original_local_path": "C:\\Users\\luis\\.codex\\visualizations\\2026\\10\\20\\01a1573c-ba1d-7133-b3a6-5f09fbc4b77d\\pixel-art-fixer-review\\market-results\\mercado-comparacion.png"
+    },
+    {
+      "file": "../../juego/arte/cuy-nino-base-limpia-v1.pxo",
+      "sha256": "4720902f482780b3335d14e9e8cfaf20101aed01991463219e542806881659d5",
+      "bytes": 5595,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "../../juego/arte/cuy-nino-animado-v1.pxo",
+      "sha256": "14617dfd8ab666e4f3aaee71158616c68d3555d381e5c049f295d8ca9ffc0408",
+      "bytes": 135526,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "../../juego/arte/cuy-nino-animado-v1-export-pixelorama.png",
+      "sha256": "7f7cf5c3c7803fb6a3b022fa50bd22e785fcf2c00aebdf260d4eca2d24e34c00",
+      "bytes": 21433,
+      "production": "cuy-nino-v1",
+      "width": 896,
+      "height": 512,
+      "mode": "RGBA"
+    },
+    {
+      "file": "../../juego/arte/cuy-nino-paleta-v1.gpl",
+      "sha256": "7bc08065ec2289c0f3faea810f84160484941b6d0f67c7674f389728d2b9b73b",
+      "bytes": 176,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "../../juego/public/dibujos/cuy-nino-animado-v1.png",
+      "sha256": "9bfe31c148de522d3ef3bc5cc41594a89e2ca79ba1288174b95a6437e4c6a97e",
+      "bytes": 11139,
+      "production": "cuy-nino-v1",
+      "width": 896,
+      "height": 512,
+      "mode": "P"
+    },
+    {
+      "file": "../../juego/public/dibujos/cuy-nino-animado-v1.json",
+      "sha256": "0876c002e907d88393dc72e86e67a1690eadd0230a42514549b702b68cd5ca37",
+      "bytes": 1563,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "produccion/cuy-nino-base-limpia-v1.png",
+      "sha256": "2c9da03c284b99480a0f0687d7104d65d9d36225bb70bee553989d9813b80771",
+      "bytes": 2119,
+      "production": "cuy-nino-v1",
+      "width": 112,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "file": "produccion/cuy-nino-vistas-v1.png",
+      "sha256": "58c89f63111087f18b6bcf23cce70724ca1dc61b55ed84ebd2d39a940979bbf8",
+      "bytes": 10095,
+      "production": "cuy-nino-v1",
+      "width": 1344,
+      "height": 426,
+      "mode": "RGB"
+    },
+    {
+      "file": "produccion/cuy-nino-ciclo-v1.png",
+      "sha256": "0cc8b5172b8066e32187008b00f32a744ad08312c5752849587e543f6c9385f9",
+      "bytes": 31828,
+      "production": "cuy-nino-v1",
+      "width": 1344,
+      "height": 1136,
+      "mode": "RGB"
+    },
+    {
+      "file": "produccion/cuy-nino-caminar-v1.gif",
+      "sha256": "85c643bc10916de113d210aafbee903932747a19dabce84be39019396d98d2f9",
+      "bytes": 72065,
+      "production": "cuy-nino-v1",
+      "width": 448,
+      "height": 568,
+      "mode": "P"
+    },
+    {
+      "file": "produccion/cuy-nino-reposo-v1.gif",
+      "sha256": "381bcb3312c29e4bee8a48e65959eebf3bbeb4ee0aee0d3ac86346e983fc29e0",
+      "bytes": 24346,
+      "production": "cuy-nino-v1",
+      "width": 448,
+      "height": 568,
+      "mode": "P"
+    },
+    {
+      "file": "produccion/cuy-nino-verificacion-v1.json",
+      "sha256": "81f38a110f2c5abf050320ed7bb5c5e67720315923339aa6a23f3678e89859c3",
+      "bytes": 7897,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "produccion/cuy-fixer-reproducido-v1.json",
+      "sha256": "4e40046c1de3e90616b49db624a9a39b37ae2c0674d04b9aa9f9b5403dc8bcc9",
+      "bytes": 767,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "produccion/pixelorama-produccion-v1.json",
+      "sha256": "78e18313c09a47209fb4b763833762c60d404cb19d84b550144e22ce97c40610",
+      "bytes": 42604,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "produccion/cuy-nino-mercado-iab-v1.png",
+      "sha256": "0f2de802770644aa38d70eefd4e108cd6c42edf39914c33b2a81c4fa24ac66b2",
+      "bytes": 24354,
+      "production": "cuy-nino-v1",
+      "width": 319,
+      "height": 452,
+      "mode": "RGB"
+    },
+    {
+      "file": "produccion/cuy-nino-mercado-tactil-v1.png",
+      "sha256": "f9e7b044c12770aa97bff07a99bae7134fb71173fc1e9772d73c8312e0a47952",
+      "bytes": 648490,
+      "production": "cuy-nino-v1",
+      "width": 960,
+      "height": 540,
+      "mode": "RGB"
+    },
+    {
+      "file": "produccion/cuy-nino-mercado-v1.png",
+      "sha256": "74fde86bb4189348a143a24adf8a21df67a1e9997cf7e40241de82b2dc38c09d",
+      "bytes": 1055123,
+      "production": "cuy-nino-v1",
+      "width": 1280,
+      "height": 720,
+      "mode": "RGB"
+    },
+    {
+      "file": "../../scripts/arte/empaquetar_cuy.py",
+      "sha256": "f17db479056416acbbfec586fe29c2e5ff1a35c62670ecd1c5e04285309bb010",
+      "bytes": 8682,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "../../scripts/arte/receta_cuy_pixelorama.py",
+      "sha256": "1f9c8547fec318de66f5c956b47503176387e8517f05a0a932953f94b9eff034",
+      "bytes": 13873,
+      "production": "cuy-nino-v1"
+    },
+    {
+      "file": "../../scripts/arte/reconstruir_cuy.py",
+      "sha256": "076335e83624f206366a8339b3cdfaf83829afa1184576e49cc4376a128ccca0",
+      "bytes": 1476,
+      "production": "cuy-nino-v1"
+    }
+  ],
+  "production": {
+    "version": "cuy-nino-v1",
+    "date": "2026-10-22",
+    "identity_reference": "referencias/cuy-cartoon-aprobado.png",
+    "pixel_source": "referencias/cuy-pixel-native.png",
+    "method": "Pixel Art Fixer reproducido sobre la exploración original; limpieza, vistas y fotogramas mediante comandos nativos de Pixelorama MCP. Indexación PNG posterior sin cambios RGBA.",
+    "guide": "../PRODUCCION_CUY_NINO.md",
+    "editable_project": "../../juego/arte/cuy-nino-animado-v1.pxo",
+    "game_manifest": "../../juego/public/dibujos/cuy-nino-animado-v1.json",
+    "frames": 32,
+    "layers": 7,
+    "tags": 8,
+    "frame_size": [
+      112,
+      128
+    ],
+    "anchor": [
+      56,
+      117
+    ],
+    "states": {
+      "reposo": {
+        "frames_per_direction": 2,
+        "fps": 2
+      },
+      "caminar": {
+        "frames_per_direction": 6,
+        "fps": 10
+      }
+    },
+    "directions": [
+      "frente",
+      "espaldas",
+      "derecha",
+      "izquierda"
+    ],
+    "game_scale": 1,
+    "native_project_mode": "RGBA with restricted working palette",
+    "export_png_mode": "indexed P, color type 3, lossless RGBA match",
+    "visible_colors": 7,
+    "working_palette": [
+      "#3D210F",
+      "#A05835",
+      "#FBE1C6",
+      "#E95343",
+      "#F3A27D",
+      "#FFF8ED",
+      "#6B2627",
+      "#D57670"
+    ],
+    "visual_approval": "Reference identity approved; new views and motion await Luis review.",
+    "android_status": "Functional Android integration remains pending."
+  }
+}

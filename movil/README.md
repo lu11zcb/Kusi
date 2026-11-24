@@ -1,5 +1,28 @@
 # Kusi Android · recorrido del Sprint 2
 
+## Bienvenida con Kusi animado en Compose · 22 de noviembre
+
+La bienvenida («Ven, vamos a la aventura») muestra un valle andino con cantutas, nubes
+y mariposas. El paisaje se desvanece arriba y abajo. Los bloques para contar y el libro
+ilustrado señalan dos portales que se iluminan cuando Kusi los pisa. El logotipo se mece
+en la bienvenida y en la carga. El primer arranque muestra el icono de Kusi con aros coral
+y dorado sobre fondo blanco. La carga de la app usa el fondo menta y muestra a Kusi
+sentado, que mira alrededor y reacciona al tocarlo.
+`DibujoKusi.kt` reproduce dibujos de cuerpo completo alineados por las patas.
+`kusi_intermedios.png` añade poses de impulso, subida, bajada y recuperación al salto,
+y cuatro poses al gesto de invitación. Los dibujos parten de
+`juego/arte/kusi/origen/kusi-chibi-v1.png`.
+Al terminar el saludo, «¡Vamos!» se habilita. Kusi señala hacia abajo brevemente y luego
+invita a jugar con las dos patas.
+Pulsar el botón inicia un brinco de celebración y luego abre el ingreso. Tocar a Kusi
+muestra hojitas junto al toque solo si el dedo cae sobre su dibujo. Después de la presentación alterna entre un brinco,
+una risa y un saludo con el sombrero. El parlante reproduce la voz y la nota
+musical activa o silencia los efectos. Los apoyos, el impulso y las cosquillas reutilizan
+sonidos [Kenney CC0 del juego](../juego/kit/recursos/sonidos/ORIGEN.md). El roce del libro
+es sonido de síntesis generado para Kusi.
+Con las animaciones del sistema desactivadas, «¡Vamos!» se habilita de inmediato,
+abre el ingreso al pulsarlo y las hojitas aparecen brevemente en su sitio.
+
 ## Cierre del Sprint 3 · 10 de noviembre
 
 El contenedor de cualquier juego admite **Pausa**. Primero detiene la escena,
