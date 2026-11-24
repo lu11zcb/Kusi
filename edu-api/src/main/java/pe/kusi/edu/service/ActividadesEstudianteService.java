@@ -117,6 +117,35 @@ public class ActividadesEstudianteService {
                 Timestamp.from(Instant.now()), juego, estudiante);
     }
 
+    public Map<String, Object> logros(UUID estudiante) {
+        record ProgresoCurso(UUID curso, long puntos, long retos) {}
+        List<ProgresoCurso> progreso = jdbc.query("""
+                select s.curso_id, sum(p.puntos) as puntos, count(*) as retos
+                from edu.puntos_reto p
+                join edu.solicitudes_propuesta s on s.id = p.actividad_id
+                where p.estudiante_id = ?
+                group by s.curso_id
+                order by puntos desc, retos desc, s.curso_id
+                """, (fila, indice) -> new ProgresoCurso(
+                fila.getObject("curso_id", UUID.class), fila.getLong("puntos"), fila.getLong("retos")), estudiante);
+
+        return Map.of(
+                "puntos", progreso.stream().mapToLong(ProgresoCurso::puntos).sum(),
+                "retos", progreso.stream().mapToLong(ProgresoCurso::retos).sum(),
+                "cursos", progreso.stream().map(curso -> Map.<String, Object>of(
+                        "nombre", nombreCursoDeLogros(curso.curso()), "puntos", curso.puntos(), "retos", curso.retos()
+                )).toList()
+        );
+    }
+
+    private String nombreCursoDeLogros(UUID curso) {
+        try {
+            return django.nombreCurso(curso);
+        } catch (IllegalArgumentException noExiste) {
+            return "Curso anterior";
+        }
+    }
+
     private JsonNode leer(String contenido) {
         try { return json.readTree(contenido); }
         catch (Exception error) { throw new IllegalStateException("No se pudo leer el contenido guardado."); }

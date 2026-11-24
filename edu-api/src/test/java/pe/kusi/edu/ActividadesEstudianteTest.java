@@ -88,6 +88,25 @@ class ActividadesEstudianteTest {
     private ObjectNode checkpoint(String partida, int orden, int nivel) { return json.createObjectNode().put("partida", partida).put("orden", orden).put("nivel", nivel); }
     private int puntos(Map<String, Object> resultado) { return (Integer) ((Map<?, ?>) resultado.get("resumen")).get("puntos"); }
 
+    @Test void logrosCuentaRetosUnicosPorAlumnoYCurso() throws Exception {
+        String ruta = "/api/edu/estudiante/logros/";
+        when(django.nombreCurso(curso)).thenReturn("Ciencia y Tecnología");
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "reto_completado", 1));
+        partidas.guardar(estudiante, false, aviso(juego, partida, 2, "reto_completado", 2));
+        Generacion nueva = enviar(new Generacion(actividad, juego.getPropuestaId(), 2), 3);
+        partidas.guardar(estudiante, false, aviso(nueva, UUID.randomUUID().toString(), 1, "reto_completado", 1));
+
+        leer(ruta, "estudiante").andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.puntos").value(13)).andExpect(jsonPath("$.retos").value(2))
+                .andExpect(jsonPath("$.cursos.length()").value(1))
+                .andExpect(jsonPath("$.cursos[0].nombre").value("Ciencia y Tecnología"))
+                .andExpect(jsonPath("$.cursos[0].puntos").value(13)).andExpect(jsonPath("$.cursos[0].retos").value(2));
+        leer(ruta, "otro").andExpect(status().isOk()).andExpect(jsonPath("$.puntos").value(0))
+                .andExpect(jsonPath("$.retos").value(0)).andExpect(jsonPath("$.cursos").isEmpty());
+        leer(ruta, "docente").andExpect(status().isForbidden());
+    }
+
     @Test void pausaConfirmadaConservaVersionRetoYOrdenAlExistirUnEnvioNuevo() throws Exception {
         String partida = UUID.randomUUID().toString();
         leer(ruta(juego), "estudiante").andExpect(status().isOk()).andExpect(jsonPath("$.avance").isEmpty());
