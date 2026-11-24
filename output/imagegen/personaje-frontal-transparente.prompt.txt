@@ -1,7 +1,0 @@
-Herramienta: image_gen integrada. Fondo transparente: true.
-Referencia de identidad: codex-clipboard-ef8cbbf6-fcb7-4281-b16e-607a6f14144a.png.
-
-Use case: precise-object-edit / identity-preserve.
-Edit the supplied image. Keep this exact character and this exact front-facing neutral standing pose completely unchanged: same face, open smile, eyes looking forward, asymmetric brown markings on viewer-left head and flank, beige body, coral red bandana and knot, brown hands and feet, two cream head tufts, drawing style, colors and outlines. Arms relaxed down at sides and feet slightly apart remain exactly the same.
-Only correct the framing: scale the entire intact character down uniformly so the full character occupies about 78–80% of the canvas HEIGHT, centered both vertically and horizontally, with clearly visible empty margin above the top tuft and below the feet (at least 10% of canvas height on each side). Do not crop or redraw the character, do not alter its proportions or pose.
-Make the surrounding space fully transparent with an actual alpha channel, clean transparent cutout without any glow, halo, shadow, floor, backdrop or colored haze. Keep character's fills opaque and original colors. No added elements, no text, no checkerboard.

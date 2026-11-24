@@ -10,8 +10,8 @@ y dorado sobre fondo blanco. La carga de la app usa el fondo menta y muestra a K
 sentado, que mira alrededor y reacciona al tocarlo.
 `DibujoKusi.kt` reproduce dibujos de cuerpo completo alineados por las patas.
 `kusi_intermedios.png` añade poses de impulso, subida, bajada y recuperación al salto,
-y cuatro poses al gesto de invitación. Los dibujos parten de
-`juego/arte/kusi/origen/kusi-chibi-v1.png`.
+y cuatro poses al gesto de invitación. Los dibujos parten de `kusi-chibi-v1.png`, el original de Kusi,
+que ya no está en el repositorio: se puede recuperar del historial de Git (commit `cbac25a`).
 Al terminar el saludo, «¡Vamos!» se habilita. Kusi señala hacia abajo brevemente y luego
 invita a jugar con las dos patas.
 Pulsar el botón inicia un brinco de celebración y luego abre el ingreso. Tocar a Kusi
