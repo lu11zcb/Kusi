@@ -170,6 +170,7 @@
       "dibujos/interfaz/joystick-perilla.png"
     ],
     "mano": "dibujos/interfaz/mano-tutorial.png",
+    "mano_guia": "dibujos/interfaz/mano-guia.png",
     "destellos": "dibujos/interfaz/destellos-siguiente.png"
   },
   "sonidos": [

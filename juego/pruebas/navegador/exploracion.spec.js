@@ -33,11 +33,11 @@ test.beforeAll(async () => {
 })
 test.afterAll(async () => { await rm(CARPETA, { recursive: true, force: true }) })
 
-async function abrir(pagina) {
+async function abrir(pagina, busqueda = '') {
   const errores = []
   pagina.on('pageerror', (error) => errores.push(error.message))
   pagina.on('console', (mensaje) => { if (mensaje.type() === 'error') errores.push(mensaje.text()) })
-  await pagina.goto('/?juego=' + TRABAJO + '&historia=0&vida=0')
+  await pagina.goto('/?juego=' + TRABAJO + '&historia=0&vida=0' + busqueda)
   await pagina.waitForFunction(() => window.__exploracion?.controles, null, { timeout: 20_000 })
   return errores
 }
@@ -74,7 +74,7 @@ test('un muro no se atraviesa: el protagonista se detiene contra él', async ({ 
 })
 
 test('el adversario avisa, persigue y atrapa: el protagonista vuelve al inicio sin perder lo reunido', async ({ page: pagina }) => {
-  const errores = await abrir(pagina)
+  const errores = await abrir(pagina, '&tutorial=0')
   // Se queda quieto cerca del recorrido del adversario hasta que lo atrape (con avisos y todo).
   await pagina.waitForFunction(() => window.__exploracion.capturas >= 1, null, { timeout: 25_000 })
   const despues = await estado(pagina)

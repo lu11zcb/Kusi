@@ -14,16 +14,15 @@ export const PROTAGONISTAS = Object.freeze([
   Object.freeze({
     id: 'cuy',
     nombre: 'Cuy',
-    // «?v=9» renueva el manifiesto guardado por el navegador cuando cambia la hoja.
-    manifiesto: 'dibujos/personajes/cuy.json?v=9',
+    // La revisión en la URL renueva el manifiesto guardado cuando cambia la hoja.
+    manifiesto: 'dibujos/personajes/cuy.json?v=10',
     // Los sonidos son los del catálogo: el paso y el quejido cuando lo atrapan.
     sonidos: Object.freeze({ paso: 'paso_cuy', quejido: 'captura' }),
   }),
 ])
 
-// Las medidas del molde. Todas las opciones usan la misma hoja de 3 × 6 celdas
-// de 256 px, con los pies en (128, 244), para que un juego no tenga que saber
-// qué personaje está dibujando.
+// El molde base usa 3 × 6 celdas de 256 px con los pies en (128, 244).
+// Una fila adicional admite el gesto opcional sin mover los cuadros del molde.
 export const MEDIDAS_MOLDE = Object.freeze({
   fotograma: Object.freeze({ ancho: 256, alto: 256 }),
   cuadricula: Object.freeze({ columnas: 3, filas: 6 }),
@@ -70,8 +69,10 @@ export function validarMolde(datos, id = 'protagonista') {
   const { fotograma, cuadricula, anclaje } = MEDIDAS_MOLDE
   exigir(datos.fotograma.ancho === fotograma.ancho && datos.fotograma.alto === fotograma.alto,
     'Cada celda del molde mide ' + fotograma.ancho + ' × ' + fotograma.alto)
-  exigir(datos.cuadricula.columnas === cuadricula.columnas && datos.cuadricula.filas === cuadricula.filas,
-    'La hoja del molde tiene ' + cuadricula.columnas + ' columnas y ' + cuadricula.filas + ' filas')
+  const filasConGesto = cuadricula.filas + 1
+  const filas = datos.cuadricula.filas
+  exigir(datos.cuadricula.columnas === cuadricula.columnas && (filas === cuadricula.filas || filas === filasConGesto),
+    'La hoja del molde tiene ' + cuadricula.columnas + ' columnas y ' + cuadricula.filas + ' o ' + filasConGesto + ' filas')
   exigir(datos.anclaje.x === anclaje.x && datos.anclaje.y === anclaje.y,
     'Los pies del molde están en (' + anclaje.x + ', ' + anclaje.y + ')')
   for (const direccion of DIRECCIONES_PERSONAJE) {

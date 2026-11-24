@@ -14,6 +14,7 @@ import { COLOR, NUMERO } from '../../reproductor/medidas.js'
 import { crearProtagonista, ALTURA_PROTAGONISTA } from '../../reproductor/dibujos/protagonista.js'
 import { crearControles } from '../../reproductor/interfaz/controles.js'
 import { crearHud } from '../../reproductor/interfaz/hud.js'
+import { crearTutorial } from '../../reproductor/interfaz/tutorial.js'
 import { moverConColisiones, crearAdversario, avanzarAdversario } from '../../reproductor/logica/exploracion.js'
 import { repartirYColocar, darVida, ambiente, sombraBajo, ordenarPorY } from '../../reproductor/efectos/mundoVivo.js'
 import { cantidadParaDensidad } from '../../reproductor/logica/decorado.js'
@@ -35,7 +36,7 @@ const LIMITES = { izquierda: 0, derecha: MUNDO.ancho, arriba: 0, abajo: MUNDO.al
 export class EscenaExploracion extends Phaser.Scene {
   constructor() { super('exploracion-ejemplo') }
 
-  init(datos) { this.datos = datos }
+  init(datos) { this.datos = { ...datos, partida: datos?.partida ?? {} } }
 
   create() {
     this.cameras.main.setBackgroundColor(COLOR.arena)
@@ -83,9 +84,25 @@ export class EscenaExploracion extends Phaser.Scene {
     this.cameras.main.startFollow(this.protagonista, true, 0.12, 0.12)
 
     this.controles = crearControles(this)
-    this.hud = crearHud(this, { alEscuchar: () => this.hud.decir('Junta todo y cuídate del rojo.') })
+    const explicarReto = () => this.hud.decir('Junta todo y cuídate del rojo.')
+    this.hud = crearHud(this, { alEscuchar: explicarReto })
     this.marcador = this.hud.indicador({ texto: '0 / ' + this.cosas.length })
-    this.hud.decir('Recorre el lugar con el joystick.')
+    const centroDelJoystick = () => this.controles.estado().joystick
+    this.tutorial = crearTutorial(this, this.hud, {
+      pasos: [{
+        frase: 'Mueve el joystick para caminar.',
+        gesto: 'joystick',
+        objetivo: centroDelJoystick,
+        hacia: () => {
+          const { x, y } = centroDelJoystick()
+          return { x: x + 60, y }
+        },
+        // Cuenta un desplazamiento real, también con las flechas, para que el
+        // niño pueda empezar a jugar con cualquiera de los controles del kit.
+        hecho: () => Phaser.Math.Distance.Between(this.posicion.x, this.posicion.y, INICIO.x, INICIO.y) >= 24,
+      }],
+      alTerminar: explicarReto,
+    })
   }
 
   // Dibujos de ejemplo hechos con formas (en un juego de verdad, son las piezas dibujadas del mundo).
@@ -116,11 +133,15 @@ export class EscenaExploracion extends Phaser.Scene {
     this.vista = vistaDelMovimiento(dx, dy, this.vista)
     this.protagonista.animarMovimiento(this.vista, Math.hypot(dx, dy), segundos, this.time.now)
 
-    avanzarAdversario(this.adversario, this.posicion, segundos, { velocidadProtagonista: VELOCIDAD, obstaculos: OBSTACULOS, limites: LIMITES })
-    this.dibujoAdversario.setPosition(this.adversario.x, this.adversario.y)
-    this.dibujoAdversario.setScale(this.adversario.mira, this.adversario.estado === 'descansa' ? 0.85 : 1)
-    if (this.adversario.alerto) this.hud.decir('¡Cuidado, viene el rojo!', { esperar: true })
-    if (this.adversario.capturo) this.alCapturar()
+    this.tutorial.actualizar(segundos)
+    // El niño puede ensayar con calma antes de que el adversario patrulle.
+    if (this.tutorial.terminado) {
+      avanzarAdversario(this.adversario, this.posicion, segundos, { velocidadProtagonista: VELOCIDAD, obstaculos: OBSTACULOS, limites: LIMITES })
+      this.dibujoAdversario.setPosition(this.adversario.x, this.adversario.y)
+      this.dibujoAdversario.setScale(this.adversario.mira, this.adversario.estado === 'descansa' ? 0.85 : 1)
+      if (this.adversario.alerto) this.hud.decir('¡Cuidado, viene el rojo!', { esperar: true })
+      if (this.adversario.capturo) this.alCapturar()
+    }
 
     for (const cosa of this.cosas) {
       if (cosa.visible && Phaser.Math.Distance.Between(cosa.x, cosa.y, this.posicion.x, this.posicion.y - 40) < 60) {

@@ -4,6 +4,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import {
   PROTAGONISTAS, PROTAGONISTA_POR_OMISION, MEDIDAS_MOLDE, ESTADOS_MOLDE, elegirProtagonista, validarMolde,
 } from '../../kit/reproductor/datos/protagonistas.js'
+import { validarSpritePersonaje } from '../../kit/reproductor/datos/validarSpritePersonaje.js'
+import { leerPng } from '../ayudas/png.js'
 
 // El protagonista es el personaje que el reproductor le da a cada juego. Estas
 // pruebas cuidan que la elección nunca deje al niño sin personaje y que todo
@@ -38,6 +40,21 @@ test('cada protagonista de la lista cumple el molde completo y su hoja existe', 
   }
 })
 
+test('el cuy lanza a ambos lados con los tres últimos cuadros de su hoja', () => {
+  const datos = validarSpritePersonaje(leerJson(PROTAGONISTAS[0].manifiesto), 'cuy')
+  const hoja = leerPng(new URL('dibujos/personajes/' + datos.imagen, recursos))
+  const columnas = hoja.ancho / datos.fotograma.ancho
+  const filas = hoja.alto / datos.fotograma.alto
+  assert.deepEqual({ columnas, filas }, datos.cuadricula)
+  for (const direccion of ['derecha', 'izquierda']) {
+    const lanzar = datos.animaciones[direccion].lanzar
+    assert.deepEqual(lanzar, {
+      fotogramas: [18, 19, 20], fps: 10, repetir: 0, siguiente: 'quieto', voltear: direccion === 'izquierda',
+    })
+    assert.ok(lanzar.fotogramas.every((indice) => indice >= 0 && indice < columnas * filas))
+  }
+})
+
 test('el molde rechaza un manifiesto sin «feliz» de frente, aunque pase el contrato común', () => {
   const cuy = leerJson(PROTAGONISTAS[0].manifiesto)
   const sinFeliz = copia(cuy)
@@ -50,7 +67,7 @@ test('el molde rechaza un manifiesto sin «feliz» de frente, aunque pase el con
 
 test('el molde rechaza otra cuadrícula u otros pies: el zorro no sirve de protagonista', () => {
   const zorro = leerJson('dibujos/personajes/zorro.json?v=4')
-  assert.throws(() => validarMolde(zorro, 'zorro'), /3 columnas y 6 filas/)
+  assert.throws(() => validarMolde(zorro, 'zorro'), /3 columnas y 6 o 7 filas/)
   const otrosPies = copia(leerJson(PROTAGONISTAS[0].manifiesto))
   otrosPies.anclaje = { x: 128, y: 240 }
   assert.throws(() => validarMolde(otrosPies, 'prueba'), /pies del molde/)

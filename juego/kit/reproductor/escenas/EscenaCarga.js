@@ -24,6 +24,7 @@ import {
 import { cargarFicha, cargarGrabaciones, escenaDelTrabajo, dibujarFiguraSimple } from './juegosDelTaller.js'
 import { partirHistoria, debeContarHistoria } from '../logica/historia.js'
 import { callarVoz, configurarVoz } from '../logica/voz.js'
+import { necesitaPermisoMicrofono } from '../interfaz/microfono.js'
 import {
   pedirManifiestoProtagonista, prepararProtagonista, registrarProtagonista,
 } from '../dibujos/protagonista.js'
@@ -61,6 +62,12 @@ export class EscenaCarga extends Phaser.Scene {
     // El ejemplo se abre directamente; el modo mensaje espera el guion del panel.
     // La partida existe desde la carga para registrar también cualquier fallo.
     const parametros = new URLSearchParams(window.location.search)
+    // Solo se pide la pieza si está en el kit. El tutorial dibuja su propia mano
+    // mientras llega el arte y también puede seguir si la imagen falla al cargar.
+    const hayManoGuia = Object.keys(import.meta.glob('../../recursos/dibujos/interfaz/mano-guia.png')).length > 0
+    if (hayManoGuia && parametros.get('tutorial') !== '0' && !this.textures.exists('mano-guia')) {
+      this.load.image('mano-guia', 'dibujos/interfaz/mano-guia.png')
+    }
     this.esperaMensaje = parametros.get('paquete') === 'mensaje'
     // ?juego=<trabajo> abre el guion de ejemplo de un juego del taller.
     this.juegoPedido = trabajoPedido(window.location.search)
@@ -220,7 +227,8 @@ export class EscenaCarga extends Phaser.Scene {
         }
 
         const clave = claveEscena(trabajo)
-        if (!this.scene.get(clave)) this.scene.add(clave, escenaDelTrabajo(ficha.escena, clave), false)
+        const usaMicrofono = ficha.usaMicrofono === true
+        if (!this.scene.get(clave)) this.scene.add(clave, escenaDelTrabajo(ficha.escena, clave, usaMicrofono), false)
         configurarVoz(grabaciones)
         const datos = {
           paquete,
@@ -228,12 +236,14 @@ export class EscenaCarga extends Phaser.Scene {
           trabajo,
           indiceNivel: nivelPedido(window.location.search, paquete.retos.length),
         }
-        this.atenderPuenteDelJuego(clave, datos)
+        this.atenderPuenteDelJuego(clave, datos, usaMicrofono)
         // La historia de la propuesta se cuenta primero, como un cuento, salvo que no haya, que se pida
         // un nivel o ?historia=0, o que la partida se reanude donde se dejó.
         const paginas = partirHistoria(paquete.historia)
-        if (debeContarHistoria({ busqueda: window.location.search, partida: datos.partida, paginas })) {
-          this.scene.start('historia', { paginas, piezas: ficha.piezas, siguiente: { clave, datos } })
+        const contar = debeContarHistoria({ busqueda: window.location.search, partida: datos.partida, paginas })
+        if (contar || (usaMicrofono && necesitaPermisoMicrofono())) {
+          // Sin cuento, la misma portada da el primer toque antes de entrar al nivel.
+          this.scene.start('historia', { paginas: contar ? paginas : [], piezas: ficha.piezas, usaMicrofono, siguiente: { clave, datos } })
         } else {
           this.scene.start(clave, datos)
         }
@@ -247,7 +257,7 @@ export class EscenaCarga extends Phaser.Scene {
   // Un juego del taller no tiene que saber del puente: el reproductor atiende por él un
   // guion nuevo (vuelve a la carga) o el reinicio (otra partida desde el primer nivel).
   // Se conecta cuando la carga se cierra; si el juego conecta su propio manejador, gana el suyo.
-  atenderPuenteDelJuego(clave, datos) {
+  atenderPuenteDelJuego(clave, datos, usaMicrofono) {
     if (!this.puente) return
     const puente = this.puente
     const escenas = this.game.scene
@@ -259,7 +269,12 @@ export class EscenaCarga extends Phaser.Scene {
         escenas.start('carga', { paquete: orden.paquete, partida: orden.partida })
       } else if (orden.tipo === MENSAJE_REINICIAR) {
         callarVoz()
-        escenas.start(clave, { ...datos, indiceNivel: 0, partida: crearPartidaLaberinto() })
+        const reinicio = { ...datos, indiceNivel: 0, partida: crearPartidaLaberinto() }
+        if (usaMicrofono && necesitaPermisoMicrofono()) {
+          escenas.start('historia', { usaMicrofono, siguiente: { clave, datos: reinicio } })
+        } else {
+          escenas.start(clave, reinicio)
+        }
       }
     }
     this.events.once('shutdown', () => puente.conectar(alRecibir))

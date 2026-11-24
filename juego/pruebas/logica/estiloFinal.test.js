@@ -7,6 +7,7 @@ import { pedirEstiloFinal, cuadroIlustrado, SPRITES_CENITALES } from '../../kit/
 import { BarraFrutas } from '../../juegos/laberinto/interfaz/BarraFrutas.js'
 import { OBJETOS_KIT } from '../../kit/reproductor/dibujos/kitFinal.js'
 import { calcularDisposicion } from '../../juegos/laberinto/logica/disposicionLaberinto.js'
+import { validarMolde } from '../../kit/reproductor/datos/protagonistas.js'
 const carpeta=new URL('../../kit/recursos/dibujos/',import.meta.url)
 function anclas(im,c,f){
  let minx=256,miny=256,maxx=-1,maxy=-1
@@ -15,22 +16,31 @@ function anclas(im,c,f){
  for(let y=miny;y<end;y++)for(let x=0;x<256;x++)if(im.pixel(c*256+x,f*256+y)[3]>=32){hx=Math.min(hx,x);hX=Math.max(hX,x)}
  return{centro:(hx+hX)/2,cima:miny,pies:maxy,minx,maxx}
 }
-for(const [archivo,filas]of[['personajes/cuy.png',6],['personajes/zorro.png',5],['personajes/kusi.png',4]]){
- test(archivo+': todas las filas tienen tres poses dibujadas y anclas medidas a 2 px',()=>{
+for(const [archivo,filas]of[['personajes/cuy.png',7],['personajes/zorro.png',5],['personajes/kusi.png',4]]){
+ test(archivo+': todas las filas tienen tres poses dibujadas con los pies anclados',()=>{
   const im=leerPng(new URL(archivo,carpeta));assert.deepEqual([im.ancho,im.alto],[768,256*filas])
   for(let f=0;f<filas;f++){
    const a=[0,1,2].map(c=>anclas(im,c,f))
-   for(const p of a){assert.ok(Math.abs(p.centro-128)<=.5);assert.equal(p.pies,244);assert.ok(p.minx>=2&&p.maxx<=253)}
-   assert.ok(Math.max(...a.map(p=>p.cima))-Math.min(...a.map(p=>p.cima))<=2)
+   for(const p of a){assert.equal(p.pies,244);assert.ok(p.minx>=2&&p.maxx<=253)}
+   // Al lanzar, la cabeza acompaña el gesto. Los pies conservan el anclaje.
+   if (archivo !== 'personajes/cuy.png' || f !== 6) {
+    for (const p of a) assert.ok(Math.abs(p.centro - 128) <= .5)
+    assert.ok(Math.max(...a.map(p => p.cima)) - Math.min(...a.map(p => p.cima)) <= 2)
+   }
    const hashes=[0,1,2].map(c=>{const b=Buffer.alloc(256*256*4);for(let y=0;y<256;y++)for(let x=0;x<256;x++)b.set(im.pixel(c*256+x,f*256+y),(y*256+x)*4);return createHash('sha256').update(b).digest('hex')})
    assert.equal(new Set(hashes).size,3)
   }
  })
 }
-test('el manifiesto del niño conserva el contrato aprobado',()=>{
+test('el manifiesto del niño conserva el contrato de seis filas sin el gesto opcional',()=>{
  const antes=JSON.parse(readFileSync(new URL('../fixtures/cuy-manifiesto-base.json',import.meta.url)))
  const ahora=JSON.parse(readFileSync(new URL('personajes/cuy.json',carpeta)))
+ // Al retirar la fila y sus dos animaciones se recupera el manifiesto base.
+ ahora.cuadricula.filas -= 1
+ delete ahora.animaciones.derecha.lanzar
+ delete ahora.animaciones.izquierda.lanzar
  assert.deepEqual(ahora,antes)
+ assert.equal(validarMolde(antes), antes)
 })
 // El fondo vigente es el cenital: cuatro tiras (pasto, arbusto, margaritas y flores)
 // con cuatro cuadros cada una. Cada archivo pedido por el cargador debe existir.

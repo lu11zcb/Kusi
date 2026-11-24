@@ -17,6 +17,7 @@ import { vectorDeJoystick, vectorDeTeclas, combinarEntradas } from '../logica/co
 const PROFUNDIDAD = 5000
 const RADIO_BASE = 92
 const RADIO_PERILLA = 44
+const RECORRIDO_PERILLA = RADIO_BASE - RADIO_PERILLA / 2
 const MARGEN = 36
 
 export function crearControles(escena, { saltar = false, joystick = true } = {}) {
@@ -73,9 +74,9 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
   }
   const alMover = (puntero) => {
     if (puntero.id !== estado.dedo) return
-    const gesto = vectorDeJoystick(puntero.x - estado.centro.x, puntero.y - estado.centro.y, RADIO_BASE - RADIO_PERILLA / 2)
-    estado.dx = gesto.x * (RADIO_BASE - RADIO_PERILLA / 2)
-    estado.dy = gesto.y * (RADIO_BASE - RADIO_PERILLA / 2)
+    const gesto = vectorDeJoystick(puntero.x - estado.centro.x, puntero.y - estado.centro.y, RECORRIDO_PERILLA)
+    estado.dx = gesto.x * RECORRIDO_PERILLA
+    estado.dy = gesto.y * RECORRIDO_PERILLA
     estado.vector = gesto
     perilla.setPosition(estado.centro.x + estado.dx, estado.centro.y + estado.dy)
   }
@@ -143,6 +144,15 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
     },
     // Las pruebas y el revisor leen aquí dónde están los controles.
     estado: () => ({ joystick: { ...estado.centro, radio: RADIO_BASE }, saltar: estado.centroSalto ? { ...estado.centroSalto, radio: 62 } : null }),
+    // La mano guía empuja el dibujo. El vector de juego lo sigue dando el niño.
+    demostrarJoystick(punto = estado.centro) {
+      if (destruido || !perilla || estado.dedo !== null) return
+      const { x, y } = estado.centro
+      const dx = punto.x - x
+      const dy = punto.y - y
+      const escala = RECORRIDO_PERILLA / Math.max(RECORRIDO_PERILLA, Math.hypot(dx, dy))
+      perilla.setPosition(x + dx * escala, y + dy * escala)
+    },
     destruir,
   }
 }

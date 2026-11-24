@@ -7,7 +7,7 @@
   },
   "cuadricula": {
     "columnas": 3,
-    "filas": 6
+    "filas": 7
   },
   "anclaje": {
     "x": 128,
@@ -203,6 +203,17 @@
         "repetir": 0,
         "siguiente": "quieto",
         "voltear": false
+      },
+      "lanzar": {
+        "fotogramas": [
+          18,
+          19,
+          20
+        ],
+        "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": false
       }
     },
     "izquierda": {
@@ -266,6 +277,17 @@
         "repetir": 0,
         "siguiente": "quieto",
         "voltear": false
+      },
+      "lanzar": {
+        "fotogramas": [
+          18,
+          19,
+          20
+        ],
+        "fps": 10,
+        "repetir": 0,
+        "siguiente": "quieto",
+        "voltear": true
       }
     }
   }

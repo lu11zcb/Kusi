@@ -251,22 +251,31 @@ export function crearVoz({
       cambiar({ tipo: 'tocar' })
     },
     callarVoz: () => cambiar({ tipo: 'callar' }),
+    vozOcupada: () => cola.actual !== null,
   }
 }
 
-export const { decir, repetirVoz, configurarVoz, habilitarVoz, callarVoz } = crearVoz()
+export const { decir, repetirVoz, configurarVoz, habilitarVoz, callarVoz, vozOcupada } = crearVoz()
 
-export function instalarActivacionVoz(ventana = window, habilitar = habilitarVoz) {
+export function alPrimerGesto(ventana, alActivar) {
   const eventos = ['pointerdown', 'touchstart', 'keydown', 'pointerup', 'touchend']
   const captura = { capture: true }
+  function quitar() {
+    for (const tipo of eventos) ventana.removeEventListener(tipo, activar, captura)
+  }
   function activar(evento) {
     if (!evento.isTrusted) return
     // Algunos navegadores habilitan el audio del primer toque al levantar el dedo.
     // Conservamos la frase pendiente hasta que ese mismo gesto pueda reproducirla.
     if (ventana.navigator?.userActivation?.hasBeenActive === false) return
-    for (const tipo of eventos) ventana.removeEventListener(tipo, activar, captura)
-    habilitar()
+    quitar()
+    alActivar()
   }
   // El gesto llega a la ventana antes de que los controles del lienzo lo manejen.
   for (const tipo of eventos) ventana.addEventListener(tipo, activar, captura)
+  return quitar
+}
+
+export function instalarActivacionVoz(ventana = window, habilitar = habilitarVoz) {
+  return alPrimerGesto(ventana, habilitar)
 }

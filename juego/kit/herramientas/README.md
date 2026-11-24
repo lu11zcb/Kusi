@@ -10,6 +10,8 @@ desde la carpeta `juego/`.
 | `preparar_criatura.mjs` | Prepara una criatura animada: corta la imagen con 3 poses del personaje, quita el fondo de cada una con la visión de macOS y arma la tira de 768 × 256 (3 cuadros, misma escala, pies en y = 244). | Node y macOS |
 | `comprobar_pieza.mjs` | Filtro de una pieza nueva (`--fondo`, `--figura` o `--criatura`). Reconoce las tiras de figura por sus medidas y devuelve las comprobaciones en JSON. | Node |
 | `preparar_fondo_cenital.mjs` | Separa la hoja de plantas de `originales/mundo/` en sus cuatro tiras animadas. | Node y `sips` |
+| `anexar_fila_personaje.mjs <hoja.png> <fila.png> <salida.png>` | Añade una tira de 768 × 256 al final de una hoja de personaje y conserva los píxeles y los índices de las filas anteriores. | Node |
+| `probar_escucha.mjs <carpeta de WAV>` | Evalúa la detección de voz y el reconocimiento de vocales en español con los mismos cuadros que analiza el micrófono. | Node |
 | `animaciones/preparar_espaldas.mjs` | Reemplaza la fila de espalda del cuy y del zorro a partir de `originales/personajes/`. | Node y `sips` |
 | `animaciones/armar_hoja.py` | Arma una hoja de personaje desde una tira o una carpeta de cuadros. | Python 3 y Pillow |
 | `animaciones/verificar_hoja.py` | Mide una hoja: pies, cima y centro de cada cuadro. | Python 3 y Pillow |
@@ -21,6 +23,19 @@ desde la carpeta `juego/`.
 
 Las tres últimas necesitan el juego abierto con `npm run dev` y escriben sus
 resultados en `evidencias/`, una carpeta que no se sube a GitHub.
+
+## Prueba del reconocedor de vocales
+
+```sh
+node kit/herramientas/probar_escucha.mjs /ruta/a/voces-prueba
+```
+
+Usa WAV PCM mono de 16 bits con una vocal aislada en español. La vocal
+esperada se lee del sufijo del nombre del archivo, por ejemplo `muestra-a.wav`.
+La herramienta lee cada WAV desde su carpeta, evalúa bloques de 40 ms a la
+frecuencia del archivo e imprime la vocal, si detectó voz y si la confirmaría.
+Al final muestra los aciertos totales, los aciertos entre las confirmaciones,
+los archivos sin voz y la tabla de confusión con la vocal esperada por fila.
 
 ## Tiras de gestos
 

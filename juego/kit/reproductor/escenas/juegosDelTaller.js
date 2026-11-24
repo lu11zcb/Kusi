@@ -7,6 +7,7 @@ import { COLOR } from '../medidas.js'
 import { rutaFicha, rutaVoz } from '../datos/registroJuegos.js'
 import { avisarPartida } from '../../../juegos/laberinto/logica/partidaLaberinto.js'
 import { leerPuente, AVISO_CARGADO } from '../mensajes/puenteGuion.js'
+import { apagarMicrofono } from '../interfaz/microfono.js'
 
 // Trae juego.js del trabajo cuando se abre el juego, no al arrancar Vite: un trabajo
 // que terminó hace un minuto se abre sin reiniciar nada. La ruta sale de rutaFicha,
@@ -35,7 +36,7 @@ export async function cargarGrabaciones(trabajo, signal) {
 // Phaser usa la clave que la escena pone en su constructor y no acepta dos escenas con
 // la misma. Esta subclase le da a cada trabajo su propia clave («taller:<id>») y, al
 // terminar su create(), avisa que el juego abrió (por si el juego no lo hizo).
-export function escenaDelTrabajo(Escena, clave) {
+export function escenaDelTrabajo(Escena, clave, usaMicrofono = false) {
   return class EscenaDelTaller extends Escena {
     constructor() {
       super()
@@ -44,6 +45,19 @@ export function escenaDelTrabajo(Escena, clave) {
 
     create(...argumentos) {
       try {
+        if (usaMicrofono) {
+          const cerrar = () => {
+            apagarMicrofono()
+            this.events.off('pause', apagarMicrofono)
+            this.events.off('sleep', apagarMicrofono)
+            this.events.off('shutdown', cerrar)
+            this.events.off('destroy', cerrar)
+          }
+          this.events.on('pause', apagarMicrofono)
+          this.events.on('sleep', apagarMicrofono)
+          this.events.once('shutdown', cerrar)
+          this.events.once('destroy', cerrar)
+        }
         const resultado = super.create?.(...argumentos)
         avisarQueAbrio(this)
         return resultado

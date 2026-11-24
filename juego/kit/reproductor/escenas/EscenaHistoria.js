@@ -11,7 +11,8 @@ import { dibujarGlobo } from '../interfaz/piezas.js'
 import { ajustarATamano } from '../dibujos/dibujos.js'
 import { animarVozKusi, crearHablaKusi, avanzarHablaKusi } from '../logica/hablaKusi.js'
 import { repartirPiezas, fondoDelCuento, laminasDelCuento, laminaDePagina } from '../logica/historia.js'
-import { callarVoz, decir } from '../logica/voz.js'
+import { alPrimerGesto, callarVoz, decir } from '../logica/voz.js'
+import { necesitaPermisoMicrofono, pedirMicrofono } from '../interfaz/microfono.js'
 import { vidaActiva } from '../efectos/vida.js'
 
 const FADE = 260
@@ -26,6 +27,7 @@ export class EscenaHistoria extends Phaser.Scene {
     this.paginas = Array.isArray(datos?.paginas) ? datos.paginas : []
     this.piezasDelJuego = Array.isArray(datos?.piezas) ? datos.piezas : []
     this.siguiente = datos?.siguiente ?? null
+    this.usaMicrofono = datos?.usaMicrofono === true
     this.indice = 0
     this.terminada = false
     this.lectura = null
@@ -85,8 +87,8 @@ export class EscenaHistoria extends Phaser.Scene {
       })
     }
 
-    // Toda la portada abre el cuento.
-    this.input.once('pointerup', () => {
+    const abrirPortada = () => {
+      if (!this.paginas.length) return this.empezar()
       this.tweens.killTweensOf(boton)
       globo.destroy()
       invitacion.destroy()
@@ -95,7 +97,26 @@ export class EscenaHistoria extends Phaser.Scene {
       // La captura del gesto en la ventana habilita el audio antes de leer.
       this.dibujarNarracion()
       this.mostrar(0)
-    })
+    }
+    // El gesto de la portada habilita el audio y, si corresponde, pide permiso
+    // antes de seguir. El juego empieza también si la familia lo rechaza.
+    if (this.usaMicrofono && necesitaPermisoMicrofono()) {
+      const control = new AbortController()
+      const quitar = alPrimerGesto(window, async () => {
+        await pedirMicrofono()
+        if (!control.signal.aborted) abrirPortada()
+      })
+      const cerrar = () => {
+        control.abort()
+        quitar()
+        this.events.off('shutdown', cerrar)
+        this.events.off('destroy', cerrar)
+      }
+      this.events.once('shutdown', cerrar)
+      this.events.once('destroy', cerrar)
+    } else {
+      this.input.once('pointerup', abrirPortada)
+    }
   }
 
   dibujarNarracion() {

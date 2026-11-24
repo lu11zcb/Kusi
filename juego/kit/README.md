@@ -37,3 +37,123 @@ registro de `reproductor/datos/registroJuegos.js`. Los detalles están en
 Las piezas nuevas que dibuja el taller quedan «pendientes» en su trabajo hasta
 que el docente las aprueba; solo entonces pueden pasar a la biblioteca de
 piezas.
+
+## Tutorial jugable
+
+Usa `crearTutorial` antes del primer reto para enseñar el gesto que el niño va a
+hacer. Cada paso apunta a un objetivo, Kusi dice la frase y la repite cada seis
+segundos de juego, y el niño practica con los controles reales. Mientras practica,
+el juego puede dejar en pausa los retos y mantener activos sus controles.
+
+```js
+import { crearTutorial } from '#kit/reproductor/interfaz/tutorial.js'
+
+// Dentro de create, con el HUD, los controles y la campana en pantalla.
+const centro = () => this.controles.estado().joystick
+this.tutorial = crearTutorial(this, this.hud, {
+  partida: this.datos.partida,
+  pasos: [
+    {
+      frase: 'Mueve el joystick para caminar.',
+      gesto: 'joystick',
+      objetivo: centro,
+      hacia: () => ({ x: centro().x + 60, y: centro().y }),
+      hecho: () => this.yaCamino,
+    },
+    {
+      frase: 'Toca la campana.',
+      gesto: 'tocar',
+      objetivo: () => ({ x: this.campana.x, y: this.campana.y }),
+      hecho: () => this.yaTocoCampana,
+    },
+  ],
+  alTerminar: () => this.empezarReto(),
+})
+```
+
+El juego pone `yaCamino` y `yaTocoCampana` en `true` al registrar cada acción.
+En `update`, después de procesar los controles, llama a
+`this.tutorial.actualizar(delta / 1000)`. `objetivo` y `hacia` devuelven
+coordenadas de pantalla, como las de la interfaz fija. Para `arrastrar`, usa
+`hacia` para señalar dónde soltar el objeto. Para `joystick`, el tutorial usa
+`this.controles` para mover el dibujo de la perilla y acepta `controles` en las
+opciones si el juego lo guarda en otro lugar.
+
+Pasa la misma `partida` entre escenas y una nueva al reiniciar el juego. El kit
+recuerda en memoria que mostró el tutorial. Si ya se vio o la dirección lleva
+`?tutorial=0`, `terminado` vale `true` y `alTerminar` se ejecuta de inmediato.
+Con `?vida=0` la mano conserva el movimiento y se apagan el anillo, la estela y
+el cambio de tamaño. La escena limpia el tutorial al cerrarse. También puedes
+llamar a `destruir()` si necesitas retirarlo antes.
+
+El [ejemplo de exploración](ejemplos/exploracion/EscenaExploracion.js) enseña a
+caminar antes de que empiece a patrullar el adversario.
+
+## Voces que cantan
+
+Usa `crearCanto` para que un personaje sostenga una vocal. Las voces `grave`,
+`media` y `aguda` tienen resonancias propias. Puedes elegir una nota o dejar que
+la voz use su tono base. Crea el canto en la escena y reprodúcelo cuando el audio
+ya esté habilitado, por ejemplo después del toque que inicia la partida.
+
+```js
+import { crearCanto } from '#kit/reproductor/efectos/canto.js'
+
+const canto = crearCanto(this)
+canto.cantar('a', { voz: 'grave', nota: 'sol3', duracion: 0.9 })
+```
+
+En `cantar`, la duración se mide en segundos. En `coro(lista, { tempo })`,
+cada entrada usa la duración en pulsos (uno por defecto) y el tempo se mide
+en pulsos por minuto (120 por defecto). El canto respeta el botón Sonido y se
+apaga al cerrar la escena. Usa `callar()` para interrumpirlo antes.
+
+## Escuchar al niño
+
+Agrega `usaMicrofono: true` a la ficha `juego.js`. El reproductor pide permiso
+en el primer toque de la portada, antes del cuento o del nivel. Si la familia
+lo rechaza, el equipo carece de micrófono o la dirección lleva `?microfono=0`,
+la actividad sigue y la escucha devuelve `oyo: false`.
+
+- El equipo analiza cada cuadro mientras suena. El audio del niño no se graba,
+  no se guarda y no se envía a ningún servicio. La escucha usa energía, tono y
+  resonancias de voz. Al terminar o al salir de la escena, libera el micrófono.
+- El juego nunca castiga por lo que oye. En un aula con ruido, puede confundir
+  una vocal. La escucha acompaña el reto y el niño puede continuar en silencio.
+- El permiso se solicita una vez al principio. Si la familia dice que no,
+  el reproductor recuerda esa decisión durante la sesión.
+
+Llama a `escucharVocal({ segundos: 2.5 })` cuando Kusi termine de hablar, por
+ejemplo desde `alTerminar` de `decir`. Si la frase sigue sonando o queda otra en
+cola, la escucha espera. Usa `alSinVoz` para que el mismo paso funcione cuando
+falla la voz de Kusi, y llama a la escucha una sola vez por consigna.
+
+```js
+import { decir } from '#kit/reproductor/logica/voz.js'
+import { escucharVocal } from '#kit/reproductor/interfaz/microfono.js'
+
+let yaEscucho = false
+async function escuchar() {
+  if (yaEscucho) return
+  yaEscucho = true
+  const { oyo, vocal, seguro } = await escucharVocal()
+  if (!oyo) return
+  decir(seguro ? '¡Te oí! Eso es ' + vocal.repeat(3) + '.' : '¡Muy bien, te escuché!')
+}
+
+decir('Dilo conmigo: ¡aaa!', {
+  alTerminar: ({ interrumpida }) => { if (!interrumpida) void escuchar() },
+  alSinVoz: escuchar,
+})
+```
+
+Pasa `alNivel` para mover las ondas con cada lectura. Recibe un número de `0` a
+`1` y vuelve a recibir `0` al terminar.
+
+```js
+const alNivel = nivel => ondas.setScale(1 + 0.35 * nivel)
+await escucharVocal({ segundos: 2.5, alNivel })
+```
+
+Si el juego se abre dentro de una página de otro origen, esa página tiene
+que delegar el permiso de micrófono al marco para que pueda escuchar.

@@ -9,12 +9,12 @@ juego son más simples: una tira de 3 cuadros de lado (`criatura-<nombre>`, regl
 ## 1. La hoja
 
 Un personaje es **una sola imagen PNG con transparencia**, dividida en celdas
-de 256 × 256. Cada fila es una vista o un estado y tiene **tres cuadros**: el
-paso con un pie, el apoyo y el paso con el otro pie. Al caminar se reproducen
-en el ciclo 0, 1, 2, 1 a 8 cuadros por segundo.
+de 256 × 256. Cada fila es una vista o un estado y tiene **tres cuadros**.
+Las filas de caminar muestran un paso con un pie, el apoyo y un paso con el
+otro pie. Se reproducen en el ciclo 0, 1, 2, 1 a 8 cuadros por segundo.
 
-La hoja del cuy (`dibujos/personajes/cuy.png`, 768 × 1536, 3 columnas y 6 filas)
-es el molde:
+La hoja del cuy (`dibujos/personajes/cuy.png`, 768 × 1792, 3 columnas y 7 filas)
+muestra las seis filas base y el gesto opcional.
 
 | Fila | Cuadros | Qué muestra |
 | --- | --- | --- |
@@ -24,6 +24,7 @@ es el molde:
 | 3 | 9, 10, 11 | Feliz, de frente. |
 | 4 | 12, 13, 14 | De espaldas, caminando. |
 | 5 | 15, 16, 17 | Parpadeo, de frente. |
+| 6 (opcional) | 18, 19, 20 | Lanzamiento, mirando a la derecha. La izquierda usa la misma fila volteada. |
 
 El zorro usa otra hoja (3 × 5: frente, lado, espalda, cansado y alerta) y Kusi
 otra (3 × 4: hablar, saludar, parpadear y respirar).
@@ -33,13 +34,13 @@ otra (3 × 4: hablar, saludar, parpadear y respirar).
 Las pruebas del kit (`pruebas/logica/estiloFinal.test.js`) ya comprueban:
 
 - **los pies apoyan en y = 244** en todos los cuadros;
-- **el centro de la cabeza está en x = 128**, con medio píxel de tolerancia;
+- **el centro de la cabeza está en x = 128** en las filas base, con medio píxel de tolerancia;
 - quedan **al menos 2 px libres** a la izquierda y a la derecha;
-- la cima de la cabeza no salta más de 2 px entre los cuadros de una fila;
+- la cima de la cabeza se desplaza como máximo 2 px entre los cuadros de una fila base;
 - los tres cuadros de cada fila son distintos.
 
-En el cuy, la silueta va de y = 23 a y = 244 (87 % de la celda) y la cabeza
-ocupa el 57 % de la altura.
+En las filas base del cuy, la silueta va de y = 23 a y = 244 (87 % de la celda)
+y la cabeza ocupa el 57 % de la altura.
 
 ## 3. El estilo del personaje
 
@@ -60,7 +61,7 @@ reproductor cómo leerla. El del cuy es `dibujos/personajes/cuy.json`.
 | `formato` | siempre `kusi-sprite/1` | `kusi-sprite/1` |
 | `imagen` | nombre del PNG, que está en `dibujos/personajes/` junto al manifiesto | `cuy.png` |
 | `fotograma` | ancho y alto de una celda | 256 × 256 |
-| `cuadricula` | columnas y filas; la hoja debe medir exactamente eso por la celda | 3 × 6 |
+| `cuadricula` | columnas y filas; la hoja debe medir exactamente eso por la celda | 3 × 7 |
 | `anclaje` | el punto de los pies dentro de la celda | x = 128, y = 244 |
 | `escala` | escala inicial (el laberinto la reemplaza por la suya) | 0,5 |
 | `velocidadReferencia` | se comprueba, pero hoy no se usa | 260 |
@@ -85,6 +86,7 @@ los juegos los usan:
 | `feliz` | frente (en el cuy, también en las demás) | Acertar. Se ve una vez y vuelve a `quieto`. |
 | `asustado` | frente (en el cuy, también en las demás) | Ser atrapado o equivocarse. Se ve una vez y vuelve a `quieto`. |
 | `parpadeo` | frente | Parpadear mientras espera. |
+| `lanzar` | derecha e izquierda | **Opcional.** Lanzar algo en tres cuadros (preparar, lanzar, terminar). El objeto sale en el segundo. Si falta `lanzar`, el juego usa `feliz`. |
 
 El zorro nombra distinto el caminar: usa `caminar` con sus propios cuadros en
 cada vista, sin `caminar_lado` ni `caminar_espalda`. Kusi no tiene manifiesto.
@@ -93,9 +95,10 @@ cada vista, sin `caminar_lado` ni `caminar_espalda`. Kusi no tiene manifiesto.
 
 Para que el niño pueda cambiar de personaje sin cambiar ningún juego:
 
-- todas las opciones usan **la misma cuadrícula de 3 × 6, el mismo orden de
-  filas y el mismo anclaje** que el cuy;
-- todas tienen **los mismos estados** de la sección 5;
-- así su manifiesto es igual al del cuy y solo cambia `imagen`;
+- todas las opciones conservan **las tres columnas, el orden de las seis filas
+  base y el mismo anclaje** que el cuy;
+- todas tienen los estados obligatorios de la sección 5 y pueden añadir una
+  séptima fila para `lanzar`;
+- su manifiesto indica el nombre de su imagen, sus filas y sus animaciones;
 - los juegos nunca nombran al cuy: usan **el protagonista** que les da el
   reproductor (ver `juego/taller/reglas.md`).
