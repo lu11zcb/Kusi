@@ -1,9 +1,13 @@
 package pe.kusi.movil
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -21,6 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.io.ByteArrayInputStream
+import java.net.URI
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
@@ -144,6 +149,20 @@ fun JuegoLaberinto(
                     settings.allowContentAccess = false
                     settings.mediaPlaybackRequiresUserGesture = false
                     settings.setSupportMultipleWindows(false)
+                    // WebView identifica el origen por su protocolo, servidor y puerto, sin la ruta del juego.
+                    val origenJuego = URI(BuildConfig.JUEGO_URL).resolve("/").toString()
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onPermissionRequest(solicitud: PermissionRequest) {
+                            val permisoMicrofono = contexto.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+                                PackageManager.PERMISSION_GRANTED
+                            val recursos = recursosPermitidosJuego(
+                                solicitud.resources,
+                                permisoMicrofono,
+                                direccionJuegoPermitida(origenJuego, solicitud.origin.toString())
+                            )
+                            if (recursos.isEmpty()) solicitud.deny() else solicitud.grant(recursos)
+                        }
+                    }
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?) =
                             request == null || !direccionJuegoPermitida(BuildConfig.JUEGO_URL, request.url.toString())
@@ -193,4 +212,12 @@ fun JuegoLaberinto(
             else { solicitaPausa = false; pedirPausa() }
         }) { Text("Guardar otra vez") }
     })
+}
+
+internal fun recursosPermitidosJuego(
+    solicitados: Array<String>, permisoMicrofono: Boolean, origenPermitido: Boolean
+): Array<String> {
+    // La lista explícita evita conceder la cámara u otros recursos que WebView añada en el futuro.
+    val audio = PermissionRequest.RESOURCE_AUDIO_CAPTURE
+    return if (permisoMicrofono && origenPermitido && audio in solicitados) arrayOf(audio) else emptyArray()
 }
