@@ -39,8 +39,10 @@ fun AplicacionInfantil(
     biblioteca: EstadoBibliotecaInfantil = EstadoBibliotecaInfantil(), reintentarBiblioteca: (() -> Unit)? = null,
     cierre: EstadoCierreInfantil = EstadoCierreInfantil(), reintentarGuardado: () -> Unit = {},
     alVerMision: (AventuraInfantil) -> Unit = {},
-    contenidoJuego: @Composable (AventuraInfantil, () -> Unit, () -> Unit) -> Unit = { _, _, volver -> JuegoSinConectar(volver) }, presentacion: Boolean = false,
+    contenidoJuego: @Composable (AventuraInfantil, () -> Unit, () -> Unit) -> Unit = { _, _, volver -> JuegoSinConectar(volver) },
     logros: EstadoLogrosInfantil = EstadoLogrosInfantil(), recargarLogros: (() -> Unit)? = null,
+    tienda: EstadoTiendaInfantil = EstadoTiendaInfantil(), cargarTienda: () -> Unit = {}, comprarPrenda: (String) -> Unit = {},
+    guardarCuy: (Int, List<String>) -> Unit = { _, _ -> },
 ) {
     val idCuenta = estado.cuenta?.id
     val contexto = LocalContext.current
@@ -52,6 +54,12 @@ fun AplicacionInfantil(
     var cursoInicio by rememberSaveable(idCuenta) { mutableStateOf<String?>(null) }
     var apariencia by rememberSaveable(idCuenta, stateSaver = AparienciaCuySaver) {
         mutableStateOf(if (idCuenta == null) AparienciaCuy() else aparienciaGuardada(preferenciasCuy, idCuenta))
+    }
+    // El cuy también vive en Spring para que los compañeros lo vean en el podio. Se envía al entrar y cada vez que cambia.
+    LaunchedEffect(idCuenta, estado.validado, apariencia) {
+        if (idCuenta != null && estado.validado && preferenciasCuy.getBoolean("creado_$idCuenta", false)) {
+            guardarCuy(apariencia.pelaje.codigo, CategoriaCuy.entries.mapNotNull { apariencia.piezas[it]?.name })
+        }
     }
     var entrada by rememberSaveable(estado.cuenta?.id) { mutableStateOf("bienvenida") }
     var aventuraId by rememberSaveable(estado.cuenta?.id) { mutableStateOf<String?>(null) }
@@ -102,7 +110,6 @@ fun AplicacionInfantil(
     }) { margen ->
         Box(Modifier.fillMaxSize().padding(margen), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = 1040.dp).fillMaxSize()) {
-                if (presentacion) Surface(color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.fillMaxWidth()) { Text("Vista de presentación · datos de ejemplo", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, modifier = Modifier.padding(6.dp)) }
                 AnimatedContent(destino, transitionSpec = { (fadeIn(tween(220)) + slideInHorizontally(tween(260)) { it / 14 }).togetherWith(fadeOut(tween(120))) }, label = "cambio-pantalla", modifier = Modifier.weight(1f)) { pantalla ->
                     when (pantalla) {
                         "arranque" -> ArranqueInfantil()
@@ -112,6 +119,7 @@ fun AplicacionInfantil(
                             CreaTuCuy(
                                 apariencia, voz, preferenciasCuy.getBoolean("voz", true),
                                 preferenciasCuy.getBoolean("creado_$idCuenta", false), ::volver,
+                                tienda, cargarTienda, comprarPrenda,
                             ) { elegida ->
                                 guardarApariencia(preferenciasCuy, idCuenta, elegida)
                                 apariencia = elegida
@@ -277,11 +285,16 @@ private fun MisionInfantil(aventura: AventuraInfantil, voz: VozKusi, jugar: () -
 }
 @Composable
 private fun CierreInfantil(aventura: AventuraInfantil, estado: EstadoCierreInfantil, voz: VozKusi, inicio: () -> Unit, otraVez: () -> Unit, reintentar: () -> Unit) {
-    PanelHorizontalInfantil(imagen = { CuyInteractivo(voz, Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge), "¡Terminaste tu aventura! Gracias por explorar conmigo.", R.drawable.kusi_celebracion_v2) }) {
+    // Las monedas solo se anuncian cuando Spring confirmó el cierre: así nunca se promete un premio que no quedó guardado.
+    val monedas = estado.monedas?.takeIf { estado.guardado && it > 0 }
+    val frase = "¡Terminaste tu aventura! Gracias por explorar conmigo." +
+        (if (monedas != null) " Ganaste " + monedas + (if (monedas == 1) " moneda" else " monedas") + " para la tienda de tu cuy." else "")
+    PanelHorizontalInfantil(imagen = { CuyInteractivo(voz, Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge), frase, R.drawable.kusi_celebracion_v2) }) {
         Text("¡Terminaste tu aventura!", style = MaterialTheme.typography.headlineMedium); Text(aventura.titulo, style = MaterialTheme.typography.titleLarge)
         if (estado.completados != null && estado.total != null) Text("Completaste " + estado.completados + " de " + estado.total + " retos")
         if (estado.puntos != null) Text("Tienes " + estado.puntos + " de 20 puntos en esta actividad.", style = MaterialTheme.typography.titleLarge)
-        Text("Hasta 20 puntos, repartidos entre los retos y redondeados. Pedir ayuda no resta puntos. Repetir no da puntos de nuevo.", style = MaterialTheme.typography.bodySmall)
+        if (monedas != null) Text("¡Ganaste " + monedas + (if (monedas == 1) " moneda" else " monedas") + " para la tienda de tu cuy!", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        Text("Hasta 20 puntos, repartidos entre los retos. Cada error resta 1 punto, sin bajar de la mitad. Pedir ayuda no resta puntos. Al repetir, solo suma lo que mejores.", style = MaterialTheme.typography.bodySmall)
         when { estado.guardando -> Text("Kusi está guardando tu aventura…", style = MaterialTheme.typography.bodySmall); estado.error != null -> { AvisoKusi("Tu aventura terminó. Vamos a guardar tu avance."); TextButton(onClick = reintentar) { Text("Intentar otra vez") } }; estado.guardado -> Text("¡Tu aventura quedó guardada!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             BotonKusi("Jugar otra vez", otraVez, Modifier.weight(1f), habilitado = !estado.guardando && estado.guardado, icono = R.drawable.ic_kusi_replay, compacto = true)

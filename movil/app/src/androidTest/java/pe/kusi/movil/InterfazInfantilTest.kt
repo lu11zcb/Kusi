@@ -368,7 +368,7 @@ class InterfazInfantilTest {
 
     @Test fun vestidor_tiene_un_dibujo_para_cada_combinacion_permitida() {
         val opciones = CategoriaCuy.entries.fold(listOf(AparienciaCuy())) { apariencias, categoria ->
-            val piezas = PiezaCuy.entries.filter { !it.bloqueada && it.categoria == categoria }
+            val piezas = PiezaCuy.entries.filter { !it.deTienda && it.categoria == categoria }
             apariencias.flatMap { apariencia -> listOf(apariencia) + piezas.map { apariencia.vestir(categoria, it) } }
         }
         val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
@@ -400,16 +400,18 @@ class InterfazInfantilTest {
                 if (!pestaña.isDisplayed()) pestaña.performScrollTo()
                 pestaña.performClick()
             }
-            for (pieza in PiezaCuy.entries.filter { it.bloqueada }) {
+            for (pieza in PiezaCuy.entries.filter { it.deTienda }) {
                 categoria(pieza.categoria.etiqueta)
-                val bloqueado = pantalla.onNode(hasText(pieza.etiqueta) and hasText("${pieza.monedas} monedas"))
-                bloqueado.performScrollTo().assertIsNotEnabled()
-                bloqueado.performTouchInput { click(center) }
+                val bloqueado = pantalla.onNode(hasText(pieza.etiqueta) and hasText("Se compra con monedas"))
+                bloqueado.performScrollTo().performClick()
+                // Sin respuesta de la tienda no se compra ni se pone nada: la app ofrece volver a consultar.
+                pantalla.onNodeWithText("No pudimos ver tus monedas. Vuelve a intentarlo.").assertIsDisplayed()
+                pantalla.onNodeWithText("Ahora no").performClick()
                 pantalla.onNodeWithText(pieza.categoria.sinPieza).assertIsSelected()
             }
             categoria("Ropa")
             pantalla.onNodeWithText("Ver puesto").performScrollTo().performClick()
-            pantalla.onNodeWithText("Bloqueado · 100 monedas").assertIsDisplayed()
+            pantalla.onNodeWithText("Bloqueado · Se compra con monedas").assertIsDisplayed()
             capturar("vestidor-vista-chaleco")
             pantalla.onNodeWithText("Volver al vestidor").performClick()
             pantalla.onNodeWithText("Sin ropa").performScrollTo().assertIsSelected()

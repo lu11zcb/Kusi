@@ -18,15 +18,9 @@ android {
     }
     buildTypes {
         debug { manifestPlaceholders["traficoLocal"] = "true" }
-        create("qa") {
-            initWith(getByName("debug"))
-            applicationIdSuffix = ".qa"
-            matchingFallbacks += "debug"
-        }
         release { manifestPlaceholders["traficoLocal"] = "false" }
     }
     buildFeatures { compose = true; buildConfig = true }
-    testBuildType = "qa"
     compileOptions { sourceCompatibility = JavaVersion.VERSION_21; targetCompatibility = JavaVersion.VERSION_21 }
 }
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21) } }
@@ -42,7 +36,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
     implementation("app.rive:rive-android:11.16.3")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    add("qaImplementation", "androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250107")
     androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
@@ -50,5 +43,4 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    add("qaImplementation", "androidx.compose.ui:ui-test-manifest")
 }

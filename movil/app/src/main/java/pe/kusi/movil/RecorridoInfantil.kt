@@ -5,7 +5,18 @@ data class EstadoEntradaKusi(val cuenta: Cuenta?, val ocupado: Boolean = false, 
 /** Solo datos para dibujar. La autorización y la carga pertenecen al servicio del alumno. */
 data class AventuraInfantil(val id: String, val titulo: String, val curso: String, val meta: String, val consigna: String, val portada: Int = R.drawable.kusi_feria_v2, val paquete: String? = null, val icono: Int = R.drawable.ic_kusi_compass, val nuevo: Boolean = false, val enPausa: Boolean = false)
 data class EstadoBibliotecaInfantil(val aventuras: List<AventuraInfantil> = emptyList(), val cargando: Boolean = false, val error: String? = null)
-data class EstadoCierreInfantil(val completados: Int? = null, val total: Int? = null, val guardando: Boolean = false, val error: String? = null, val guardado: Boolean = false, val puntos: Int? = null)
+data class EstadoCierreInfantil(val completados: Int? = null, val total: Int? = null, val guardando: Boolean = false, val error: String? = null, val guardado: Boolean = false, val puntos: Int? = null, val monedas: Int? = null)
+
+/** Una prenda a la venta en la tienda de «Mi cuy», tal como la devuelve Spring. */
+data class PrendaTiendaInfantil(val id: String, val nombre: String, val precio: Int, val comprada: Boolean)
+/** El saldo y las prendas a la venta. `comprando` es el id de la prenda que se está comprando. */
+data class EstadoTiendaInfantil(
+    val saldo: Long? = null,
+    val prendas: List<PrendaTiendaInfantil> = emptyList(),
+    val cargando: Boolean = false,
+    val comprando: String? = null,
+    val error: String? = null,
+)
 
 data class ProgresoCursoInfantil(val nombre: String, val puntos: Long, val retos: Long)
 data class ResumenLogrosInfantil(val puntos: Long, val retos: Long, val cursos: List<ProgresoCursoInfantil>)
@@ -27,6 +38,3 @@ data class EstadoLogrosInfantil(
     val ranking: RankingSalonInfantil? = null,
     val metaSalon: MetaSalonInfantil? = null,
 )
-
-fun aventuraLaberintoEjemplo() = AventuraInfantil("laberinto-ejemplo", "El laberinto de Kusi (ejemplo)", "Matemática",
-    "Explora los caminos con Kusi.", "Mira el grupo de arriba y escucha a Kusi.")

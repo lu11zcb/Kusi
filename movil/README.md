@@ -1,5 +1,23 @@
 # Kusi Android · recorrido del Sprint 2
 
+## Datos reales en la app · 24 de noviembre
+
+La app ya no tiene vista de diseño ni datos de ejemplo: se quitó la variante `qa` («Kusi · Diseño de Logros») y el
+aviso «Vista de presentación». Todo lo que ve el niño sale de Spring con su cuenta: sus juegos, sus puntos, sus medallas,
+sus monedas, la tienda y, en «Trofeos», el podio y la meta de su salón (`/api/edu/estudiante/logros/`). El podio muestra a los
+tres compañeros de su sección con más puntos, con nombre y apellido y su cuy. Por eso el cuy de cada niño también se
+guarda en Spring (`/api/edu/estudiante/apariencia/`) al entrar y cada vez que lo cambia.
+
+## Tienda de «Mi cuy» · 24 de noviembre
+
+El vestidor muestra las monedas del niño y vende 4 prendas: lentes estrella y mochila menta (20 monedas),
+gorra exploradora (40) y chaleco coral (60). Las demás prendas son gratis. El saldo, los precios y lo comprado
+vienen de Spring (`/api/edu/estudiante/monedas/`, `…/tienda/` y `…/tienda/compras/`): la app no descuenta nada
+ni guarda compras. Al tocar una prenda bloqueada, Kusi dice cuánto cuesta y cuántas monedas tiene el niño (o cuántas
+le faltan); si la compra se confirma, el cuy se la pone. Si todavía no existe el dibujo de una combinación con una prenda
+comprada, el vestidor muestra el cuy sin esa prenda en lugar de cerrarse. Al terminar una actividad, la pantalla final
+dice cuántas monedas ganó (`monedas_ganadas` del resumen de la partida).
+
 ## Bienvenida con Kusi animado en Compose · 22 de noviembre
 
 La bienvenida («Ven, vamos a la aventura») muestra un valle andino con cantutas, nubes

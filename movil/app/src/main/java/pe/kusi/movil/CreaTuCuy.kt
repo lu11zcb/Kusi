@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -79,6 +80,26 @@ private const val LadoMuestraPelaje = 384
 private const val RutaChalecoPuesto = "vestidor_vistas/chaleco.webp"
 private fun rutaVestidor(archivo: String) = "vestidor/$archivo.webp"
 
+// La lista de hojas del vestidor se lee una sola vez: son cientos de archivos y no cambian mientras la app corre.
+private var hojasDelVestidor: Set<String>? = null
+
+/** La hoja de esta apariencia, o la del cuy sin las prendas de la tienda si su dibujo todavía no existe. */
+@Composable
+private fun rutaDisponible(apariencia: AparienciaCuy): String {
+    val assets = LocalContext.current.assets
+    val hojas = hojasDelVestidor ?: assets.list("vestidor").orEmpty().toSet().also { hojasDelVestidor = it }
+    return rutaVestidor(apariencia.hojaDisponible(hojas))
+}
+
+// Para que Kusi hable bien de cada prenda de la tienda («los lentes», «el chaleco»).
+private fun conArticulo(pieza: PiezaCuy): String = when (pieza.categoria) {
+    CategoriaCuy.LENTES -> "los "
+    CategoriaCuy.ROPA -> "el "
+    else -> "la "
+} + pieza.etiqueta.lowercase()
+
+private fun textoPrecio(precio: Int?): String = if (precio == null) "Se compra con monedas" else precio.toString() + " monedas"
+
 @Composable
 private fun arteCompleto(ruta: String): ImageBitmap {
     val assets = LocalContext.current.assets
@@ -94,11 +115,20 @@ internal fun CreaTuCuy(
     vozActiva: Boolean,
     editando: Boolean,
     volver: () -> Unit,
+    tienda: EstadoTiendaInfantil,
+    cargarTienda: () -> Unit,
+    comprar: (String) -> Unit,
     guardar: (AparienciaCuy) -> Unit,
 ) {
     var elegido by rememberSaveable(aparienciaInicial, stateSaver = AparienciaCuySaver) { mutableStateOf(aparienciaInicial) }
     var categoria by rememberSaveable { mutableStateOf<CategoriaCuy?>(null) }
     var viendoChaleco by rememberSaveable { mutableStateOf(false) }
+    // La prenda de la tienda que el niño tocó y que todavía no es suya.
+    var ofrecida by rememberSaveable { mutableStateOf<PiezaCuy?>(null) }
+    val compradas = remember(tienda.prendas) { piezasCompradas(tienda) }
+    val precios = remember(tienda.prendas) {
+        tienda.prendas.mapNotNull { prenda -> piezaDeTienda(prenda.id)?.let { it to prenda.precio } }.toMap()
+    }
     var pulso by remember { mutableIntStateOf(0) }
     var saludando by remember { mutableStateOf(false) }
     var celebrando by remember { mutableStateOf(false) }
@@ -115,6 +145,19 @@ internal fun CreaTuCuy(
             saludando = true
             delay(ReaccionMascota.SALUDO.duracion.toLong())
             saludando = false
+        }
+    }
+    // El saldo y lo comprado se piden a Spring cada vez que se abre el vestidor.
+    LaunchedEffect(Unit) { cargarTienda() }
+    // Cuando Spring confirma la compra, el cuy se pone la prenda nueva y Kusi lo celebra.
+    LaunchedEffect(ofrecida, compradas) {
+        val pieza = ofrecida ?: return@LaunchedEffect
+        if (pieza in compradas) {
+            ofrecida = null
+            categoria = pieza.categoria
+            elegido = elegido.vestir(pieza.categoria, pieza, compradas)
+            pulso++
+            if (vozActiva) voz.hablar("¡Ya es tuya! Tu cuy se puso " + conArticulo(pieza) + ".")
         }
     }
     LaunchedEffect(celebrando) {
@@ -143,6 +186,7 @@ internal fun CreaTuCuy(
                 Text(if (editando) "Edita tu cuy" else "Crea tu cuy",
                     Modifier.weight(1f).semantics { heading() },
                     color = tinta, style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
+                SaldoMonedas(tienda.saldo)
                 BotonVestidor(
                     if (voz.hablando) R.drawable.ic_ingreso_silenciar else R.drawable.ic_ingreso_voz,
                     if (voz.hablando) "Dejar de escuchar a Kusi" else "Escuchar a Kusi",
@@ -187,10 +231,11 @@ internal fun CreaTuCuy(
                                 }
                             } else {
                                 SelectorPiezas(
-                                    panel, activa, elegido.piezas[activa], !celebrando, oscuro,
+                                    panel, activa, elegido.piezas[activa], !celebrando, oscuro, compradas, precios,
                                     verChaleco = { viendoChaleco = true },
+                                    ofrecer = { ofrecida = it },
                                 ) {
-                                    elegido = elegido.vestir(activa, it)
+                                    elegido = elegido.vestir(activa, it, compradas)
                                     pulso++
                                 }
                             }
@@ -236,15 +281,96 @@ internal fun CreaTuCuy(
                     VestidorCuy(
                         Modifier.weight(1f, fill = false).height(184.dp),
                         AparienciaCuy(elegido.pelaje, mapOf(CategoriaCuy.ROPA to chaleco)),
-                        reaccion, pulso, quieto, habilitado = true, ruta = RutaChalecoPuesto,
+                        reaccion, pulso, quieto, habilitado = true, rutaFija = RutaChalecoPuesto,
                     ) { if (!saludando) pulso++ }
-                    PrecioDePieza("Bloqueado · ${chaleco.monedas} monedas")
+                    PrecioDePieza("Bloqueado · " + textoPrecio(precios[chaleco]))
                 }
             },
             confirmButton = {
                 TextButton(onClick = { viendoChaleco = false }) { Text("Volver al vestidor") }
             },
         )
+    }
+    ofrecida?.let { pieza ->
+        OfertaDePieza(pieza, tienda, precios[pieza], voz, vozActiva, cargarTienda,
+            comprar = { pieza.idTienda?.let(comprar) }, cerrar = { voz.callar(); ofrecida = null })
+    }
+}
+
+/**
+ * Lo que pasa al tocar una prenda de la tienda que todavía no es del niño. Kusi dice en voz alta lo mismo que
+ * se lee, porque en 1.º y 2.º muchos niños todavía no leen. La compra la confirma Spring; la app no descuenta nada.
+ */
+@Composable
+private fun OfertaDePieza(
+    pieza: PiezaCuy,
+    tienda: EstadoTiendaInfantil,
+    precio: Int?,
+    voz: VozKusi,
+    vozActiva: Boolean,
+    cargarTienda: () -> Unit,
+    comprar: () -> Unit,
+    cerrar: () -> Unit,
+) {
+    val saldo = tienda.saldo
+    val comprando = tienda.comprando != null && tienda.comprando == pieza.idTienda
+    val alcanza = precio != null && saldo != null && saldo >= precio
+    val texto = when {
+        tienda.error != null -> tienda.error
+        precio == null || saldo == null ->
+            if (tienda.cargando) "Kusi está contando tus monedas…" else "No pudimos ver tus monedas. Vuelve a intentarlo."
+        alcanza -> "¿Compramos " + conArticulo(pieza) + "? Son " + precio + " monedas y tienes " + saldo + "."
+        else -> "Te faltan " + (precio - saldo) + " monedas para " + conArticulo(pieza) +
+            ". Juega tus aventuras y gana más."
+    }
+    LaunchedEffect(texto) { if (vozActiva && !tienda.cargando) voz.hablar(texto) }
+    AlertDialog(
+        onDismissRequest = { if (!comprando) cerrar() },
+        title = { Text(pieza.etiqueta) },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Image(painterResource(pieza.icono), null, Modifier.size(120.dp, 90.dp))
+                PrecioDePieza(textoPrecio(precio))
+                Text(texto, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+            }
+        },
+        confirmButton = {
+            when {
+                alcanza && tienda.error == null -> TextButton(onClick = comprar, enabled = !comprando) {
+                    Text(if (comprando) "Comprando…" else "Comprar")
+                }
+                precio == null || saldo == null || tienda.error != null -> TextButton(onClick = cargarTienda, enabled = !tienda.cargando) {
+                    Text("Intentar otra vez")
+                }
+                else -> TextButton(onClick = cerrar) { Text("Entendido") }
+            }
+        },
+        dismissButton = {
+            if (alcanza || precio == null || saldo == null || tienda.error != null) {
+                TextButton(onClick = cerrar, enabled = !comprando) { Text("Ahora no") }
+            }
+        },
+    )
+}
+
+/** Las monedas del niño, arriba del vestidor. No aparece hasta que Spring responde. */
+@Composable
+private fun SaldoMonedas(saldo: Long?) {
+    if (saldo == null) return
+    Surface(
+        color = FondoMonedas, contentColor = TintaMonedas, shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.clearAndSetSemantics { contentDescription = "Tienes " + saldo + " monedas" },
+    ) {
+        Row(
+            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(painterResource(R.drawable.ic_cuy_moneda), null, Modifier.size(18.dp))
+            Text(saldo.toString(), style = MaterialTheme.typography.titleMedium)
+        }
     }
 }
 
@@ -270,9 +396,10 @@ private fun VestidorCuy(
     pulso: Int,
     quieto: Boolean,
     habilitado: Boolean,
-    ruta: String = rutaVestidor(apariencia.archivo),
+    rutaFija: String? = null,
     alTocar: () -> Unit,
 ) {
+    val ruta = rutaFija ?: rutaDisponible(apariencia)
     val arte = arteCompleto(ruta)
     val forma = RoundedCornerShape(28.dp)
     BoxWithConstraints(
@@ -473,16 +600,21 @@ private fun SelectorPiezas(
     elegida: PiezaCuy?,
     habilitado: Boolean,
     oscuro: Boolean,
+    compradas: Set<PiezaCuy>,
+    precios: Map<PiezaCuy, Int>,
     verChaleco: () -> Unit,
+    ofrecer: (PiezaCuy) -> Unit,
     elegir: (PiezaCuy?) -> Unit,
 ) {
     val opciones = listOf(null) + PiezaCuy.entries.filter { it.categoria == categoria }
     Column(modifier) {
         CuadriculaVestidor(opciones, columnasAmplias = 3) { pieza, tarjeta ->
+            val bloqueada = pieza?.bloqueada(compradas) == true
             TarjetaPieza(
-                tarjeta, pieza, categoria, pieza == elegida, habilitado, oscuro,
-                verPuesta = if (pieza == PiezaCuy.CHALECO) verChaleco else null,
-            ) { elegir(pieza) }
+                tarjeta, pieza, categoria, pieza == elegida, habilitado, oscuro, bloqueada, pieza?.let { precios[it] },
+                // El chaleco tiene una vista suelta para verlo puesto antes de comprarlo.
+                verPuesta = if (pieza == PiezaCuy.CHALECO && bloqueada) verChaleco else null,
+            ) { if (pieza != null && bloqueada) ofrecer(pieza) else elegir(pieza) }
         }
     }
 }
@@ -519,11 +651,12 @@ private fun TarjetaPieza(
     seleccionada: Boolean,
     habilitado: Boolean,
     oscuro: Boolean,
+    bloqueada: Boolean,
+    precio: Int?,
     verPuesta: (() -> Unit)?,
     elegir: () -> Unit,
 ) {
     val esquema = MaterialTheme.colorScheme
-    val bloqueada = pieza?.bloqueada == true
     val forma = RoundedCornerShape(20.dp)
     val fondo = when {
         seleccionada && oscuro -> Color(0xFF294C3B)
@@ -536,8 +669,8 @@ private fun TarjetaPieza(
     Column(
         modifier.clip(forma).background(fondo)
             .border(if (seleccionada) 3.dp else 1.dp, if (seleccionada) bordeSeleccion else esquema.outlineVariant, forma)
-            .selectable(seleccionada, enabled = habilitado && !bloqueada, role = Role.RadioButton, onClick = elegir)
-            .semantics { if (bloqueada) stateDescription = "Bloqueado" }
+            .selectable(seleccionada, enabled = habilitado, role = Role.RadioButton, onClick = elegir)
+            .semantics { if (bloqueada) stateDescription = "Bloqueado. " + textoPrecio(precio) }
             .padding(7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -557,7 +690,7 @@ private fun TarjetaPieza(
         }
         Text(pieza?.etiqueta ?: categoria.sinPieza, color = esquema.onSurface,
             style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 2.dp))
-        if (pieza != null && bloqueada) PrecioDePieza("${pieza.monedas} monedas")
+        if (pieza != null && bloqueada) PrecioDePieza(textoPrecio(precio))
         if (verPuesta != null) {
             TextButton(onClick = verPuesta, enabled = habilitado, contentPadding = PaddingValues(horizontal = 7.dp)) {
                 Text("Ver puesto", style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
@@ -593,7 +726,7 @@ private fun PrecioDePieza(texto: String) {
 
 @Composable
 internal fun CuerpoMiCuy(apariencia: AparienciaCuy, modifier: Modifier = Modifier, saludando: Boolean = false) {
-    val arte = arteCompleto(rutaVestidor(apariencia.archivo))
+    val arte = arteCompleto(rutaDisponible(apariencia))
     Canvas(modifier.semantics {
         contentDescription = "Mi cuy de ${apariencia.descripcion.replaceFirstChar { it.lowercase() }}"
     }) {
@@ -614,7 +747,7 @@ internal fun RetratoMiCuy(
     saludando: Boolean = false,
     reflejado: Boolean = false,
 ) {
-    val arte = arteCompleto(rutaVestidor(apariencia.archivo))
+    val arte = arteCompleto(rutaDisponible(apariencia))
     Canvas(modifier) {
         scale(if (reflejado) -1f else 1f, 1f, pivot = center) {
             drawImage(

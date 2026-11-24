@@ -84,6 +84,8 @@ fun AccesoPantalla(modelo: AccesoViewModel = viewModel()) {
         ingresar = modelo::ingresar, cambiarClave = modelo::cambiar, comprobar = modelo::comprobar, salir = modelo::salir,
         biblioteca = modelo.biblioteca, reintentarBiblioteca = modelo::cargarBiblioteca,
         logros = modelo.logros, recargarLogros = modelo::cargarLogros,
+        tienda = modelo.tienda, cargarTienda = modelo::cargarTienda, comprarPrenda = modelo::comprarPrenda,
+        guardarCuy = modelo::guardarCuy,
         cierre = modelo.cierre, reintentarGuardado = modelo::reenviarAvisosJuego,
         alVerMision = modelo::marcarAventuraVista,
         contenidoJuego = { aventura, finalizar, volver ->

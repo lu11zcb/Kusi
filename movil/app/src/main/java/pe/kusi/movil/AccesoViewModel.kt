@@ -23,6 +23,10 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
     private var consultaLogros: Job? = null
     val logros: EstadoLogrosInfantil
         get() = logrosDeCuenta?.takeIf { it.first == cuenta?.id }?.second ?: EstadoLogrosInfantil()
+    // La tienda también se guarda con el id de su cuenta: otra cuenta nunca ve un saldo ajeno.
+    private var tiendaDeCuenta by mutableStateOf<Pair<String, EstadoTiendaInfantil>?>(null)
+    val tienda: EstadoTiendaInfantil
+        get() = tiendaDeCuenta?.takeIf { it.first == cuenta?.id }?.second ?: EstadoTiendaInfantil()
     private val registroJuego = RegistroAvisosJuego()
     private var propietarioBiblioteca: String? = null
     private var partidaActual: String? = null
@@ -64,6 +68,7 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                 if (id == null) {
                     consultaLogros?.cancel()
                     logrosDeCuenta = null
+                    tiendaDeCuenta = null
                 }
                 if (id == null) { propietarioBiblioteca = null; biblioteca = EstadoBibliotecaInfantil(); registroJuego.limpiar(); partidaActual = null; juegoActual = null; cierre = EstadoCierreInfantil() }
             }
@@ -135,14 +140,77 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
         logrosDeCuenta = propietario to logros.copy(cargando = true, error = null)
         consultaLogros = viewModelScope.launch {
             try {
-                val resumen = withContext(Dispatchers.IO) { api.logrosEstudiante() }
-                if (cuenta?.id == propietario) logrosDeCuenta = propietario to EstadoLogrosInfantil(resumen)
+                val nuevos = withContext(Dispatchers.IO) { api.logrosEstudiante() }
+                if (cuenta?.id == propietario) logrosDeCuenta = propietario to nuevos
             } catch (cancelada: CancellationException) {
                 throw cancelada
             } catch (_: Exception) {
                 if (cuenta?.id == propietario) logrosDeCuenta = propietario to logros.copy(
                     cargando = false, error = "No pudimos actualizar tus logros.",
                 )
+            }
+        }
+    }
+
+    // El último cuy que Spring confirmó por cuenta: si no cambió, no se vuelve a enviar.
+    private var cuyGuardado: Pair<String, String>? = null
+
+    fun guardarCuy(pelaje: Int, accesorios: List<String>) {
+        if (!validado) return
+        val propietario = cuenta?.id ?: return
+        val firma = pelaje.toString() + ":" + accesorios.joinToString(",")
+        if (cuyGuardado == propietario to firma) return
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) { if (cuenta?.id == propietario) api.guardarApariencia(pelaje, accesorios) }
+                cuyGuardado = propietario to firma
+            } catch (cancelada: CancellationException) {
+                throw cancelada
+            } catch (_: Exception) { /* Se vuelve a intentar la próxima vez que se abra la app o cambie el cuy. */ }
+        }
+    }
+
+    fun cargarTienda() {
+        if (!validado) return
+        val propietario = cuenta?.id ?: return
+        if (tienda.cargando || tienda.comprando != null) return
+        tiendaDeCuenta = propietario to tienda.copy(cargando = true, error = null)
+        viewModelScope.launch {
+            try {
+                val nueva = withContext(Dispatchers.IO) { api.tiendaEstudiante() }
+                if (cuenta?.id == propietario) tiendaDeCuenta = propietario to nueva
+            } catch (cancelada: CancellationException) {
+                throw cancelada
+            } catch (_: Exception) {
+                if (cuenta?.id == propietario) tiendaDeCuenta = propietario to tienda.copy(
+                    cargando = false, error = "No pudimos ver tus monedas. Vuelve a intentarlo.",
+                )
+            }
+        }
+    }
+
+    fun comprarPrenda(id: String) {
+        if (!validado) return
+        val propietario = cuenta?.id ?: return
+        if (tienda.cargando || tienda.comprando != null) return
+        tiendaDeCuenta = propietario to tienda.copy(comprando = id, error = null)
+        viewModelScope.launch {
+            try {
+                val saldo = withContext(Dispatchers.IO) { api.comprarPrenda(id) }
+                if (cuenta?.id == propietario) tiendaDeCuenta = propietario to tienda.copy(saldo = saldo, comprando = null,
+                    prendas = tienda.prendas.map { if (it.id == id) it.copy(comprada = true) else it })
+            } catch (cancelada: CancellationException) {
+                throw cancelada
+            } catch (fallo: FalloAcceso) {
+                if (cuenta?.id == propietario) {
+                    tiendaDeCuenta = propietario to tienda.copy(comprando = null,
+                        error = fallo.message ?: "No se pudo completar la compra. Vuelve a intentarlo.")
+                    // 409: no alcanzó o ya era suya. Se vuelve a consultar para mostrar el saldo real.
+                    if (fallo.estado == 409) cargarTienda()
+                }
+            } catch (_: Exception) {
+                if (cuenta?.id == propietario) tiendaDeCuenta = propietario to tienda.copy(comprando = null,
+                    error = "No se pudo completar la compra. Vuelve a intentarlo.")
             }
         }
     }
@@ -211,8 +279,11 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                 if (cuenta?.id == propietario && resumen != null && resumen.optString("partida") == partidaActual) {
                     cierre = cierre.copy(completados = resumen.optInt("niveles_completados"), guardando = registroJuego.cantidadPendientes() > 0,
                         guardado = resumen.optBoolean("termino") && registroJuego.cantidadPendientes() == 0,
-                        puntos = if (resumen.has("puntos")) resumen.optInt("puntos").coerceIn(0, 20) else null)
+                        puntos = if (resumen.has("puntos")) resumen.optInt("puntos").coerceIn(0, 20) else null,
+                        monedas = if (resumen.has("monedas_ganadas")) resumen.optInt("monedas_ganadas").coerceAtLeast(0) else null)
                     if (cierre.guardado) juegoActual?.let { mostrarPausa(it, false) }
+                    // Las monedas ganadas ya están en Spring: si la tienda se había abierto, se actualiza el saldo.
+                    if (cierre.guardado && tiendaDeCuenta?.first == propietario) cargarTienda()
                 }
             } catch (_: Exception) {
                 if (cuenta?.id == propietario) cierre = cierre.copy(guardando = false, error = "Quedó avance por guardar. Puedes volver a enviarlo.", guardado = false)

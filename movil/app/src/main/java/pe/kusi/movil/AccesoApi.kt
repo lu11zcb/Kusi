@@ -214,10 +214,11 @@ class AccesoApi(private val django: String, private val edu: String, private val
         }
     }
 
-    fun logrosEstudiante(): ResumenLogrosInfantil {
+    /** Los puntos propios y, si el niño tiene sección, el podio y la meta de su salón (los calcula Spring). */
+    fun logrosEstudiante(): EstadoLogrosInfantil {
         val datos = solicitar(edu, "/api/edu/estudiante/logros/")
         val cursos = datos.getJSONArray("cursos")
-        return ResumenLogrosInfantil(
+        val resumen = ResumenLogrosInfantil(
             puntos = datos.getLong("puntos"),
             retos = datos.getLong("retos"),
             cursos = List(cursos.length()) { indice ->
@@ -225,6 +226,43 @@ class AccesoApi(private val django: String, private val edu: String, private val
                 ProgresoCursoInfantil(curso.getString("nombre"), curso.getLong("puntos"), curso.getLong("retos"))
             },
         )
+        val ranking = datos.optJSONObject("ranking")?.let { salon ->
+            val podio = salon.getJSONArray("podio")
+            RankingSalonInfantil(List(podio.length()) { indice ->
+                val puesto = podio.getJSONObject(indice)
+                val accesorios = puesto.optJSONArray("accesorios")
+                PuestoSalonInfantil(puesto.getString("nombre_corto"), puesto.getLong("puntos"), puesto.getBoolean("es_mi_puesto"),
+                    puesto.optInt("pelaje", 0), List(accesorios?.length() ?: 0) { accesorios!!.getString(it) })
+            }, salon.getLong("mis_puntos"))
+        }
+        val meta = datos.optJSONObject("meta_salon")?.let {
+            MetaSalonInfantil(it.getLong("puntos_del_salon"), it.getLong("objetivo"))
+        }
+        return EstadoLogrosInfantil(resumen, ranking = ranking, metaSalon = meta)
+    }
+
+    /** Guarda el cuy del niño en Spring para que sus compañeros lo vean en el podio. */
+    fun guardarApariencia(pelaje: Int, accesorios: List<String>) {
+        val respuesta = escribirJuego("/api/edu/estudiante/apariencia/",
+            JSONObject().put("pelaje", pelaje).put("accesorios", org.json.JSONArray(accesorios)))
+        if (!respuesta.optBoolean("guardado")) throw FalloAcceso(502, "No se pudo guardar tu cuy.")
+    }
+
+    /** El saldo y las prendas a la venta. Spring calcula el saldo con los movimientos de monedas del estudiante. */
+    fun tiendaEstudiante(): EstadoTiendaInfantil {
+        val saldo = solicitar(edu, "/api/edu/estudiante/monedas/").getLong("saldo")
+        val lista = solicitar(edu, "/api/edu/estudiante/tienda/").getJSONArray("prendas")
+        return EstadoTiendaInfantil(saldo = saldo, prendas = List(lista.length()) { indice ->
+            val prenda = lista.getJSONObject(indice)
+            PrendaTiendaInfantil(prenda.getString("id"), prenda.getString("nombre"), prenda.getInt("precio"), prenda.getBoolean("comprada"))
+        })
+    }
+
+    /** Compra una prenda y devuelve el saldo que quedó. Spring la rechaza si no alcanza o si ya es del niño (409). */
+    fun comprarPrenda(id: String): Long {
+        val respuesta = escribirJuego("/api/edu/estudiante/tienda/compras/", JSONObject().put("prenda_id", id))
+        if (respuesta.optString("prenda_id") != id || !respuesta.has("saldo")) throw FalloAcceso(502, "No se pudo confirmar tu compra.")
+        return respuesta.getLong("saldo")
     }
 
     fun consultarAvanceJuego(juegoId: String): AvanceJuego? {
