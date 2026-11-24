@@ -254,6 +254,26 @@ class PropuestasTallerTest {
     }
 
     @Test
+    void laPropuestaPausadaSiguePreparandoseHastaQueElTallerLaRetoma() throws Exception {
+        UUID solicitud = pedirPropuesta("El cuerpo humano");
+        String cuerpo = taller("siguiente", null).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode tomado = json.readTree(cuerpo).path("trabajo");
+        String trabajo = tomado.path("id").asText();
+        Instant hasta = Instant.now().plusSeconds(7200);
+        taller(trabajo + "/pausa", Map.of("motivo", "Límite de uso del proponedor.",
+            "hasta", hasta.toString(), "tomado_en", tomado.path("tomado_en").asText()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.trabajo.intentos").value(0));
+
+        servicio.revisarEspera(hasta.plusSeconds(600));
+        consultar(solicitud).andExpect(jsonPath("$.solicitud.estado").value("generando"));
+        taller("siguiente", null).andExpect(status().isNoContent());
+        jdbc.update("update edu.trabajos_taller set disponible_desde = current_timestamp where id = ?", UUID.fromString(trabajo));
+        assertEquals(trabajo, tomar());
+        taller(trabajo + "/propuesta", entregaValida()).andExpect(status().isOk());
+        consultar(solicitud).andExpect(jsonPath("$.solicitud.estado").value("generada"));
+    }
+
+    @Test
     void siElRespaldoTambienFallaLaSolicitudQuedaFallida() throws Exception {
         when(generador.configurado()).thenReturn(true);
         when(generador.generar(any())).thenThrow(new FalloGeneracion("La IA no respondió.", false));

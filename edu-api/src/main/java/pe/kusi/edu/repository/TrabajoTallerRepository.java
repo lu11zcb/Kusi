@@ -44,12 +44,13 @@ public interface TrabajoTallerRepository extends JpaRepository<TrabajoTaller, UU
 
     /**
      * Las propuestas que nadie del taller tomó desde antes del límite (el taller está
-     * apagado o ocupado): el docente no puede esperar, entra el respaldo.
+     * apagado o ocupado): el docente no puede esperar, entra el respaldo. Las propuestas
+     * en pausa ya tienen un trabajador y quedan fuera del respaldo hasta que se retomen.
      */
     @Query(value = """
         SELECT *
         FROM edu.trabajos_taller
-        WHERE estado = 'pendiente' AND tipo = 'proponer' AND creado_en < :limite
+        WHERE estado = 'pendiente' AND tipo = 'proponer' AND disponible_desde IS NULL AND creado_en < :limite
         ORDER BY creado_en ASC, id ASC
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
@@ -71,16 +72,16 @@ public interface TrabajoTallerRepository extends JpaRepository<TrabajoTaller, UU
     Optional<TrabajoTaller> findFirstBySolicitudIdOrderByCreadoEnDesc(UUID solicitudId);
 
     /**
-     * Reclama el trabajo pendiente más antiguo.
+     * Reclama el trabajo pendiente más antiguo que ya esté disponible.
      * SKIP LOCKED evita que dos trabajadores recojan el mismo trabajo.
      */
     @Query(value = """
         SELECT *
         FROM edu.trabajos_taller
-        WHERE estado = 'pendiente'
+        WHERE estado = 'pendiente' AND (disponible_desde IS NULL OR disponible_desde <= :ahora)
         ORDER BY creado_en ASC, id ASC
         LIMIT 1
         FOR UPDATE SKIP LOCKED
         """, nativeQuery = true)
-    Optional<TrabajoTaller> tomarSiguientePendiente();
+    Optional<TrabajoTaller> tomarSiguientePendiente(@Param("ahora") Instant ahora);
 }

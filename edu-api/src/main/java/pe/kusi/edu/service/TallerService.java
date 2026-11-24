@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 
 /**
  * El buzón del taller, del lado de Spring. El trabajador de la Mac pide el siguiente
- * trabajo, crea el juego y devuelve su resultado o su fallo. Lo que pasa por dentro
+ * trabajo, crea el juego y devuelve su resultado, su pausa o su fallo. Lo que pasa por dentro
  * (motivos, intentos, evidencia) se guarda; el docente solo ve un mensaje amable.
  */
 @Service
@@ -90,18 +90,19 @@ public class TallerService {
     private record PiezaNueva(String id, String tipo, String nombre) {}
 
     /**
-     * Entrega el trabajo pendiente más antiguo y lo marca «en proceso», o vacío si no
+     * Entrega el trabajo pendiente disponible más antiguo y lo marca «en proceso», o vacío si no
      * hay ninguno. Antes, devuelve a «pendiente» los que se vencieron.
      */
     @Transactional
     public Optional<TrabajoTaller> siguiente() {
-        for (TrabajoTaller vencido : trabajos.bloquearVencidos(Instant.now().minus(VENCIMIENTO))) {
+        Instant ahora = Instant.now();
+        for (TrabajoTaller vencido : trabajos.bloquearVencidos(ahora.minus(VENCIMIENTO))) {
             vencer(vencido);
         }
         // La consulta del siguiente es SQL directo: tiene que ver los vencidos ya guardados.
         trabajos.flush();
 
-        Optional<TrabajoTaller> siguiente = trabajos.tomarSiguientePendiente();
+        Optional<TrabajoTaller> siguiente = trabajos.tomarSiguientePendiente(ahora);
         siguiente.ifPresent(trabajo -> {
             trabajo.tomar(TRABAJADOR);
             trabajos.save(trabajo);
@@ -119,6 +120,18 @@ public class TallerService {
                     + " (vez " + trabajo.getIntentos() + ").");
         });
         return siguiente;
+    }
+
+    @Transactional
+    public TrabajoTaller pausar(UUID id, String motivo, Instant hasta, Instant tomadoEn) {
+        TrabajoTaller trabajo = bloquearEnProceso(id);
+        // Un aviso tardío de una toma anterior no puede reencolar el trabajo de otro turno.
+        if (!tomadoEn.equals(trabajo.getTomadoEn())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La pausa corresponde a una toma anterior.");
+        }
+        trabajo.pausar(recortar(motivo.strip(), MAX_CARACTERES_MOTIVO), hasta);
+        // La generación o la solicitud siguen en su estado actual mientras el rol descansa.
+        return trabajos.save(trabajo);
     }
 
     // Un trabajo vencido vuelve a «pendiente», salvo que ya se haya vencido tres veces.
@@ -268,15 +281,20 @@ public class TallerService {
     // Solo se cierra un trabajo que está «en proceso». Si se venció y volvió a la cola,
     // el resultado tardío se rechaza: lo entregará la próxima vez que lo tomen.
     private TrabajoTaller enProceso(UUID id) {
+        TrabajoTaller trabajo = bloquearEnProceso(id);
+        if (trabajo.esDePropuesta()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ese trabajo es una propuesta: se entrega en «propuesta» o «fallo», no en «resultado».");
+        }
+        return trabajo;
+    }
+
+    private TrabajoTaller bloquearEnProceso(UUID id) {
         TrabajoTaller trabajo = trabajos.bloquearPorId(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ese trabajo del taller."));
         if (!"en_proceso".equals(trabajo.getEstado())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "El trabajo no está en proceso (está «" + trabajo.getEstado() + "»).");
-        }
-        if (trabajo.esDePropuesta()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Ese trabajo es una propuesta: se entrega en «propuesta» o «fallo», no en «resultado».");
         }
         return trabajo;
     }

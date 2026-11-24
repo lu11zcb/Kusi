@@ -249,6 +249,42 @@ class TallerBuzonTest {
         assertEquals(trabajoDe(segundo), tomar());
     }
 
+    @Test
+    void una_pausa_libera_el_intento_y_respeta_la_hora_sin_cambiar_la_generacion() throws Exception {
+        UUID juego = generarJuegoDelTaller();
+        UUID trabajo = trabajoDe(juego);
+        JsonNode tomado = cuerpo(taller("siguiente", CLAVE, null).andExpect(status().isOk())).path("trabajo");
+        String estadoSolicitud = solicitudes.findById(solicitudDe(juego)).orElseThrow().getEstado();
+        Instant hasta = Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        String motivo = "El programador llegó a su límite de uso.";
+        Map<String, String> pausa = Map.of("motivo", motivo, "hasta", hasta.toString(),
+            "tomado_en", tomado.path("tomado_en").asText());
+
+        taller(trabajo + "/pausa", null, pausa).andExpect(status().isForbidden());
+        assertEquals("en_proceso", estadoDelTrabajo(trabajo));
+        taller(trabajo + "/pausa", CLAVE, pausa).andExpect(status().isOk())
+            .andExpect(jsonPath("$.trabajo.estado").value("pendiente"))
+            .andExpect(jsonPath("$.trabajo.intentos").value(0))
+            .andExpect(jsonPath("$.trabajo.disponible_desde").value(hasta.toString()));
+        assertEquals(motivo, jdbc.queryForObject("select motivo_pausa from edu.trabajos_taller where id = ?", String.class, trabajo));
+        assertNull(jdbc.queryForObject("select motivo_fallo from edu.trabajos_taller where id = ?", String.class, trabajo));
+        assertEquals("generando", estadoDeLaGeneracion(juego));
+        assertEquals(estadoSolicitud, solicitudes.findById(solicitudDe(juego)).orElseThrow().getEstado());
+        taller("siguiente", CLAVE, null).andExpect(status().isNoContent());
+
+        UUID otroJuego = generarJuegoDelTaller();
+        assertEquals(trabajoDe(otroJuego), tomar());
+        // Simula que pasó la hora de la pausa sin hacer esperar a la prueba.
+        jdbc.update("update edu.trabajos_taller set disponible_desde = ? where id = ?", Timestamp.from(Instant.now().minusSeconds(1)), trabajo);
+        taller("siguiente", CLAVE, null).andExpect(status().isOk())
+            .andExpect(jsonPath("$.trabajo.id").value(trabajo.toString()))
+            .andExpect(jsonPath("$.trabajo.intentos").value(1));
+        // Una petición tardía de la primera toma no puede pausar la segunda.
+        taller(trabajo + "/pausa", CLAVE, pausa).andExpect(status().isConflict());
+        assertEquals("en_proceso", estadoDelTrabajo(trabajo));
+        taller(trabajo + "/resultado", CLAVE, resultadoBueno(trabajo)).andExpect(status().isOk());
+    }
+
     // ---------- resultado ----------
 
     @Test

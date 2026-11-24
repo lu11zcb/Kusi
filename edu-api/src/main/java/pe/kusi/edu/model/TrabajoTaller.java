@@ -2,6 +2,7 @@ package pe.kusi.edu.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 /**
@@ -38,6 +39,12 @@ public class TrabajoTaller {
 
     @Column(name = "motivo_fallo", length = 2000)
     private String motivoFallo;
+
+    @Column(name = "motivo_pausa", length = 2000)
+    private String motivoPausa;
+
+    @Column(name = "disponible_desde")
+    private Instant disponibleDesde;
 
     @Column(nullable = false)
     private int intentos;
@@ -88,6 +95,7 @@ public class TrabajoTaller {
     public String getDatosEntrada() { return datosEntrada; }
     public String getResultado() { return resultado; }
     public String getMotivoFallo() { return motivoFallo; }
+    public Instant getDisponibleDesde() { return disponibleDesde; }
     public int getIntentos() { return intentos; }
     public String getTomadoPor() { return tomadoPor; }
     public Instant getCreadoEn() { return creadoEn; }
@@ -101,8 +109,10 @@ public class TrabajoTaller {
     public void tomar(String trabajador) {
         this.estado = "en_proceso";
         this.tomadoPor = trabajador;
-        this.tomadoEn = Instant.now();
+        // La hora también identifica esta toma. Se devuelve con la precisión que guarda la base.
+        this.tomadoEn = Instant.now().truncatedTo(ChronoUnit.MICROS);
         this.terminadoEn = null;
+        this.disponibleDesde = null;
         this.intentos++;
     }
 
@@ -129,8 +139,20 @@ public class TrabajoTaller {
      * Devuelve el trabajo a la cola para permitir una corrección.
      */
     public void reencolar(String motivo) {
-        this.estado = "pendiente";
+        dejarPendiente();
         this.motivoFallo = motivo;
+    }
+
+    public void pausar(String motivo, Instant disponibleDesde) {
+        dejarPendiente();
+        this.motivoPausa = motivo;
+        this.disponibleDesde = disponibleDesde.truncatedTo(ChronoUnit.MICROS);
+        // Se devuelve el intento sumado al tomarlo: esperar al rol no gasta un vencimiento.
+        this.intentos--;
+    }
+
+    private void dejarPendiente() {
+        this.estado = "pendiente";
         this.tomadoPor = null;
         this.tomadoEn = null;
         this.terminadoEn = null;

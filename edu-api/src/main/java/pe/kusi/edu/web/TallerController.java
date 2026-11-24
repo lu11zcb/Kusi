@@ -17,6 +17,8 @@ import pe.kusi.edu.taller.EntregaTallerInvalida;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +55,7 @@ public class TallerController {
         }
     }
 
-    // Toma el trabajo pendiente más antiguo. 204 si no hay ninguno.
+    // Toma el trabajo pendiente disponible más antiguo. 204 si no hay ninguno.
     @PostMapping("/siguiente")
     public ResponseEntity<Map<String, Object>> siguiente(
             @RequestHeader(value = "X-Taller-Clave", required = false) String clave) {
@@ -99,6 +101,24 @@ public class TallerController {
         return sinCache(200, Map.of("trabajo", Map.of("id", id, "estado", "listo")));
     }
 
+    // { motivo, hasta, tomado_en }. La hora de toma identifica el turno que pide la pausa.
+    @PostMapping("/{id}/pausa")
+    public ResponseEntity<Map<String, Object>> pausa(
+            @RequestHeader(value = "X-Taller-Clave", required = false) String clave,
+            @PathVariable UUID id,
+            @RequestBody(required = false) String cuerpo) {
+        autorizar(clave);
+        JsonNode datos = leer(cuerpo);
+        String motivo = datos == null ? "" : datos.path("motivo").asText("");
+        if (datos == null || !datos.path("motivo").isTextual() || motivo.isBlank()) {
+            throw new IllegalArgumentException("La pausa necesita un motivo.");
+        }
+        TrabajoTaller trabajo = taller.pausar(id, motivo, instanteEn(datos, "hasta"), instanteEn(datos, "tomado_en"));
+        return sinCache(200, Map.of("trabajo", Map.of(
+                "id", id, "estado", trabajo.getEstado(), "intentos", trabajo.getIntentos(),
+                "disponible_desde", trabajo.getDisponibleDesde())));
+    }
+
     // { motivo }. El motivo es interno: el docente nunca lo ve. Si era una propuesta, entra el respaldo.
     @PostMapping("/{id}/fallo")
     public ResponseEntity<Map<String, Object>> fallo(
@@ -131,6 +151,14 @@ public class TallerController {
             return json.readTree(cuerpo);
         } catch (JsonProcessingException ex) {
             throw new IllegalArgumentException("El cuerpo no es un JSON válido.");
+        }
+    }
+
+    private Instant instanteEn(JsonNode datos, String campo) {
+        try {
+            return Instant.parse(datos.path(campo).asText(""));
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("«" + campo + "» debe ser una fecha y hora ISO 8601 con zona horaria.");
         }
     }
 
