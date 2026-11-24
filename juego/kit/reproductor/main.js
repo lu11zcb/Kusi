@@ -13,6 +13,7 @@ import { CLAVE_RENDERIZADOR_PEDIDO } from './renderizador.js'
 import { crearPuente, CLAVE_PUENTE } from './mensajes/puenteGuion.js'
 import { instalarPausaJuego } from './mensajes/pausaJuego.js'
 import { instalarActivacionVoz } from './logica/voz.js'
+import { recolectarPantalla } from './revisar/recolectar.js'
 
 // Sin parámetros, o con ?paquete=laberinto, se usa el guion de ejemplo.
 // ?paquete=mensaje espera el guion de la página que contiene el juego.
@@ -55,6 +56,7 @@ async function empezar() {
   // Las escenas del laberinto encuentran el puente aquí, antes de su primer cuadro.
   juego.registry.set(CLAVE_PUENTE, puente)
   instalarPausaJuego(juego, puente)
+  window.__kusiPantalla = () => recolectarPantalla(juego, { ancho: window.innerWidth, alto: window.innerHeight })
 }
 
 empezar()

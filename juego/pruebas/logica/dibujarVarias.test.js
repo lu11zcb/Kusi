@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { dibujarVarias, MAX_EN_PARALELO } from '../../taller/dibujar_varias.mjs'
+import { limiteDe, resultadoDePausa } from '../../taller/trabajador/pausa.js'
 
 // Un dibujante de mentira que tarda un poco y anota cuántos trabajan a la vez.
 function dibujanteDePrueba({ fallar = [] } = {}) {
@@ -57,4 +58,23 @@ test('el mundo de la aventura llega a cada pieza, y una pieza puede traer el suy
   await dibujarVarias({ carpeta: '/t/x', mundo: 'a cloud kingdom', piezas: [{ id: 'a', que: 'x' }, { id: 'b', que: 'y', mundo: 'otro' }] }, { roles: {}, dibujarPieza })
   assert.equal(estado.pedidos.find((pedido) => pedido.id === 'a').mundo, 'a cloud kingdom')
   assert.equal(estado.pedidos.find((pedido) => pedido.id === 'b').mundo, 'otro')
+})
+
+test('un lote propaga el límite y deja para después las piezas que no se lanzaron', async () => {
+  const lanzadas = []
+  const ahora = Date.now()
+  const pausa = { rol: 'dibujante', hasta: ahora + 900_000, sondear: true }
+  const piezas = Array.from({ length: MAX_EN_PARALELO + 2 }, (_, numero) => ({ id: 'pieza-' + numero, que: 'objeto' }))
+  const resultados = await dibujarVarias({ carpeta: '/t/x', piezas }, { async dibujarPieza({ id }) {
+    lanzadas.push(id)
+    if (id === 'pieza-0') return { id, ...resultadoDePausa(pausa) }
+    await new Promise(setImmediate)
+    return { id, pasa: true, siguiente: 'revisor' }
+  } })
+  assert.deepEqual(lanzadas, piezas.slice(0, MAX_EN_PARALELO).map(({ id }) => id))
+  assert.deepEqual(resultados.map(({ id }) => id), piezas.map(({ id }) => id))
+  assert.equal(resultados[1].siguiente, 'revisor')
+  assert.ok(resultados.slice(MAX_EN_PARALELO).every(({ siguiente, intento }) => siguiente === 'pausa' && intento === undefined))
+  const salida = JSON.stringify({ type: 'item.completed', item: { type: 'command_execution', aggregated_output: JSON.stringify(resultados) } })
+  assert.deepEqual(limiteDe({ salida }, 'supervisor', ahora), pausa)
 })

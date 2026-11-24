@@ -25,6 +25,8 @@ async function armar({ acciones, respuestasBuzon = [], roles, ahora } = {}) {
   const buzon = { entregas: [], fallos: [] }
   buzon.propuesta = async (id, cuerpo) => { buzon.entregas.push({ id, cuerpo }); return respuestasBuzon.shift() ?? { estado: 200, datos: {} } }
   buzon.fallo = async (id, motivo) => { buzon.fallos.push({ id, motivo }); return { estado: 200, datos: {} } }
+  buzon.pausas = []
+  buzon.pausar = async ({ id }, { pausa }) => { buzon.pausas.push({ id, pausa }); return { estado: 200 } }
   const lanzar = async (comando, opciones) => {
     llamadas.push({ comando, opciones })
     const accion = acciones.shift() ?? {}
@@ -123,11 +125,10 @@ test('una entrega sin fuentes o sin archivo no llega a Spring: se corrige primer
   await limpiar()
 })
 
-test('si el proponedor dice FALLÓ o termina con error (sin tokens), falla de una vez sin insistir', async () => {
+test('si el proponedor dice FALLÓ o termina con un error general, falla de una vez sin insistir', async () => {
   for (const accion of [
     { respuesta: 'FALLÓ: no encontré una fuente que sirva' },
-    { ejecucion: { codigo: 1, salida: '', errores: 'usage limit reached' } },
-    { ejecucion: { salida: JSON.stringify({ result: 'Se acabó el límite de uso.', is_error: true }) } },
+    { ejecucion: { codigo: 1, salida: '', errores: 'servicio no disponible' } },
   ]) {
     const { dependencias, buzon, llamadas, limpiar } = await armar({ acciones: [accion] })
     const final = await procesarPropuesta(trabajoNuevo(), dependencias)
@@ -137,6 +138,28 @@ test('si el proponedor dice FALLÓ o termina con error (sin tokens), falla de un
     assert.equal(buzon.entregas.length, 0)
     await limpiar()
   }
+})
+
+test('el proponedor también se pausa sin gastar intento y retoma la propuesta que dejó', async (contexto) => {
+  const trabajo = trabajoNuevo()
+  const hora = new Date(2026, 10, 24, 1, 29).getTime()
+  const entrega = { propuesta: PROPUESTA, fuentes: [FUENTE] }
+  const { dependencias, buzon, llamadas, trabajos, limpiar } = await armar({
+    ahora: () => hora,
+    acciones: [{ escribir: entrega, ejecucion: { codigo: 1, salida: '', errores: 'usage limit reached' } }, {}],
+  })
+  contexto.after(limpiar)
+  assert.equal((await procesarPropuesta(trabajo, dependencias)).resultado, 'en pausa')
+  assert.equal(llamadas.length, 1)
+  assert.deepEqual(buzon.fallos, [])
+  assert.deepEqual(buzon.entregas, [])
+  assert.deepEqual(buzon.pausas, [{ id: trabajo.id, pausa: { rol: 'proponedor', sondear: true, hasta: hora + 900_000 } }])
+  const archivo = path.join(trabajos, trabajo.id, 'evidencia.json')
+  assert.equal(JSON.parse(await readFile(archivo, 'utf8')).intentos.propuesta, 0)
+  dependencias.ahora = () => hora + 900_000
+  assert.equal((await procesarPropuesta(trabajo, dependencias)).resultado, 'listo')
+  assert.match(llamadas[1].comando.argumentos[0], /Retoma lo que esté escrito/)
+  assert.equal(buzon.entregas[0].cuerpo.evidencia.intentos.propuesta, 1)
 })
 
 test('si se acaba el tiempo falla; sin el rol proponedor falla sin lanzar nada', async () => {

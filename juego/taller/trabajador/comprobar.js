@@ -12,6 +12,7 @@ import { promisify } from 'node:util'
 import { CARPETA_JUEGO } from './configuracion.js'
 import { comprobarPieza } from '#kit/herramientas/comprobar_pieza.mjs'
 import { partirHistoria } from '#kit/reproductor/logica/historia.js'
+import { revisarPantalla } from '#kit/reproductor/logica/revisarPantalla.js'
 import { huellasAprobadas } from './carpeta.js'
 import { motivosDePantalla } from './pantalla.js'
 
@@ -362,6 +363,74 @@ export async function revisarCodigo(carpetaJuego) {
   return { motivos, avisos }
 }
 
+export async function revisarPromesasDelPlan(carpeta) {
+  const referencia = ' (reglas.md, regla 14.16).'
+  const motivos = []
+  const anotar = (motivo) => motivos.push(motivo + referencia)
+  let plan
+  try {
+    plan = await readFile(path.join(carpeta, 'plan.md'), 'utf8')
+  } catch (error) {
+    // Los juegos hechos a mano no pasan por la revisión del plan del taller.
+    return error.code === 'ENOENT' ? [] : ['No se pudo leer plan.md' + referencia]
+  }
+
+  const lineas = plan.split(/\r?\n/)
+  const inicio = lineas.findIndex((linea) => /^##[ \t]+Promesas(?:[ \t]+\(.+\))?(?:[ \t]+#+)?$/.test(linea.trim()))
+  if (inicio === -1) return ['Falta la sección «## Promesas» en plan.md' + referencia]
+
+  const promesas = new Set()
+  for (const linea of lineas.slice(inicio + 1)) {
+    const texto = linea.trim()
+    if (/^#{1,2}[ \t]+/.test(texto)) break
+    // La promesa puede ser una lista o una tabla. Se lee el ID al inicio de
+    // la entrada para que una mención dentro de su descripción no cuente dos veces.
+    const id = texto.match(/^(?:(?:[-*+]|\d+[.)]|\|)[ \t]*)?(?:\*\*|__|`)?(P[1-9]\d*)\b/)?.[1]
+    if (!id) continue
+    if (promesas.has(id)) anotar('La promesa ' + id + ' está repetida en plan.md')
+    promesas.add(id)
+  }
+  if (!promesas.size) return ['La sección «## Promesas» de plan.md debe listar promesas con IDs P1, P2…' + referencia]
+
+  const archivo = 'revision/promesas.tsv'
+  let informe
+  try {
+    informe = await readFile(path.join(carpeta, archivo), 'utf8')
+  } catch (error) {
+    anotar(error.code === 'ENOENT' ? 'Falta ' + archivo : 'No se pudo leer ' + archivo)
+    return motivos
+  }
+
+  const revisadas = new Set()
+  const estados = new Set(['hecho', 'falta', 'roto', 'no comprobado'])
+  for (const [indice, linea] of informe.split(/\r?\n/).entries()) {
+    if (!linea.trim()) continue
+    const campos = linea.split('\t').map((campo) => campo.trim())
+    const [id, estado, prueba, nota] = campos
+    const lugar = archivo + ', línea ' + (indice + 1)
+    if (!promesas.has(id)) {
+      anotar(lugar + ' tiene un ID que no figura en «## Promesas»: «' + id + '»')
+      continue
+    }
+    if (revisadas.has(id)) anotar('La promesa ' + id + ' tiene más de una fila en ' + archivo)
+    revisadas.add(id)
+    if (campos.length !== 4) {
+      anotar(lugar + ' debe tener cuatro columnas separadas por tabulaciones para ' + id + ': ID, estado, prueba y nota')
+      continue
+    }
+    if (!estados.has(estado)) anotar('La promesa ' + id + ' tiene un estado no válido en ' + archivo + ': «' + estado + '»')
+    if (!prueba) anotar('La promesa ' + id + ' no tiene prueba en ' + archivo)
+    if (estado === 'falta' || estado === 'roto') {
+      const problema = estado === 'falta' ? ' falta: ' : ' está rota: '
+      anotar('La promesa ' + id + problema + (nota || prueba || 'revisa ' + lugar))
+    }
+  }
+  for (const id of promesas) {
+    if (!revisadas.has(id)) anotar('Falta la fila de la promesa ' + id + ' en ' + archivo)
+  }
+  return motivos
+}
+
 // El primer filtro de cada pieza de piezas/ (kit/estilo/comprobacion.md): una pieza que no
 // pasa no se entrega. El dibujante ya lo pasó; aquí se confirma lo que quedó en la carpeta.
 export async function revisarPiezas(carpeta) {
@@ -426,11 +495,13 @@ export async function correrPruebas(carpetaJuego, { limiteMs = 60_000 } = {}) {
 // trae la ficha, revisa el guion de ejemplo con su validar y abre la escena.
 export async function abrirEnNavegador(trabajo, { juegoUrl, limiteMs = 30_000 }) {
   const { chromium } = await import('@playwright/test')
-  const navegador = await chromium.launch()
+  // La portada de un juego de voz necesita resolver el permiso. El navegador
+  // de revisión usa un dispositivo simulado y nunca abre el micrófono del equipo.
+  const navegador = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] })
   try {
-    const motivos = await revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida: false })
-    if (motivos.length) return motivos
-    return await revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida: true })
+    const sinVida = await revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida: false })
+    const conVida = await revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida: true })
+    return [...sinVida, ...conVida]
   } finally {
     await navegador.close()
   }
@@ -455,6 +526,53 @@ function instalarSintesisDePrueba() {
   } })
 }
 
+function leerPantalla(pagina) {
+  return pagina.evaluate(() => window.__kusiPantalla())
+}
+
+function tocarParaEmpezar(pagina, pantalla) {
+  // Si aún no se puede tocar un objeto, el toque en el lienzo habilita la voz.
+  const punto = pantalla.toques.find((toque) => !toque.hud) ?? { x: pantalla.ancho / 2, y: pantalla.alto / 2 }
+  return pagina.touchscreen.tap(punto.x, punto.y)
+}
+
+async function abrirNivel(pagina, trabajo, juegoUrl, { conVida, limiteMs, nivel }) {
+  const url = new URL('?juego=' + trabajo + '&historia=0' + (conVida ? '' : '&vida=0') +
+    (nivel === 1 ? '' : '&nivel=' + nivel), juegoUrl).href
+  const juegoAbiertoOFallido = (id) => window.kusi?.juego?.trabajo === id ||
+    window.kusi?.avisos?.some((aviso) => aviso.tipo === 'fallo')
+  await pagina.goto(url, { timeout: limiteMs })
+  await pagina.waitForFunction((id) => window.kusi?.juego?.trabajo === id ||
+    window.kusi?.avisos?.some((aviso) => aviso.tipo === 'fallo') || window.__kusiPantalla?.().portada, trabajo, { timeout: limiteMs })
+  const pantalla = await leerPantalla(pagina)
+  if (pantalla.portada && pantalla.toques.length > 0) {
+    const boton = pantalla.toques[0]
+    await pagina.touchscreen.tap(boton.x, boton.y)
+  }
+  await pagina.waitForFunction(juegoAbiertoOFallido, trabajo, { timeout: limiteMs })
+  return pagina.evaluate(() => window.kusi?.avisos?.find((aviso) => aviso.tipo === 'fallo')?.motivo)
+}
+
+// Una captura completa incluye los botones de las esquinas. Si cualquier
+// toque cambió un píxel, el juego ya mostró una respuesta en esta prueba.
+export async function comprobarToques(pagina) {
+  const probados = new Set()
+  let cambio = false
+  for (let intento = 0; intento < 3; intento += 1) {
+    const { toques } = await leerPantalla(pagina)
+    const toque = toques.find((punto) => !punto.hud && !probados.has(punto.id)) ??
+      toques.find((punto) => !probados.has(punto.id)) ?? toques[0]
+    if (!toque) return null
+    probados.add(toque.id)
+    const antes = await pagina.screenshot({ type: 'png' })
+    await pagina.touchscreen.tap(toque.x, toque.y)
+    await pagina.waitForTimeout(300)
+    const despues = await pagina.screenshot({ type: 'png' })
+    if (!antes.equals(despues)) cambio = true
+  }
+  return cambio ? null : 'Tocar no cambia nada en la pantalla (reglas.md, regla 14.16).'
+}
+
 async function revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida }) {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 720 }, hasTouch: true })
   const motivos = new Set()
@@ -464,6 +582,12 @@ async function revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida
   }
   let probandoElToque = false
   let sonoVoz = false
+  const opciones = { conVida, limiteMs }
+  const anotarPantalla = (pantalla, momento) => {
+    for (const { motivo, regla } of revisarPantalla(pantalla)) {
+      motivos.add(momento + ' ' + motivo + ' (reglas.md, regla ' + regla + ').')
+    }
+  }
   pagina.on('pageerror', (error) => errorDeConsola('pageerror', error.message))
   pagina.on('console', (mensaje) => {
     const texto = mensaje.text()
@@ -475,24 +599,41 @@ async function revisarApertura(navegador, trabajo, juegoUrl, { limiteMs, conVida
   })
   try {
     await pagina.addInitScript(instalarSintesisDePrueba)
-    const url = new URL('?juego=' + trabajo + '&historia=0' + (conVida ? '' : '&vida=0'), juegoUrl).href
-    await pagina.goto(url, { timeout: limiteMs })
-    await pagina.waitForFunction((id) => window.kusi?.juego?.trabajo === id ||
-      window.kusi?.avisos?.some((aviso) => aviso.tipo === 'fallo'), trabajo, { timeout: limiteMs })
-    const fallo = await pagina.evaluate(() => window.kusi?.avisos?.find((aviso) => aviso.tipo === 'fallo')?.motivo)
+    const fallo = await abrirNivel(pagina, trabajo, juegoUrl, { ...opciones, nivel: 1 })
     if (fallo) {
       motivos.add('El reproductor no pudo abrir el juego ' + modo + '. ' + fallo + ' (reglas.md, regla 14.6).')
     } else {
+      const inicio = await leerPantalla(pagina)
+      if (conVida) anotarPantalla(inicio, 'Al empezar el nivel 1.')
       probandoElToque = true
-      await pagina.touchscreen.tap(640, 360)
+      await tocarParaEmpezar(pagina, inicio)
       // Da tiempo a que la consigna arranque y a que se manifiesten los errores de inicio.
       await pagina.waitForTimeout(3000)
-      if (conVida) {
-        for (const motivo of await revisarPantalla(pagina)) motivos.add(motivo)
-      }
       if (!sonoVoz) {
         motivos.add('No apareció «[Kusi] voz:» después de tocar la pantalla ' + modo +
           '. Usa la voz del kit para decir la consigna (reglas.md, regla 14.1).')
+      }
+      probandoElToque = false
+
+      if (conVida) {
+        anotarPantalla(await leerPantalla(pagina), 'Después de tocar en el nivel 1.')
+        for (const motivo of await revisarCapturas(pagina)) motivos.add(motivo)
+        if (inicio.niveles > 1) {
+          const falloNivel = await abrirNivel(pagina, trabajo, juegoUrl, { ...opciones, nivel: 2 })
+          if (falloNivel) {
+            motivos.add('El reproductor no pudo abrir el nivel 2. ' + falloNivel + ' (reglas.md, regla 14.6).')
+          } else {
+            await tocarParaEmpezar(pagina, await leerPantalla(pagina))
+            await pagina.waitForTimeout(3000)
+            anotarPantalla(await leerPantalla(pagina), 'Después de tocar en el nivel 2.')
+          }
+        }
+      } else {
+        // Sin los efectos del kit es más fácil distinguir una respuesta del
+        // juego de algo que se animaría aunque nadie lo toque.
+        probandoElToque = true
+        const motivo = await comprobarToques(pagina)
+        if (motivo) motivos.add(motivo)
       }
     }
   } catch (error) {
@@ -529,7 +670,7 @@ export async function capturar(pagina) {
 // Con los efectos encendidos se toman tres capturas: al empezar, un momento
 // después sin tocar nada y tras mover el joystick. Los errores de consola se
 // conservan en revisarApertura aunque falle una captura.
-async function revisarPantalla(pagina) {
+async function revisarCapturas(pagina) {
   try {
     const inicio = await capturar(pagina)
     await pagina.waitForTimeout(1500)
@@ -552,6 +693,7 @@ async function revisarPantalla(pagina) {
 export async function comprobarJuego({ carpeta, trabajo, juegoUrl }) {
   const carpetaJuego = path.join(carpeta, 'juego')
   const { motivos, avisos } = await revisarCodigo(carpetaJuego)
+  motivos.push(...await revisarPromesasDelPlan(carpeta))
   motivos.push(...await revisarPiezas(carpeta))
   let paquete = null
   try {

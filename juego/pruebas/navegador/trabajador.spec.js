@@ -13,7 +13,8 @@ import path from 'node:path'
 // mínimo, y las comprobaciones reales (node --test y el juego abierto en un navegador).
 
 const JUEGO = fileURLToPath(new URL('../../', import.meta.url))
-const SUPERVISOR = fileURLToPath(new URL('../fixtures/supervisorDePrueba.mjs', import.meta.url))
+const SUPERVISOR = fileURLToPath(new URL('./supervisorConTutorial.mjs', import.meta.url))
+const SIN_MOTOR_DE_VOZ = fileURLToPath(new URL('./sinMotorDeVoz.mjs', import.meta.url))
 const CLAVE = 'clave-del-taller-de-prueba'
 const creados = []
 
@@ -61,9 +62,15 @@ async function correrTrabajador({ modo, limiteMs = 60_000 }) {
   await writeFile(path.join(auxiliar, 'roles.json'), JSON.stringify({
     supervisor: { programa: process.execPath, argumentos: [SUPERVISOR, '{carpeta}', modo, '{pedido}'] },
   }))
-  const proceso = spawn(process.execPath, ['taller/trabajador.js', '--una-vez'], {
+  const proceso = spawn(process.execPath, ['--import', SIN_MOTOR_DE_VOZ, 'taller/trabajador.js', '--una-vez'], {
     cwd: JUEGO,
-    env: { ...process.env, TALLER_ENV: path.join(auxiliar, '.env'), TALLER_ROLES: path.join(auxiliar, 'roles.json'), TALLER_LIMITE_MS: String(limiteMs) },
+    env: {
+      ...process.env,
+      TALLER_ENV: path.join(auxiliar, '.env'),
+      TALLER_ROLES: path.join(auxiliar, 'roles.json'),
+      TALLER_LIMITE_MS: String(limiteMs),
+      ARCHIVO_MOTOR_DE_PRUEBA: path.join(auxiliar, 'motor-ausente'),
+    },
   })
   let consola = ''
   proceso.stdout.on('data', (parte) => { consola += parte })
@@ -82,6 +89,7 @@ test('toma el trabajo, el supervisor hace el juego, se comprueba y se entrega a 
   expect(paquete).toMatchObject({ formato: 'kusi-paquete/0', familia: 'parejas_prueba', trabajo: id })
   expect(piezas).toEqual([{ id: 'olla-de-prueba', tipo: 'objeto' }])
   expect(evidencia).toMatchObject({ trabajo: id, familia: 'parejas_prueba', resultado: 'listo', intentos: { juego: 1, piezas: { 'olla-de-prueba': 1 } } })
+  expect(evidencia.voz).toMatchObject({ estado: 'omitida', grabadas: 0, motivo: expect.stringContaining('Falta el entorno del motor de voz') })
   expect(evidencia.pasos[0]).toMatchObject({ rol: 'supervisor', tokens_entrada: 1200, tokens_salida: 300, costo_estimado_usd: 0.01 })
   // La carpeta tiene lo que llegó del buzón, la biblioteca y la evidencia.
   for (const archivo of ['trabajo.json', 'biblioteca.json', 'evidencia.json', 'plan.md', 'juego/juego.js']) {

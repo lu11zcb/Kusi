@@ -3,19 +3,20 @@
 // el resultado o el fallo, todo dentro del tiempo máximo.
 
 import { existsSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { prepararCarpeta, piezasNuevas, escribirJson, leerJson } from './carpeta.js'
 import { armarComando, consumoDe, negadosDe, subagentes } from './roles.js'
 import { CARPETA_JUEGO, CARPETA_RAIZ, CARPETA_TALLER } from './configuracion.js'
 import { grabarVozDelTrabajo } from './voz.js'
+import { leerPausa, limiteDe, pausarTrabajo } from './pausa.js'
 
 // 1 intento y hasta 2 correcciones (reglas.md, regla 10).
 export const MAX_CORRECCIONES = 2
 
 // Lo que se le pide al supervisor. Nombra roles, nunca programas.
-export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion, intento, avisos = [] }) {
+export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion, intento, avisos = [], retomado = false }) {
   const lineas = [
     'Eres el supervisor del taller de Kusi. Sigue tus instrucciones y las de juego/taller/.',
     'Trabajo: ' + trabajo.id + ' (' + trabajo.tipo + '). Carpeta del trabajo: ' + carpeta,
@@ -24,6 +25,10 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
   if (trabajo.tipo === 'corregir_juego') {
     lineas.push('Es una corrección: juego/ y piezas/ ya tienen una copia del juego anterior. Modifica esa copia ' +
       'según «pedido» y la propuesta nueva de trabajo.json (taller/entrega.md §6.1).')
+  }
+  if (retomado) {
+    lineas.push('El trabajo se retoma después de una pausa. Lee plan.md, evidencia.json y lo que dejaron en piezas/, juego/ y revision/. ' +
+      'Conserva lo que ya está hecho y continúa desde el primer paso pendiente.')
   }
   lineas.push(
     'Entrega en la carpeta del trabajo todo lo de juego/taller/entrega.md: juego/ (juego.js, README.md, escenas/, ' +
@@ -37,7 +42,7 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
       'Cada tarea cabe en 8 minutos del programador: la primera deja el juego JUGABLE de principio a fin (el movimiento con el joystick, lo que se recoge, ' +
       'el adversario, los tres niveles con sus datos, el cierre); lo vistoso (suelo, decorado, ambiente) va en una segunda tarea.',
     'No termines tu turno mientras esperas algo: no uses segundo plano (run_in_background) ni respondas «espero a que termine…». ' +
-      'Ejecuta cada comando en primer plano y espera su resultado. Tu respuesta final es solo LISTO o FALLÓ.',
+      'Ejecuta cada comando en primer plano y espera su resultado.',
     'Cada encargo puede tardar varios minutos: dale 13 minutos de espera. Responde un JSON: con «siguiente»: «revisor», ' +
       'pásale el juego a tu revisor; con «corregir», vuelve a llamarlo con --correccion y los «no» del revisor.',
     'El kit, la biblioteca y el resto de juego/ son de solo lectura para todos.',
@@ -66,7 +71,9 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
       'juega cada nivel una vez de principio a fin, mira unas pocas capturas (no decenas) y repite solo lo que falló. No repitas partidas completas por gusto. ' +
       'Si el juego ya pasa lo esencial y se acaba el tiempo, el taller entrega lo que haya en la carpeta: déjala siempre en un estado que se pueda entregar.',
     'Antes de encargar el código, haz la crítica de la idea (agentes/supervisor.md, «Crítica de la idea»): una sola mecánica, un reto claro y nada de mandados.',
-    'Al terminar, responde en una línea: LISTO, o FALLÓ: <motivo>.',
+    'Si programar, dibujar o dibujar_varias devuelve «siguiente»: «pausa», conserva el avance, termina el turno y responde en una línea con su campo «aviso». ' +
+      'Si el límite llega en otro rol, responde PAUSA <rol>: <aviso de límite completo, con la hora si aparece>.',
+    'En los demás casos responde en una línea: LISTO, o FALLÓ: <motivo>.',
   )
   if (correccion) {
     lineas.push(
@@ -91,17 +98,26 @@ export async function procesarTrabajo(trabajo, dependencias) {
   const ahora = dependencias.ahora ?? (() => Date.now())
   const registrar = dependencias.registrar ?? ((texto) => console.log('[taller] ' + texto))
   const inicio = ahora()
-  const pasos = []
-  const correcciones = []
-  let intento = 0
-  let motivos = null
-  let avisos = []
+  const { carpeta, anterior } = await prepararCarpeta(trabajo, { trabajos, biblioteca })
+  const guardado = await leerPausa(carpeta)
+  const { pasos = [], correcciones = [] } = guardado ?? {}
+  let { intento = 0, motivos = null, avisos = [] } = guardado ?? {}
   let voz
 
-  const { carpeta, anterior } = await prepararCarpeta(trabajo, { trabajos, biblioteca })
   registrar('Trabajo ' + trabajo.id + ' (' + trabajo.tipo + '): carpeta lista.')
   const temporal = path.join(tmpdir(), 'kusi-taller', trabajo.id)
   await mkdir(temporal, { recursive: true })
+  const valores = {
+    instrucciones: agentes.supervisor.instrucciones,
+    // El revisor es un subagente del supervisor.
+    agentes: subagentes(agentes, ['revisor']),
+    carpeta, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
+  }
+  const evidenciaActual = (resultado, motivo, pausa) => armarEvidencia({
+    carpeta, trabajo, inicio, fin: ahora(), resultado, motivo, intento, pasos, correcciones, avisos, voz,
+    pausa: pausa ?? guardado?.pausa,
+  })
+  const borrarPausa = () => rm(path.join(carpeta, 'pausa.json'), { force: true })
 
   const comprobarEntrega = async () => {
     const revision = await comprobar({ carpeta, trabajo: trabajo.id, juegoUrl })
@@ -111,30 +127,35 @@ export async function procesarTrabajo(trabajo, dependencias) {
   }
 
   const terminar = async (resultado, motivo, entrega = null) => {
-    const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado, motivo, intento, pasos, correcciones, avisos, voz })
+    const evidencia = await evidenciaActual(resultado, motivo)
     await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia)
     if (resultado === 'listo') return { resultado, evidencia, entrega }
     const respuesta = await buzon.fallo(trabajo.id, motivo)
+    if (respuesta.estado === 200) await borrarPausa()
     registrar('Trabajo ' + trabajo.id + ': falló (' + motivo.slice(0, 160) + '). Spring respondió ' + respuesta.estado + '.')
     return { resultado, evidencia, motivo }
   }
 
   while (true) {
-    intento += 1
     const restante = limiteMs - (ahora() - inicio)
     if (restante <= 0) return terminar('falló', 'Se acabó el tiempo del trabajo (' + Math.round(limiteMs / 60000) + ' minutos).')
 
-    registrar('Trabajo ' + trabajo.id + ': el supervisor empieza el intento ' + intento + '.')
+    const siguiente = intento + 1
+    registrar('Trabajo ' + trabajo.id + ': el supervisor empieza el intento ' + siguiente + '.')
     const comando = armarComando(roles.supervisor, {
-      pedido: pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion: motivos, intento, avisos }),
-      instrucciones: agentes.supervisor.instrucciones,
-      // El revisor es un subagente del supervisor; el programador y el dibujante se
-      // lanzan aparte, con programar.mjs y dibujar.mjs, como otros roles.
-      agentes: subagentes(agentes, ['revisor']),
-      carpeta, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
+      ...valores,
+      pedido: pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion: motivos, intento: siguiente,
+        avisos, retomado: Boolean(guardado) }),
     })
     const pasoInicio = new Date(ahora()).toISOString()
     const ejecucion = await lanzar(comando, { limiteMs: restante })
+    const pausa = limiteDe(ejecucion, 'supervisor', ahora())
+    if (pausa) {
+      return pausarTrabajo({ trabajo, carpeta, estado: { intento, motivos, pasos, correcciones, avisos },
+        pausa, buzon, evidencia: evidenciaActual, roles, lanzar, valores, registrar })
+    }
+    intento = siguiente
+    if (motivos) correcciones.push({ rol: 'trabajador', para: 'supervisor', motivo: motivos.join(' | ').slice(0, 2000) })
     const consumo = consumoDe(ejecucion.salida)
     const negados = negadosDe(ejecucion.salida)
     // La respuesta completa del supervisor queda en la carpeta del trabajo: trae lo que
@@ -190,11 +211,11 @@ export async function procesarTrabajo(trabajo, dependencias) {
         registrar, lanzarVoz: dependencias.lanzarVoz, archivosMotor: dependencias.archivosMotor,
       })
       if (voz.motivo) registrar('Trabajo ' + trabajo.id + ' (voz). ' + voz.motivo)
-      const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado: 'listo', motivo: notaDeEntrega,
-        intento, pasos, correcciones, avisos, voz })
+      const evidencia = await evidenciaActual('listo', notaDeEntrega)
       const respuesta = await buzon.resultado(trabajo.id, { paquete: revision.paquete, piezas, evidencia })
       if (respuesta.estado === 200) {
         await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia)
+        await borrarPausa()
         registrar('Trabajo ' + trabajo.id + ': entregado a Spring (' + piezas.length +
           (piezas.length === 1 ? ' pieza nueva).' : ' piezas nuevas).'))
         return { resultado: 'listo', evidencia }
@@ -212,13 +233,12 @@ export async function procesarTrabajo(trabajo, dependencias) {
     if (intento > MAX_CORRECCIONES) {
       return terminar('falló', 'No pasó las comprobaciones después de ' + MAX_CORRECCIONES + ' correcciones: ' + motivos.join(' | '))
     }
-    correcciones.push({ rol: 'trabajador', para: 'supervisor', motivo: motivos.join(' | ').slice(0, 2000) })
   }
 }
 
 // La evidencia (entrega.md §8). Si el supervisor ya escribió una, se conservan sus
 // datos y se completan los que conoce el trabajador: tiempos, intentos, pasos y costo.
-async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo, intento, pasos, correcciones, avisos, voz }) {
+async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo, intento, pasos, correcciones, avisos, voz, pausa }) {
   const archivo = path.join(carpeta, 'evidencia.json')
   let delSupervisor = {}
   try {
@@ -252,6 +272,7 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
   return {
     ...delSupervisor,
     ...(voz && { voz }),
+    ...(pausa && { pausa: { rol: pausa.rol, hasta: new Date(pausa.hasta).toISOString(), sondear: pausa.sondear } }),
     trabajo: trabajo.id,
     tipo: trabajo.tipo,
     familia,
@@ -265,9 +286,12 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
       juego: intento,
       piezas: { ...(delSupervisor.intentos?.piezas ?? {}), ...Object.fromEntries(Object.entries(delDibujante).map(([pieza, registro]) => [pieza, registro.intentos])) },
     },
-    correcciones: [...(Array.isArray(delSupervisor.correcciones) ? delSupervisor.correcciones : []), ...correcciones],
+    correcciones: [...(Array.isArray(delSupervisor.correcciones) ? delSupervisor.correcciones : []).filter((registro) =>
+      delSupervisor.resultado !== 'en pausa' || registro.rol !== 'trabajador'), ...correcciones],
     avisos_comprobacion: avisos,
-    pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []), ...pasos, ...pasosDelProgramador, ...pasosDelDibujante],
+    pasos: [...(Array.isArray(delSupervisor.pasos) ? delSupervisor.pasos : []).filter((registro) =>
+      delSupervisor.resultado !== 'en pausa' || !['supervisor', 'programador', 'dibujante'].includes(registro.rol)),
+    ...pasos, ...pasosDelProgramador, ...pasosDelDibujante],
     costo_estimado_usd: Number([...pasos, ...pasosDelProgramador, ...pasosDelDibujante]
       .reduce((suma, paso) => suma + paso.costo_estimado_usd, 0).toFixed(4)),
     como_se_estimo: 'tokens de cada paso por el precio de lista del modelo usado, a la fecha del trabajo; ' +

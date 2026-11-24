@@ -21,6 +21,7 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { CARPETA_JUEGO, CARPETA_RAIZ, CARPETA_TALLER } from './trabajador/configuracion.js'
 import { armarComando, consumoDe, lanzar, leerAgentes, leerRoles } from './trabajador/roles.js'
+import { limiteDe, resultadoDePausa } from './trabajador/pausa.js'
 import { esIdTrabajo } from '#kit/reproductor/datos/registroJuegos.js'
 
 // Un encargo y hasta 2 correcciones, más un margen para dividir el trabajo en partes. Un juego grande hecho con el
@@ -117,7 +118,7 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
   await mkdir(path.join(carpetaReal, 'programador'), { recursive: true })
 
   const pedido = pedidoDeCodigo({ carpeta: carpetaReal, tarea, correccion, juegoUrl, trabajo })
-  await appendFile(path.join(carpetaReal, 'programador', 'pedidos.md'), '## Encargo ' + encargo + '\n\n' + pedido + '\n\n')
+  const pedidos = path.join(carpetaReal, 'programador', 'pedidos.md')
   const comando = armarComando(roles.programador, {
     pedido, instrucciones: agentes.programador.instrucciones,
     carpeta: carpetaReal, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
@@ -127,12 +128,18 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
   // relanzarlo se espera un rato: el reintento inmediato se quedaba colgado detrás de la llamada
   // trabada (juego 1, 20 de noviembre, kit/estilo/juego-1-el-traje-de-inti.md).
   let ejecucion
+  const notas = []
   for (let lanzamiento = 1; lanzamiento <= 2; lanzamiento += 1) {
     // Los dos lanzamientos comparten el tiempo del encargo: el supervisor espera como máximo eso.
     ejecucion = await lanzarRol(comando, { limiteMs: Math.max(60_000, LIMITE_ENCARGO_MS - (Date.now() - inicio)) })
+    const pausa = limiteDe(ejecucion, 'programador', Date.now())
+    if (pausa) {
+      // Se conservan los archivos del trabajo. El encargo se registra cuando el rol pueda responder.
+      await rm(temporal, { recursive: true, force: true })
+      return resultadoDePausa(pausa)
+    }
     if (!ejecucion.silencio) break
-    await appendFile(path.join(carpetaReal, 'programador', 'pedidos.md'),
-      'El programador dejó de responder' + (lanzamiento === 1 ? ': se lanza otra vez.' : ' dos veces seguidas.') + '\n\n')
+    notas.push('El programador dejó de responder' + (lanzamiento === 1 ? ': se lanza otra vez.' : ' dos veces seguidas.') + '\n\n')
     if (lanzamiento === 1) await new Promise((listo) => setTimeout(listo, esperaReintentoMs))
   }
   const consumo = consumoDe(ejecucion.salida)
@@ -151,7 +158,7 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
   registro.push({ encargo, termino, motivo, segundos, tokens_entrada: consumo.tokens_entrada, tokens_salida: consumo.tokens_salida,
     costo_estimado_usd: consumo.costo_estimado_usd })
   await writeFile(path.join(carpetaReal, 'programador', 'registro.json'), JSON.stringify(registro, null, 2) + '\n')
-  await appendFile(path.join(carpetaReal, 'programador', 'pedidos.md'),
+  await appendFile(pedidos, '## Encargo ' + encargo + '\n\n' + pedido + '\n\n' + notas.join('') +
     'Resultado: ' + (termino ? 'terminó.' : 'no terminó (' + motivo + ').') + '\n\n')
 
   return { pasa: termino, encargo, motivo, respuesta: respuesta.slice(0, 1500), archivos: await archivosDelJuego(carpetaReal),

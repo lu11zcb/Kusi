@@ -1,9 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { revisarCodigo } from '../../taller/trabajador/comprobar.js'
+import { comprobarJuego, revisarCodigo, revisarPromesasDelPlan } from '../../taller/trabajador/comprobar.js'
 
 const GUION = {
   titulo: 'Ayuda en la plaza',
@@ -28,6 +28,63 @@ const CODIGO = [
 ].join('\n')
 const FRASE_DE_60 = '¡Muy bien! Guarda la manzana roja cerca de las otras frutas.'
 const FRASES = 'export const frasesDeKusi = () => ["¡Sigamos!", "La A: aaa."]'
+const PLAN = '# Plan\n\n## Promesas\n\n- P1: La fresa se mueve.\n- **P2:** Se oye un crujido.\n'
+const FILA_P1 = 'P1\thecho\tescenas/Escena.js:20\tLa fresa se mueve.'
+const FILA_P2 = 'P2\tno comprobado\tescenas/Escena.js:35\tEl código llama al sonido y en esta prueba no se pudo oír.'
+
+async function carpetaDePromesas(t, plan, informe) {
+  const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-promesas-'))
+  t.after(() => rm(carpeta, { recursive: true, force: true }))
+  if (plan !== null) await writeFile(path.join(carpeta, 'plan.md'), plan)
+  if (informe !== null) {
+    await mkdir(path.join(carpeta, 'revision'))
+    await writeFile(path.join(carpeta, 'revision', 'promesas.tsv'), informe)
+  }
+  return carpeta
+}
+
+test('la regla 14.16 deja pasar un juego hecho a mano sin plan ni informe', async (t) => {
+  const carpeta = await carpetaDePromesas(t, null, null)
+  assert.deepEqual(await revisarPromesasDelPlan(carpeta), [])
+})
+
+test('la regla 14.16 acepta hecho y no comprobado para todos los IDs del plan', async (t) => {
+  const plan = PLAN.replace('## Promesas', '## Promesas (lo que verá el niño)') +
+    '| `P3` | La fresa vuelve al inicio. |\n\n## Piezas\n\n- P4: Otro dato.\n'
+  const informe = [FILA_P2, 'P3\thecho\trevision/inicio.png\tVolvió al inicio.', FILA_P1, ''].join('\r\n')
+  const carpeta = await carpetaDePromesas(t, plan, informe)
+  assert.deepEqual(await revisarPromesasDelPlan(carpeta), [])
+})
+
+for (const [caso, plan, informe, motivo] of [
+  ['falta la sección', '# Plan\n- P1: La fresa se mueve.', FILA_P1, /Falta la sección «## Promesas»/],
+  ['la sección no tiene IDs', '## Promesas\nLa fresa se mueve.\n## Piezas\n- P1: Una fresa.', FILA_P1, /debe listar promesas con IDs/],
+  ['se repite un ID en el plan', PLAN + '- P1: Otra promesa.\n', FILA_P1 + '\n' + FILA_P2, /P1 está repetida en plan\.md/],
+  ['falta el informe', PLAN, null, /Falta revision\/promesas\.tsv/],
+  ['falta una fila', PLAN, FILA_P1, /Falta la fila de la promesa P2/],
+  ['se repite una fila', PLAN, [FILA_P1, FILA_P2, FILA_P2].join('\n'), /P2 tiene más de una fila/],
+  ['hay un ID ajeno al plan', PLAN, [FILA_P1, FILA_P2, FILA_P1.replace('P1', 'P3')].join('\n'), /ID que no figura en «## Promesas»: «P3»/],
+  ['faltan columnas', PLAN, FILA_P1 + '\nP2\thecho\tescenas/Escena.js:35', /cuatro columnas separadas por tabulaciones para P2/],
+  ['sobran columnas', PLAN, FILA_P1 + '\n' + FILA_P2 + '\textra', /cuatro columnas separadas por tabulaciones para P2/],
+  ['el estado es inválido', PLAN, FILA_P1 + '\nP2\tpendiente\tescenas/Escena.js:35\tRevisar.', /P2 tiene un estado no válido/],
+  ['la prueba está vacía', PLAN, FILA_P1 + '\nP2\tno comprobado\t \tNo se oyó.', /P2 no tiene prueba/],
+  ['la promesa falta', PLAN, FILA_P1 + '\nP2\tfalta\trevision/partida.png\tNo aparece el objeto.', /La promesa P2 falta: No aparece el objeto/],
+  ['la promesa está rota', PLAN, FILA_P1 + '\nP2\troto\tescenas/Escena.js:35\tEl sonido se corta.', /La promesa P2 está rota: El sonido se corta/],
+]) {
+  test('la regla 14.16 bloquea la entrega si ' + caso, async (t) => {
+    const carpeta = await carpetaDePromesas(t, plan, informe)
+    const motivos = await revisarPromesasDelPlan(carpeta)
+    assert.equal(motivos.length, 1, motivos.join('\n'))
+    assert.match(motivos[0], motivo)
+    assert.match(motivos[0], /reglas\.md, regla 14\.16/)
+  })
+}
+
+test('la comprobación de entrega devuelve el motivo de la regla 14.16', async (t) => {
+  const carpeta = await carpetaDePromesas(t, PLAN, FILA_P1)
+  const { motivos } = await comprobarJuego({ carpeta, trabajo: 'prueba' })
+  assert.ok(motivos.some((motivo) => /Falta la fila de la promesa P2.*regla 14\.16/.test(motivo)), motivos.join('\n'))
+})
 
 async function revisar(t, reemplazos = {}) {
   const juego = await mkdtemp(path.join(tmpdir(), 'kusi-comprobar-'))

@@ -78,9 +78,13 @@ export async function prepararCarpeta(trabajo, { trabajos, biblioteca }) {
     const id = trabajo.entrada?.anterior?.trabajo
     if (esIdTrabajo(id) && existsSync(path.join(trabajos, id, 'juego'))) {
       anterior = path.join(trabajos, id)
-      await cp(path.join(anterior, 'juego'), path.join(carpeta, 'juego'), { recursive: true })
-      if (existsSync(path.join(anterior, 'piezas'))) {
-        await cp(path.join(anterior, 'piezas'), path.join(carpeta, 'piezas'), { recursive: true })
+      // trabajo.json solo se escribe cuando terminó la copia inicial. Si el buzón
+      // nos devuelve el mismo trabajo, los cambios de la corrección ya están aquí.
+      if (!existsSync(path.join(carpeta, 'trabajo.json'))) {
+        await cp(path.join(anterior, 'juego'), path.join(carpeta, 'juego'), { recursive: true })
+        if (existsSync(path.join(anterior, 'piezas'))) {
+          await cp(path.join(anterior, 'piezas'), path.join(carpeta, 'piezas'), { recursive: true })
+        }
       }
     }
   }

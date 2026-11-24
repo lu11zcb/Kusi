@@ -5,7 +5,7 @@
 //
 // <JSON> es una lista de { id, que, fondo?, cuento?, figura?, criatura?, apoyado? }, con lo mismo que
 // recibe dibujar.mjs por pieza. Responde un JSON con una lista de los resultados, uno por
-// pieza y en el mismo orden (cada uno trae «siguiente»: revisor, corregir o respaldo).
+// pieza y en el mismo orden (cada uno trae «siguiente»: revisor, corregir, respaldo o pausa).
 // «--mundo» describe el mundo de la aventura (por ejemplo, de qué está hecho): se le dice a cada pieza
 // para que todo parezca del mismo lugar (reglas.md, 13.10). Las correcciones se piden después, de una en una, con dibujar.mjs --correccion.
 
@@ -30,20 +30,26 @@ export async function dibujarVarias({ carpeta, piezas, mundo = null }, { roles, 
   }
   const resultados = new Array(piezas.length)
   let siguiente = 0
+  let pausa = null
   // Un grupo de trabajadores toma la siguiente pieza de la lista cuando termina la suya.
   const trabajador = async () => {
-    while (siguiente < piezas.length) {
+    while (siguiente < piezas.length && !pausa) {
       const numero = siguiente
       siguiente += 1
       const pieza = piezas[numero] ?? {}
       try {
         resultados[numero] = await dibujarPieza({ mundo, ...pieza, carpeta }, { roles })
+        if (resultados[numero].siguiente === 'pausa') pausa ??= resultados[numero]
       } catch (error) {
         resultados[numero] = { id: pieza.id ?? null, pasa: false, siguiente: 'corregir', motivo: 'El dibujante falló: ' + String(error?.message ?? error) }
       }
     }
   }
   await Promise.all(Array.from({ length: Math.min(MAX_EN_PARALELO, piezas.length) }, trabajador))
+  // Se esperan las piezas que ya se lanzaron. Las restantes quedan pendientes para el siguiente turno.
+  for (; siguiente < piezas.length; siguiente += 1) {
+    resultados[siguiente] = { ...pausa, id: piezas[siguiente]?.id ?? null }
+  }
   return resultados
 }
 

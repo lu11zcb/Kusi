@@ -82,3 +82,12 @@ La carpeta del trabajo: `trabajo.json`, `plan.md`, `juego/` y `piezas/`.
 
 El informe de este intento está escrito, con su veredicto, sus capturas y las
 listas de comprobación de cada pieza.
+
+## La lista de promesas (regla 14.16)
+
+Antes de dar el veredicto, escribe `revision/promesas.tsv` con una línea por cada promesa de `## Promesas` de `plan.md`:
+`<id>` TAB `hecho`, `falta`, `roto` o `no comprobado` TAB `<prueba>` TAB `<lo que viste o por qué no se pudo ver>`.
+La prueba es una captura que ya está en `revision/` o el lugar del código que lo hace (`escenas/EscenaX.js:120`). «Hecho» es
+«está y hace lo que dice la promesa», nunca «se siente bien». Un sonido o una sensación que no se puede mostrar con una
+captura ni con el código va como `no comprobado`, con su porqué, nunca como `hecho`. Toda promesa en `falta` o `roto` es un
+«no» del informe: veredicto **corregir**.

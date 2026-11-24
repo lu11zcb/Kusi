@@ -18,6 +18,7 @@ import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { CARPETA_JUEGO, CARPETA_TALLER } from './trabajador/configuracion.js'
 import { armarComando, lanzar, leerRoles } from './trabajador/roles.js'
+import { limiteDe, resultadoDePausa } from './trabajador/pausa.js'
 import { esIdTrabajo, PATRON_PIEZA } from '#kit/reproductor/datos/registroJuegos.js'
 import { prepararPieza } from '#kit/herramientas/preparar_pieza.mjs'
 import { prepararCriatura, prepararTiraFigura } from '#kit/herramientas/preparar_criatura.mjs'
@@ -192,12 +193,19 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
   let ejecucion
   try {
     ejecucion = await lanzarRol(comando, { limiteMs: LIMITE_IMAGEN_MS })
-  } catch {
+  } catch (error) {
     // Un fallo al arrancar también consume un intento y queda documentado.
-    ejecucion = { codigo: -1, agotado: false, salida: '', errores: '' }
+    ejecucion = { codigo: -1, agotado: false, salida: '', errores: String(error?.message ?? error) }
   }
 
   const archivo = id + '-intento-' + intento + '.png'
+  const pausa = limiteDe(ejecucion, 'dibujante', Date.now())
+  if (pausa) {
+    // La reserva solo coordina el lanzamiento. Con un límite se devuelve este turno y se conserva la pieza anterior.
+    await rm(temporal, { recursive: true, force: true })
+    await rm(path.join(reservas, archivo), { force: true })
+    return { id, ...resultadoDePausa(pausa) }
+  }
   const origen = path.join(carpetaReal, 'piezas', 'origen', archivo)
   const pieza = path.join(carpetaReal, 'piezas', id + '.png')
   await mkdir(path.dirname(origen), { recursive: true })

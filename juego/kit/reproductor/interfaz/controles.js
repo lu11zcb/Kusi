@@ -39,6 +39,7 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
     etiqueta = escena.add.text(0, 30, 'Saltar', estiloTexto(24, COLOR.tinta)).setOrigin(0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 2)
     piezas.push(sombra, boton, flecha, etiqueta)
   }
+  for (const pieza of piezas) pieza.setData('hud', true)
 
   // Las posiciones siguen al tamaño de la pantalla (el lienzo se amplía en pantallas alargadas).
   const colocar = () => {

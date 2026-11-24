@@ -1,8 +1,10 @@
 // El buzón de Spring, visto desde el trabajador: pedir el siguiente trabajo y
-// entregar su resultado o su fallo (edu-api/README.md, «El buzón del taller»).
+// entregar su resultado, devolverlo a la cola o informar su fallo.
+import { INTERVALO_SONDEO_MS } from './pausa.js'
 
-export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch }) {
+export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch, ahora = Date.now }) {
   const raiz = url.replace(/\/+$/, '') + '/interno/taller/trabajos/'
+  let espera = null
 
   async function pedir(ruta, cuerpo) {
     const respuesta = await pedirHttp(raiz + ruta, {
@@ -23,6 +25,24 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch }) {
   return {
     // El trabajo pendiente más antiguo, o null si no hay.
     async siguiente() {
+      if (espera) {
+        if (ahora() < espera.pausa.hasta) return null
+        const { pausa, probar, guardar } = espera
+        if (pausa.sondear && probar) {
+          let limite
+          try {
+            limite = await probar(ahora())
+          } catch {
+            limite = { ...pausa, hasta: ahora() + INTERVALO_SONDEO_MS }
+          }
+          if (limite) {
+            espera.pausa = limite
+            await guardar(limite)
+            return null
+          }
+        }
+        espera = null
+      }
       const { estado, datos } = await pedir('siguiente')
       if (estado === 204) return null
       if (estado === 200 && datos?.trabajo?.id) return datos.trabajo
@@ -39,6 +59,13 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch }) {
     resultado: (id, cuerpo) => pedir(id + '/resultado', cuerpo),
     // La propuesta de un trabajo «proponer»: { propuesta, fuentes, evidencia }. Mismos estados que «resultado».
     propuesta: (id, cuerpo) => pedir(id + '/propuesta', cuerpo),
+    // Se suspende la toma de trabajos incluso si Spring está temporalmente desconectado.
+    async pausar(trabajo, { pausa, motivo, probar, guardar }) {
+      espera = { pausa, probar, guardar }
+      return pedir(trabajo.id + '/pausa', {
+        motivo, hasta: new Date(pausa.hasta).toISOString(), tomado_en: trabajo.tomado_en,
+      })
+    },
     // Si el trabajo era una propuesta, Spring usa su respaldo; el trabajador no lo sabe ni lo necesita.
     fallo: (id, motivo) => pedir(id + '/fallo', { motivo }),
   }

@@ -38,7 +38,8 @@ dónde sale ese contenido.
    mecánicas. Elige **una mecánica que haga que el niño demuestre lo que aprende con lo que
    hace** (contar, ordenar, clasificar, armar…), distinta de «recorrer y recoger», y cuéntala
    con tus palabras en las `acciones` y las `reglas`: sin nombrar juegos ni copiar sus
-   dibujos, personajes o niveles. Lee la ficha del género elegido.
+   dibujos, personajes o niveles. Lee la ficha del género elegido y, en `kit/generos/fichas/`, cómo se
+   siente su primer minuto y con qué contenido escolar encaja.
    **Luego lee [../../kit/recetas/README.md](../../kit/recetas/README.md) y
    [diversion.md](../../kit/recetas/diversion.md)** y elige **una sola receta** (exploración, plataformas o
    viaje): la propuesta se hace pensando en un juego **sencillo pero entretenido, como los de Friv**.

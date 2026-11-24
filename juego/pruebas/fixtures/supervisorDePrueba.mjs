@@ -85,7 +85,8 @@ async function trabajar() {
       cierre: { mensaje: '¡Muy bien!' },
     }),
     'juego/README.md': '# Las parejas de prueba\n\nUn juego mínimo para probar el trabajador.\n',
-    'plan.md': '# Plan del trabajo\n\nJuego nuevo de prueba.\n',
+    'plan.md': '# Plan del trabajo\n\nJuego nuevo de prueba.\n\n## Promesas\n\n- P1: Hay un círculo que se mueve.\n',
+    'revision/promesas.tsv': 'P1\thecho\tjuego/escenas/EscenaParejas.js:15\tEl círculo se mueve de lado a lado.\n',
     'evidencia.json': JSON.stringify({ intentos: { piezas: { 'olla-de-prueba': 1 } } }),
   }
   if (conPruebas) {

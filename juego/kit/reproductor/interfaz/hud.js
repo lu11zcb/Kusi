@@ -34,7 +34,13 @@ const SEPARACION_ICONO = 8
 export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilenciar = null, silenciado = false } = {}) {
   const piezas = []
   const recolocarBotones = []
-  const agregar = (pieza) => { piezas.push(pieza); return pieza }
+  const agregar = (pieza, nombre) => {
+    // El revisor necesita distinguir los dibujos de la interfaz del decorado.
+    pieza.setData('hud', true)
+    if (nombre) pieza.setData('idPantalla', nombre)
+    piezas.push(pieza)
+    return pieza
+  }
   const { width: ancho } = escena.scale
 
   // Kusi, en un círculo claro, arriba a la izquierda.
@@ -44,7 +50,7 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
   const habla = crearHablaKusi(vidaActiva())
 
   // El globo: junto a Kusi, con su colita hacia él.
-  const globo = agregar(escena.add.graphics().setScrollFactor(0).setDepth(PROFUNDIDAD))
+  const globo = agregar(escena.add.graphics().setScrollFactor(0).setDepth(PROFUNDIDAD), 'Globo de Kusi')
   const texto = agregar(escena.add.text(0, 0, '', estiloTexto(30, COLOR.tinta, { align: 'left', wordWrap: { width: 520 } })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
   globo.setAlpha(0)
   texto.setAlpha(0)
@@ -64,9 +70,14 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
     const anchoGlobo = Math.min(maximo, texto.width + 56)
     const altoGlobo = Math.max(84, texto.height + 40)
     const centroY = Math.max(80, 14 + altoGlobo / 2)
+    const colaY = 80 - centroY
     globo.clear()
     globo.setPosition(160 + anchoGlobo / 2, centroY)
-    dibujarGlobo(globo, anchoGlobo, altoGlobo, { cola: 'izquierda', colaY: 80 - centroY })
+    dibujarGlobo(globo, anchoGlobo, altoGlobo, { cola: 'izquierda', colaY })
+    // Graphics no tiene tamaño propio. La caja incluye la cola y el trazo de 4 px.
+    const arriba = Math.min(-altoGlobo / 2, colaY - 16) - 2
+    globo.setData('cajaPantalla', { x: -anchoGlobo / 2 - 32, y: arriba,
+      ancho: anchoGlobo + 34, alto: Math.max(altoGlobo / 2, colaY + 34) + 2 - arriba })
     texto.setPosition(160 + 28, centroY)
     escena.tweens.killTweensOf([globo, texto])
     globo.setAlpha(1)
@@ -180,8 +191,9 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
   const indicador = ({ icono = null, texto: inicial = '' } = {}) => {
     const x = ancho - 20
     const y = 146 + indicadores.length * 50
+    const nombre = inicial ? 'Indicador ' + inicial : 'Indicador ' + (indicadores.length + 1)
     const fondo = agregar(escena.add.rectangle(x, y, 40, ALTO_INDICADOR, NUMERO.crema, 0.96)
-      .setOrigin(1, 0.5).setStrokeStyle(3, NUMERO.tinta).setRounded(21).setScrollFactor(0).setDepth(PROFUNDIDAD))
+      .setOrigin(1, 0.5).setStrokeStyle(3, NUMERO.tinta).setRounded(21).setScrollFactor(0).setDepth(PROFUNDIDAD), nombre)
     const cifra = agregar(escena.add.text(x - MARGEN_INDICADOR, y, inicial, estiloTexto(24, COLOR.tinta))
       .setOrigin(1, 0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
     let imagen = null

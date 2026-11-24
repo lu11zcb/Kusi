@@ -1,20 +1,20 @@
 // Una propuesta de principio a fin: preparar su carpeta, poner a trabajar al proponedor,
 // entregarle a Spring lo que escribió y, si Spring la rechaza, pedirle hasta 2 correcciones.
-// Si no sale (sin tokens, un error, se acaba el tiempo), el trabajador dice que falló:
-// Spring entonces usa su respaldo para que el docente no espere en vano.
+// Un límite de uso pausa la propuesta. Para los demás errores Spring usa su respaldo.
 
-import { mkdir } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { carpetaDe, escribirJson, leerJson } from './carpeta.js'
 import { armarComando, consumoDe } from './roles.js'
 import { CARPETA_JUEGO, CARPETA_RAIZ } from './configuracion.js'
+import { leerPausa, limiteDe, pausarTrabajo } from './pausa.js'
 
 // 1 intento y hasta 2 correcciones, como los juegos (reglas.md, regla 10).
 export const MAX_CORRECCIONES_PROPUESTA = 2
 
 // Lo que se le pide al proponedor. Nombra roles, nunca programas.
-export function pedidoParaElProponedor({ trabajo, carpeta, correccion, intento }) {
+export function pedidoParaElProponedor({ trabajo, carpeta, correccion, intento, retomado = false }) {
   const lineas = [
     'Eres el proponedor del taller de Kusi. Sigue tus instrucciones.',
     'Trabajo: ' + trabajo.id + ' (' + trabajo.tipo + '). Carpeta del trabajo: ' + carpeta,
@@ -24,6 +24,7 @@ export function pedidoParaElProponedor({ trabajo, carpeta, correccion, intento }
       '«propuesta» y «fuentes».',
     'Al terminar, responde en una línea: LISTO, o FALLÓ: <motivo>.',
   ]
+  if (retomado) lineas.push('Retoma lo que esté escrito en propuesta.json y completa solo lo pendiente.')
   if (correccion) {
     lineas.push(
       '',
@@ -42,22 +43,22 @@ export async function procesarPropuesta(trabajo, dependencias) {
   const ahora = dependencias.ahora ?? (() => Date.now())
   const registrar = dependencias.registrar ?? ((texto) => console.log('[taller] ' + texto))
   const inicio = ahora()
-  const pasos = []
-  const correcciones = []
-  let intento = 0
-  let motivos = null
 
   const carpeta = carpetaDe(trabajos, trabajo.id)
   await mkdir(carpeta, { recursive: true })
+  const guardado = await leerPausa(carpeta)
+  const { pasos = [], correcciones = [] } = guardado ?? {}
+  let { intento = 0, motivos = null } = guardado ?? {}
   await escribirJson(path.join(carpeta, 'trabajo.json'), { id: trabajo.id, tipo: trabajo.tipo, entrada: trabajo.entrada })
   const temporal = path.join(tmpdir(), 'kusi-taller', trabajo.id)
   await mkdir(temporal, { recursive: true })
   registrar('Trabajo ' + trabajo.id + ' (propuesta): carpeta lista.')
 
-  const evidencia = (resultado, motivo) => {
+  const evidencia = (resultado, motivo, pausa = guardado?.pausa) => {
     const fin = ahora()
     return {
       trabajo: trabajo.id, tipo: trabajo.tipo, resultado, motivo,
+      ...(pausa && { pausa: { rol: pausa.rol, hasta: new Date(pausa.hasta).toISOString(), sondear: pausa.sondear } }),
       inicio: new Date(inicio).toISOString(), fin: new Date(fin).toISOString(),
       segundos: Math.round((fin - inicio) / 1000),
       intentos: { propuesta: intento },
@@ -66,10 +67,12 @@ export async function procesarPropuesta(trabajo, dependencias) {
       como_se_estimo: 'tokens del paso por el precio de lista del modelo usado, a la fecha del trabajo',
     }
   }
+  const borrarPausa = () => rm(path.join(carpeta, 'pausa.json'), { force: true })
   // Un fallo no es un error del trabajador: Spring lo recibe y usa su respaldo.
   const fallar = async (motivo) => {
     await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia('falló', motivo))
     const respuesta = await buzon.fallo(trabajo.id, motivo)
+    if (respuesta.estado === 200) await borrarPausa()
     registrar('Trabajo ' + trabajo.id + ': la propuesta falló (' + motivo.slice(0, 160) + '). Spring respondió ' + respuesta.estado + '.')
     return { resultado: 'falló', motivo }
   }
@@ -77,20 +80,29 @@ export async function procesarPropuesta(trabajo, dependencias) {
   if (!roles.proponedor || !agentes.proponedor) {
     return fallar('Falta el rol «proponedor» en roles.local.json o en taller/agentes/.')
   }
+  const valores = {
+    instrucciones: agentes.proponedor.instrucciones, carpeta, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
+  }
 
   while (true) {
-    intento += 1
     const restante = limiteMs - (ahora() - inicio)
     if (restante <= 0) return fallar('Se acabó el tiempo de la propuesta (' + Math.round(limiteMs / 60000) + ' minutos).')
 
-    registrar('Trabajo ' + trabajo.id + ': el proponedor empieza el intento ' + intento + '.')
+    const siguiente = intento + 1
+    registrar('Trabajo ' + trabajo.id + ': el proponedor empieza el intento ' + siguiente + '.')
     const comando = armarComando(roles.proponedor, {
-      pedido: pedidoParaElProponedor({ trabajo, carpeta, correccion: motivos, intento }),
-      instrucciones: agentes.proponedor.instrucciones,
-      carpeta, juego: CARPETA_JUEGO, raiz: CARPETA_RAIZ, temporal,
+      ...valores,
+      pedido: pedidoParaElProponedor({ trabajo, carpeta, correccion: motivos, intento: siguiente, retomado: Boolean(guardado) }),
     })
     const pasoInicio = new Date(ahora()).toISOString()
     const ejecucion = await lanzar(comando, { limiteMs: restante })
+    const pausa = limiteDe(ejecucion, 'proponedor', ahora())
+    if (pausa) {
+      return pausarTrabajo({ trabajo, carpeta, estado: { intento, motivos, pasos, correcciones },
+        pausa, buzon, evidencia, roles, lanzar, valores, registrar })
+    }
+    intento = siguiente
+    if (motivos) correcciones.push({ rol: 'trabajador', para: 'proponedor', motivo: motivos.join(' | ').slice(0, 2000) })
     const consumo = consumoDe(ejecucion.salida)
     pasos.push({
       rol: 'proponedor', intento, inicio: pasoInicio, fin: new Date(ahora()).toISOString(),
@@ -98,7 +110,7 @@ export async function procesarPropuesta(trabajo, dependencias) {
       imagenes: 0, costo_estimado_usd: consumo.costo_estimado_usd,
     })
     if (ejecucion.agotado) return fallar('Se acabó el tiempo de la propuesta mientras trabajaba el proponedor.')
-    // Un error del rol (por ejemplo, sin tokens) no se arregla insistiendo: Spring usa su respaldo.
+    // Un error del rol distinto del límite de uso pasa al respaldo de Spring.
     if (ejecucion.codigo !== 0 || consumo.con_error) {
       return fallar('El proponedor terminó con un error: ' + (consumo.respuesta || ejecucion.errores.slice(-500) || 'sin detalle'))
     }
@@ -125,6 +137,7 @@ export async function procesarPropuesta(trabajo, dependencias) {
         const respuesta = await buzon.propuesta(trabajo.id, { propuesta: entrega.propuesta, fuentes: entrega.fuentes, evidencia: evidencia('listo', null) })
         if (respuesta.estado === 200) {
           await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia('listo', null))
+          await borrarPausa()
           registrar('Trabajo ' + trabajo.id + ': propuesta entregada a Spring.')
           return { resultado: 'listo' }
         }
@@ -142,6 +155,5 @@ export async function procesarPropuesta(trabajo, dependencias) {
     if (intento > MAX_CORRECCIONES_PROPUESTA) {
       return fallar('La propuesta no pasó la revisión después de ' + MAX_CORRECCIONES_PROPUESTA + ' correcciones: ' + motivos.join(' | '))
     }
-    correcciones.push({ rol: 'trabajador', para: 'proponedor', motivo: motivos.join(' | ').slice(0, 2000) })
   }
 }

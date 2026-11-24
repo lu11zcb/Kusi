@@ -31,6 +31,15 @@ Las puntuaciones son juicios de diseño sobre **una adaptación pequeña**, no s
 
 **Encaje educativo:** 1, la acción apenas representa el contenido; 2, exige añadir una actividad separada; 3, necesita una transformación fuerte; 4, varias decisiones del juego pueden demostrar aprendizaje; 5, ordenar, contar, clasificar o relacionar son la propia acción central. Un 5 no garantiza aprender: depende de la consigna, la dificultad y la revisión docente.
 
+## Fichas de diseño del primer minuto
+
+El **proponedor** lee la ficha al elegir un juego cuya acción sirva para aprender el tema. El **supervisor** la vuelve a leer en su crítica para comprobar qué hace el niño al empezar, cómo responde el juego y qué decisiones debe fijar en el plan. Las opciones por defecto son puntos de partida. Cada excepción se usa dentro de las [reglas del taller](../../taller/reglas.md).
+
+- [Plataformas](fichas/plataformas.md) · [Arcade clásico](fichas/arcade-clasico.md)
+- [Objetos escondidos](fichas/objetos-escondidos.md) · [Puzle de casillas](fichas/puzle-de-casillas.md) · [Puzle de lógica](fichas/puzle-de-logica.md)
+- [Carrera sin fin](fichas/carrera-sin-fin.md) · [Bloques que caen](fichas/bloques-que-caen.md)
+- [Pesca](fichas/pesca.md) · [Cuidar y ordenar](fichas/cuidar-y-ordenar.md) · [Laberinto](fichas/laberinto.md)
+
 ## Cómo se usa en el taller
 
 Este catálogo lo leen el **proponedor** (para que cada propuesta se inspire en una mecánica distinta, no en

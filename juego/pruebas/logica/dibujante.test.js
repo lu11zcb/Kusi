@@ -269,6 +269,28 @@ test('el trabajador exige una revisión aprobada de los bytes finales y un infor
   } finally { await rm(path.dirname(carpeta), { recursive: true }) }
 })
 
+test('el límite del dibujante devuelve la reserva y deja intactos los intentos anteriores', async (contexto) => {
+  const carpeta = await trabajoDePrueba()
+  contexto.after(() => rm(path.dirname(carpeta), { recursive: true, force: true }))
+  const pedido = { carpeta, id: 'olla', que: 'clay pot' }
+  const lanzarRol = async () => ({ codigo: 1, salida: '', errores: '' })
+  assert.equal((await dibujar(pedido, { roles, lanzarRol })).intento, 1)
+  const piezas = path.join(carpeta, 'piezas')
+  const reserva = path.join(piezas, '.intentos')
+  const registro = path.join(piezas, 'registro.json')
+  const antes = await readFile(registro, 'utf8')
+  const aviso = JSON.stringify({ type: 'error', error: { message: 'Límite de uso.' } })
+  const resultado = await dibujar(pedido, { roles, lanzarRol: async () => ({ codigo: 1, salida: aviso, errores: '' }) })
+  assert.equal(resultado.siguiente, 'pausa')
+  assert.equal(resultado.pausa.rol, 'dibujante')
+  assert.equal(resultado.pausa.sondear, true)
+  assert.equal(resultado.intento, undefined)
+  assert.deepEqual(await readdir(reserva), ['olla-intento-1.png'])
+  assert.equal(await readFile(registro, 'utf8'), antes)
+
+  assert.equal((await dibujar(pedido, { roles, lanzarRol })).intento, 2)
+})
+
 test('un fallo al arrancar consume intento, sin falsificar originales y sin un cuarto lanzamiento', async () => {
   const carpeta = await trabajoDePrueba()
   let lanzamientos = 0

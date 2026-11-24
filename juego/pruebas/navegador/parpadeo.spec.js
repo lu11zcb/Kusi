@@ -28,16 +28,16 @@ test('el manifiesto define el parpadeo una sola vez, solo de frente, y cabe en l
   const datos = validarSpriteCuy(await leerManifiesto())
   expect(datos.imagen).toBe('cuy.png')
   expect(datos.fotograma).toEqual({ ancho: 256, alto: 256 })
-  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 6 })
+  expect(datos.cuadricula).toEqual({ columnas: 3, filas: 7 })
   expect(datos.animaciones.frente.parpadeo).toEqual({
     fotogramas: [15, 16, 17, 16, 15], fps: 16, repetir: 0, siguiente: 'quieto', voltear: false,
   })
   for (const direccion of DIRECCIONES_CUY.filter((vista) => vista !== 'frente')) {
     expect(datos.animaciones[direccion].parpadeo).toBeUndefined()
   }
-  // La sexta fila termina en el cuadro 17; el 18 ya está fuera de la hoja.
+  // Las siete filas llegan hasta el cuadro 20. El 21 queda fuera de la hoja.
   const fuera = structuredClone(datos)
-  fuera.animaciones.frente.parpadeo.fotogramas = [15, 16, 18]
+  fuera.animaciones.frente.parpadeo.fotogramas = [15, 16, 21]
   expect(() => validarSpriteCuy(fuera)).toThrow('Índice fuera de la hoja')
 })
 

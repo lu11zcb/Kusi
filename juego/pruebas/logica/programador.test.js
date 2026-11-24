@@ -8,6 +8,7 @@ import path from 'node:path'
 import { programar, pedidoDeCodigo, textoDeArchivo, MAX_ENCARGOS } from '../../taller/programar.mjs'
 import { leerAgentes } from '../../taller/trabajador/roles.js'
 import { pedidoParaElSupervisor } from '../../taller/trabajador/procesar.js'
+import { limiteDe } from '../../taller/trabajador/pausa.js'
 
 // El programador del taller sin el programa real: un doble «escribe» el juego en la carpeta
 // del trabajo. Comprueba lo que se le pide, dónde escribe y lo que queda registrado.
@@ -47,6 +48,33 @@ test('el encargo dice la carpeta, la tarea y la corrección, y nunca nombra prog
   assert.match(pedido, /Es una corrección[\s\S]*La ayuda 2 no se ve\./)
   assert.match(pedido, /\?juego=/)
   assert.match(pedido, /^Eres el programador del taller de Kusi/)
+})
+
+test('el límite del programador deja el encargo sin contar y conserva el código para retomarlo', async (contexto) => {
+  const carpeta = await trabajoDePrueba()
+  contexto.after(() => rm(path.dirname(carpeta), { recursive: true, force: true }))
+  const pedido = { carpeta, tarea: 'Escribe el juego' }
+  const archivo = path.join(carpeta, 'juego', 'juego.js')
+  const hasta = '2099-01-01T09:00:00.000Z'
+  let llamadas = 0
+  const pausado = await programar(pedido, { roles, agentes, async lanzarRol() {
+    llamadas += 1
+    await writeFile(archivo, 'export default {}\n')
+    // Aunque haya quedado en silencio tras el aviso, el límite evita el relanzamiento inmediato.
+    return { codigo: 1, silencio: true, salida: '', errores: 'Usage limit; try again at ' + hasta }
+  }, esperaReintentoMs: 0 })
+  assert.equal(llamadas, 1)
+  assert.equal(pausado.siguiente, 'pausa')
+  assert.deepEqual(pausado.pausa, { rol: 'programador', hasta: Date.parse(hasta), sondear: false })
+  assert.deepEqual(limiteDe({ salida: pausado.aviso }, 'supervisor', Date.now()), pausado.pausa)
+  assert.deepEqual(limiteDe({ salida: JSON.stringify({ result: JSON.stringify(pausado) }) }, 'supervisor', Date.now()), pausado.pausa)
+  assert.equal(existsSync(path.join(carpeta, 'programador', 'registro.json')), false)
+  assert.equal(existsSync(path.join(carpeta, 'programador', 'pedidos.md')), false)
+  assert.equal(await readFile(archivo, 'utf8'), 'export default {}\n')
+
+  const retomado = await programar(pedido, { roles, agentes, ...programadorDePrueba(['LISTO']) })
+  assert.equal(retomado.encargo, 1)
+  assert.equal(retomado.pasa, true)
 })
 
 test('un encargo que termina deja el código en juego/, su pedido y su registro', async () => {

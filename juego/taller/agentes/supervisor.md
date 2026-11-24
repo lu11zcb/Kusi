@@ -116,8 +116,11 @@ decides, repartes, controlas y entregas.
    con su motivo.
 
 **No termines tu turno esperando.** No uses segundo plano (`run_in_background`) ni respondas «espero a que termine…»: lo que
-queda en segundo plano se pierde al terminar. Ejecuta en primer plano y espera el resultado. Tu respuesta final es solo
-`LISTO` o `FALLÓ: <motivo>`.
+queda en segundo plano se pierde al terminar. Ejecuta en primer plano y espera el resultado.
+
+**Si un comando devuelve `siguiente: pausa`**, conserva el avance y termina el turno con el campo `aviso`, en una sola línea.
+Si el revisor avisa un límite, responde `PAUSA revisor: <aviso de límite>` con la hora si aparece. En los demás casos,
+responde `LISTO` o `FALLÓ: <motivo>`.
 
 **Si un comando se niega por permisos**, no es motivo para responder «FALLÓ».
 Usa otro camino permitido: para leer y escribir archivos, Read, Write y Edit; para
@@ -139,7 +142,8 @@ respuesta es «no», rehaz la idea tú mismo** (sin cambiar el tema ni lo que ap
 6. ¿Cuántas **piezas dibujadas** hay? **Ocho o menos.** Si hay más, quita las que no cambian cómo se juega.
 7. ¿Cómo **reacciona** el juego a cada acción (efecto y sonido al recoger, acertar, fallar y ganar)?
 8. ¿En qué **juego de Friv** se inspira (`kit/friv/por-motor.md`, su ficha en `seleccion.md`) y qué mecánica adaptas? Si
-   no hay uno, elige uno que encaje con la receta.
+   no hay uno, elige uno que encaje con la receta. Lee la **ficha de su género** en `kit/generos/fichas/` (primer minuto, cómo se
+   siente, decisiones y qué cambia para niños de 6 y 7 años) y anota en el plan qué reglas de la ficha sigues y cuál rompes, y por qué.
 9. ¿Qué es la **acción**: qué persigue, contra qué rival se corre o qué ritmo sube? **«Camina y recoge cosas» no pasa.**
 10. ¿Cada frase de la **historia se ve y se oye** en el juego (13.23)? Si dice que algo canta o habla y no se muestra con
     notas, un sonido o la voz de Kusi, reescríbela. Y el verbo del juego sale de la misión.
@@ -147,6 +151,14 @@ respuesta es «no», rehaz la idea tú mismo** (sin cambiar el tema ni lo que ap
     rehaz la idea. ¿Qué hace el niño **con el contenido del tema** (arma, clasifica, ordena, lleva, cura, construye…)?
 12. ¿Dónde **se enseña antes de preguntar** (descubrir, practicar, aplicar)? Escribe en `plan.md` una línea: «Al terminar el
     niño sabe…».
+
+13. ¿Cuál es su **dirección de arte**, escrita para este juego (regla 14.15)? Una línea cada una: ánimo, formas, paleta con
+    el papel de cada color (protagonista, peligro, suelo, acento), dónde va el detalle y un **detalle firma** que ningún otro
+    juego de Kusi tenga. Si se parece a la de un juego anterior del taller, cámbiala.
+14. ¿Cuál es el **juego real más parecido** y **en qué cambia** el nuestro? Si no cambia nada importante, es una copia:
+    rehaz la idea.
+15. Las **promesas** (regla 14.16): cada frase del cuento, cada acción, regla, reto y ayuda de la propuesta y cada cosa que
+    prometes en el plan va numerada en `## Promesas` (P1, P2…). El revisor las comprueba una por una.
 
 Un juego que no pasa esta crítica no se programa. Anota en `plan.md` qué cambiaste y por qué.
 
@@ -170,6 +182,8 @@ acaba el tiempo, el taller entrega lo que esté en la carpeta y pase las comprob
 ## El mundo (material, paleta y qué existe allí), cómo se maneja el protagonista (joystick y, en plataformas, saltar) y cómo cruza el mundo
 ## Tensión y sorpresa (adversario u obstáculo, y qué trae cada nivel) y los detalles del mundo
 ## El cuento de apertura (cada página: su frase y lo que muestra su lámina) y el escenario (fondo del kit o fondo nuevo)
+## Dirección de arte (ánimo, formas, paleta con papeles, detalle y detalle firma) y el juego más parecido
+## Promesas (P1, P2…: lo que el niño verá y oirá, sacado del cuento, la propuesta y el plan)
 ## Piezas del kit que se usan
 ## Piezas nuevas
 | id | qué es | para qué sirve | estado |

@@ -181,6 +181,17 @@ y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/corre
 - [ ] **Capturas cuadro a cuadro** de cada animación importante (ponerse algo, un gesto, celebrar) en `revision/`: lo que se ve bien en una
       foto quieta puede verse mal en movimiento [48].
 
+### 2.5 La lista de promesas (regla 14.16)
+
+- [ ] `revision/promesas.tsv` tiene una línea por cada promesa de `## Promesas` del plan, con su estado y su prueba (captura o
+      línea de código). Ninguna en `falta` ni `roto`; las `no comprobado` dicen por qué.
+
+### 2.6 La revisión automática de la pantalla
+
+`trabajador/comprobar.js` abre el juego y revisa sola la pantalla (textos chicos o fuera de la pantalla, cosas encimadas sobre
+el HUD o entre sí, pantalla trabada mientras el niño toca, toques que no cambian nada). Lo que encuentre llega como motivo de
+corrección; el revisor no lo repite a mano, pero sí mira las capturas.
+
 ## 3. El informe del revisor
 
 Cada revisión deja `revision/intento-<n>.md`:

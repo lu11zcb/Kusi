@@ -705,6 +705,18 @@ de una lección. Mientras escucha, un micrófono grande, que no tapa nada, se mu
 con el canto del kit `kit/reproductor/efectos/canto.js`), no un pitido; si dice que algo se congela, se ve congelarse. El revisor compara el
 cuento, frase por frase, con lo que se ve y se oye en el juego [90].
 
+**14.15 Cada juego tiene su propia dirección de arte.** No hay un estilo por defecto: el supervisor escribe en el plan, para este
+juego, el ánimo, las formas (redondas y blandas, angulosas, de bloques), la paleta con el papel de cada color (protagonista, peligro,
+suelo, acento; las sombras más frías y las luces más cálidas), dónde va el detalle y dónde no (detrás del juego, poco), y un
+**detalle firma** que ningún otro juego de Kusi tenga (un brillo, un borde de papel, una textura). Dos juegos no reciben la misma
+dirección por costumbre. Nunca un emoji ni un símbolo de letra como dibujo. El plan nombra también el **juego real más parecido** y
+en qué cambia el nuestro: se toma la idea, nunca sus personajes, su arte ni su nombre.
+
+**14.16 Lo prometido se comprueba, con prueba.** Lo que prometen el cuento, la propuesta y el plan (cada frase del cuento, cada
+acción, regla, reto y ayuda) va numerado en el plan (`## Promesas`) y el revisor lo marca en `revision/promesas.tsv` como hecho,
+falta, roto o no comprobado, con una captura o la línea de código que lo muestra. Lo que no se puede mostrar se declara «no
+comprobado», nunca «hecho». Un juego con una promesa en falta o rota no se entrega [90].
+
 ## 12. Nombres neutrales
 
 Los archivos del juego, el plan, las revisiones y la evidencia nombran
