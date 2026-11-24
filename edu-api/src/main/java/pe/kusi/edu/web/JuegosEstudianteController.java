@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.kusi.edu.service.DjangoInternoClient;
 import pe.kusi.edu.service.ActividadesEstudianteService;
 import pe.kusi.edu.service.MonedasEstudianteService;
+import pe.kusi.edu.service.SalonEstudianteService;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,10 +19,11 @@ public class JuegosEstudianteController {
     private final DjangoInternoClient django;
     private final ActividadesEstudianteService actividades;
     private final MonedasEstudianteService monedas;
+    private final SalonEstudianteService salon;
     public JuegosEstudianteController(DjangoInternoClient django, ActividadesEstudianteService actividades,
-                                      MonedasEstudianteService monedas) {
+                                      MonedasEstudianteService monedas, SalonEstudianteService salon) {
         this.django = django; this.actividades = actividades;
-        this.monedas = monedas;
+        this.monedas = monedas; this.salon = salon;
     }
 
     private UUID estudiante(String sesion) {
@@ -35,7 +37,17 @@ public class JuegosEstudianteController {
     }
     @GetMapping("/logros/")
     public ResponseEntity<Map<String, Object>> logros(@CookieValue(value = "sessionid", required = false) String sesion) {
-        return sinCache(actividades.logros(estudiante(sesion)));
+        UUID id = estudiante(sesion);
+        // Los puntos propios y, si el estudiante tiene sección, el podio y la meta de su salón.
+        Map<String, Object> cuerpo = new LinkedHashMap<>(actividades.logros(id));
+        cuerpo.putAll(salon.salon(id));
+        return sinCache(cuerpo);
+    }
+    @PostMapping("/apariencia/")
+    public ResponseEntity<Map<String, Object>> apariencia(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                          @RequestBody JsonNode datos) {
+        salon.guardarApariencia(estudiante(sesion), datos);
+        return sinCache(Map.of("guardado", true));
     }
     @GetMapping("/juegos/{id}/avance/")
     public ResponseEntity<Map<String, Object>> avance(@CookieValue(value = "sessionid", required = false) String sesion, @PathVariable UUID id) {

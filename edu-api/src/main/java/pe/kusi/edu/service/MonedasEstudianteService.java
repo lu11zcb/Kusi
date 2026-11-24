@@ -18,10 +18,11 @@ public class MonedasEstudianteService {
     private record Premios(int terminadas, int puntosConvertidos) {}
 
     // Solo se enumeran prendas que se pueden comprar. Las de logros se obtienen fuera de la tienda.
+    // Cada id es el nombre de la prenda en la app («Mi cuy»), en minúsculas, para que la app sepa cuál desbloquear.
+    // Precios acordados: accesorios (lentes y mochila) 20, cabeza 40 y ropa 60.
     private static final List<Prenda> PRENDAS = List.of(
-            new Prenda("chalina", "Chalina", 20), new Prenda("lentes", "Lentes", 20),
-            new Prenda("sombrero", "Sombrero", 40), new Prenda("chullo", "Chullo", 40),
-            new Prenda("poncho", "Poncho", 60), new Prenda("traje", "Traje", 60));
+            new Prenda("lentes_estrellas", "Lentes estrella", 20), new Prenda("mochila_menta", "Mochila menta", 20),
+            new Prenda("gorra", "Gorra exploradora", 40), new Prenda("chaleco", "Chaleco coral", 60));
 
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transaccion;
@@ -37,8 +38,7 @@ public class MonedasEstudianteService {
     }
 
     public List<Map<String, Object>> tienda(UUID estudiante) {
-        Set<String> compradas = new HashSet<>(jdbc.queryForList("select prenda_id from edu.movimientos_monedas "
-                + "where estudiante_id = ? and prenda_id is not null", String.class, estudiante));
+        Set<String> compradas = compradas(estudiante);
         return PRENDAS.stream().map(prenda -> Map.<String, Object>of("id", prenda.id(), "nombre", prenda.nombre(),
                 "precio", prenda.precio(), "comprada", compradas.contains(prenda.id()))).toList();
     }
@@ -57,6 +57,17 @@ public class MonedasEstudianteService {
                     estudiante, prenda.id(), -prenda.precio());
             return Map.of("prenda_id", prenda.id(), "saldo", saldoActual - prenda.precio());
         });
+    }
+
+    /** Los ids de las prendas que el estudiante ya compró. */
+    Set<String> compradas(UUID estudiante) {
+        return new HashSet<>(jdbc.queryForList("select prenda_id from edu.movimientos_monedas "
+                + "where estudiante_id = ? and prenda_id is not null", String.class, estudiante));
+    }
+
+    /** Si la prenda está en la tienda: entonces solo se la puede poner quien la compró. */
+    static boolean seVende(String id) {
+        return PRENDAS.stream().anyMatch(prenda -> prenda.id().equals(id));
     }
 
     /** Se llama al confirmar el fin, con la partida y la actividad ya bloqueadas. */

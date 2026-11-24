@@ -309,24 +309,100 @@ class ActividadesEstudianteTest {
 
     @Test void tiendaCompraConSaldoPropioYRechazaDuplicadosYPrendasFueraDelCatalogo() throws Exception {
         String compras = ESTUDIANTE + "tienda/compras/";
-        ObjectNode chalina = json.createObjectNode().put("prenda_id", "chalina");
-        enviar(compras, "estudiante", chalina).andExpect(status().isConflict());
+        ObjectNode lentes = json.createObjectNode().put("prenda_id", "lentes_estrellas");
+        enviar(compras, "estudiante", lentes).andExpect(status().isConflict());
         comprobarFin(completarRetos(UUID.randomUUID().toString(), 0, 0, 0), 20, 25, false);
         leer(ESTUDIANTE + "tienda/", "estudiante").andExpect(status().isOk())
-                .andExpect(jsonPath("$.prendas.length()").value(6))
-                .andExpect(jsonPath("$.prendas[*].precio", contains(20, 20, 40, 40, 60, 60)))
+                .andExpect(jsonPath("$.prendas.length()").value(4))
+                .andExpect(jsonPath("$.prendas[*].precio", contains(20, 20, 40, 60)))
                 .andExpect(jsonPath("$.prendas[0].comprada").value(false));
-        enviar(compras, "otro", chalina).andExpect(status().isConflict());
-        enviar(compras, "otro", chalina.deepCopy().put("estudiante_id", estudiante.toString())).andExpect(status().isBadRequest());
-        enviar(compras, "docente", chalina).andExpect(status().isForbidden());
+        enviar(compras, "otro", lentes).andExpect(status().isConflict());
+        enviar(compras, "otro", lentes.deepCopy().put("estudiante_id", estudiante.toString())).andExpect(status().isBadRequest());
+        enviar(compras, "docente", lentes).andExpect(status().isForbidden());
         leer(ESTUDIANTE + "monedas/", "docente").andExpect(status().isForbidden());
         enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "logro")).andExpect(status().isNotFound());
-        enviar(compras, "estudiante", chalina).andExpect(status().isOk())
-                .andExpect(jsonPath("$.prenda_id").value("chalina")).andExpect(jsonPath("$.saldo").value(5));
-        enviar(compras, "estudiante", chalina).andExpect(status().isConflict());
+        enviar(compras, "estudiante", lentes).andExpect(status().isOk())
+                .andExpect(jsonPath("$.prenda_id").value("lentes_estrellas")).andExpect(jsonPath("$.saldo").value(5));
+        enviar(compras, "estudiante", lentes).andExpect(status().isConflict());
         leer(ESTUDIANTE + "tienda/", "estudiante").andExpect(jsonPath("$.prendas[0].comprada").value(true));
         leer(ESTUDIANTE + "tienda/", "otro").andExpect(jsonPath("$.prendas[0].comprada").value(false));
         leer(ESTUDIANTE + "monedas/", "estudiante").andExpect(jsonPath("$.saldo").value(5));
+    }
+
+    // Un compañero de la sección que recibió el juego del setup y completa algunos retos.
+    private UUID companeroConRetos(String nombre, int retos) {
+        UUID companero = UUID.randomUUID();
+        vinculos.saveAndFlush(new VinculoEstudiante(companero, seccion, 2026, docente));
+        jdbc.update("insert into edu.destinatarios_actividad(generacion_id, estudiante_id, asignado_por) values (?, ?, ?)",
+                juego.getId(), companero, docente);
+        when(django.validarCuenta(companero, "estudiante")).thenReturn(Map.of("nombre", nombre));
+        String partida = UUID.randomUUID().toString();
+        for (int nivel = 1; nivel <= retos; nivel++) partidas.guardar(companero, false, aviso(juego, partida, nivel, "reto_completado", nivel));
+        return companero;
+    }
+
+    @Test void trofeosMuestranElPodioYLaMetaDelSalonConDatosReales() throws Exception {
+        when(django.validarCuenta(estudiante, "estudiante")).thenReturn(Map.of("nombre", "Luis Cucho Bravo"));
+        when(django.nombreCurso(curso)).thenReturn("Ciencia y Tecnología");
+        UUID ana = companeroConRetos("Ana Lucía Pérez García", 3);
+        companeroConRetos("Rosa Quispe", 0);
+        UUID retirado = companeroConRetos("Pedro Mamani Luna", 3);
+        jdbc.update("update edu.vinculos_estudiante set retirado_en = current_timestamp where estudiante_id = ?", retirado);
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "reto_completado", 1));
+        partidas.guardar(estudiante, false, aviso(juego, partida, 2, "reto_completado", 2));
+        when(django.validarSesion("ana")).thenReturn(Map.of("id", ana.toString(), "roles", List.of("estudiante")));
+        enviar(ESTUDIANTE + "apariencia/", "ana", json.createObjectNode().put("pelaje", 2)
+                .set("accesorios", json.createArrayNode().add("SOMBRERO").add("POLO"))).andExpect(status().isOk());
+
+        // Ana (20) y yo (13) en el podio; Rosa no tiene puntos y Pedro ya no está en la sección.
+        leer(ESTUDIANTE + "logros/", "estudiante").andExpect(status().isOk())
+                .andExpect(jsonPath("$.puntos").value(13))
+                .andExpect(jsonPath("$.ranking.podio.length()").value(2))
+                .andExpect(jsonPath("$.ranking.podio[0].nombre_corto").value("Ana Pérez"))
+                .andExpect(jsonPath("$.ranking.podio[0].puntos").value(20))
+                .andExpect(jsonPath("$.ranking.podio[0].es_mi_puesto").value(false))
+                .andExpect(jsonPath("$.ranking.podio[0].pelaje").value(2))
+                .andExpect(jsonPath("$.ranking.podio[0].accesorios", contains("SOMBRERO", "POLO")))
+                .andExpect(jsonPath("$.ranking.podio[1].nombre_corto").value("Luis Cucho"))
+                .andExpect(jsonPath("$.ranking.podio[1].es_mi_puesto").value(true))
+                .andExpect(jsonPath("$.ranking.podio[1].accesorios").isEmpty())
+                .andExpect(jsonPath("$.ranking.mis_puntos").value(13))
+                // Tres compañeros vigentes recibieron una actividad de 20 puntos: el objetivo es 60.
+                .andExpect(jsonPath("$.meta_salon.objetivo").value(60))
+                .andExpect(jsonPath("$.meta_salon.puntos_del_salon").value(33));
+        // Quien no tiene sección este año no ve el salón de nadie.
+        leer(ESTUDIANTE + "logros/", "otro").andExpect(status().isOk())
+                .andExpect(jsonPath("$.ranking").doesNotExist()).andExpect(jsonPath("$.meta_salon").doesNotExist());
+        assertEquals("Ana Pérez", SalonEstudianteService.nombreYApellido(" Ana  Pérez "));
+        assertEquals("María Pérez", SalonEstudianteService.nombreYApellido("María de los Ángeles Pérez García"));
+    }
+
+    @Test void elCuySoloLlevaPrendasQueExistenYLasDeLaTiendaSiSeCompraron() throws Exception {
+        String ruta = ESTUDIANTE + "apariencia/";
+        java.util.function.Function<String[], ObjectNode> cuy = prendas -> {
+            ObjectNode cuerpo = json.createObjectNode().put("pelaje", 1);
+            var lista = cuerpo.putArray("accesorios");
+            for (String prenda : prendas) lista.add(prenda);
+            return cuerpo;
+        };
+        enviar(ruta, "estudiante", cuy.apply(new String[]{"GORRO", "LENTES_SOL", "BUFANDA", "MOCHILA"})).andExpect(status().isOk());
+        assertEquals("GORRO,LENTES_SOL,BUFANDA,MOCHILA", jdbc.queryForObject(
+                "select accesorios from edu.apariencias_estudiante where estudiante_id = ?", String.class, estudiante));
+        enviar(ruta, "estudiante", cuy.apply(new String[]{"LENTES_ESTRELLAS"})).andExpect(status().isBadRequest());
+        enviar(ruta, "estudiante", cuy.apply(new String[]{"SOMBRERO", "GORRO"})).andExpect(status().isBadRequest());
+        enviar(ruta, "estudiante", cuy.apply(new String[]{"CORONA"})).andExpect(status().isBadRequest());
+        enviar(ruta, "estudiante", cuy.apply(new String[]{}).put("pelaje", 4)).andExpect(status().isBadRequest());
+        enviar(ruta, "estudiante", cuy.apply(new String[]{}).put("estudiante_id", otro.toString())).andExpect(status().isBadRequest());
+        enviar(ruta, "docente", cuy.apply(new String[]{})).andExpect(status().isForbidden());
+
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 0, 0, 0), 20, 25, false);
+        enviar(ESTUDIANTE + "tienda/compras/", "estudiante", json.createObjectNode().put("prenda_id", "lentes_estrellas"))
+                .andExpect(status().isOk());
+        enviar(ruta, "estudiante", cuy.apply(new String[]{"LENTES_ESTRELLAS"})).andExpect(status().isOk());
+        assertEquals(1, jdbc.queryForObject("select count(*) from edu.apariencias_estudiante where estudiante_id = ?", Integer.class, estudiante));
+        assertEquals("LENTES_ESTRELLAS", jdbc.queryForObject(
+                "select accesorios from edu.apariencias_estudiante where estudiante_id = ?", String.class, estudiante));
     }
 
     @Test void comprasSimultaneasNoPuedenGastarElMismoSaldo() throws Exception {
@@ -336,12 +412,12 @@ class ActividadesEstudianteTest {
         try (var hilos = Executors.newFixedThreadPool(2)) {
             var una = hilos.submit(() -> {
                 salida.await();
-                return enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "chalina"))
+                return enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "lentes_estrellas"))
                         .andReturn().getResponse().getStatus();
             });
             var otra = hilos.submit(() -> {
                 salida.await();
-                return enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "lentes"))
+                return enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "mochila_menta"))
                         .andReturn().getResponse().getStatus();
             });
             salida.countDown();

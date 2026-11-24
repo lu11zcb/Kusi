@@ -171,3 +171,7 @@ La actividad reparte 20 puntos entre sus retos. Cada respuesta incorrecta baja u
 | `POST /api/edu/estudiante/tienda/compras/` | Recibe `prenda_id` y devuelve `prenda_id` y el `saldo` actualizado |
 
 La compra usa el CSRF de las demás escrituras educativas. Responde 404 para prendas fuera del catálogo y 409 por saldo insuficiente o por una prenda que el estudiante ya compró.
+
+`GET /api/edu/estudiante/logros/` devuelve los puntos, los retos y los cursos del estudiante. Si tiene sección vigente este año, agrega `ranking` (`podio` con hasta 3 compañeros con puntos: `nombre_corto`, `puntos`, `es_mi_puesto`, `pelaje` y `accesorios`; y `mis_puntos`) y `meta_salon` (`puntos_del_salon` y `objetivo`). Solo cuentan los compañeros no retirados de su sección. El `nombre_corto` es el primer nombre y el apellido paterno (la penúltima palabra si hay dos apellidos). El objetivo vale 20 puntos por cada actividad vigente que recibió cada compañero. `POST /api/edu/estudiante/apariencia/` recibe `pelaje` (0 a 3) y `accesorios` (nombres de las prendas de la app, una por parte del cuerpo); rechaza una prenda de la tienda que el estudiante no compró. Se guarda en `apariencias_estudiante` (V17).
+
+El catálogo es el de «Mi cuy» en la app: cada `id` es el nombre de la prenda en `PiezaCuy`, en minúsculas. Se venden `lentes_estrellas` y `mochila_menta` (20 monedas), `gorra` (40) y `chaleco` (60). Las demás prendas de la app son gratis.
