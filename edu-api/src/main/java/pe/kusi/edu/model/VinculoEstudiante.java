@@ -13,6 +13,11 @@ public class VinculoEstudiante {
     @Column(name="anio_escolar", nullable=false) private int anioEscolar;
     @Column(name="creado_en", nullable=false) private Instant creadoEn=Instant.now();
     @Column(name="creado_por", nullable=false) private UUID creadoPor;
+    @Column(name="retirado_en") private Instant retiradoEn;
+    @Column(name="retirado_por") private UUID retiradoPor;
+    public boolean isRetirado(){return retiradoEn != null;}
+    public Instant getRetiradoEn(){return retiradoEn;}
+    public void retirar(UUID administrador){if (retiradoEn == null){retiradoEn=Instant.now();retiradoPor=administrador;}}
     protected VinculoEstudiante() {}
     public VinculoEstudiante(UUID estudianteId, Seccion seccion, int anioEscolar, UUID creadoPor){this.estudianteId=estudianteId;this.seccion=seccion;this.anioEscolar=anioEscolar;this.creadoPor=creadoPor;}
     public UUID getId(){return id;} public UUID getEstudianteId(){return estudianteId;} public Seccion getSeccion(){return seccion;} public int getAnioEscolar(){return anioEscolar;} public Instant getCreadoEn(){return creadoEn;}

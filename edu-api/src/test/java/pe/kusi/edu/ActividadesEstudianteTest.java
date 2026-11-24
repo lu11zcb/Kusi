@@ -265,4 +265,81 @@ class ActividadesEstudianteTest {
                 .andExpect(jsonPath("$.juegos[0].id").value(siguiente.getId().toString()))
                 .andExpect(jsonPath("$.juegos[0].nuevo").value(true));
     }
+
+    @Test void hu10RetirarEstudianteImpideAbrirRetomarYRecibirSinPerderHistorial() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "reto_completado", 1));
+        enviar(ruta(juego), "estudiante", checkpoint(partida, 1, 2)).andExpect(status().isOk());
+        UUID vinculo = vinculos.findAllByEstudianteId(estudiante).get(0).getId();
+        String retiro = "/interno/vinculos-estudiantes/" + vinculo + "/retirar/";
+        when(django.validarAdministrador("admin")).thenReturn(Map.of("id", docente.toString()));
+        mvc.perform(post(retiro).header("X-Clave-Interna", "incorrecta").header("X-Sesion-Kusi", "admin"))
+                .andExpect(status().isForbidden());
+        for (int i = 0; i < 2; i++) mvc.perform(post(retiro).header("X-Clave-Interna", "clave-solo-para-pruebas-aisladas")
+                .header("X-Sesion-Kusi", "admin")).andExpect(status().isCreated()).andExpect(jsonPath("$.vinculo.retirado").value(true));
+        leer("/api/edu/estudiante/juegos/", "estudiante").andExpect(jsonPath("$.juegos.length()").value(0));
+        leer(ruta(juego), "estudiante").andExpect(status().isNotFound());
+        enviar(ruta(juego), "estudiante", checkpoint(partida, 1, 2)).andExpect(status().isNotFound());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> partidas.guardar(estudiante, false, aviso(juego, partida, 2, "inicio", 2)));
+        Generacion nueva = enviar(new Generacion(actividad, juego.getPropuestaId(), 2), 3);
+        assertFalse(actividades.permitido(estudiante, nueva.getId()));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.destinatarios_actividad where generacion_id = ?", Integer.class, nueva.getId()));
+        assertEquals(1, jdbc.queryForObject("select count(*) from edu.avances_actividad where partida_id = ?", Integer.class, partida));
+        assertEquals(7, jdbc.queryForObject("select sum(puntos) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.partidas.length()").value(1));
+    }
+
+    @Test void hu45RetiroAbarcaTodasLasVersionesConservaResultadosYNoSePuedeRepublicar() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "reto_completado", 1));
+        enviar(ruta(juego), "estudiante", checkpoint(partida, 1, 2)).andExpect(status().isOk());
+        Generacion nueva = enviar(new Generacion(actividad, juego.getPropuestaId(), 2), 3);
+        String retiro = "/api/edu/resultados/actividades/" + actividad + "/retirar/";
+        enviar(retiro, "ajeno", json.createObjectNode()).andExpect(status().isNotFound());
+        enviar(retiro, "estudiante", json.createObjectNode()).andExpect(status().isForbidden());
+        enviar(retiro, "admin", json.createObjectNode()).andExpect(status().isForbidden());
+        mvc.perform(post(retiro).cookie(new Cookie("sessionid", "docente"))).andExpect(status().isForbidden());
+        for (int i = 0; i < 2; i++) enviar(retiro, "docente", json.createObjectNode()).andExpect(status().isOk());
+        leer("/api/edu/estudiante/juegos/", "estudiante").andExpect(jsonPath("$.juegos.length()").value(0));
+        leer(ruta(juego), "estudiante").andExpect(status().isNotFound());
+        leer(ruta(nueva), "estudiante").andExpect(status().isNotFound());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> partidas.guardar(estudiante, false, aviso(juego, partida, 2, "inicio", 2)));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> actividades.comprobarPublicacion(actividad));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.partidas.length()").value(1));
+        assertEquals(1, jdbc.queryForObject("select count(*) from edu.avances_actividad where partida_id = ?", Integer.class, partida));
+        assertEquals(7, jdbc.queryForObject("select sum(puntos) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
+    }
+
+    @Test void hu60IncidenciaValidadaIdempotenteSinRespuestaIncorrectaNiPuntos() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        ObjectNode incidencia = aviso(juego, partida, 1, "incidencia", 1).put("detalle", "Un toque no respondió");
+        assertEquals(0, puntos(partidas.guardar(estudiante, false, incidencia)));
+        assertEquals(true, partidas.guardar(estudiante, false, incidencia).get("duplicado"));
+        assertThrows(IllegalArgumentException.class, () -> partidas.guardar(estudiante, false, incidencia.deepCopy().put("correcto", false)));
+        assertThrows(IllegalArgumentException.class, () -> partidas.guardar(estudiante, false, incidencia.deepCopy().put("detalle", " ")));
+        assertThrows(IllegalArgumentException.class, () -> partidas.guardar(estudiante, false, incidencia.deepCopy().put("detalle", "x".repeat(501))));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(jsonPath("$.partidas[0].incidencias.length()").value(1))
+                .andExpect(jsonPath("$.partidas[0].incidencias[0].detalle").value("Un toque no respondió"))
+                .andExpect(jsonPath("$.partidas[0].retos.length()").value(0))
+                .andExpect(jsonPath("$.partidas[0].estado").value("sin_iniciar"));
+    }
+
+    @Test void hu40PruebaDocenteCompletaNoApareceEnResultadosNiGeneraPuntos() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(docente, true, aviso(juego, partida, 1, "inicio", 1));
+        partidas.guardar(docente, true, aviso(juego, partida, 2, "accion", 1).put("respuesta", "llama").put("correcto", true));
+        partidas.guardar(docente, true, aviso(juego, partida, 3, "reto_completado", 1));
+        assertEquals(0, puntos(partidas.guardar(docente, true, aviso(juego, partida, 4, "fin", 3))));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/", "docente")
+                .andExpect(jsonPath("$.estudiantes.length()").value(1)).andExpect(jsonPath("$.estudiantes[0].partidas").value(0))
+                .andExpect(jsonPath("$.estudiantes[0].estado").value("sin_iniciar"));
+        leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/" + estudiante + "/", "docente")
+                .andExpect(jsonPath("$.partidas.length()").value(0));
+    }
 }

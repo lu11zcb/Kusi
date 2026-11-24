@@ -18,7 +18,7 @@ import java.util.UUID;
 // respuesta perdida sin contar dos ayudas ni completar dos veces el mismo nivel.
 @Service
 public class PartidasService {
-    private static final List<String> TIPOS = List.of("listo", "inicio", "accion", "ayuda", "reto_completado", "fin", "fallo");
+    private static final List<String> TIPOS = List.of("listo", "inicio", "accion", "ayuda", "reto_completado", "fin", "fallo", "incidencia");
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
     private final TransactionTemplate transaccion;
@@ -46,6 +46,9 @@ public class PartidasService {
                     (fila, indice) -> fila.getObject(1, UUID.class), partida);
             if (propietarios.isEmpty() || !usuario.equals(propietarios.get(0)))
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró esta partida de tu cuenta.");
+            Boolean pruebaGuardada = jdbc.queryForObject("select prueba_docente from edu.partidas where id = ?", Boolean.class, partida);
+            if (!Boolean.valueOf(pruebaDocente).equals(pruebaGuardada))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El tipo de esta partida no puede cambiar.");
             JsonNode original = conJuego(usuario, pruebaDocente, partida, aviso);
             List<String> existentes = jdbc.query("select contenido from edu.avisos_partida where partida_id = ? and orden = ?",
                     (fila, indice) -> fila.getString(1), partida, aviso.path("orden").asInt());
@@ -79,7 +82,7 @@ public class PartidasService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este juego entre tus actividades.");
         String acceso = pruebaDocente ? "s.docente_id = ?" : "exists (select 1 from edu.destinatarios_actividad d where d.generacion_id = g.id and d.estudiante_id = ?)";
         Integer permitidos = jdbc.queryForObject("select count(*) from edu.generaciones g join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
-                + "where g.id = ? and g.publicada = true and g.estado = 'lista' and " + acceso, Integer.class, juego, usuario);
+                + "where g.id = ? and g.publicada = true and g.estado = 'lista' and s.retirada_en is null and " + acceso, Integer.class, juego, usuario);
         if (permitidos == null || permitidos == 0)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este juego entre tus actividades.");
         com.fasterxml.jackson.databind.node.ObjectNode completo = aviso.deepCopy();
@@ -120,6 +123,9 @@ public class PartidasService {
         try { Instant.parse(aviso.path("momento").asText()); }
         catch (RuntimeException error) { throw new IllegalArgumentException("El aviso necesita una fecha válida."); }
         String tipo = aviso.path("tipo").asText();
+        if (tipo.equals("incidencia") && (!aviso.path("detalle").isTextual() || aviso.path("detalle").asText().isBlank()
+                || aviso.path("detalle").asText().length() > 500 || aviso.has("correcto") || aviso.has("respuesta")))
+            throw new IllegalArgumentException("La incidencia necesita un detalle de hasta 500 caracteres y no es una respuesta.");
         if (aviso.has("reto") && !((aviso.path("reto").isTextual() && !aviso.path("reto").asText().isBlank() && aviso.path("reto").asText().length() <= 120)
                 || entero(aviso.path("reto"), 1, 100000))) throw new IllegalArgumentException("El reto del aviso no es válido.");
         if (aviso.has("juego_id") && (!aviso.path("juego_id").isTextual()

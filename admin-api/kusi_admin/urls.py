@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/interno/cuentas/<uuid:usuario_id>/', interno_views.consultar_cuenta_interna, name='consultar_cuenta_interna'),
     path('api/interno/cursos/<uuid:curso_id>/', interno_views.consultar_curso_interno, name='consultar_curso_interno'),
     path('api/educacion/vinculos-estudiantes/', educacion_views.listar_vinculos, name='listar_vinculos'),
+    path('api/educacion/vinculos-estudiantes/<uuid:vinculo_id>/retirar/', educacion_views.retirar_estudiante, name='retirar_estudiante'),
     path('api/educacion/vinculos-estudiantes/crear/', educacion_views.vincular_estudiante, name='vincular_estudiante'),
     path('api/educacion/asignaciones-docentes/', educacion_views.listar_asignaciones, name='listar_asignaciones'),
     path('api/educacion/asignaciones-docentes/crear/', educacion_views.asignar_docente, name='asignar_docente'),

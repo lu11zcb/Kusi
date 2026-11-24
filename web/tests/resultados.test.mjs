@@ -125,3 +125,11 @@ test('la lista diferencia destinatarios existentes y estudiantes que necesitan e
   assert.equal((html.match(/disabled=""/g) ?? []).length, 1)
   assert.ok(html.includes('Cuenta recién vinculada'))
 })
+
+test('HU60 presenta las incidencias aparte, sin fabricar respuestas incorrectas', () => {
+  const html = renderToStaticMarkup(createElement(PartidasEstudiante, { partidas: [{ ...partida, retos: [], incidencias: [{ orden: 1, momento: '2026-11-23T20:00:00Z', detalle: 'El juego no cargó', nivel: 0 }] }] }))
+  assert.match(html, /Incidencias técnicas/)
+  assert.match(html, /El juego no cargó/)
+  assert.doesNotMatch(html, /Por corregir/)
+  assert.doesNotMatch(html, /Primera respuesta/)
+})

@@ -14,7 +14,7 @@ public interface VinculoEstudianteRepository extends JpaRepository<VinculoEstudi
     @Query("""
         select distinct v
         from VinculoEstudiante v
-        where exists (
+        where v.retiradoEn is null and exists (
             select a.id
             from AsignacionDocente a
             where a.docenteId = :docenteId

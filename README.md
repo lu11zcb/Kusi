@@ -71,3 +71,7 @@ Maven y Gradle no se instalan: el repositorio trae `./mvnw` (Maven 3.9.16) y `./
 Diferencias con los comandos de Windows de este README y de los documentos: `./mvnw` y `./gradlew` en vez de `mvnw.cmd` y `gradlew.bat`; `.venv/bin/python` en vez de `.venv/Scripts/python.exe`; `cp` en vez de `copy`; `export VARIABLE=valor` en vez de `$env:VARIABLE="valor"`; y rutas con `/`.
 
 El repositorio guarda los archivos con saltos de línea LF, así que en la Mac no hace falta configurar nada. Nueve íconos de `movil/app/src/main/res/drawable/ic_*.xml` se guardan con CRLF a propósito, para conservar sus bytes (lo fija `.gitattributes`): no los reformatees ni los normalices.
+
+## Versión Flutter
+
+La carpeta [movil_flutter](movil_flutter/README.md) incluye la interfaz infantil en Flutter para web y Android, la configuración de VS Code, un servidor de desarrollo y los pasos para crear cuentas y una clase de prueba local. La aplicación Kotlin de movil/ conserva la integración original del juego con las API.

@@ -26,6 +26,9 @@ public class EliminacionPropuestas {
     public void eliminar(UUID docenteId, UUID solicitud) {
         // Comprueba que la propuesta exista y sea del docente (si no, responde 404).
         propuestas.consultar(docenteId, solicitud);
+        Integer publicadas = jdbc.queryForObject("select count(*) from edu.generaciones where solicitud_id = ? and publicada = true", Integer.class, solicitud);
+        if (publicadas != null && publicadas > 0) throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Esta actividad fue publicada. Usa Retirar actividad para conservar sus resultados.");
         String estado = jdbc.queryForObject("select estado from edu.solicitudes_propuesta where id = ?", String.class, solicitud);
         if ("generando".equals(estado)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Espera a que la IA termine la propuesta antes de eliminarla.");

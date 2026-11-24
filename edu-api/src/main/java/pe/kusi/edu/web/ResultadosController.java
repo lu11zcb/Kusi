@@ -46,6 +46,12 @@ public class ResultadosController {
                                                           @PathVariable UUID actividad) {
         return respuesta("estudiantes", actividades.asignaciones(docente(sesion), actividad));
     }
+    @PostMapping("/actividades/{actividad}/retirar/")
+    public ResponseEntity<Map<String, Object>> retirar(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                      @PathVariable UUID actividad) {
+        actividades.retirar(docente(sesion), actividad);
+        return respuesta("guardado", true);
+    }
     @PostMapping("/actividades/{actividad}/asignaciones/")
     public ResponseEntity<Map<String, Object>> asignar(@CookieValue(value = "sessionid", required = false) String sesion,
                                                     @PathVariable UUID actividad, @RequestBody JsonNode datos) {

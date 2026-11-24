@@ -1,0 +1,9 @@
+{
+  "descripcion": "Ilustraciones de bienvenida y personalización del cuy para la interfaz infantil.",
+  "origen": "Generadas con la herramienta integrada de imágenes a partir de la referencia de interfaz aportada por el usuario.",
+  "archivos": ["kusi_referencia.png", "kusi_mascota_referencia.png"],
+  "indicaciones": [
+    "Cuy naranja y blanco de la referencia, sombrero de explorador, poncho andino rojo con detalles azules y dorados, saludando; acuarela infantil con contornos marrones y fondo transparente, sin texto ni interfaz.",
+    "Cuy de creación de mascota de la referencia, crema con manchas caramelo, ojos marrones y pañuelo rojo; cuerpo entero de frente, sin sombrero ni poncho, acuarela infantil y fondo transparente."
+  ]
+}

@@ -174,3 +174,8 @@ def mis_estudiantes_docente(request):
             vinculo["estudiante_dni"] = dni
     return JsonResponse(datos)
 
+
+@never_cache
+@require_POST
+def retirar_estudiante(request, vinculo_id):
+    return _solicitar(request, "vinculos-estudiantes/" + str(vinculo_id) + "/retirar", "POST", "vinculo")

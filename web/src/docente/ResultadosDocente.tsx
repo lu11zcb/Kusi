@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { actividadesResultados, estudiantesResultados, respuestasResultados } from '../servicios/resultados'
+import { actividadesResultados, estudiantesResultados, respuestasResultados, retirarActividad } from '../servicios/resultados'
 import type { ActividadResultado, EstadoResultado, EstudianteResultado, PartidaResultado } from '../servicios/resultados'
 import { CabeceraDocente, CargandoDocente, MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
@@ -17,6 +17,7 @@ export function PartidasEstudiante({ partidas }: { partidas: PartidaResultado[] 
     <div className="doc-resultado-cabecera"><h3>Partida {indice + 1}</h3><Estado valor={partida.estado} /></div>
     <p>Juego recibido: envío {partida.envio} · {fecha.format(new Date(partida.enviado_en))}</p>
     <p className="doc-nota">Ayudas utilizadas: {partida.ayudas_usadas}. Las ayudas se muestran aparte de los puntos.</p>
+    {!!partida.incidencias?.length && <section aria-label="Incidencias técnicas"><h4>Incidencias técnicas</h4><p>Estos avisos no cuentan como respuestas incorrectas ni descuentan puntos.</p><ul>{partida.incidencias.map(aviso => <li key={aviso.orden}>{aviso.detalle}{aviso.nivel > 0 ? ' · Nivel ' + aviso.nivel : ''} · {fecha.format(new Date(aviso.momento))}</li>)}</ul></section>}
     {!partida.retos.length && <p>Todavía no hay respuestas registradas en esta partida.</p>}
     {partida.retos.map((reto, numeroReto) => <section key={reto.reto}><h4>Reto {/^[1-9]\d{0,4}$/.test(reto.reto) ? reto.reto : numeroReto + 1}</h4>
       <table className="doc-tabla"><caption className="solo-lectores">Respuestas de este reto</caption><thead><tr><th scope="col">Intento</th><th scope="col">Respuesta</th><th scope="col">Resultado</th><th scope="col">Ayudas</th></tr></thead><tbody>
@@ -46,6 +47,8 @@ function RespuestasEstudiante({ actividad, estudiante }: { actividad: string; es
 }
 
 function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) {
+  const [retirada, establecerRetirada] = useState(!!actividad.retirada)
+  const [retirando, establecerRetirando] = useState(false)
   const [asignando, establecerAsignando] = useState(false)
   const [estudiantes, establecerEstudiantes] = useState<EstudianteResultado[] | null>(null)
   const [elegido, establecerElegido] = useState<EstudianteResultado | null>(null)
@@ -59,12 +62,21 @@ function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) 
       .catch(fallo => { if (!controlador.signal.aborted) establecerError(mensajeDocente(fallo, 'No pudimos cargar esta actividad. Intenta otra vez.')) })
     return () => controlador.abort()
   }, [actividad.id, recarga])
+  async function retirar() {
+    if (retirando || retirada || !window.confirm('¿Retirar esta actividad? Ya no se podrá abrir ni retomar. Los resultados se conservan.')) return
+    establecerRetirando(true); establecerError('')
+    try { await retirarActividad(actividad.id); establecerRetirada(true); establecerAsignando(false) }
+    catch (fallo) { establecerError(mensajeDocente(fallo, 'No pudimos retirar la actividad.')) }
+    finally { establecerRetirando(false) }
+  }
   const visibles = (estudiantes ?? []).filter(e => (!filtro || e.estado === filtro) && normalizarBusqueda(e.nombre).includes(normalizarBusqueda(buscar)))
   return <>
     <div className="doc-resultado-cabecera"><div><h2>{actividad.titulo}</h2><p>Sección {actividad.seccion}</p></div><div className="doc-resultado-acciones">
-      <button type="button" className="secundario" aria-expanded={asignando} onClick={() => establecerAsignando(valor => !valor)}>Asignar a estudiantes nuevos</button>
+      <button type="button" className="secundario" disabled={retirada || retirando} aria-expanded={asignando} onClick={() => establecerAsignando(valor => !valor)}>Asignar a estudiantes nuevos</button>
       <button type="button" className="secundario" onClick={() => { establecerError(''); establecerEstudiantes(null); establecerElegido(null); establecerRecarga(n => n + 1) }}>Actualizar</button>
+      <button type="button" className="secundario" disabled={retirada || retirando} onClick={() => void retirar()}>{retirada ? 'Actividad retirada' : retirando ? 'Retirando…' : 'Retirar actividad'}</button>
     </div></div>
+    {retirada && <p role="status">Actividad retirada. Ya no se puede abrir ni retomar. Los resultados se conservan.</p>}
     {asignando && <AsignacionesActividad actividad={actividad.id} alAsignar={() => { establecerElegido(null); establecerRecarga(n => n + 1) }} />}
     {error ? <MensajeDocente titulo="No pudimos cargar los resultados" error><p>{error}</p></MensajeDocente> : estudiantes === null ? <CargandoDocente texto="Buscando el avance de tu clase…" /> : <>
       <div className="doc-filtros-estado" role="group" aria-label="Filtrar por avance"><button type="button" className="secundario" aria-pressed={!filtro} onClick={() => establecerFiltro('')}>Todos <span>{estudiantes.length}</span></button>{Object.entries(estados).map(([clave, nombre]) => <button type="button" className="secundario" aria-pressed={filtro === clave} key={clave} onClick={() => establecerFiltro(clave)}>{nombre} <span>{estudiantes.filter(e => e.estado === clave).length}</span></button>)}</div>

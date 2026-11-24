@@ -61,6 +61,16 @@ public class EducacionController {
         return ResponseEntity.status(201).body(Map.of("vinculo", vinculoDto(saved)));
     }
 
+    @PostMapping("/vinculos-estudiantes/{id}/retirar/") @Transactional
+    public ResponseEntity<?> retirarEstudiante(@RequestHeader(value="X-Clave-Interna", required=false) String clave,
+        @RequestHeader(value="X-Sesion-Kusi", required=false) String sesion, @PathVariable UUID id) {
+        Map<String,Object> admin = autorizar(clave, sesion);
+        VinculoEstudiante vinculo = vinculos.findById(id).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el vínculo."));
+        vinculo.retirar(UUID.fromString(admin.get("id").toString()));
+        vinculos.saveAndFlush(vinculo);
+        return ResponseEntity.status(201).body(Map.of("vinculo", vinculoDto(vinculo)));
+    }
+
     @GetMapping("/vinculos-estudiantes/") @Transactional(readOnly=true)
     public Map<String,Object> listarVinculos(@RequestHeader(value="X-Clave-Interna", required=false) String clave, @RequestHeader(value="X-Sesion-Kusi", required=false) String sesion) {
         autorizar(clave,sesion); return Map.of("vinculos", vinculos.findAll().stream().map(this::vinculoDto).toList());
@@ -124,7 +134,7 @@ public class EducacionController {
 
 
     private Map<String,Object> seccionDto(Seccion s){return Map.of("id",s.getId(),"nombre",s.getNombre(),"grado",s.getGrado(),"anio_escolar",s.getAnioEscolar());}
-    private Map<String,Object> vinculoDto(VinculoEstudiante v){return Map.of("id",v.getId(),"estudiante_id",v.getEstudianteId(),"seccion",seccionDto(v.getSeccion()),"anio_escolar",v.getAnioEscolar(),"creado_en",v.getCreadoEn());}
+    private Map<String,Object> vinculoDto(VinculoEstudiante v){return Map.of("id",v.getId(),"estudiante_id",v.getEstudianteId(),"seccion",seccionDto(v.getSeccion()),"anio_escolar",v.getAnioEscolar(),"creado_en",v.getCreadoEn(),"retirado",v.isRetirado());}
     private Map<String,Object> asignacionDto(AsignacionDocente a){return Map.of("id",a.getId(),"docente_id",a.getDocenteId(),"curso_id",a.getCursoId(),"seccion",seccionDto(a.getSeccion()),"anio_escolar",a.getAnioEscolar(),"creado_en",a.getCreadoEn());}
 
     public record CrearSeccion(@NotBlank @Size(max=80) String nombre, @Min(1) @Max(2) int grado, @Min(1000) @Max(9999) int anio_escolar) {}
