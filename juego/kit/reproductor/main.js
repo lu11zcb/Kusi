@@ -7,6 +7,7 @@ import '@fontsource/fredoka/700.css'
 import { ANCHO, ALTO, LETRA } from './medidas.js'
 import { EscenaCarga } from './escenas/EscenaCarga.js'
 import { EscenaHistoria } from './escenas/EscenaHistoria.js'
+import { EscenaPuntos } from './escenas/EscenaPuntos.js'
 import { EscenaLaberinto } from '../../juegos/laberinto/escenas/EscenaLaberinto.js'
 import { elegirRenderizador } from '../../juegos/laberinto/logica/parametrosLaberinto.js'
 import { CLAVE_RENDERIZADOR_PEDIDO } from './renderizador.js'
@@ -49,7 +50,7 @@ async function empezar() {
     input: {
       activePointers: 3,
     },
-    scene: [EscenaCarga, EscenaLaberinto, EscenaHistoria],
+    scene: [EscenaCarga, EscenaLaberinto, EscenaHistoria, EscenaPuntos],
   })
   // Las pruebas leen desde las escenas qué lienzo se pidió y cuál quedó activo.
   juego.registry.set(CLAVE_RENDERIZADOR_PEDIDO, pedido)

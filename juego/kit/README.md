@@ -38,6 +38,31 @@ Las piezas nuevas que dibuja el taller quedan «pendientes» en su trabajo hasta
 que el docente las aprueba; solo entonces pueden pasar a la biblioteca de
 piezas.
 
+## Puntos y monedas
+
+El reproductor escucha los avisos de partida que ya emiten el laberinto y los
+juegos del taller. La estrella del HUD muestra los puntos de esta partida.
+Cada `reto_completado` suma su parte de 20, repartida redondeando el acumulado
+de cada nivel y restando el anterior. Cada `accion` con `correcto: false`
+descuenta un punto de ese nivel, hasta la mitad redondeada hacia arriba. Pedir
+ayuda conserva el puntaje. Con `?vida=0` el número cambia sin vuelo, brillo ni
+sonido de puntos.
+
+Con `fin` se muestra la tarjeta y Kusi dice cuántas monedas se ganaron. Si el
+anfitrión omite `paquete.progreso`, la tarjeta cuenta la partida como la primera
+y muestra los puntos más cinco monedas. Para indicar una práctica, puede
+mandar, por ejemplo, `progreso: { mejoresPuntosPorNivel: [4, 6, 7], practicasUsadas: 0 }`.
+La lista empieza en el nivel 1 y guarda los mejores puntos **previos** de cada
+nivel. Cero significa que esta es la primera práctica después de la primera
+partida. La práctica da dos monedas más las mejoras hasta el máximo de 20
+puntos acumulados. El premio se agota después de tres prácticas. Spring
+confirma los puntos y el saldo con los avisos que recibe del anfitrión.
+
+La vista previa del panel (`?paquete=mensaje` dentro de un iframe) y
+`?prueba_docente` muestran el puntaje con el aviso de que no se guarda. En
+Android, el aviso que hace cerrar el juego se entrega al tocar «Continuar» o
+después de unos segundos con la tarjeta en pantalla.
+
 ## Tutorial jugable
 
 Usa `crearTutorial` antes del primer reto para enseñar el gesto que el niño va a

@@ -22,6 +22,7 @@ import { dibujarGlobo } from './piezas.js'
 import { decir, repetirVoz } from '../logica/voz.js'
 import { animarVozKusi, crearHablaKusi, avanzarHablaKusi } from '../logica/hablaKusi.js'
 import { vidaActiva } from '../efectos/vida.js'
+import { aplicarAvisoPuntos, crearPuntos, MAXIMO_PUNTOS } from '../logica/puntos.js'
 
 const PROFUNDIDAD = 4000
 const LADO_BOTON = 76
@@ -188,31 +189,14 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
 
   // Indicadores: una pastilla con un dibujo y un número, debajo de los botones.
   const indicadores = []
+  // La capa común ocupa la primera fila en los juegos que abrió el reproductor.
+  const filaInicial = escena.scene?.get('puntos')?.escenaJuego === escena ? 1 : 0
   const indicador = ({ icono = null, texto: inicial = '' } = {}) => {
-    const x = ancho - 20
-    const y = 146 + indicadores.length * 50
     const nombre = inicial ? 'Indicador ' + inicial : 'Indicador ' + (indicadores.length + 1)
-    const fondo = agregar(escena.add.rectangle(x, y, 40, ALTO_INDICADOR, NUMERO.crema, 0.96)
-      .setOrigin(1, 0.5).setStrokeStyle(3, NUMERO.tinta).setRounded(21).setScrollFactor(0).setDepth(PROFUNDIDAD), nombre)
-    const cifra = agregar(escena.add.text(x - MARGEN_INDICADOR, y, inicial, estiloTexto(24, COLOR.tinta))
-      .setOrigin(1, 0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
-    let imagen = null
-    if (icono && escena.textures.exists(icono)) {
-      imagen = agregar(escena.add.image(0, y, icono).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
-      const escala = Math.min(LADO_ICONO / imagen.width, LADO_ICONO / imagen.height)
-      imagen.setScale(escala)
-    }
-    const ajustar = () => {
-      const largo = cifra.width + MARGEN_INDICADOR * 2 + (imagen ? LADO_ICONO + SEPARACION_ICONO : 0)
-      fondo.setSize(largo, ALTO_INDICADOR)
-      if (imagen) imagen.setPosition(x - largo + MARGEN_INDICADOR + LADO_ICONO / 2, y)
-    }
-    ajustar()
-    const pastilla = {
-      poner(valor) { cifra.setText(String(valor)); ajustar() },
-      // Un saltito suave para avisar que cambió (nada fuerte ni rápido).
-      resaltar() { if (vidaActiva()) escena.tweens.add({ targets: [fondo, cifra], scale: 1.12, yoyo: true, duration: 140 }) },
-    }
+    const pastilla = crearIndicador(escena, {
+      x: ancho - 20, y: 146 + (filaInicial + indicadores.length) * 50,
+      inicial, nombre, agregar, icono,
+    })
     indicadores.push(pastilla)
     return pastilla
   }
@@ -238,5 +222,73 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
     // Cambia el dibujo del botón de sonido (apagado o encendido).
     sonido: (apagado) => sonido.imagen.setTexture(apagado ? 'boton-silencio' : 'boton-sonido'),
     destruir,
+  }
+}
+
+function crearIndicador(escena, { x, y, inicial, nombre, agregar, icono }) {
+  const fondo = agregar(escena.add.rectangle(0, 0, 40, ALTO_INDICADOR, NUMERO.crema, 0.96)
+    .setOrigin(1, 0.5).setStrokeStyle(3, NUMERO.tinta).setRounded(21).setScrollFactor(0).setDepth(PROFUNDIDAD), nombre)
+  const cifra = agregar(escena.add.text(0, 0, inicial, estiloTexto(24, COLOR.tinta))
+    .setOrigin(1, 0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
+  let imagen = null
+  if (typeof icono === 'function') imagen = icono(escena)
+  else if (icono && escena.textures.exists(icono)) {
+    imagen = escena.add.image(0, 0, icono)
+    ajustarATamano(imagen, LADO_ICONO, LADO_ICONO)
+  }
+  if (imagen) agregar(imagen.setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
+
+  const ajustar = () => {
+    const largo = cifra.width + MARGEN_INDICADOR * 2 + (imagen ? LADO_ICONO + SEPARACION_ICONO : 0)
+    fondo.setSize(largo, ALTO_INDICADOR).setPosition(x, y)
+    cifra.setPosition(x - MARGEN_INDICADOR, y)
+    if (imagen) imagen.setPosition(x - largo + MARGEN_INDICADOR + LADO_ICONO / 2, y)
+  }
+  ajustar()
+  return {
+    poner(valor) { cifra.setText(String(valor)); ajustar() },
+    colocar(aX, aY) { x = aX; y = aY; ajustar() },
+    centro: () => ({ x: x - fondo.width / 2, y }),
+    mostrar(visible) { for (const pieza of [fondo, cifra, imagen]) pieza?.setVisible(visible) },
+    // Un saltito suave para avisar que cambió (nada fuerte ni rápido).
+    resaltar() { if (vidaActiva()) escena.tweens.add({ targets: [fondo, cifra], scale: 1.12, yoyo: true, duration: 140 }) },
+  }
+}
+
+export function dibujarEstrellaPuntos(escena, radio) {
+  return escena.add.star(0, 0, 5, radio * 0.53, radio, NUMERO.naranjaClaro)
+    .setStrokeStyle(2.5, NUMERO.tinta)
+}
+
+export function textoPuntos(total) {
+  return total + ' de ' + MAXIMO_PUNTOS
+}
+
+export function crearHudPuntos(escena) {
+  const indicador = crearIndicador(escena, {
+    x: 0, y: 0, inicial: textoPuntos(0), nombre: 'Puntos',
+    icono: () => dibujarEstrellaPuntos(escena, 14),
+    agregar(pieza, nombre) {
+      pieza.setData('hud', true)
+      if (nombre) pieza.setData('idPantalla', nombre)
+      return pieza
+    },
+  })
+  let puntaje = crearPuntos(0)
+  return {
+    mostrar: indicador.mostrar,
+    colocar: indicador.colocar,
+    centro: indicador.centro,
+    empezar(totalRetos) {
+      puntaje = crearPuntos(totalRetos)
+      indicador.poner(textoPuntos(puntaje.total))
+    },
+    recibir(aviso) {
+      const anterior = puntaje.total
+      puntaje = aplicarAvisoPuntos(puntaje, aviso)
+      if (puntaje.total !== anterior) indicador.poner(textoPuntos(puntaje.total))
+      return puntaje.total - anterior
+    },
+    puntaje: () => puntaje,
   }
 }

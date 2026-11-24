@@ -5,3 +5,5 @@ export {
   crearPartidaLaberinto as crearPartida,
   avisarPartida,
 } from '../../../juegos/laberinto/logica/partidaLaberinto.js'
+
+export { observarAvisosPartida } from './avisos.js'

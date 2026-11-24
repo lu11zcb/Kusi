@@ -12,6 +12,7 @@ export const SONIDOS_LABERINTO = Object.freeze({
 })
 const PREFIJO_CLAVE = 'laberinto-sonido-'
 const CARPETA_SONIDOS = 'sonidos/'
+export const SONIDO_PUNTOS = PREFIJO_CLAVE + 'comer'
 const ESPERA_ENTRE_PASOS = 140
 const TIPOS_PASO = new Set(['paso_cuy', 'paso_zorro'])
 // Los ciclos de caminar repiten el cuadro central (0,1,2,1): el pie se apoya en

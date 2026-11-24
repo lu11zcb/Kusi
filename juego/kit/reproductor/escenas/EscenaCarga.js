@@ -57,6 +57,7 @@ export class EscenaCarga extends Phaser.Scene {
   }
 
   preload() {
+    this.scene.get('puntos')?.limpiarPartida()
     callarVoz()
     configurarVoz(null)
     // El ejemplo se abre directamente; el modo mensaje espera el guion del panel.
@@ -154,6 +155,7 @@ export class EscenaCarga extends Phaser.Scene {
           // necesita avisar de nuevo al anfitrión que terminó de cargar.
           if (this.partidaRecibida) this.scene.get('laberinto').events.once('create', () =>
             this.puente?.avisar({ tipo: 'cargado', niveles: paquete.retos.length }))
+          this.scene.get('puntos')?.prepararLaberinto(this.scene.get('laberinto'))
           this.scene.start('laberinto', datos)
         } catch (error) {
           this.mostrarError(error)

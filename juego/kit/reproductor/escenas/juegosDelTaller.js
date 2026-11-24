@@ -43,6 +43,11 @@ export function escenaDelTrabajo(Escena, clave, usaMicrofono = false) {
       this.sys.settings.key = clave
     }
 
+    init(datos) {
+      this.scene.get('puntos')?.abrirJuego(this, datos)
+      return super.init?.(datos)
+    }
+
     create(...argumentos) {
       try {
         if (usaMicrofono) {
