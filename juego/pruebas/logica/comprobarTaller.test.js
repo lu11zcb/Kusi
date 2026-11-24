@@ -16,16 +16,18 @@ const GUION = {
   cierre: { mensaje: '¡Lo hicimos!' },
 }
 const CODIGO = [
+  'import { crearTutorial } from "#kit/reproductor/interfaz/tutorial.js"',
   'export function preparar(escena) {',
-  '  crearControles(escena)',
   '  const hud = crearHud(escena)',
+  '  crearTutorial(escena, hud)',
   '  repartirYColocar(escena, {})',
   '  darVida(escena, {})',
   '  ambiente(escena, {})',
   '  return hud',
   '}',
 ].join('\n')
-const FRASES = 'export const frasesDeKusi = () => ["¡Sigamos!", "a".repeat(60)]'
+const FRASE_DE_60 = '¡Muy bien! Guarda la manzana roja cerca de las otras frutas.'
+const FRASES = 'export const frasesDeKusi = () => ["¡Sigamos!", "La A: aaa."]'
 
 async function revisar(t, reemplazos = {}) {
   const juego = await mkdtemp(path.join(tmpdir(), 'kusi-comprobar-'))
@@ -43,9 +45,11 @@ async function revisar(t, reemplazos = {}) {
   return revisarCodigo(juego)
 }
 
-test('pasa un juego mínimo con frases calculadas, incluida una de 60 caracteres, y Kusi en el cuento', async (t) => {
+test('pasa un juego fijo sin joystick con tutorial y frases con contexto, incluida una de 60 caracteres', async (t) => {
+  assert.equal([...FRASE_DE_60].length, 60)
   assert.deepEqual(await revisar(t, {
-    'frases.js': 'import { saludo } from "./saludo.js"\nexport const frasesDeKusi = async () => [saludo, "a".repeat(60)]',
+    'frases.js': 'import { saludo } from "./saludo.js"\nexport const frasesDeKusi = async () => ' +
+      '[saludo, "La A: aaa.", ' + JSON.stringify(FRASE_DE_60) + ']',
     'saludo.js': 'export const saludo = "¡Sigamos!"',
   }), { motivos: [], avisos: [] })
 })
@@ -57,6 +61,8 @@ for (const [caso, frases, error] of [
   ['la función falla', 'export function frasesDeKusi() { throw new Error("Frases indisponibles") }', /Frases indisponibles/],
   ['el retorno no es una lista de textos', 'export const frasesDeKusi = () => [42]', /debe devolver una lista de textos/],
   ['una frase pasa de 60', 'export const frasesDeKusi = () => ["a".repeat(61)]', /frase 1 tiene 61 caracteres/],
+  ['una frase está vacía', 'export const frasesDeKusi = () => [""]', /frase 1 está vacía/],
+  ['una frase solo contiene espacios', 'export const frasesDeKusi = () => ["  \\t"]', /frase 1 está vacía/],
   ['una frase dice el propio nombre', 'export const frasesDeKusi = () => ["Soy kUsI."]', /frase 1 dice «Kusi»/],
   ['el módulo se cuelga', 'while (true) {}\n' + FRASES, /superó el límite de 3 s/],
 ]) {
@@ -65,6 +71,111 @@ for (const [caso, frases, error] of [
     assert.equal(motivos.length, 1, motivos.join('\n'))
     assert.match(motivos[0], error)
     assert.match(motivos[0], /reglas\.md, regla 14\.1/)
+  })
+}
+
+for (const frase of ['a', 'A', '¡Í!', 'aaa', '¡Aaa!', 'iii', 'mmm', 'mmm…']) {
+  test('frases.js bloquea el sonido suelto «' + frase + '»', async (t) => {
+    const { motivos } = await revisar(t, {
+      'frases.js': 'export const frasesDeKusi = () => ' + JSON.stringify([frase]),
+    })
+    assert.equal(motivos.length, 1, motivos.join('\n'))
+    assert.match(motivos[0], /frase 1 es una vocal o un sonido suelto.*reglas 14\.1 y 14\.11/)
+  })
+}
+
+test('frases.js acepta interjecciones que la voz de Kusi puede decir', async (t) => {
+  const frases = ['¡Brrr!', '¡Achís!', '¡Shhh!', '¡Ah!']
+  assert.deepEqual(await revisar(t, {
+    'frases.js': 'export const frasesDeKusi = () => ' + JSON.stringify(frases),
+  }), { motivos: [], avisos: [] })
+})
+
+for (const [caso, codigo] of [
+  ['falta la llamada', CODIGO.replace('crearTutorial(escena, hud)', '// crearTutorial(escena, hud)')],
+  ['se llama a una función ajena al kit', CODIGO.replace('#kit/reproductor/interfaz/tutorial.js', './tutorial.js')],
+]) {
+  test('el tutorial se exige si ' + caso, async (t) => {
+    const { motivos } = await revisar(t, { 'juego.js': codigo })
+    assert.deepEqual(motivos, ['El juego no tiene tutorial al empezar (regla 14.10).'])
+  })
+}
+
+for (const paso of [
+  'moverConColisiones(posicion, direccion, velocidad, segundos)',
+  'avanzarVehiculo(vehiculo, direccion, segundos)',
+  'avanzarCuerpo(cuerpo, direccion, plataformas, segundos)',
+  'import { avanzarCuerpo as caminar } from "#kit/reproductor/logica/plataformas.js"\n' +
+    'caminar(cuerpo, direccion, plataformas, segundos)',
+]) {
+  test('exige joystick si el juego llama a ' + paso.split('\n').at(-1).split('(')[0], async (t) => {
+    const { motivos } = await revisar(t, { 'escena.js': paso + '\n// crearControles(escena)' })
+    assert.equal(motivos.length, 1, motivos.join('\n'))
+    assert.match(motivos[0], /no usa los controles del kit.*regla 13\.16/)
+  })
+}
+
+test('un juego de plataformas con controles del kit y tutorial importado con alias pasa', async (t) => {
+  assert.deepEqual(await revisar(t, {
+    'juego.js': CODIGO.replace('import { crearTutorial }', 'import { crearTutorial as guiar }')
+      .replace('crearTutorial(escena, hud)', 'guiar(escena, hud)'),
+    'escena.js': [
+      'import { avanzarCuerpo as caminar } from "#kit/reproductor/logica/plataformas.js"',
+      'import { crearControles as ponerJoystick } from "#kit/reproductor/interfaz/controles.js"',
+      'const entrada = ponerJoystick(escena).leer()',
+      'caminar(cuerpo, entrada, plataformas, segundos)',
+    ].join('\n'),
+  }), { motivos: [], avisos: [] })
+})
+
+const FICHA_CON_MICROFONO = CODIGO + '\nexport default { "usaMicrofono": true }'
+const ESCUCHA_DEL_KIT = 'import { escucharVocal } from "#kit/reproductor/interfaz/microfono.js"\n'
+
+test('un juego con micrófono que llama a escucharVocal del kit pasa', async (t) => {
+  assert.deepEqual(await revisar(t, {
+    'juego.js': FICHA_CON_MICROFONO,
+    'escena.js': ESCUCHA_DEL_KIT + 'escucharVocal({ vocal: "a" })',
+  }), { motivos: [], avisos: [] })
+})
+
+test('un juego con usaMicrofono desactivado pasa sin llamar a escucharVocal', async (t) => {
+  assert.deepEqual(await revisar(t, {
+    'juego.js': CODIGO + '\nexport default { usaMicrofono: false }',
+  }), { motivos: [], avisos: [] })
+})
+
+for (const [caso, codigo] of [
+  ['solo importa la función', ESCUCHA_DEL_KIT],
+  ['llama a una función propia', 'function escucharVocal() {}\nescucharVocal()'],
+]) {
+  test('un juego con micrófono se bloquea si ' + caso, async (t) => {
+    const { motivos } = await revisar(t, { 'juego.js': FICHA_CON_MICROFONO, 'escena.js': codigo })
+    assert.equal(motivos.length, 1, motivos.join('\n'))
+    assert.match(motivos[0], /usaMicrofono: true.*escucharVocal.*regla 14\.13/)
+  })
+}
+
+test('un juego con micrófono se bloquea si pide acceso directo con getUserMedia', async (t) => {
+  const { motivos } = await revisar(t, {
+    'juego.js': FICHA_CON_MICROFONO,
+    'escena.js': ESCUCHA_DEL_KIT + 'escucharVocal()\nnavigator.mediaDevices["getUserMedia"]({ audio: true })',
+  })
+  assert.equal(motivos.length, 1, motivos.join('\n'))
+  assert.match(motivos[0], /getUserMedia directamente.*regla 14\.13/)
+})
+
+for (const [api, codigo] of [
+  ['SpeechRecognition', 'new SpeechRecognition()'],
+  ['webkitSpeechRecognition', 'new window["webkitSpeechRecognition"]()'],
+  ['fetch', 'const enviar = fetch\nenviar("/audio", { method: "POST", body: audio })'],
+  ['XMLHttpRequest', 'const solicitud = new XMLHttpRequest()\nsolicitud.send(audio)'],
+  ['sendBeacon', 'navigator.sendBeacon("/audio", audio)'],
+]) {
+  test('bloquea ' + api + ' aunque la ficha no declare micrófono', async (t) => {
+    const { motivos } = await revisar(t, { 'escena.js': codigo })
+    assert.equal(motivos.length, 1, motivos.join('\n'))
+    assert.ok(motivos[0].includes(api), motivos[0])
+    assert.match(motivos[0], /regla 14\.13/)
   })
 }
 

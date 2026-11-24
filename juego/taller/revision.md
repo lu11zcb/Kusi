@@ -164,6 +164,20 @@ y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/corre
       nada repetido ni flotando, el viento no dobla lo rígido (14.7) [7, 8, 24, 28, 29, 30, 31, 32, 33, 42, 43, 53].
 - [ ] **La interfaz:** indicadores chicos que no tapan; botones dibujados del kit; globos que no se cortan ni se cruzan con nada (14.8)
       [45, 59, 66, 69].
+- [ ] **Tutorial:** al empezar el nivel 1, la mano guía muestra el gesto, Kusi dice qué tocar y para qué, y el niño lo hace una vez con
+      algo de práctica; no vuelve a salir en la misma partida (14.10) [84].
+- [ ] **El porqué:** el juego explica por qué el contenido es así con algo que se ve y se hace (no solo lo nombra ni lo pide); cada frase
+      se entiende sola, sin frases telegráficas, ni «Mira» si nada pasa (14.1, 14.11) [85, 86].
+- [ ] **Tocar y romper:** con dos cosas cruzadas, tocar la parte visible de la de atrás elige la de atrás; un tiro al vacío no rompe nada;
+      romper muestra grietas y pedazos que vuelan; el protagonista hace la acción con su animación (14.12) [79, 82, 87].
+- [ ] **Animales y personajes:** cada animal se reconoce de un vistazo; el coro y el público tienen gestos; nadie aparece ni desaparece de
+      la nada (14.3) [80, 81, 83].
+- [ ] **Micrófono** (si la ficha tiene `usaMicrofono`): el permiso se pide en la portada; con un micrófono simulado (Chromium con
+      `--use-fake-device-for-media-stream --use-file-for-fake-audio-capture=<wav>`) Kusi responde a lo que oyó y nunca dice que está mal;
+      el micrófono en pantalla se ve entero y se mueve con la voz (14.13) [88].
+- [ ] **El cuento se cumple:** cada cosa que promete el cuento se ve o se oye en el juego (si cantan, se les oye cantar) (14.14) [90].
+- [ ] **La voz de Kusi:** `voz/voz.json` existe y `voz/revisar.json` no tiene frases con `fallo`; escuchar primero las marcadas con
+      `revisar` (14.1) [89].
 - [ ] **Capturas cuadro a cuadro** de cada animación importante (ponerse algo, un gesto, celebrar) en `revision/`: lo que se ve bien en una
       foto quieta puede verse mal en movimiento [48].
 

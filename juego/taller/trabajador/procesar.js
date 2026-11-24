@@ -9,6 +9,7 @@ import path from 'node:path'
 import { prepararCarpeta, piezasNuevas, escribirJson, leerJson } from './carpeta.js'
 import { armarComando, consumoDe, negadosDe, subagentes } from './roles.js'
 import { CARPETA_JUEGO, CARPETA_RAIZ, CARPETA_TALLER } from './configuracion.js'
+import { grabarVozDelTrabajo } from './voz.js'
 
 // 1 intento y hasta 2 correcciones (reglas.md, regla 10).
 export const MAX_CORRECCIONES = 2
@@ -83,7 +84,8 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
 }
 
 // «dependencias» permite probarlo sin programas reales: buzon, roles (del archivo local),
-// agentes (de taller/agentes/), lanzar, comprobar, ahora y registrar.
+// agentes (de taller/agentes/), lanzar, comprobar, ahora y registrar. La voz
+// puede probarse con archivosMotor y lanzarVoz simulados.
 export async function procesarTrabajo(trabajo, dependencias) {
   const { buzon, roles, agentes, lanzar, comprobar, biblioteca, trabajos, juegoUrl, limiteMs } = dependencias
   const ahora = dependencias.ahora ?? (() => Date.now())
@@ -94,6 +96,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
   let intento = 0
   let motivos = null
   let avisos = []
+  let voz
 
   const { carpeta, anterior } = await prepararCarpeta(trabajo, { trabajos, biblioteca })
   registrar('Trabajo ' + trabajo.id + ' (' + trabajo.tipo + '): carpeta lista.')
@@ -108,7 +111,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
   }
 
   const terminar = async (resultado, motivo, entrega = null) => {
-    const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado, motivo, intento, pasos, correcciones, avisos })
+    const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado, motivo, intento, pasos, correcciones, avisos, voz })
     await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia)
     if (resultado === 'listo') return { resultado, evidencia, entrega }
     const respuesta = await buzon.fallo(trabajo.id, motivo)
@@ -181,8 +184,14 @@ export async function procesarTrabajo(trabajo, dependencias) {
       }
     }
     if (revision && motivos.length === 0) {
-      const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado: 'listo', motivo: notaDeEntrega, intento, pasos, correcciones, avisos })
       const piezas = await piezasNuevas(carpeta, anterior)
+      voz = await grabarVozDelTrabajo({
+        carpeta, restanteMs: limiteMs - (ahora() - inicio),
+        registrar, lanzarVoz: dependencias.lanzarVoz, archivosMotor: dependencias.archivosMotor,
+      })
+      if (voz.motivo) registrar('Trabajo ' + trabajo.id + ' (voz). ' + voz.motivo)
+      const evidencia = await armarEvidencia({ carpeta, trabajo, inicio, fin: ahora(), resultado: 'listo', motivo: notaDeEntrega,
+        intento, pasos, correcciones, avisos, voz })
       const respuesta = await buzon.resultado(trabajo.id, { paquete: revision.paquete, piezas, evidencia })
       if (respuesta.estado === 200) {
         await escribirJson(path.join(carpeta, 'evidencia.json'), evidencia)
@@ -209,7 +218,7 @@ export async function procesarTrabajo(trabajo, dependencias) {
 
 // La evidencia (entrega.md §8). Si el supervisor ya escribió una, se conservan sus
 // datos y se completan los que conoce el trabajador: tiempos, intentos, pasos y costo.
-async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo, intento, pasos, correcciones, avisos }) {
+async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo, intento, pasos, correcciones, avisos, voz }) {
   const archivo = path.join(carpeta, 'evidencia.json')
   let delSupervisor = {}
   try {
@@ -242,6 +251,7 @@ async function armarEvidencia({ carpeta, trabajo, inicio, fin, resultado, motivo
   } catch { /* sin guion todavía */ }
   return {
     ...delSupervisor,
+    ...(voz && { voz }),
     trabajo: trabajo.id,
     tipo: trabajo.tipo,
     familia,

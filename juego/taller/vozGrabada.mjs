@@ -1,4 +1,7 @@
 import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { partirHistoria } from '../kit/reproductor/logica/historia.js'
 import { normalizarFrase, PATRON_VOZ_NATURAL } from '../kit/reproductor/logica/textoVoz.js'
 
@@ -10,6 +13,27 @@ export function juntarFrases(guion, frasesDelJuego = []) {
     guion.cierre?.mensaje, ...frasesDelJuego,
   ]
   return [...new Set(frases.map(normalizarFrase).filter(Boolean))]
+}
+
+// Las frases que el juego arma por su cuenta (contar objetos, dar pistas, responder
+// al niño) viven en juego/frases.js. Un juego puede no tener ese archivo.
+export async function frasesDelJuego(carpetaJuego) {
+  const archivo = path.join(carpetaJuego, 'frases.js')
+  let existe = true
+  try {
+    await readFile(archivo, 'utf8')
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+    existe = false
+  }
+  if (!existe) return []
+  const { frasesDeKusi } = await import(pathToFileURL(archivo).href)
+  if (typeof frasesDeKusi !== 'function') throw new Error('juego/frases.js debe exportar frasesDeKusi().')
+  const frases = await frasesDeKusi()
+  if (!Array.isArray(frases) || frases.some((frase) => typeof frase !== 'string')) {
+    throw new Error('frasesDeKusi() debe devolver una lista de textos.')
+  }
+  return frases
 }
 
 export function archivoDeFrase(texto) {

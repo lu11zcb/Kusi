@@ -16,12 +16,13 @@ import { huellasAprobadas } from './carpeta.js'
 import { motivosDePantalla } from './pantalla.js'
 
 // Regla 9: red, almacenamiento, texto como código y tocar la página o la app.
+// Las APIs que pueden enviar audio también se comprueban por referencia (14.13).
 export const PROHIBIDO = [
-  [/\bfetch\s*\(/, 'se conecta a la red (fetch)'],
-  [/\bXMLHttpRequest\b/, 'se conecta a la red (XMLHttpRequest)'],
+  [/\bfetch\s*\(/, 'se conecta a la red (fetch)', 'fetch'],
+  [/\bXMLHttpRequest\b/, 'se conecta a la red (XMLHttpRequest)', 'XMLHttpRequest'],
   [/\bWebSocket\b/, 'se conecta a la red (WebSocket)'],
   [/\bEventSource\b/, 'se conecta a la red (EventSource)'],
-  [/\bsendBeacon\b/, 'se conecta a la red (sendBeacon)'],
+  [/\bsendBeacon\b/, 'se conecta a la red (sendBeacon)', 'sendBeacon'],
   [/\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|document\.cookie/, 'guarda datos en el navegador'],
   [/\beval\s*\(|\bnew\s+Function\b/, 'ejecuta texto como código'],
   [/\bset(?:Timeout|Interval)\s*\(\s*['"`]/, 'ejecuta texto como código (un temporizador con texto)'],
@@ -73,6 +74,7 @@ async function archivosDe(carpeta, extensiones) {
 }
 
 const NOMBRE_KUSI = /(?<![\p{L}\p{N}_])kusi(?![\p{L}\p{N}_])/iu
+const SONIDO_SUELTO = /^(?:[aeiou]|(\p{L})\1+)$/iu
 const PROMESA_FUTURA = /(?<![\p{L}\p{N}_])(?:aprender|sabr|entender|comprender)[aá]n?(?![\p{L}\p{N}_])/iu
 const PROMESA_AL_TERMINAR = /\bal\s+(?:terminar|finalizar|final)(?:\s+(?:el|la)\s+(?:juego|actividad|partida|reto))?\s*,?\s+(?:(?:el|la|los|las)\s+(?:niños?|niñas?|estudiantes?|alumnos?|alumnas?)\s+)?(?:ya\s+)?(?:saben?|entienden?|aprenden?|comprenden?)\b/iu
 const ejecutar = promisify(execFile)
@@ -114,7 +116,13 @@ async function revisarFrases(archivo, motivos) {
     for (const [indice, frase] of resultado.frases.entries()) {
       const origen = 'juego/frases.js, frase ' + (indice + 1)
       const largo = [...frase].length
+      // Los signos y las tildes no le dan contexto a una vocal o un sonido grabado.
+      const contenido = frase.normalize('NFD').replace(/[\p{M}\p{P}\s]/gu, '')
       if (largo > 60) motivos.push(origen + ' tiene ' + largo + ' caracteres. Acórtala a 60 como máximo' + referencia)
+      else if (!contenido) motivos.push(origen + ' está vacía. Escribe una frase que se pueda decir' + referencia)
+      else if (SONIDO_SUELTO.test(contenido)) {
+        motivos.push(origen + ' es una vocal o un sonido suelto. Dale contexto, como «La A: aaa.» (reglas.md, reglas 14.1 y 14.11).')
+      }
       if (NOMBRE_KUSI.test(frase)) motivos.push(origen + ' dice «Kusi». Escribe lo que dice en primera persona' + referencia)
     }
   } catch (error) {
@@ -170,8 +178,33 @@ function revisarGuion(texto, motivos) {
 }
 
 function limpiarCodigo(texto, conservarCadenas) {
-  return texto.replace(/(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
-    (parte, comilla) => comilla && conservarCadenas ? parte : ' ')
+  // Mantiene las posiciones para cotejar rutas y propiedades entre las dos lecturas.
+  return texto.replace(CADENAS_COMENTARIOS_Y_PATRONES,
+    (parte, comilla) => comilla && conservarCadenas ? parte : parte.replace(/[^\r\n]/g, ' '))
+}
+
+function usaApiDelNavegador(conCadenas, sinCadenas, nombre) {
+  if (new RegExp('\\b' + nombre + '\\b').test(sinCadenas)) return true
+  const propiedad = new RegExp(String.raw`\[\s*(['"])` + nombre + String.raw`\1\s*\]`, 'g')
+  return [...conCadenas.matchAll(propiedad)].some(({ index }) => sinCadenas[index] === '[')
+}
+
+function llamaFuncionDelKit(conCadenas, sinCadenas, modulo, funcion) {
+  // Importar una función sin llamarla deja al niño sin tutorial o sin escucha.
+  const importaciones = conCadenas.matchAll(/\bimport\s+(?:[\w$]+\s*,\s*)?(\{[^{}]*\}|\*\s+as\s+[\w$]+)\s*from\s*(['"])([^'"]+)\2/g)
+  for (const { 1: enlace, 3: ruta, index } of importaciones) {
+    if (ruta !== modulo || !sinCadenas.startsWith('import', index)) continue
+    if (enlace.startsWith('*')) {
+      const espacio = enlace.match(/[\w$]+$/)[0].replaceAll('$', '\\$')
+      if (new RegExp('(?<![\\w$.])' + espacio + '\\s*\\.\\s*' + funcion + '\\s*\\(').test(sinCadenas)) return true
+    } else {
+      for (const nombre of enlace.slice(1, -1).split(',')) {
+        const [exportado, , local = exportado] = nombre.trim().split(/\s+/)
+        if (exportado === funcion && new RegExp('(?<![\\w$.])' + local.replaceAll('$', '\\$') + '\\s*\\(').test(sinCadenas)) return true
+      }
+    }
+  }
+  return false
 }
 
 function revisarInterfaz(texto, archivo, avisos) {
@@ -200,27 +233,57 @@ export async function revisarCodigo(carpetaJuego) {
   const tieneFrases = existsSync(frases)
   if (!tieneFrases) motivos.push('Falta juego/frases.js. Exporta frasesDeKusi() con las frases del juego (reglas.md, regla 14.1).')
   const codigo = []
+  const archivosConCapturaDirecta = []
   let llevaObjetos = false
   let usaSoltar = false
+  let usaMicrofono = false
+  let usaEscuchaDelKit = false
+  let usaTutorial = false
+  let mueveProtagonista = false
+  let usaControles = false
   let hayCodigoProhibido = false
   for (const archivo of await archivosDe(carpetaJuego, ['.js', '.mjs', '.json'])) {
     const relativo = path.relative(carpetaJuego, archivo)
     const texto = await readFile(archivo, 'utf8')
     const esPrueba = relativo.startsWith('pruebas' + path.sep)
+    const esCodigo = !archivo.endsWith('.json')
     if (!esPrueba) {
-      for (const [patron, motivo] of PROHIBIDO) {
-        if (patron.test(texto)) {
-          motivos.push('juego/' + relativo + ' ' + motivo + ' (reglas.md, regla 9).')
+      const conCadenas = esCodigo ? limpiarCodigo(texto, true) : texto
+      const sinCadenas = esCodigo ? limpiarCodigo(texto, false) : texto
+      for (const [patron, motivo, api] of PROHIBIDO) {
+        if (patron.test(texto) || (api && esCodigo && usaApiDelNavegador(conCadenas, sinCadenas, api))) {
+          const regla = api ? '9 y regla 14.13' : '9'
+          motivos.push('juego/' + relativo + ' ' + motivo + ' (reglas.md, regla ' + regla + ').')
           hayCodigoProhibido = true
         }
       }
       if (relativo === 'guion-ejemplo.json') revisarGuion(texto, motivos)
-      if (!archivo.endsWith('.json')) {
+      if (esCodigo) {
         codigo.push(texto)
-        const conCadenas = limpiarCodigo(texto, true)
-        const sinCadenas = limpiarCodigo(texto, false)
         llevaObjetos ||= /\bcargad[ao]\b|\bcargar\s*\(/.test(sinCadenas)
         usaSoltar ||= /\.\s*botonSoltar\s*\(/.test(sinCadenas)
+        usaTutorial ||= llamaFuncionDelKit(conCadenas, sinCadenas, '#kit/reproductor/interfaz/tutorial.js', 'crearTutorial')
+        usaEscuchaDelKit ||= llamaFuncionDelKit(conCadenas, sinCadenas, '#kit/reproductor/interfaz/microfono.js', 'escucharVocal')
+        // Solo los pasos que desplazan al protagonista requieren joystick. Crear
+        // un cuerpo o calcular el alcance de un salto no mueve al personaje.
+        mueveProtagonista ||= /\b(?:moverConColisiones|avanzarVehiculo|avanzarCuerpo)\s*\(/.test(sinCadenas) ||
+          llamaFuncionDelKit(conCadenas, sinCadenas, '#kit/reproductor/logica/exploracion.js', 'moverConColisiones') ||
+          llamaFuncionDelKit(conCadenas, sinCadenas, '#kit/reproductor/logica/vehiculo.js', 'avanzarVehiculo') ||
+          llamaFuncionDelKit(conCadenas, sinCadenas, '#kit/reproductor/logica/plataformas.js', 'avanzarCuerpo')
+        usaControles ||= /\bcrearControles\s*\(/.test(sinCadenas) ||
+          llamaFuncionDelKit(conCadenas, sinCadenas, '#kit/reproductor/interfaz/controles.js', 'crearControles')
+        if (relativo === 'juego.js') {
+          const campos = conCadenas.matchAll(/[,{]\s*(?:usaMicrofono|(['"])usaMicrofono\1)\s*:\s*true\s*[,}]/g)
+          usaMicrofono = [...campos].some(({ index }) => /[,{]/.test(sinCadenas[index]))
+        }
+        for (const api of ['SpeechRecognition', 'webkitSpeechRecognition']) {
+          if (usaApiDelNavegador(conCadenas, sinCadenas, api)) {
+            motivos.push('juego/' + relativo + ' usa ' + api + '. Escucha con escucharVocal del kit para que el audio ' +
+              'se analice en el equipo (reglas.md, regla 14.13).')
+            hayCodigoProhibido = true
+          }
+        }
+        if (usaApiDelNavegador(conCadenas, sinCadenas, 'getUserMedia')) archivosConCapturaDirecta.push(relativo)
         if (/\.\s*setTintFill\s*(?:\?\.\s*)?\(/.test(sinCadenas) || /\[\s*['"]setTintFill['"]\s*\]\s*\(/.test(conCadenas)) {
           motivos.push('juego/' + relativo + ' usa setTintFill, retirado en Phaser 4. Usa ' +
             'setTint(color).setTintMode(Phaser.TintModes.FILL) (reglas.md, regla 2).')
@@ -229,7 +292,7 @@ export async function revisarCodigo(carpetaJuego) {
       }
     }
     if (nombraAlCuy(texto)) motivos.push('juego/' + relativo + ' nombra al cuy: usa el protagonista (reglas.md, regla 3).')
-    if (!archivo.endsWith('.json')) {
+    if (esCodigo) {
       for (const encontrado of texto.matchAll(/\b(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|\bimport\s*['"]([^'"]+)['"]/g)) {
         const especificador = encontrado[1] ?? encontrado[2]
         if (!importacionPermitida(especificador, archivo, carpetaJuego)) {
@@ -239,19 +302,31 @@ export async function revisarCodigo(carpetaJuego) {
       }
     }
   }
+  if (!usaTutorial) motivos.push('El juego no tiene tutorial al empezar (regla 14.10).')
+  if (usaMicrofono) {
+    if (!usaEscuchaDelKit) {
+      motivos.push('juego/juego.js declara usaMicrofono: true. Llama a escucharVocal de ' +
+        '#kit/reproductor/interfaz/microfono.js (reglas.md, regla 14.13).')
+    }
+    for (const archivo of archivosConCapturaDirecta) {
+      motivos.push('juego/' + archivo + ' usa getUserMedia directamente. Usa escucharVocal del kit (reglas.md, regla 14.13).')
+      hayCodigoProhibido = true
+    }
+  }
   const readme = path.join(carpetaJuego, 'README.md')
   if (existsSync(readme)) revisarPromesas('README.md', await readFile(readme, 'utf8'), motivos)
   // Las frases pueden importar otros archivos del juego. Si el filtro de
   // seguridad ya detectó código prohibido, se corrige antes de ejecutarlas.
   if (tieneFrases && !hayCodigoProhibido) await revisarFrases(frases, motivos)
-  // Un juego se maneja con los controles del kit y usa su interfaz (reglas.md, 13.16 y 13.17), y no trae
-  // su propio entorno: el reproductor lo abre.
+  // El joystick acompaña al movimiento por el mundo. La interfaz común vale
+  // también para los juegos que se juegan desde un punto fijo.
   const todo = codigo.join('\n')
   if (llevaObjetos && !usaSoltar) {
     motivos.push('El juego parece cargar objetos y falta hud.botonSoltar. Usa ese botón para dejar el objeto ' +
       'a los pies del protagonista (reglas.md, regla 14.5).')
   }
-  if (!/\bcrearControles\s*\(/.test(todo)) motivos.push('El juego no usa los controles del kit: llama a crearControles de #kit/reproductor/interfaz/controles.js (el joystick; reglas.md, 13.16).')
+  if (mueveProtagonista && !usaControles) motivos.push('El juego mueve al protagonista y no usa los controles del kit: llama a crearControles de ' +
+    '#kit/reproductor/interfaz/controles.js (el joystick; reglas.md, regla 13.16).')
   if (!/\bcrearHud\s*\(/.test(todo)) motivos.push('El juego no usa la interfaz común del kit: llama a crearHud de #kit/reproductor/interfaz/hud.js (reglas.md, 13.17).')
   // Un mundo que se ve y se mueve (reglas.md, 13.22): decorado repartido, cosas que se mueven y ambiente.
   if (!/\brepartirYColocar\s*\(|\brepartirDecorado\s*\(/.test(todo)) motivos.push('El juego no reparte el decorado del mundo: usa repartirYColocar de #kit/reproductor/efectos/mundoVivo.js para llenar el lugar (reglas.md, 13.22).')

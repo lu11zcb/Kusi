@@ -592,8 +592,12 @@ corchetes es la fila). Valen para todo juego. El revisor las comprueba con `revi
 - Cada personaje habla con su propio globo; Kusi no dice las frases de otro [39]. Kusi habla en primera persona (regla 7) [63].
 - Kusi solo pide cosas que el niño puede **ver y hacer** en ese juego: ningún texto nombra algo que no está en la pantalla («busca un
   refugio» sin refugios) [72].
-- El juego exporta `frasesDeKusi()` (en `frases.js`) con **todas** las frases que puede decir Kusi, para grabarlas con
-  `taller/grabar_voz.mjs` cuando haya voz elegida [49].
+- El juego exporta `frasesDeKusi()` (en `frases.js`) con **todas** las frases que puede decir Kusi: el taller las graba con **la voz de
+  Kusi** (`taller/vozKusi.mjs`) y el juego las reproduce igual en cualquier equipo; la voz del navegador queda solo de respaldo [49, 89].
+  Ninguna frase es una vocal o un sonido suelto («aaa»): se dice con contexto («La A: aaa.») [89].
+- **Cada frase se entiende sola** para un niño de 6 años: dice qué es, qué hacer o por qué, con frase completa; nada telegráfico
+  («Boca bien abierta.», «Casi cierro la boca.»). «Mira» solo si de verdad pasa algo que mirar; «¡Ahora tú!» solo si antes alguien lo
+  hizo [86].
 - El cuento se narra solo, sin botones (regla 13.1) [65, 71, 76].
 
 **14.2 Nada promete lo que el juego no hace.** La propuesta, el guion y el informe no aseguran que el niño aprenderá: dicen qué
@@ -610,6 +614,12 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
 - Todo lo que se le puede dar a un personaje tiene una reacción con sentido (la manzana se come, la flauta se toca), aunque no sea lo
   que se busca; nada se rechaza en seco, y no cuenta como error [51].
 - Los personajes del mundo tienen la escala del mundo; lo que necesita verse grande (vestir, armar) va en un **acercamiento** aparte [34].
+
+- **Todos** los personajes en pantalla, también el coro, el público y los animales de fondo, tienen gestos dibujados (aletear, balancearse,
+  aplaudir, cantar) además de respirar [81]. Cada animal se reconoce **de un vistazo** por sus rasgos propios; si se puede confundir con
+  otro (una foca con una morsa), se redibuja [80].
+- **Nada aparece ni desaparece de la nada**: entra y sale por un lugar con sentido (se zambulle con salpicadura, se va detrás de algo,
+  sale del agua de un salto) [68, 83].
 
 **14.4 La ropa y lo que se pone un personaje.**
 - La pieza que se busca en el mundo **no** es la que se ve puesta. Un personaje que cambia de ropa se **dibuja entero en cada estado**
@@ -663,6 +673,37 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
 - Un mundo lleno y vivo necesita sus propias piezas: **unas 20 piezas sueltas** como guía (personajes, objetos, escondites, adornos,
   láminas), pedidas en tandas y revisadas una por una; los dibujos de estados o gestos de un personaje cuentan aparte y se piden solo si
   el juego los usa. Antes de pedir una pieza, se mira si el kit ya la tiene [26].
+
+**14.10 Un tutorial corto al empezar.** Todo juego empieza con un tutorial que **se juega** (no se lee): en el nivel 1, la mano guía del
+kit (`crearTutorial`, `kit/reproductor/interfaz/tutorial.js`) muestra el gesto sobre la cosa de verdad (tocar, arrastrar o mover el
+joystick), Kusi dice qué tocar y para qué, y el niño lo hace una vez con algo de práctica que no cuenta (un bloque sin letra, la primera
+prenda) antes de que empiece el nivel. Una vez por partida; con `?tutorial=0` no sale. Durante el tutorial no hay peligros ni avisos
+`accion` [84].
+
+**14.11 Enseñar el porqué, con algo que se ve y se hace.** Nombrar y pedir no es enseñar. El juego explica **por qué** el contenido es
+así, con palabras de niño y algo que el niño ve y hace: en las vocales, la boca dibujada de cada vocal junto a la letra, «Al decir aaa, tu
+boca se abre grande.» y «Dilo conmigo», y un momento para «el secreto» (A, E, O se llaman abiertas o fuertes **porque** la boca se abre
+mucho). Las respuestas y pistas repiten ese porqué («¡Sí! La O es fuerte: la boca se abre mucho.») [85]. Ver 14.1 para las frases [86].
+
+**14.12 Lo que se toca, se lanza y se rompe.**
+- La acción la hace el protagonista **con su cuerpo y su animación** (lanzar como una piedra con su estado `lanzar`), no un efecto que sale
+  de la nada [79].
+- **Lo que se rompe es lo que el niño eligió:** el toque elige lo que se ve bajo el dedo (lo de adelante, por su forma, no por el centro
+  más cercano); la bola o el golpe solo puede dar en eso; un tiro al vacío no rompe nada ni manda una `accion` equivocada. Las cosas que se
+  tocan no se tapan entre sí más de un cuarto [87].
+- **Romper se ve como romperse:** primero grietas, luego pedazos dibujados que salen volando y giran, polvo o chispas y su sonido; nunca
+  dos mitades recortadas que se separan [82].
+
+**14.13 Escuchar al niño.** Si el juego le pide decir algo en voz alta, **escucha de verdad** con el micrófono del kit
+(`escucharVocal`, `kit/reproductor/interfaz/microfono.js`; ficha con `usaMicrofono: true`) y responde a lo que oyó: «¡Te oí! Eso es
+aaa.» si lo reconoce, «¡Muy bien, te escuché!» si oyó voz sin estar seguro, y sigue sin decir nada si no oyó. **Nunca castiga** ni repite
+el pedido por lo que oyó. El audio se analiza en el equipo: no se graba, no se guarda y no se manda a ningún lado (nada de reconocimiento
+de voz del navegador). El permiso se pide **al principio** (la app, al abrirse por primera vez; el navegador, en la portada), nunca a mitad
+de una lección. Mientras escucha, un micrófono grande, que no tapa nada, se mueve con la voz del niño [88].
+
+**14.14 Lo que promete el cuento se ve y se oye.** Si el cuento dice que los pingüinos cantan, se les **oye cantar** (cada vocal cantada,
+con el canto del kit `kit/reproductor/efectos/canto.js`), no un pitido; si dice que algo se congela, se ve congelarse. El revisor compara el
+cuento, frase por frase, con lo que se ve y se oye en el juego [90].
 
 ## 12. Nombres neutrales
 

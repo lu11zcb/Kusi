@@ -11,6 +11,7 @@ import { prepararCarpeta, piezasNuevas } from '../../taller/trabajador/carpeta.j
 import { armarComando, leerAgentes, cortarActivos, subagentes, consumoDe, negadosDe, lanzar } from '../../taller/trabajador/roles.js'
 import { nombraAlCuy, importacionPermitida, revisarCodigo, comprobarJuego } from '../../taller/trabajador/comprobar.js'
 import { procesarTrabajo, pedidoParaElSupervisor, MAX_CORRECCIONES } from '../../taller/trabajador/procesar.js'
+import { grabarVozKusi } from '../../taller/vozKusi.mjs'
 
 // El trabajador del taller, sin programas reales: los roles, el buzón y las
 // comprobaciones son dobles de prueba. La prueba de punta a punta, con el navegador,
@@ -161,7 +162,8 @@ test('un juego sin los controles ni la interfaz del kit, o con su propio entorno
   const juego = path.join(carpeta, 'juego')
   await mkdir(path.join(juego, 'escenas'), { recursive: true })
   for (const archivo of ['juego.js', 'guion-ejemplo.json', 'README.md']) await writeFile(path.join(juego, archivo), archivo.endsWith('.json') ? '{}' : '// x\n')
-  await writeFile(path.join(juego, 'escenas', 'E.js'), "import * as Phaser from 'phaser'\nexport class E extends Phaser.Scene {}\n")
+  await writeFile(path.join(juego, 'escenas', 'E.js'), "import * as Phaser from 'phaser'\n" +
+    'export class E extends Phaser.Scene { update() { moverConColisiones() } }\n')
   const sin = (await revisarCodigo(juego)).motivos.join(' | ')
   assert.match(sin, /no usa los controles del kit/)
   assert.match(sin, /no usa la interfaz común del kit/)
@@ -231,7 +233,7 @@ test('la revisión del código encuentra lo prohibido, el cuy y las importacione
     'window.parent.postMessage(1)',
   ].join('\n'))
   const { motivos } = await revisarCodigo(juego)
-  // Cinco fallos del código, cinco del kit y dos archivos obligatorios ausentes.
+  // Cinco fallos del código, cinco del kit (incluido el tutorial) y dos archivos obligatorios ausentes.
   assert.equal(motivos.length, 12, motivos.join('\n'))
   assert.match(motivos[0], /Falta juego\/README\.md/)
   assert.ok(motivos.some((motivo) => /E\.js se conecta a la red/.test(motivo)))
@@ -279,12 +281,17 @@ test('el pedido al supervisor dice la carpeta, la corrección y sus motivos, sin
 
 // ---------- procesarTrabajo, con dobles ----------
 
-async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, ahora, siguientes, avisos = [] } = {}) {
+async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, ahora, siguientes, avisos = [],
+  motorInstalado = false, modeloDisponible = motorInstalado, grabar, alComprobar } = {}) {
   const trabajos = await mkdtemp(path.join(tmpdir(), 'kusi-procesar-'))
   const trabajo = { id: randomUUID(), tipo: 'crear_juego', intentos: 1, entrada: { solicitud: { tema: 'Parejas' } } }
-  const registro = { lanzados: [], resultados: [], fallos: [], consola: [], siguientes }
+  const registro = { lanzados: [], grabaciones: [], resultados: [], fallos: [], consola: [], siguientes }
   const buzon = {
-    resultado: async (id, cuerpo) => { registro.resultados.push(cuerpo); return respuestasSpring.shift() ?? { estado: 200, datos: {} } },
+    resultado: async (id, cuerpo) => {
+      registro.resultados.push(cuerpo)
+      registro.seEntregoConVoz = existsSync(path.join(trabajos, id, 'voz', 'voz.json'))
+      return respuestasSpring.shift() ?? { estado: 200, datos: {} }
+    },
     fallo: async (id, motivo) => { registro.fallos.push(motivo); return { estado: 200, datos: {} } },
   }
   // Cada intento del supervisor «entrega» algo: los motivos que encontrarán las comprobaciones.
@@ -304,9 +311,28 @@ async function escenario({ entregas, respuestasSpring = [], limiteMs = 60_000, a
     registro.siguientes = entrega
     return { codigo: 0, agotado: false, salida: JSON.stringify({ result: 'LISTO', usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.5 }), errores: '' }
   }
-  const comprobar = async () => ({ motivos: registro.siguientes, avisos, paquete: { formato: 'kusi-paquete/0', trabajo: trabajo.id } })
+  const comprobar = async ({ carpeta }) => {
+    await alComprobar?.()
+    await writeFile(path.join(carpeta, 'juego', 'guion-ejemplo.json'), JSON.stringify({
+      consigna: 'Hola.', cierre: { mensaje: 'Falla.' },
+    }))
+    return { motivos: registro.siguientes, avisos, paquete: { formato: 'kusi-paquete/0', trabajo: trabajo.id } }
+  }
+  const archivosMotor = ['python-simulado', 'referencia-simulada.wav', 'modelo.txt'].map((archivo) => path.join(trabajos, archivo))
+  const [python, referencia, modelo] = archivosMotor
+  if (motorInstalado) {
+    await writeFile(python, 'simulado')
+    await writeFile(referencia, 'simulada')
+  }
+  if (modeloDisponible) await writeFile(modelo, 'modelo-simulado')
+  const lanzarVoz = async ({ argumentos }, { limiteMs }) => {
+    registro.grabaciones.push(limiteMs)
+    assert.deepEqual(registro.siguientes, [], 'El juego debe pasar antes de grabar')
+    return grabar(argumentos[2])
+  }
   const final = await procesarTrabajo(trabajo, {
     buzon, lanzar, comprobar, trabajos, limiteMs, ahora, registrar: (texto) => registro.consola.push(texto),
+    lanzarVoz, archivosMotor,
     roles: { supervisor: { programa: 'p', argumentos: ['{pedido}'] } },
     agentes: await leerAgentes(), biblioteca: { ejemplos: [] }, juegoUrl: 'http://127.0.0.1:5174/',
   })
@@ -326,6 +352,87 @@ test('un juego que pasa a la primera se entrega con su evidencia', async () => {
   assert.equal(evidencia.intentos.juego, 1)
   assert.equal(evidencia.costo_estimado_usd, 0.5)
   assert.equal(evidencia.pasos[0].rol, 'supervisor')
+  assert.deepEqual(registro.grabaciones, [])
+  assert.equal(registro.seEntregoConVoz, false)
+  assert.equal(evidencia.voz.estado, 'omitida')
+  assert.match(evidencia.voz.motivo, /Falta el entorno del motor de voz/)
+})
+
+test('el trabajador entrega el juego sin voz grabada si falta el modelo de voz', async () => {
+  const { final, registro } = await escenario({ entregas: [[]], motorInstalado: true, modeloDisponible: false })
+  assert.equal(final.resultado, 'listo')
+  assert.deepEqual(registro.grabaciones, [])
+  assert.equal(registro.seEntregoConVoz, false)
+  const { voz } = registro.resultados[0].evidencia
+  assert.equal(voz.estado, 'omitida')
+  assert.match(voz.motivo, /archivo del modelo de voz/)
+})
+
+test('el trabajador graba con el motor instalado después de comprobar y antes de entregar', async () => {
+  const { final, registro } = await escenario({
+    entregas: [['Faltan las pruebas.'], []], motorInstalado: true, limiteMs: 75 * 60 * 1000,
+    async grabar(carpeta) {
+      const resumen = await grabarVozKusi({
+        carpeta,
+        async motor({ trabajos }) {
+          const fallos = []
+          for (const { texto, salida } of trabajos) {
+            if (texto === 'Falla.') fallos.push({ salida, motivo: 'Sin audio.' })
+            else await writeFile(salida, 'audio simulado')
+          }
+          return { fallos }
+        },
+        convertir: ([origen, , , , , destino]) => copyFile(origen, destino),
+        afinfo: async () => ({ stdout: 'estimated duration: 1.2 sec' }),
+      })
+      return { codigo: 0, salida: 'Frases cargadas.\n' + JSON.stringify(resumen) + '\n' }
+    },
+  })
+  assert.equal(final.resultado, 'listo')
+  assert.deepEqual(registro.grabaciones, [12 * 60 * 1000])
+  assert.equal(registro.seEntregoConVoz, true)
+  assert.deepEqual(registro.resultados[0].evidencia.voz, {
+    voz: 'Kusi', estado: 'terminada', grabadas: 1, ya_estaban: 0, total: 2, para_revisar: 1, fallidas: 1,
+  })
+})
+
+test('el trabajador entrega aunque falle el grabador y guarda el motivo', async () => {
+  const { final, registro } = await escenario({
+    entregas: [[]], motorInstalado: true,
+    grabar: async () => ({ codigo: 1, errores: 'No se pudo cargar el motor.\n' }),
+  })
+  assert.equal(final.resultado, 'listo')
+  assert.equal(registro.seEntregoConVoz, false)
+  assert.deepEqual(registro.fallos, [])
+  assert.deepEqual(registro.resultados[0].evidencia.voz, {
+    estado: 'falló', grabadas: 0, para_revisar: 0, fallidas: 0, motivo: 'No se pudo cargar el motor.',
+  })
+})
+
+test('el trabajador limita la voz al tiempo restante y entrega si la grabación se agota', async () => {
+  let reloj = 0
+  const limiteMs = 75 * 60 * 1000
+  const { final, registro } = await escenario({
+    entregas: [[]], motorInstalado: true, limiteMs, ahora: () => reloj,
+    alComprobar: () => { reloj = limiteMs - 4000 },
+    grabar: async () => ({ codigo: null, agotado: true }),
+  })
+  assert.equal(final.resultado, 'listo')
+  assert.deepEqual(registro.grabaciones, [4000])
+  assert.equal(registro.seEntregoConVoz, false)
+  assert.match(registro.resultados[0].evidencia.voz.motivo, /superó el tiempo disponible \(4 s\)/)
+})
+
+test('el trabajador omite la voz si las comprobaciones consumieron el tiempo del trabajo', async () => {
+  let reloj = 0
+  const { final, registro } = await escenario({
+    entregas: [[]], motorInstalado: true, limiteMs: 1000, ahora: () => reloj,
+    alComprobar: () => { reloj = 1000 },
+  })
+  assert.equal(final.resultado, 'listo')
+  assert.deepEqual(registro.grabaciones, [])
+  assert.equal(registro.resultados[0].evidencia.voz.estado, 'omitida')
+  assert.match(registro.resultados[0].evidencia.voz.motivo, /Se acabó el tiempo del trabajo/)
 })
 
 test('si no pasa, el supervisor recibe los motivos y corrige', async () => {

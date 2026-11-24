@@ -3,9 +3,9 @@
 import { execFile } from 'node:child_process'
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 import { parseArgs, promisify } from 'node:util'
-import { elegirVozDeMac, juntarFrases, planearGrabaciones } from './vozGrabada.mjs'
+import { elegirVozDeMac, frasesDelJuego, juntarFrases, planearGrabaciones } from './vozGrabada.mjs'
 
 const ejecutar = promisify(execFile)
 const decirEnMac = (argumentos) => ejecutar('say', argumentos)
@@ -20,22 +20,10 @@ async function leerOpcional(archivo) {
   }
 }
 
-async function frasesAdicionales(carpetaJuego) {
-  const archivo = path.join(carpetaJuego, 'frases.js')
-  if (await leerOpcional(archivo) === null) return []
-  const { frasesDeKusi } = await import(pathToFileURL(archivo).href)
-  if (typeof frasesDeKusi !== 'function') throw new Error('juego/frases.js debe exportar frasesDeKusi().')
-  const frases = await frasesDeKusi()
-  if (!Array.isArray(frases) || frases.some((frase) => typeof frase !== 'string')) {
-    throw new Error('frasesDeKusi() debe devolver una lista de textos.')
-  }
-  return frases
-}
-
 export async function grabarVoz({ carpeta, voz }, { say = decirEnMac, afconvert = convertirEnMac } = {}) {
   const carpetaJuego = path.resolve(carpeta, 'juego')
   const guion = JSON.parse(await readFile(path.join(carpetaJuego, 'guion-ejemplo.json'), 'utf8'))
-  const frases = juntarFrases(guion, await frasesAdicionales(carpetaJuego))
+  const frases = juntarFrases(guion, await frasesDelJuego(carpetaJuego))
   if (!voz) voz = elegirVozDeMac((await say(['-v', '?'])).stdout)
 
   const carpetaVoz = path.resolve(carpeta, 'voz')
