@@ -5,6 +5,12 @@ export type ActividadResultado = { id: string; titulo: string; seccion: string; 
 export type DestinatarioActividad = { id: string; nombre: string; asignado: boolean }
 export type EstadoResultado = 'sin_iniciar' | 'en_curso' | 'completada'
 export type EstudianteResultado = { id: string; nombre: string; estado: EstadoResultado; partidas: number; ayudas_usadas: number }
+export type EstadoEnVivo = 'jugando' | 'en_pausa' | 'sin_iniciar' | 'completada'
+export type EstudianteEnVivo = {
+  id: string; nombre: string; estado: EstadoEnVivo; pausa_guardada: boolean; nivel: number | null
+  errores_nivel: number; errores_total: number; ayudas_usadas: number; puntos: number
+  incidencias_tecnicas: number; segundos_desde_ultimo_aviso: number | null
+}
 export type RespuestaResultado = { respuesta: string; correcto: boolean | null; tipo: 'primera' | 'correccion' | 'siguiente'; ayudas: number[] }
 export type IncidenciaResultado = { orden: number; momento: string; detalle: string; nivel: number }
 export type PartidaResultado = { incidencias?: IncidenciaResultado[]; juego_id: string; enviado_en: string; envio: number; estado: EstadoResultado; ayudas_usadas: number; retos: { reto: string; respuestas: RespuestaResultado[] }[] }
@@ -23,6 +29,16 @@ export async function actividadesResultados(signal?: AbortSignal): Promise<Activ
 export async function estudiantesResultados(actividad: string, signal?: AbortSignal): Promise<EstudianteResultado[]> {
   return lista(await solicitar<unknown>(base + encodeURIComponent(actividad) + '/estudiantes/', { signal }), 'estudiantes',
     d => objeto(d) && texto(d.id) && texto(d.nombre) && estado(d.estado) && cantidad(d.partidas) && cantidad(d.ayudas_usadas)) as EstudianteResultado[]
+}
+
+export async function estudiantesEnVivo(actividad: string, signal?: AbortSignal): Promise<EstudianteEnVivo[]> {
+  return lista(await solicitar<unknown>(base + encodeURIComponent(actividad) + '/en-vivo/', { signal }), 'estudiantes',
+    d => objeto(d) && texto(d.id) && texto(d.nombre) && typeof d.estado === 'string'
+      && ['jugando', 'en_pausa', 'sin_iniciar', 'completada'].includes(d.estado) && typeof d.pausa_guardada === 'boolean'
+      && (d.nivel === null || (cantidad(d.nivel) && Number(d.nivel) >= 1 && Number(d.nivel) <= 5))
+      && cantidad(d.errores_nivel) && cantidad(d.errores_total) && Number(d.errores_nivel) <= Number(d.errores_total)
+      && cantidad(d.ayudas_usadas) && cantidad(d.puntos) && Number(d.puntos) <= 20 && cantidad(d.incidencias_tecnicas)
+      && (d.segundos_desde_ultimo_aviso === null || cantidad(d.segundos_desde_ultimo_aviso))) as EstudianteEnVivo[]
 }
 
 export async function destinatariosActividad(actividad: string, signal?: AbortSignal): Promise<DestinatarioActividad[]> {

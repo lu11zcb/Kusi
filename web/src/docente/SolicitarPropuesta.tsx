@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { RevisionPropuesta } from './RevisionPropuesta'
 import { GestorSolicitud, obtenerContextosPropuestas } from '../servicios/propuestas'
-import type { ContextosPropuestas, Proposito, SolicitudPropuesta } from '../servicios/propuestas'
+import type { ContextosPropuestas, SolicitudPropuesta } from '../servicios/propuestas'
 import { CabeceraDocente, CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
 import { mensajeDocente } from './trabajosDocente'
 import { nombreGrado } from '../servicios/opcionesEducativas'
 
-export type BorradorPropuesta = { seleccion: string; tema: string; objetivo: string; proposito: Proposito; instrucciones: string }
+export type BorradorPropuesta = { seleccion: string; tema: string; objetivo: string; instrucciones: string }
 type Propiedades = { borrador: BorradorPropuesta; alCambiarBorrador: (valor: BorradorPropuesta) => void; alOcupar: (valor: boolean) => void; activo?: boolean; alSalir?: () => void }
 export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, activo = true, alSalir }: Propiedades) {
-  const { seleccion, tema, objetivo, proposito, instrucciones } = borrador
+  const { seleccion, tema, objetivo, instrucciones } = borrador
   const [contextos, establecerContextos] = useState<ContextosPropuestas | null>(null)
   const [cargando, establecerCargando] = useState(true)
   const [errorContexto, establecerErrorContexto] = useState('')
@@ -51,7 +51,8 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
     if (!contexto) { establecerError('Elige un curso y una sección para tu juego.'); return }
     bloqueo.current = true; establecerOcupado(true); alOcupar(true); establecerError(''); establecerIntentoPara(huella)
     try {
-      const respuesta = await gestor.current.enviar({ curso_id: contexto.curso_id, seccion_id: contexto.seccion_id, tema, objetivo, proposito, instrucciones })
+      // La solicitud sigue enviando el propósito que exige el servidor aunque el formulario ya no lo pregunte.
+      const respuesta = await gestor.current.enviar({ curso_id: contexto.curso_id, seccion_id: contexto.seccion_id, tema, objetivo, proposito: 'preparacion', instrucciones })
       establecerResultado({ huella, solicitud: respuesta })
     } catch (fallo) { establecerError(mensajeDocente(fallo, 'No pudimos terminar tu idea. Conservamos lo que escribiste. Intenta otra vez para recuperar lo que ya se guardó.')) }
     finally { bloqueo.current = false; establecerOcupado(false); alOcupar(false) }
@@ -70,7 +71,6 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
         <fieldset disabled={ocupado || revisando}><legend>¿Qué quieres trabajar en clase?</legend>
           <div className="campo"><label htmlFor="curso-propuesta">Curso y sección</label><select id="curso-propuesta" value={seleccionVigente} onChange={(e) => cambiar('seleccion', e.target.value)} disabled={cargando || !contextos?.contextos.length} required><option value="">Elige un curso de tu clase</option>{contextos?.contextos.map((c) => <option key={c.curso_id + '/' + (c.seccion_id ?? '')} value={c.curso_id + '/' + (c.seccion_id ?? '')}>{c.curso_nombre}{c.seccion_nombre ? ' · ' + c.seccion_nombre : ''}</option>)}</select></div>
           <div className="campo"><label htmlFor="tema-propuesta">¿Qué tema quieres enseñar? <span>Obligatorio</span></label><textarea id="tema-propuesta" value={tema} onChange={(e) => cambiar('tema', e.target.value)} required maxLength={2000} rows={3} placeholder="Por ejemplo: patrones con frutas" /><p className="doc-ayuda">Puedes contar qué necesitan practicar tus estudiantes.</p></div>
-          <fieldset className="doc-propositos"><legend>¿Cuándo usarán el juego?</legend>{([{ valor: 'preparacion', titulo: 'Antes de la clase', texto: 'Para descubrir un tema' }, { valor: 'refuerzo', titulo: 'Después de la clase', texto: 'Para practicar lo aprendido' }] as const).map((p) => <label className={'doc-proposito' + (proposito === p.valor ? ' seleccionado' : '')} key={p.valor}><input type="radio" name="doc-proposito" value={p.valor} checked={proposito === p.valor} onChange={() => cambiar('proposito', p.valor)} /><span><strong>{p.titulo}</strong><small>{p.texto}</small></span></label>)}</fieldset>
           <div className="campo"><label htmlFor="objetivo-propuesta">¿Qué deben aprender? <span>Opcional</span></label><textarea id="objetivo-propuesta" value={objetivo} onChange={(e) => cambiar('objetivo', e.target.value)} maxLength={4000} rows={3} placeholder="Por ejemplo: reconocer un patrón y continuarlo" /><p className="doc-ayuda">Si lo dejas vacío, Kusi te propondrá un objetivo.</p></div>
           <details className="doc-opcional" open={instrucciones ? true : undefined}><summary>Algo más que Kusi deba saber <span>Opcional</span></summary><div className="campo"><label htmlFor="instrucciones-propuesta">Tus indicaciones</label><textarea id="instrucciones-propuesta" value={instrucciones} onChange={(e) => cambiar('instrucciones', e.target.value)} maxLength={4000} rows={3} placeholder="Por ejemplo: dar instrucciones cortas y pistas sencillas" /></div></details>
         </fieldset>

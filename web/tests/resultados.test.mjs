@@ -4,8 +4,9 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { cargarModulo } from './cargar-modulo.mjs'
 
-const { actividadesResultados, estudiantesResultados, respuestasResultados, destinatariosActividad, asignarActividad } = await import(await cargarModulo(new URL('../src/servicios/resultados.ts', import.meta.url)))
+const { actividadesResultados, estudiantesResultados, estudiantesEnVivo, respuestasResultados, destinatariosActividad, asignarActividad } = await import(await cargarModulo(new URL('../src/servicios/resultados.ts', import.meta.url)))
 const { PartidasEstudiante, ResultadosDocente } = await import(await cargarModulo(new URL('../src/docente/ResultadosDocente.tsx', import.meta.url)))
+const { TarjetasEnVivo } = await import(await cargarModulo(new URL('../src/docente/EnVivoActividad.tsx', import.meta.url)))
 const { ListaDestinatarios } = await import(await cargarModulo(new URL('../src/docente/AsignacionesActividad.tsx', import.meta.url)))
 const juego = '22222222-2222-2222-2222-222222222222'
 const reto = '33333333-3333-3333-3333-333333333333'
@@ -14,6 +15,44 @@ const partida = { juego_id: juego, envio: 2, enviado_en: '2026-11-09T15:30:59Z',
     { respuesta: 'Cuadrado', correcto: false, tipo: 'primera', ayudas: [] },
     { respuesta: 'Círculo', correcto: true, tipo: 'correccion', ayudas: [1, 2] },
   ] }] }
+const estudianteEnVivo = { id: 'a', nombre: 'Estudiante A', estado: 'jugando', nivel: 2, pausa_guardada: false, errores_nivel: 2,
+  errores_total: 8, ayudas_usadas: 2, puntos: 7, incidencias_tecnicas: 0, segundos_desde_ultimo_aviso: 14 }
+
+test('consulta el avance en vivo sin caché y valida las métricas antes de mostrarlas', async (t) => {
+  const controlador = new AbortController()
+  const consulta = t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ estudiantes: [estudianteEnVivo] })))
+  assert.deepEqual(await estudiantesEnVivo('actividad', controlador.signal), [estudianteEnVivo])
+  const [ruta, opciones] = consulta.mock.calls[0].arguments
+  assert.equal(ruta, '/api/edu/resultados/actividades/actividad/en-vivo/')
+  assert.equal(opciones.signal, controlador.signal)
+  assert.equal(opciones.cache, 'no-store')
+  assert.equal(opciones.credentials, 'same-origin')
+  for (const cambio of [{ estado: 'en_curso' }, { nivel: 0 }, { errores_nivel: 9 }, { ayudas_usadas: -1 }, { puntos: 21 }, { segundos_desde_ultimo_aviso: 'ahora' }]) {
+    consulta.mock.mockImplementation(async () => new Response(JSON.stringify({ estudiantes: [{ ...estudianteEnVivo, ...cambio }] })))
+    await assert.rejects(estudiantesEnVivo('actividad'), fallo => fallo.estado === 502)
+  }
+})
+
+test('las tarjetas priorizan tres errores del mismo nivel y muestran actividad y métricas por separado', () => {
+  const estudiantes = [estudianteEnVivo,
+    { ...estudianteEnVivo, id: 'b', nombre: 'Estudiante B', estado: 'en_pausa', pausa_guardada: true, errores_nivel: 3, incidencias_tecnicas: 1, segundos_desde_ultimo_aviso: 95 },
+    { ...estudianteEnVivo, id: 'c', nombre: 'Estudiante C', estado: 'sin_iniciar', nivel: null, errores_nivel: 0, errores_total: 0, ayudas_usadas: 0, puntos: 0, segundos_desde_ultimo_aviso: null },
+    { ...estudianteEnVivo, id: 'd', nombre: 'Estudiante D', estado: 'completada', errores_nivel: 0 },
+  ]
+  const html = renderToStaticMarkup(createElement(TarjetasEnVivo, { estudiantes }))
+  assert.equal((html.match(/<li class=/g) ?? []).length, 4)
+  assert.equal((html.match(/Puede necesitar ayuda/g) ?? []).length, 1)
+  assert.ok(html.indexOf('Estudiante B') < html.indexOf('Estudiante A'))
+  assert.match(html, /doc-en-vivo-jugando.*Jugando/)
+  assert.match(html, /Sin actividad.*En pausa/)
+  assert.match(html, /Nivel<\/dt><dd>2/)
+  assert.match(html, /Errores del nivel<\/dt><dd>3/)
+  assert.match(html, /Errores totales<\/dt><dd>8/)
+  assert.match(html, /Ayudas<\/dt><dd>2/)
+  assert.match(html, /Puntos<\/dt><dd>7 \/ 20/)
+  for (const texto of ['Sin iniciar', 'Completada', 'Sin avisos todavía', 'Hace 14 s', 'Hace 1 min', 'Incidencias técnicas · 1']) assert.ok(html.includes(texto), texto)
+  assert.equal(estudiantes[0].id, 'a')
+})
 
 test('consulta actividades, estados y respuestas por las rutas protegidas, con sesión y sin caché', async () => {
   const original = globalThis.fetch

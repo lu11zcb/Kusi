@@ -13,3 +13,19 @@
 .panel-docente .doc-asignacion-lista input { width: 20px; height: 20px; accent-color: var(--doc-vino, #5a1c15); }
 .panel-docente .doc-asignacion-lista small { color: var(--doc-texto-suave, #69594d); }
 @media (max-width: 640px) { .panel-docente .doc-partida { padding: 16px; } }
+
+.panel-docente .doc-en-vivo-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
+.panel-docente .doc-en-vivo-lista > .doc-en-vivo-tarjeta { display: flex; flex-direction: column; gap: 12px; padding: 18px; margin: 0; min-width: 0; }
+.panel-docente .doc-en-vivo-ayuda { border-color: #bd9355; box-shadow: inset 4px 0 #bd9355; }
+.panel-docente .doc-en-vivo-cabecera, .panel-docente .doc-en-vivo-etiquetas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.panel-docente .doc-en-vivo-cabecera { justify-content: space-between; }
+.panel-docente .doc-en-vivo-cabecera h3 { margin: 0; overflow-wrap: anywhere; }
+.panel-docente .doc-en-vivo-estado { background: #eeedeb; color: #575451; }
+.panel-docente .doc-en-vivo-estado i { width: 9px; height: 9px; border-radius: 50%; background: #74716e; }
+.panel-docente .doc-en-vivo-jugando { background: #e6f3e7; color: #266140; }
+.panel-docente .doc-en-vivo-jugando i { background: #28754a; }
+.panel-docente .doc-en-vivo-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.panel-docente .doc-en-vivo-datos > div { background: #faf7f2; border-radius: 8px; padding: 8px; }
+.panel-docente .doc-en-vivo-datos dt, .panel-docente .doc-en-vivo-pie, .panel-docente .doc-en-vivo-etiquetas { color: var(--doc-suave); font-size: 13px; }
+.panel-docente .doc-en-vivo-datos dd { margin: 2px 0 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+.panel-docente .doc-en-vivo-pie { margin-top: auto; display: flex; gap: 4px 12px; flex-wrap: wrap; }

@@ -17,8 +17,16 @@ const mostrar = (datos, opciones = {}) => renderToStaticMarkup(createElement(Rev
 
 test('la idea conserva su contenido educativo y ofrece aprobar y preparar en un solo paso', () => {
   const html = mostrar(solicitud)
-  for (const texto of ['Reconocer patrones.', 'Kusi recorre los caminos.', 'Elegir una fruta', 'Seguir el orden', 'Completar el patrón', 'Mira qué sigue', 'Aprobar y preparar juego', 'Editar el texto', 'Pedir estos cambios']) assert.ok(html.includes(texto), texto)
+  for (const texto of ['Reconocer patrones.', 'Kusi recorre los caminos.', 'Elegir una fruta', 'Seguir el orden', 'Completar el patrón', 'Mira qué sigue', 'Aprobar y preparar juego', 'Esta idea no me convence']) assert.ok(html.includes(texto), texto)
   for (const texto of ['Versión', 'versiones anteriores', 'generada por IA', 'archivo-del-catalogo', solicitud.id_solicitud, solicitud.propuesta.id]) assert.ok(!html.includes(texto), texto)
+})
+
+test('una propuesta de refuerzo se puede revisar y ajustar por el chat', () => {
+  const html = mostrar(solicitud)
+  assert.match(html, /Cuéntale a Kusi/)
+  assert.match(html, /Pedir estos cambios/)
+  assert.equal((html.match(/<textarea\b/g) ?? []).length, 1)
+  assert.doesNotMatch(html, /después de (la )?clase|Editar el texto|Editar mi idea|Guardar cambios/i)
 })
 
 test('los cambios se piden en una conversación y una idea rechazada todavía se puede recuperar', () => {

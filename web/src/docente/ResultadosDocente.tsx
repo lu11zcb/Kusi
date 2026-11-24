@@ -6,6 +6,7 @@ import { IconoDocente } from './IconoDocente'
 import { normalizarBusqueda } from './utilidadesDocente'
 import { mensajeDocente } from './trabajosDocente'
 import { AsignacionesActividad } from './AsignacionesActividad'
+import { EnVivoActividad } from './EnVivoActividad'
 
 const estados: Record<EstadoResultado, string> = { sin_iniciar: 'Sin iniciar', en_curso: 'En curso', completada: 'Completada' }
 const tipos = { primera: 'Primera respuesta', correccion: 'Corrección', siguiente: 'Respuesta siguiente' }
@@ -91,6 +92,7 @@ function EstudiantesActividad({ actividad }: { actividad: ActividadResultado }) 
 export function ResultadosDocente({ activo }: { activo: boolean }) {
   const [actividades, establecerActividades] = useState<ActividadResultado[] | null>(null)
   const [elegida, establecerElegida] = useState<ActividadResultado | null>(null)
+  const [enVivo, establecerEnVivo] = useState(false)
   const [error, establecerError] = useState('')
   const [recarga, establecerRecarga] = useState(0)
   useEffect(() => {
@@ -101,9 +103,18 @@ export function ResultadosDocente({ activo }: { activo: boolean }) {
     return () => controlador.abort()
   }, [activo, recarga])
   return <section className="doc-pagina" aria-label="Resultados de mi clase">
-    <CabeceraDocente icono="check" color="c-verde" titulo="Resultados" descripcion="Consulta quiénes completaron cada actividad y cómo respondieron." />
+    <CabeceraDocente icono="check" color="c-verde" titulo="Resultados" descripcion="Sigue el avance de tu clase y consulta sus respuestas." />
     {error ? <MensajeDocente titulo="No pudimos abrir los resultados" error><p>{error}</p><button type="button" className="secundario" onClick={() => establecerRecarga(n => n + 1)}>Volver a intentar</button></MensajeDocente>
       : actividades === null ? <CargandoDocente texto="Buscando las actividades de tus secciones…" /> : !actividades.length ? <MensajeDocente titulo="Aún no hay actividades enviadas"><p>Cuando envíes un juego a tu clase, podrás consultar aquí sus resultados.</p></MensajeDocente>
-        : <><div className="doc-herramientas"><div className="doc-filtro"><label htmlFor="resultado-actividad">Actividad</label><select id="resultado-actividad" value={elegida?.id ?? ''} onChange={e => establecerElegida(actividades.find(a => a.id === e.target.value) ?? null)}><option value="">Elige una actividad</option>{actividades.map(a => <option key={a.id} value={a.id}>{a.titulo} · {a.seccion}</option>)}</select></div></div>{elegida && activo && <EstudiantesActividad key={elegida.id + '/' + recarga} actividad={elegida} />}</>}
+        : <>
+          <div className="doc-herramientas"><div className="doc-filtro"><label htmlFor="resultado-actividad">Actividad</label><select id="resultado-actividad" value={elegida?.id ?? ''} onChange={e => establecerElegida(actividades.find(a => a.id === e.target.value) ?? null)}><option value="">Elige una actividad</option>{actividades.map(a => <option key={a.id} value={a.id}>{a.titulo} · {a.seccion}</option>)}</select></div></div>
+          {elegida && activo && <>
+            <div className="doc-filtros-estado" role="group" aria-label="Vista de la actividad">
+              <button type="button" className="secundario" aria-pressed={!enVivo} onClick={() => establecerEnVivo(false)}>Resultados</button>
+              <button type="button" className="secundario" aria-pressed={enVivo} onClick={() => establecerEnVivo(true)}>En vivo</button>
+            </div>
+            {enVivo ? <EnVivoActividad key={elegida.id} actividad={elegida} /> : <EstudiantesActividad key={elegida.id + '/' + recarga} actividad={elegida} />}
+          </>}
+        </>}
   </section>
 }

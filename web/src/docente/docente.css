@@ -96,13 +96,6 @@
 .panel-docente .doc-pagina .campo label { font-size: 14px; }
 .panel-docente .campo label > span, .panel-docente summary > span { font-size: 12px; font-weight: 600; color: var(--doc-suave); margin-left: 7px; }
 .panel-docente .doc-ayuda { font-size: 12px; line-height: 1.5; margin: 8px 0 0; color: var(--doc-suave); }
-.panel-docente .doc-propositos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 24px; }
-.panel-docente .doc-propositos legend { font: 800 14px var(--letra); margin-bottom: 10px; }
-.panel-docente .doc-proposito { display: flex; align-items: flex-start; gap: 9px; border: 1px solid #d7c8b7; border-radius: 12px; padding: 15px 12px; cursor: pointer; }
-.panel-docente .doc-proposito.seleccionado { border-color: #b88739; background: #fff5df; }
-.panel-docente .doc-proposito input { width: 17px; height: 17px; min-height: 17px; margin: 3px 0 0; flex: none; accent-color: #a75026; }
-.panel-docente .doc-proposito strong { display: block; font-size: 13px; color: var(--vino); }
-.panel-docente .doc-proposito small { display: block; font-size: 12px; margin-top: 4px; color: var(--doc-suave); }
 .panel-docente summary { cursor: pointer; color: var(--vino); font-size: 14px; font-weight: 800; padding: 12px 0; }
 .panel-docente .doc-opcional { border-top: 1px solid var(--doc-linea); margin-bottom: 20px; }
 .panel-docente .doc-opcional .campo { margin-top: 12px; }
@@ -120,8 +113,7 @@
 .panel-docente .doc-solicitud-datos .doc-formulario { padding: 18px; }
 .panel-docente .doc-revision { margin-top: 20px; }
 .panel-docente .doc-revision-cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin: 22px 0; }
-.panel-docente .doc-revision-cabecera h2 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; overflow-wrap: anywhere; }
-.panel-docente .doc-revision-cabecera p { color: var(--doc-suave); font-size: 14px; margin: 0; }
+.panel-docente .doc-revision-cabecera h2 { font-size: 30px; line-height: 1.2; margin: 0; overflow-wrap: anywhere; }
 .panel-docente .doc-revision-distribucion { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 30px; align-items: start; }
 .panel-docente .doc-revision-lectura { min-width: 0; padding: 28px; background: var(--doc-papel); border: 1px solid var(--doc-linea); border-radius: 18px; }
 .panel-docente .doc-origen { display: flex; align-items: center; gap: 12px; padding-bottom: 22px; border-bottom: 1px solid var(--doc-linea); color: var(--vino); font-size: 14px; font-weight: 800; }
@@ -147,9 +139,6 @@
 .panel-docente .doc-decisiones .doc-decisiones-nota { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; margin-top: 20px; }
 .panel-docente .doc-decisiones-nota .doc-icono { width: 18px; height: 18px; margin-top: 2px; }
 .panel-docente .doc-confirmacion { display: flex; align-items: center; gap: 10px; border: 1px solid #a4cbb0; background: #eaf5e9; padding: 15px 18px; border-radius: 12px; color: #245f3c !important; }
-.panel-docente .doc-editor { max-width: none; margin: 24px 0 0; }
-.panel-docente .doc-editor > p { font-size: 13px; color: var(--doc-suave); }
-.panel-docente .doc-editor h3 { margin-bottom: 6px; }
 .panel-docente .doc-versiones, .panel-docente .doc-instrucciones { margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--doc-linea); }
 .panel-docente .doc-versiones > p, .panel-docente .doc-versiones details > p { font-size: 13px; color: var(--doc-suave); }
 .panel-docente .doc-versiones ol { padding-left: 22px; }
@@ -210,7 +199,6 @@
   .panel-docente .doc-pasos li { font-size: 12px; }
   .panel-docente .doc-pasos li > span { width: 24px; height: 24px; }
   .panel-docente .doc-formulario, .panel-docente .doc-revision-lectura { padding: 20px; }
-  .panel-docente .doc-propositos { grid-template-columns: minmax(0, 1fr); }
   .panel-docente .doc-formulario-pie { display: block; }
   .panel-docente .doc-formulario-pie > button { width: 100%; }
   .panel-docente .doc-revision-cabecera { flex-direction: column; gap: 14px; }

@@ -31,7 +31,7 @@ export function PanelDocente({ usuario, salir, cambiarRol }: { usuario: Cuenta; 
   const [ocupado, establecerOcupado] = useState(false)
   const [recarga, establecerRecarga] = useState(0)
   const [abrirJuego, establecerAbrirJuego] = useState<string | null>(null)
-  const [borrador, establecerBorrador] = useState<BorradorPropuesta>({ seleccion: '', tema: '', objetivo: '', proposito: 'preparacion', instrucciones: '' })
+  const [borrador, establecerBorrador] = useState<BorradorPropuesta>({ seleccion: '', tema: '', objetivo: '', instrucciones: '' })
   // Los cursos autorizados y el estado de la IA se usan en varias secciones.
   const [contextos, establecerContextos] = useState<ContextosPropuestas | null>(null)
   const [errorContextos, establecerErrorContextos] = useState('')
