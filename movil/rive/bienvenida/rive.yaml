@@ -1,0 +1,11 @@
+# Kusi · bienvenida de la app Android. Ver movil/rive/README.md.
+# El nombre es también el del archivo exportado: kusi_bienvenida.riv (Android solo acepta
+# minúsculas, números y guion bajo en res/raw).
+name: kusi_bienvenida
+main: Bienvenida
+output:
+  # `rive . --publish` escribe el .riv directamente donde lo lee la app.
+  dir: ../../app/src/main/res/raw
+logs:
+  file: build/rive.log
+  problems: build/problems.log

@@ -1,0 +1,920 @@
+<Rive version="1" kind="fragment">
+    <!--
+        Kusi · bienvenida de la app Android (pantalla «Ven, vamos a la aventura»).
+
+        Kusi es la hoja de 12 cuadros del juego (juego/kit/recursos/dibujos/personajes/kusi.png):
+        3 columnas x 4 filas de 256 px. Filas: 0 hablar, 1 saludar, 2 parpadear (con el brazo
+        arriba) y 3 respirar (brazos abajo). Se usa la misma hoja que el juego para que sea el
+        mismo personaje en todas partes; el archivo se lee desde su sitio, no se copia.
+
+        Cada cuadro se muestra recortando la hoja con un rectángulo de 256 x 256 que viaja con
+        el nodo «kusi» (sus pies son el origen). Cambiar de cuadro es mover la hoja con claves
+        «hold»; la posición de la hoja para el cuadro N es
+            x = -132 - 256 * (N mod 3)      y = -245 - 256 * (N div 3)
+        Por eso las capas de cuadros cambian de estado sin mezcla (duración 0): mezclar dos
+        posiciones de la hoja la haría deslizarse entre cuadros.
+
+        Al personaje entero nunca se le gira ni se le inclina: solo se mueve, se escala desde los
+        pies y cambia de cuadro (regla del proyecto para los efectos de vida de Kusi).
+
+        Datos que escribe la app (modelo «Kusi»):
+          hablando  booleano  la voz de Kusi está sonando: mueve la boca (fila 0)
+          quieto    booleano  el sistema tiene las animaciones desactivadas: todo queda en reposo;
+                              tocar a Kusi todavía lo hace saludar (solo cambia de cuadro)
+          saludar   disparo   la app lo lanza cuando el niño toca a Kusi: saluda y brinca
+
+        Curvas: entradas y respuestas con la salida fuerte cubic-bezier(0.23, 1, 0.32, 1); vaivenes
+        continuos con ease-in-out (0.42, 0, 0.58, 1); la caída del brinco con ease-in (0.42, 0, 1, 1)
+        porque imita la gravedad.
+    -->
+    <ImageAsset file="../../../juego/kit/recursos/dibujos/personajes/kusi.png" name="hoja_kusi" id="0:10"/>
+    <FontAsset file="../../app/src/main/res/font/baloo2.ttf" name="Baloo 2" id="0:11"/>
+
+    <Artboard width="360" height="330" defaultStateMachineId="0:300" viewModelId="0:500" viewModelInstanceId="0:501" styleId="0:2" name="Bienvenida" id="0:1">
+        <LayoutComponentStyle name="Estilo de Bienvenida" id="0:2"/>
+
+        <!-- Destellos junto a la mano que saluda: solo se ven mientras Kusi saluda. -->
+        <Node x="211" y="201" opacity="0" scaleX="0.6" scaleY="0.6" name="destellos" id="0:20">
+            <Shape x="-4.5" y="-25.6" rotation="-0.17" name="destello_1">
+                <Rectangle width="5" height="13" cornerRadiusTL="2.5" name="Trazo"/>
+                <Fill name="Relleno"><SolidColor colorValue="FFF5B42E" name="Oro"/></Fill>
+            </Shape>
+            <Shape x="11" y="-23.6" rotation="0.44" name="destello_2">
+                <Rectangle width="5" height="15" cornerRadiusTL="2.5" name="Trazo"/>
+                <Fill name="Relleno"><SolidColor colorValue="FFF5B42E" name="Oro"/></Fill>
+            </Shape>
+            <Shape x="22.5" y="-13" rotation="1.05" name="destello_3">
+                <Rectangle width="5" height="11" cornerRadiusTL="2.5" name="Trazo"/>
+                <Fill name="Relleno"><SolidColor colorValue="FFF5B42E" name="Oro"/></Fill>
+            </Shape>
+        </Node>
+
+        <!-- Pasto del frente: tapa un poco el borde del suelo. Se mece apenas desde la base. -->
+        <Node x="334" y="306" rotation="-0.03" name="pasto_der" id="0:30">
+            <Shape rotation="-0.5" name="hoja_1">
+                <Ellipse width="10" height="26" originY="1" name="Hoja"/>
+                <Fill name="Relleno"><SolidColor colorValue="FF6FAE57" name="Verde"/></Fill>
+            </Shape>
+            <Shape rotation="0.05" name="hoja_2">
+                <Ellipse width="11" height="34" originY="1" name="Hoja"/>
+                <Fill name="Relleno"><SolidColor colorValue="FF7DBB63" name="Verde"/></Fill>
+            </Shape>
+            <Shape rotation="0.55" name="hoja_3">
+                <Ellipse width="10" height="24" originY="1" name="Hoja"/>
+                <Fill name="Relleno"><SolidColor colorValue="FF6FAE57" name="Verde"/></Fill>
+            </Shape>
+        </Node>
+        <Node x="30" y="310" rotation="0.03" name="pasto_izq" id="0:31">
+            <Shape rotation="-0.55" name="hoja_1">
+                <Ellipse width="10" height="24" originY="1" name="Hoja"/>
+                <Fill name="Relleno"><SolidColor colorValue="FF7DBB63" name="Verde"/></Fill>
+            </Shape>
+            <Shape rotation="-0.05" name="hoja_2">
+                <Ellipse width="11" height="32" originY="1" name="Hoja"/>
+                <Fill name="Relleno"><SolidColor colorValue="FF6FAE57" name="Verde"/></Fill>
+            </Shape>
+            <Shape rotation="0.5" name="hoja_3">
+                <Ellipse width="10" height="22" originY="1" name="Hoja"/>
+                <Fill name="Relleno"><SolidColor colorValue="FF7DBB63" name="Verde"/></Fill>
+            </Shape>
+        </Node>
+
+        <!-- Kusi. El origen del nodo son sus pies: escalar desde aquí aplasta hacia el suelo.
+             Los valores escritos son los del cuadro 0 de la entrada (abajo y transparente). -->
+        <Node x="128" y="322" opacity="0" scaleX="0.94" scaleY="0.94" name="kusi" id="0:40">
+            <Image x="-132" y="-501" originX="0" originY="0" assetId="0:10" name="hoja_kusi" id="0:41">
+                <ClippingShape sourceId="0:42" name="Recorte"/>
+            </Image>
+            <!-- Ventana de un cuadro: sin pintura, solo recorta. -->
+            <Shape x="-132" y="-245" name="ventana_cuadro" id="0:42">
+                <Rectangle width="256" height="256" originX="0" originY="0" name="Cuadro"/>
+            </Shape>
+        </Node>
+
+        <!-- Sombra bajo los pies: se achica cuando Kusi brinca. -->
+        <Shape x="130" y="297" opacity="0" scaleX="0.6" name="sombra_kusi" id="0:45">
+            <Ellipse width="112" height="16" name="Sombra"/>
+            <Fill name="Relleno"><SolidColor colorValue="2E6B4423" name="Tinta suave"/></Fill>
+        </Shape>
+
+        <!-- Libro abierto que flota a la derecha. -->
+        <Node x="322" y="244" opacity="0" name="libro" id="0:50">
+            <Shape name="hojas">
+                <PointsPath isClosed="true" name="Pagina izquierda">
+                    <StraightVertex x="-30" y="-12" radius="3"/>
+                    <StraightVertex x="-2" y="-5"/>
+                    <StraightVertex x="-2" y="15"/>
+                    <StraightVertex x="-30" y="8" radius="3"/>
+                </PointsPath>
+                <PointsPath isClosed="true" name="Pagina derecha">
+                    <StraightVertex x="2" y="-5"/>
+                    <StraightVertex x="30" y="-12" radius="3"/>
+                    <StraightVertex x="30" y="8" radius="3"/>
+                    <StraightVertex x="2" y="15"/>
+                </PointsPath>
+                <Stroke thickness="2.5" join="round" name="Borde"><SolidColor colorValue="FF6B4423" name="Tinta"/></Stroke>
+                <Fill name="Papel"><SolidColor colorValue="FFFFFBF2" name="Crema"/></Fill>
+            </Shape>
+            <Shape name="renglones">
+                <PointsPath name="Izquierda 1"><StraightVertex x="-24" y="-4"/><StraightVertex x="-8" y="0"/></PointsPath>
+                <PointsPath name="Izquierda 2"><StraightVertex x="-24" y="2"/><StraightVertex x="-8" y="6"/></PointsPath>
+                <PointsPath name="Derecha 1"><StraightVertex x="8" y="0"/><StraightVertex x="24" y="-4"/></PointsPath>
+                <PointsPath name="Derecha 2"><StraightVertex x="8" y="6"/><StraightVertex x="24" y="2"/></PointsPath>
+                <Stroke thickness="2" cap="round" name="Linea"><SolidColor colorValue="FFD9C3A0" name="Arena"/></Stroke>
+            </Shape>
+            <Shape name="tapa">
+                <PointsPath isClosed="true" name="Tapa">
+                    <StraightVertex x="-34" y="-8" radius="4"/>
+                    <StraightVertex x="0" y="-1"/>
+                    <StraightVertex x="34" y="-8" radius="4"/>
+                    <StraightVertex x="34" y="12" radius="4"/>
+                    <StraightVertex x="0" y="20"/>
+                    <StraightVertex x="-34" y="12" radius="4"/>
+                </PointsPath>
+                <Fill name="Relleno"><SolidColor colorValue="FFE9824F" name="Naranja"/></Fill>
+            </Shape>
+        </Node>
+
+        <!-- Bloques 1-2-3 de Matemática, como en las tarjetas de la app. -->
+        <Node x="290" y="106" opacity="0" name="bloques" id="0:60">
+            <Node y="-25" name="bloque_1" id="0:61">
+                <Text sizingValue="autoWidth" originX="0.5" originY="0.5" name="Numero">
+                    <TextStylePaint fontSize="30" fontAssetId="0:11" name="Numero" id="0:62">
+                        <Fill name="Relleno"><SolidColor colorValue="FF5A3A22" name="Tinta"/></Fill>
+                        <TextStyleAxis tag="2003265652" axisValue="800" name="Peso"/>
+                    </TextStylePaint>
+                    <TextValueRun styleId="0:62" text="1" name="Texto"/>
+                </Text>
+                <Shape name="cara">
+                    <Rectangle width="44" height="44" cornerRadiusTL="11" name="Cara"/>
+                    <Fill name="Relleno"><SolidColor colorValue="FFFFD866" name="Amarillo"/></Fill>
+                </Shape>
+                <Shape y="5" name="relieve">
+                    <Rectangle width="44" height="44" cornerRadiusTL="11" name="Relieve"/>
+                    <Fill name="Relleno"><SolidColor colorValue="FFE0AE37" name="Amarillo oscuro"/></Fill>
+                </Shape>
+            </Node>
+            <Node x="-24" y="23" name="bloque_2" id="0:63">
+                <Text sizingValue="autoWidth" originX="0.5" originY="0.5" name="Numero">
+                    <TextStylePaint fontSize="30" fontAssetId="0:11" name="Numero" id="0:64">
+                        <Fill name="Relleno"><SolidColor colorValue="FF5A3A22" name="Tinta"/></Fill>
+                        <TextStyleAxis tag="2003265652" axisValue="800" name="Peso"/>
+                    </TextStylePaint>
+                    <TextValueRun styleId="0:64" text="2" name="Texto"/>
+                </Text>
+                <Shape name="cara">
+                    <Rectangle width="44" height="44" cornerRadiusTL="11" name="Cara"/>
+                    <Fill name="Relleno"><SolidColor colorValue="FFC6ACF2" name="Lila"/></Fill>
+                </Shape>
+                <Shape y="5" name="relieve">
+                    <Rectangle width="44" height="44" cornerRadiusTL="11" name="Relieve"/>
+                    <Fill name="Relleno"><SolidColor colorValue="FF9C7DD8" name="Lila oscuro"/></Fill>
+                </Shape>
+            </Node>
+            <Node x="24" y="23" name="bloque_3" id="0:65">
+                <Text sizingValue="autoWidth" originX="0.5" originY="0.5" name="Numero">
+                    <TextStylePaint fontSize="30" fontAssetId="0:11" name="Numero" id="0:66">
+                        <Fill name="Relleno"><SolidColor colorValue="FF5A3A22" name="Tinta"/></Fill>
+                        <TextStyleAxis tag="2003265652" axisValue="800" name="Peso"/>
+                    </TextStylePaint>
+                    <TextValueRun styleId="0:66" text="3" name="Texto"/>
+                </Text>
+                <Shape name="cara">
+                    <Rectangle width="44" height="44" cornerRadiusTL="11" name="Cara"/>
+                    <Fill name="Relleno"><SolidColor colorValue="FF94D6A0" name="Verde"/></Fill>
+                </Shape>
+                <Shape y="5" name="relieve">
+                    <Rectangle width="44" height="44" cornerRadiusTL="11" name="Relieve"/>
+                    <Fill name="Relleno"><SolidColor colorValue="FF5FAE6F" name="Verde oscuro"/></Fill>
+                </Shape>
+            </Node>
+        </Node>
+
+        <!-- Camino de puntos que va de los pies de Kusi a los bloques: la aventura empieza ahí. -->
+        <Shape opacity="0" name="camino" id="0:70">
+            <PointsPath isClosed="false" name="Camino">
+                <StraightVertex x="178" y="304"/>
+                <CubicMirroredVertex x="262" y="262" rotation="-1.243" distance="42"/>
+                <StraightVertex x="296" y="156"/>
+            </PointsPath>
+            <Stroke thickness="7" cap="round" name="Puntos">
+                <SolidColor colorValue="FFE7C9A0" name="Arena"/>
+                <DashPath name="Separacion">
+                    <Dash length="1" name="Punto"/>
+                    <Dash length="15" name="Hueco"/>
+                </DashPath>
+            </Stroke>
+        </Shape>
+
+        <!-- Suelo: una loma verde muy clara, como la de la app. No se mueve. -->
+        <Shape x="180" y="318" name="suelo" id="0:80">
+            <Ellipse width="392" height="80" name="Loma"/>
+            <Fill name="Relleno"><SolidColor colorValue="FFE8EFCF" name="Verde claro"/></Fill>
+        </Shape>
+
+        <!--
+            Máquina de estados. Cada capa anima cosas distintas, así nunca se pisan.
+            Orden de la entrada (una sola vez, la primera pantalla que ve el niño):
+              0 ms   Kusi sube y aparece (protagonista); el camino aparece sin moverse
+              100 ms los bloques suben un poco
+              170 ms el libro sube un poco
+            Después solo quedan vaivenes lentos. Kusi saluda solo de vez en cuando (cada ~6,5 s).
+        -->
+        <StateMachine name="Kusi" id="0:300">
+
+            <!-- Capa 1 · Cuadros de Kusi y destellos. Sin mezcla entre estados. -->
+            <StateMachineLayer name="Cuadros" id="0:301">
+                <AnyState x="900" y="-200"/>
+                <ExitState x="1060" y="-200"/>
+                <EntryState x="0" y="0"><StateTransition stateToId="0:310"/></EntryState>
+
+                <!-- Saludo de entrada (mismo saludo que al tocarlo). -->
+                <AnimationState x="180" y="0" animationId="0:401" reset="true" id="0:310">
+                    <StateTransition stateToId="0:315">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:314" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:510" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:311" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+
+                <!-- Reposo: respira con la fila 3 durante ~6,5 s y luego saluda corto. -->
+                <AnimationState x="420" y="0" animationId="0:402" reset="true" id="0:311">
+                    <StateTransition stateToId="0:315">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:314">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:510" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:313">
+                        <TransitionViewModelCondition>
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyTrigger><DataBindContext sourcePathIds="0:500-0:512" propertyKey="686"/></BindablePropertyTrigger>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueTriggerComparator/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:312" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+
+                <!-- Saludo corto que Kusi hace solo, para invitar a tocarlo. -->
+                <AnimationState x="420" y="220" animationId="0:403" reset="true" id="0:312">
+                    <StateTransition stateToId="0:314">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:510" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:313">
+                        <TransitionViewModelCondition>
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyTrigger><DataBindContext sourcePathIds="0:500-0:512" propertyKey="686"/></BindablePropertyTrigger>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueTriggerComparator/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:311" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+
+                <!-- Saludo al tocarlo: termina el saludo y, si la voz sigue sonando, habla. -->
+                <AnimationState x="680" y="220" animationId="0:401" reset="true" id="0:313">
+                    <StateTransition stateToId="0:314" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:510" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:311" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+
+                <!-- Hablando: la boca se mueve mientras suena la voz. -->
+                <AnimationState x="680" y="0" animationId="0:404" id="0:314">
+                    <StateTransition stateToId="0:313">
+                        <TransitionViewModelCondition>
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyTrigger><DataBindContext sourcePathIds="0:500-0:512" propertyKey="686"/></BindablePropertyTrigger>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueTriggerComparator/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:311">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:510" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="false"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <!-- Quieto: sin respiración ni saludos solos. Tocar y hablar siguen respondiendo. -->
+                <AnimationState x="180" y="220" animationId="0:405" id="0:315">
+                    <StateTransition stateToId="0:313">
+                        <TransitionViewModelCondition>
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyTrigger><DataBindContext sourcePathIds="0:500-0:512" propertyKey="686"/></BindablePropertyTrigger>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueTriggerComparator/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:314">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:510" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:311">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="false"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+
+            <!-- Capa 2 · Cuerpo: entrada, vaivén al respirar y brinco al tocarlo. -->
+            <StateMachineLayer name="Cuerpo" id="0:302">
+                <AnyState x="900" y="-200"/>
+                <ExitState x="1060" y="-200"/>
+                <EntryState x="0" y="0"><StateTransition stateToId="0:320"/></EntryState>
+
+                <AnimationState x="180" y="0" animationId="0:410" id="0:320">
+                    <StateTransition stateToId="0:323">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:321" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+
+                <AnimationState x="420" y="0" animationId="0:411" id="0:321">
+                    <StateTransition stateToId="0:323" duration="120">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:322" duration="60">
+                        <TransitionViewModelCondition>
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyTrigger><DataBindContext sourcePathIds="0:500-0:512" propertyKey="686"/></BindablePropertyTrigger>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueTriggerComparator/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+
+                <!-- Brinco: la respuesta al toque empieza en el mismo cuadro del toque. -->
+                <AnimationState x="420" y="220" animationId="0:412" reset="true" id="0:322">
+                    <StateTransition stateToId="0:321" duration="120" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+
+                <AnimationState x="180" y="220" animationId="0:413" id="0:323">
+                    <StateTransition stateToId="0:321" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="false"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+
+            <!-- Capa 3 · Bloques 1-2-3. -->
+            <StateMachineLayer name="Bloques" id="0:303">
+                <AnyState x="900" y="-200"/>
+                <ExitState x="1060" y="-200"/>
+                <EntryState x="0" y="0"><StateTransition stateToId="0:330"/></EntryState>
+                <AnimationState x="180" y="0" animationId="0:420" id="0:330">
+                    <StateTransition stateToId="0:332">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:331" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <AnimationState x="420" y="0" animationId="0:421" id="0:331">
+                    <StateTransition stateToId="0:332" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+                <AnimationState x="180" y="220" animationId="0:422" id="0:332">
+                    <StateTransition stateToId="0:331" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="false"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+
+            <!-- Capa 4 · Libro. Su vaivén dura distinto que el de los bloques para no ir a la par. -->
+            <StateMachineLayer name="Libro" id="0:304">
+                <AnyState x="900" y="-200"/>
+                <ExitState x="1060" y="-200"/>
+                <EntryState x="0" y="0"><StateTransition stateToId="0:340"/></EntryState>
+                <AnimationState x="180" y="0" animationId="0:430" id="0:340">
+                    <StateTransition stateToId="0:342">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:341" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <AnimationState x="420" y="0" animationId="0:431" id="0:341">
+                    <StateTransition stateToId="0:342" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+                <AnimationState x="180" y="220" animationId="0:432" id="0:342">
+                    <StateTransition stateToId="0:341" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="false"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+
+            <!-- Capa 5 · Ambiente: el camino aparece en su sitio y el pasto se mece. -->
+            <StateMachineLayer name="Ambiente" id="0:305">
+                <AnyState x="900" y="-200"/>
+                <ExitState x="1060" y="-200"/>
+                <EntryState x="0" y="0"><StateTransition stateToId="0:350"/></EntryState>
+                <AnimationState x="180" y="0" animationId="0:440" id="0:350">
+                    <StateTransition stateToId="0:352">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                    <StateTransition stateToId="0:351" enableExitTime="true" exitTimeIsPercetange="true" exitTime="100"/>
+                </AnimationState>
+                <AnimationState x="420" y="0" animationId="0:441" id="0:351">
+                    <StateTransition stateToId="0:352" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="true"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+                <AnimationState x="180" y="220" animationId="0:442" id="0:352">
+                    <StateTransition stateToId="0:351" duration="200">
+                        <TransitionViewModelCondition opValue="equal">
+                            <TransitionPropertyViewModelComparator>
+                                <BindablePropertyBoolean><DataBindContext sourcePathIds="0:500-0:511" propertyKey="634"/></BindablePropertyBoolean>
+                            </TransitionPropertyViewModelComparator>
+                            <TransitionValueBooleanComparator value="false"/>
+                        </TransitionViewModelCondition>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <!-- ===================== Capa Cuadros ===================== -->
+
+        <!-- Saludo: fila 1 dos veces (3-4-5-4) a 133 ms por cuadro, y parpadeo con el brazo arriba
+             (fila 2: 6-7-8-7-6) a 67 ms. Lo usan la entrada y el toque. -->
+        <LinearAnimation duration="100" name="saludo" id="0:401">
+            <KeyedObject objectId="0:41">
+                <KeyedProperty property="x">
+                    <KeyFrameDouble frame="0" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="8" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="16" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="24" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="32" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="40" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="48" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="56" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="64" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="68" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="72" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="76" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="80" value="-132" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="-501" interpolationType="hold"/>
+                    <KeyFrameDouble frame="64" value="-757" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="8" value="1" interpolationType="hold"/>
+                    <KeyFrameDouble frame="56" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="70" value="0" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="0.6" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="1" interpolationType="hold"/>
+                    <KeyFrameDouble frame="56" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="70" value="1.15" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble frame="0" value="0.6" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="1" interpolationType="hold"/>
+                    <KeyFrameDouble frame="56" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="70" value="1.15" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Reposo: fila 3 (9-10-11-10) a medio segundo por cuadro, 6,5 s en total. -->
+        <LinearAnimation duration="390" name="reposo" id="0:402">
+            <KeyedObject objectId="0:41">
+                <KeyedProperty property="x">
+                    <KeyFrameDouble frame="0" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="30" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="60" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="90" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="120" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="150" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="180" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="210" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="240" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="270" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="300" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="330" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="360" value="-132" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="-1013" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Saludo corto: una vez la fila 1 y el parpadeo. -->
+        <LinearAnimation duration="76" name="saludo_corto" id="0:403">
+            <KeyedObject objectId="0:41">
+                <KeyedProperty property="x">
+                    <KeyFrameDouble frame="0" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="8" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="16" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="24" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="32" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="44" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="48" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="52" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="56" value="-132" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="-501" interpolationType="hold"/>
+                    <KeyFrameDouble frame="40" value="-757" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="8" value="1" interpolationType="hold"/>
+                    <KeyFrameDouble frame="30" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="44" value="0" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="0.6" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble frame="0" value="0.6" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Hablar: fila 0 (0-1-2-1) a 133 ms por cuadro, mientras suena la voz. -->
+        <LinearAnimation duration="32" loopValue="loop" name="hablar" id="0:404">
+            <KeyedObject objectId="0:41">
+                <KeyedProperty property="x">
+                    <KeyFrameDouble frame="0" value="-132" interpolationType="hold"/>
+                    <KeyFrameDouble frame="8" value="-388" interpolationType="hold"/>
+                    <KeyFrameDouble frame="16" value="-644" interpolationType="hold"/>
+                    <KeyFrameDouble frame="24" value="-388" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="-245" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Cuadro quieto: el primero de la fila 3, sin destellos. -->
+        <LinearAnimation duration="1" name="cuadro_quieto" id="0:405">
+            <KeyedObject objectId="0:41">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-132" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="-1013" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- ===================== Capa Cuerpo ===================== -->
+
+        <!-- Entrada: sube 26 px, crece desde 0,94 y aparece. 500 ms con salida fuerte. -->
+        <LinearAnimation duration="30" name="entrada" id="0:410">
+            <KeyedObject objectId="0:40">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="322" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="30" value="296" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="14" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="0.94" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="30" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble frame="0" value="0.94" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="30" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:45">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="20" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="0.6" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="30" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Vaivén al respirar: sube 3 px y se estira apenas desde los pies. Ida y vuelta, 1,25 s cada tramo. -->
+        <LinearAnimation duration="75" loopValue="pingPong" name="flotar" id="0:411">
+            <KeyedObject objectId="0:40">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="296" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="75" value="293" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="75" value="1.012" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="75" value="0.994" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:45">
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="75" value="0.95" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Brinco al tocarlo (533 ms): se estira al despegar, sube 17 px, cae y se aplasta al llegar. -->
+        <LinearAnimation duration="32" name="brinco" id="0:412">
+            <KeyedObject objectId="0:40">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="296" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="279" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="1" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="19" value="296" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="5" value="1.05" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="17" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="21" value="0.93" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="32" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="5" value="0.96" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="17" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="21" value="1.06" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="32" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:45">
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="0.7" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="1" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="19" value="1.05" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="32" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="1" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="10" value="0.55" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="1" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="19" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Cuerpo quieto: en su sitio, visible, sin vaivén. -->
+        <LinearAnimation duration="1" name="cuerpo_quieto" id="0:413">
+            <KeyedObject objectId="0:40">
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="296" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="scaleX"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="scaleY"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:45">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="scaleX"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- ===================== Capa Bloques ===================== -->
+
+        <!-- Entrada: espera 100 ms, sube 10 px y aparece en 467 ms. -->
+        <LinearAnimation duration="36" name="bloques_entrada" id="0:420">
+            <KeyedObject objectId="0:60">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="hold"/>
+                    <KeyFrameDouble frame="6" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="30" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="106" interpolationType="hold"/>
+                    <KeyFrameDouble frame="6" value="106" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="34" value="96" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation duration="110" loopValue="pingPong" name="bloques_flotar" id="0:421">
+            <KeyedObject objectId="0:60">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="96" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="110" value="91" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation duration="1" name="bloques_quietos" id="0:422">
+            <KeyedObject objectId="0:60">
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="96" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- ===================== Capa Libro ===================== -->
+
+        <!-- Entrada: espera 170 ms, sube 8 px y aparece. -->
+        <LinearAnimation duration="42" name="libro_entrada" id="0:430">
+            <KeyedObject objectId="0:50">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="hold"/>
+                    <KeyFrameDouble frame="10" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="34" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="244" interpolationType="hold"/>
+                    <KeyFrameDouble frame="10" value="244" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="38" value="236" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation duration="140" loopValue="pingPong" name="libro_flotar" id="0:431">
+            <KeyedObject objectId="0:50">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="236" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="140" value="239.5" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="140" value="0.04" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation duration="1" name="libro_quieto" id="0:432">
+            <KeyedObject objectId="0:50">
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="236" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- ===================== Capa Ambiente ===================== -->
+
+        <!-- El camino es decoración: solo aparece, sin moverse. -->
+        <LinearAnimation duration="24" name="ambiente_entrada" id="0:440">
+            <KeyedObject objectId="0:70">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble frame="0" value="0" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="24" value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation duration="150" loopValue="pingPong" name="pasto" id="0:441">
+            <KeyedObject objectId="0:30">
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble frame="0" value="-0.03" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="150" value="0.04" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:31">
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble frame="0" value="0.03" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="150" value="-0.04" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:70">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation duration="1" name="ambiente_quieto" id="0:442">
+            <KeyedObject objectId="0:30">
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:31">
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:70">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1" interpolationType="hold"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+
+    <!-- Lo que la app puede leer y escribir. -->
+    <ViewModel defaultInstanceId="0:501" name="Kusi" id="0:500">
+        <ViewModelPropertyBoolean name="hablando" id="0:510"/>
+        <ViewModelPropertyBoolean name="quieto" id="0:511"/>
+        <ViewModelPropertyTrigger name="saludar" id="0:512"/>
+        <ViewModelInstance exports="true" name="Default" id="0:501">
+            <ViewModelInstanceBoolean propertyValue="false" viewModelPropertyId="0:510"/>
+            <ViewModelInstanceBoolean propertyValue="false" viewModelPropertyId="0:511"/>
+            <ViewModelInstanceTrigger viewModelPropertyId="0:512"/>
+        </ViewModelInstance>
+    </ViewModel>
+</Rive>

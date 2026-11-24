@@ -12,8 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,10 +23,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,8 +39,20 @@ fun AplicacionInfantil(
     biblioteca: EstadoBibliotecaInfantil = EstadoBibliotecaInfantil(), reintentarBiblioteca: (() -> Unit)? = null,
     cierre: EstadoCierreInfantil = EstadoCierreInfantil(), reintentarGuardado: () -> Unit = {},
     alVerMision: (AventuraInfantil) -> Unit = {},
-    contenidoJuego: @Composable (AventuraInfantil, () -> Unit, () -> Unit) -> Unit = { _, _, volver -> JuegoSinConectar(volver) }, presentacion: Boolean = false
+    contenidoJuego: @Composable (AventuraInfantil, () -> Unit, () -> Unit) -> Unit = { _, _, volver -> JuegoSinConectar(volver) }, presentacion: Boolean = false,
+    logros: EstadoLogrosInfantil = EstadoLogrosInfantil(), recargarLogros: (() -> Unit)? = null,
 ) {
+    val idCuenta = estado.cuenta?.id
+    val contexto = LocalContext.current
+    val preferenciasCuy = remember(contexto) { contexto.getSharedPreferences("kusi_mi_cuy", Context.MODE_PRIVATE) }
+    var crearCuy by rememberSaveable(idCuenta) {
+        mutableStateOf(idCuenta != null && !preferenciasCuy.getBoolean("creado_$idCuenta", false))
+    }
+    var seccionInicio by rememberSaveable(idCuenta) { mutableIntStateOf(0) }
+    var cursoInicio by rememberSaveable(idCuenta) { mutableStateOf<String?>(null) }
+    var apariencia by rememberSaveable(idCuenta, stateSaver = AparienciaCuySaver) {
+        mutableStateOf(if (idCuenta == null) AparienciaCuy() else aparienciaGuardada(preferenciasCuy, idCuenta))
+    }
     var entrada by rememberSaveable(estado.cuenta?.id) { mutableStateOf("bienvenida") }
     var aventuraId by rememberSaveable(estado.cuenta?.id) { mutableStateOf<String?>(null) }
     var aventuraElegida by remember(estado.cuenta?.id) { mutableStateOf<AventuraInfantil?>(null) }
@@ -55,18 +63,40 @@ fun AplicacionInfantil(
     val snackbar = remember { SnackbarHostState() }; val scope = rememberCoroutineScope()
     val voz = recordarVozKusi { scope.launch { snackbar.showSnackbar(it) } }
     val aventura = biblioteca.aventuras.find { it.id == aventuraId } ?: aventuraElegida?.takeIf { it.id == aventuraId }
-    fun volver() { if (ayuda) ayuda = false else if (aventura != null) { if (paso == "juego") confirmarRegreso = true else aventuraId = null } else entrada = "bienvenida" }
-    BackHandler(ayuda || aventura != null || (estado.cuenta == null && entrada == "ingreso")) { volver() }
-    val actividad = LocalContext.current.actividad()
+    val destino = when {
+        estado.iniciando -> "arranque"
+        estado.cuenta == null -> entrada
+        estado.cuenta.temporal -> "clave"
+        !estado.cuenta.roles.contains("estudiante") -> "adulto"
+        aventura != null -> paso
+        crearCuy -> "crear-cuy"
+        else -> "inicio"
+    }
+    fun volver() {
+        when {
+            ayuda -> ayuda = false
+            aventura != null && paso == "juego" -> confirmarRegreso = true
+            aventura != null -> aventuraId = null
+            destino == "crear-cuy" -> { voz.callar(); crearCuy = false }
+            destino == "inicio" && seccionInicio == 1 -> cursoInicio = null
+            else -> entrada = "bienvenida"
+        }
+    }
+    BackHandler(
+        ayuda || aventura != null || destino == "ingreso" || destino == "crear-cuy" ||
+            (destino == "inicio" && seccionInicio == 1 && cursoInicio != null),
+    ) { volver() }
+    val actividad = contexto.actividad()
     val orienta = actividad?.javaClass?.packageName == "pe.kusi.movil"
     val horizontal = aventura != null
     DisposableEffect(actividad) { val anterior = actividad?.requestedOrientation; onDispose { if (orienta && anterior != null) actividad?.requestedOrientation = anterior } }
     LaunchedEffect(horizontal) { if (orienta) actividad?.requestedOrientation = if (horizontal) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT }
-    val destino = when { estado.iniciando -> "arranque"; estado.cuenta == null -> entrada; estado.cuenta.temporal -> "clave"; !estado.cuenta.roles.contains("estudiante") -> "adulto"; aventura != null -> paso; else -> "inicio" }
     LaunchedEffect(destino, aventuraId) { if (destino == "mision") aventura?.let(alVerMision) }
-    Scaffold(containerColor = MaterialTheme.colorScheme.background, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
-        if (destino != "juego" && destino != "arranque") TopAppBar(title = { MarcaKusi() },
-            navigationIcon = { if (destino == "ingreso" || aventura != null) BotonIconoKusi(R.drawable.ic_arrow_left, "Volver") { volver() } },
+    val fondo = if (destino == "arranque") colorResource(R.color.kusi_fondo_carga) else MaterialTheme.colorScheme.background
+    Scaffold(containerColor = fondo, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
+        if (destino !in setOf("juego", "arranque", "bienvenida", "ingreso", "crear-cuy") &&
+            destino != "inicio") TopAppBar(title = { MarcaKusi() },
+            navigationIcon = { if (aventura != null) BotonIconoKusi(R.drawable.ic_arrow_left, "Volver") { volver() } },
             actions = { BotonIconoKusi(R.drawable.ic_question, "Necesito ayuda") { ayuda = true } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
     }) { margen ->
@@ -75,15 +105,33 @@ fun AplicacionInfantil(
                 if (presentacion) Surface(color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.fillMaxWidth()) { Text("Vista de presentación · datos de ejemplo", style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, modifier = Modifier.padding(6.dp)) }
                 AnimatedContent(destino, transitionSpec = { (fadeIn(tween(220)) + slideInHorizontally(tween(260)) { it / 14 }).togetherWith(fadeOut(tween(120))) }, label = "cambio-pantalla", modifier = Modifier.weight(1f)) { pantalla ->
                     when (pantalla) {
-                        "arranque" -> ArranqueInfantil(voz)
-                        "bienvenida" -> BienvenidaReferencia(voz) { entrada = "ingreso" }
-                        "ingreso" -> IngresoInfantil(estado, ingresar) { ayuda = true }
+                        "arranque" -> ArranqueInfantil()
+                        "bienvenida" -> BienvenidaKusi(voz) { entrada = "ingreso" }
+                        "ingreso" -> IngresoInfantil(estado, voz, ingresar, ::volver) { ayuda = true }
+                        "crear-cuy" -> if (idCuenta != null) {
+                            CreaTuCuy(
+                                apariencia, voz, preferenciasCuy.getBoolean("voz", true),
+                                preferenciasCuy.getBoolean("creado_$idCuenta", false), ::volver,
+                            ) { elegida ->
+                                guardarApariencia(preferenciasCuy, idCuenta, elegida)
+                                apariencia = elegida
+                                crearCuy = false
+                            }
+                        }
                         "clave" -> NuevaClaveInfantil(estado, cambiarClave) { confirmarSalida = true }
                         "adulto" -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { AvisoKusi("Esta app es para estudiantes. Para enseñar o administrar, entra desde la web."); BotonKusi("Salir de Kusi", salir, habilitado = !estado.ocupado) }
                         "mision" -> aventura?.let { MisionInfantil(it, voz) { paso = "juego" } }
                         "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { paso = "mision" }) }
                         "cierre" -> aventura?.let { CierreInfantil(it, cierre, voz, { aventuraId = null }, { paso = "juego" }, reintentarGuardado) }
-                        else -> estado.cuenta?.let { InicioReferencia(it, estado, biblioteca, voz, { aventuraElegida = it; aventuraId = it.id; paso = "mision" }, reintentarBiblioteca, comprobar, salir) }
+                        else -> estado.cuenta?.let {
+                            InicioReferencia(
+                                it, estado, biblioteca, voz,
+                                { aventuraElegida = it; aventuraId = it.id; paso = if (it.enPausa) "juego" else "mision" },
+                                reintentarBiblioteca, comprobar, salir, apariencia, seccionInicio, cursoInicio,
+                                { seccionInicio = it; cursoInicio = null }, { cursoInicio = it },
+                                { crearCuy = true }, { ayuda = true }, logros, recargarLogros,
+                            )
+                        }
                     }
                 }
             }
@@ -94,10 +142,17 @@ fun AplicacionInfantil(
         "ingreso", "clave" -> "Tu profe te da tu cuenta. Pide ayuda a un adulto para entrar o cambiar tu contraseña."
         "mision" -> aventura?.consigna ?: "Escucha a Kusi y toca Jugar cuando estés listo."
         "cierre" -> "Puedes jugar otra vez o elegir otra aventura."
-        "inicio" -> "Elige una aventura de tu clase y toca Ver la misión."
+        "inicio" -> when {
+            seccionInicio == 1 && cursoInicio == null -> "Toca el dibujo de una materia para ver tus aventuras."
+            seccionInicio == 2 -> "Supera retos en tus aventuras y aquí verás tus puntos y medallas."
+            seccionInicio == 1 -> "Aquí están tus aventuras de $cursoInicio. Toca la flecha para volver a Mis cursos."
+            seccionInicio == 3 -> "Toca tu cuy para saludarlo. En Personalizar mi cuy puedes cambiar su pelaje y sus accesorios."
+            else -> "Elige una aventura de tu clase. Toca Ver la misión o Continuar si ya guardaste una partida."
+        }
         else -> "Soy Kusi. Toca Entrar y pide ayuda a un adulto la primera vez."
     }
-    if (ayuda) AlertDialog(onDismissRequest = { ayuda = false }, icon = { IconoKusi(R.drawable.ic_question) }, title = { Text("Kusi te ayuda") }, text = { Text(textoAyuda) },
+    if (ayuda && destino == "ingreso") AyudaDelIngreso(textoAyuda, voz) { ayuda = false }
+    else if (ayuda) AlertDialog(onDismissRequest = { ayuda = false }, icon = { IconoKusi(R.drawable.ic_question) }, title = { Text("Kusi te ayuda") }, text = { Text(textoAyuda) },
         confirmButton = { TextButton(onClick = { ayuda = false }) { Text("¡Entendido!") } }, dismissButton = { TextButton(onClick = { voz.hablar(textoAyuda) }) { IconoKusi(R.drawable.ic_speaker_high); Text("Escuchar") } })
     if (confirmarRegreso) AlertDialog(onDismissRequest = { confirmarRegreso = false }, title = { Text("¿Volvemos a la misión?") },
         text = { Text("Usa Pausa dentro del juego para guardar el reto antes de volver.") },
@@ -109,10 +164,6 @@ fun AplicacionInfantil(
 @Composable
 private fun FondoAventura(modifier: Modifier = Modifier, contenido: @Composable BoxScope.() -> Unit) {
     Box(modifier.clip(MaterialTheme.shapes.extraLarge).background(MaterialTheme.colorScheme.tertiaryContainer)) { Image(painterResource(R.drawable.kusi_bienvenida_v2), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop); contenido() }
-}
-@Composable
-private fun ArranqueInfantil(voz: VozKusi) {
-    Column(Modifier.fillMaxSize().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) { CuyInteractivo(voz, Modifier.size(190.dp)); Text("Kusi", style = MaterialTheme.typography.displayLarge); Spacer(Modifier.height(24.dp)); CircularProgressIndicator(); Spacer(Modifier.height(16.dp)); Text("Preparando Kusi…") }
 }
 @Composable
 private fun BienvenidaInfantil(voz: VozKusi, entrar: () -> Unit) {
@@ -133,23 +184,6 @@ private fun BienvenidaInfantil(voz: VozKusi, entrar: () -> Unit) {
         }
         Text("La primera vez, entra con ayuda de un adulto.", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
-    }
-}
-@Composable
-private fun IngresoInfantil(estado: EstadoEntradaKusi, ingresar: (String, String, Boolean) -> Unit, ayuda: () -> Unit) {
-    var dni by rememberSaveable { mutableStateOf("") }; var clave by remember { mutableStateOf("") }; var recordar by rememberSaveable { mutableStateOf(true) }
-    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Image(painterResource(R.drawable.kusi_referencia), "Kusi te da la bienvenida", Modifier.fillMaxWidth().height(170.dp), contentScale = ContentScale.Fit)
-        Text("¡Vamos a entrar!", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
-        TarjetaKusi(Modifier.fillMaxWidth()) {
-            OutlinedTextField(dni, { dni = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("Mi DNI") }, supportingText = { Text("Los 8 números de tu DNI") }, singleLine = true, enabled = !estado.ocupado, shape = MaterialTheme.shapes.medium, colors = coloresCampoKusi(), textStyle = MaterialTheme.typography.titleMedium, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next), modifier = Modifier.fillMaxWidth())
-            CampoClaveKusi(clave, { clave = it }, "Mi contraseña", !estado.ocupado)
-            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(recordar, role = Role.Checkbox, enabled = !estado.ocupado, onValueChange = { recordar = it }), verticalAlignment = Alignment.CenterVertically) { Checkbox(recordar, null, enabled = !estado.ocupado); Text("Recordarme en este celular", style = MaterialTheme.typography.bodySmall) }
-            estado.mensaje?.let { AvisoKusi(it, true) }
-            BotonKusi(if (estado.ocupado) "Entrando…" else "Entrar", { ingresar(dni, clave, recordar) }, Modifier.fillMaxWidth(), !estado.ocupado && dni.length == 8 && clave.isNotEmpty(), R.drawable.ic_arrow_right)
-            if (estado.ocupado) LinearProgressIndicator(Modifier.fillMaxWidth())
-        }
-        TextButton(onClick = ayuda, modifier = Modifier.heightIn(min = 48.dp)) { Text("Olvidé mi contraseña") }
     }
 }
 @Composable

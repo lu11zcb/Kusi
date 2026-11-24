@@ -1,0 +1,4 @@
+name: kusi_ingreso
+main: Ingreso
+output:
+  dir: ../../app/src/main/res/raw

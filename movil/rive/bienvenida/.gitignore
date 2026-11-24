@@ -1,0 +1,5 @@
+# Lo genera el CLI de Rive: compilaciones, capturas y registros.
+build/
+# `rive create` escribe estas instrucciones para agentes; no se versionan.
+AGENTS.md
+CLAUDE.md

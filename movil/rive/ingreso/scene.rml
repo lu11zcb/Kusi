@@ -1,0 +1,348 @@
+<Rive version="1" kind="fragment">
+    <ImageAsset file="../../app/src/main/res/drawable-nodpi/kusi_poses_ingreso.png" name="Poses de Kusi" id="0:10"/>
+    <ImageAsset file="../../app/src/main/res/drawable-nodpi/kusi_hojas_ingreso.png" name="Hojas del arbusto" id="0:11"/>
+    <ImageAsset file="../../app/src/main/res/drawable-nodpi/kusi_ramas_ingreso.png" name="Ramas y hojas" id="0:12"/>
+
+    <Artboard width="224" height="224" name="Ingreso" defaultStateMachineId="0:50" viewModelId="0:60" viewModelInstanceId="0:63" id="0:1">
+        <Node x="96" y="164" opacity="0" scaleX="0.079" scaleY="0.079" name="Hoja al viento izquierda" id="0:33">
+            <Image x="-576" y="-576" originX="0" originY="0" assetId="0:12"><ClippingShape sourceId="0:43"/></Image>
+            <Shape x="-192" y="-192" id="0:43"><Rectangle width="384" height="384" originX="0" originY="0"/></Shape>
+        </Node>
+        <Node x="135" y="164" opacity="0" scaleX="0.092" scaleY="0.092" name="Hoja al viento derecha" id="0:34">
+            <Image x="-576" y="-576" originX="0" originY="0" assetId="0:12"><ClippingShape sourceId="0:44"/></Image>
+            <Shape x="-192" y="-192" id="0:44"><Rectangle width="384" height="384" originX="0" originY="0"/></Shape>
+        </Node>
+        <Node x="112" y="162" opacity="0" scaleX="0.067" scaleY="0.067" name="Hoja al viento del centro" id="0:35">
+            <Image x="-576" y="-576" originX="0" originY="0" assetId="0:12"><ClippingShape sourceId="0:45"/></Image>
+            <Shape x="-192" y="-192" id="0:45"><Rectangle width="384" height="384" originX="0" originY="0"/></Shape>
+        </Node>
+        <Node x="112" y="204" opacity="0" name="Kusi apoyado en el borde" id="0:46">
+            <Node x="-99.68" y="-186.5" scaleX="0.3894" scaleY="0.3894" opacity="0" name="Pose frontal del DNI" id="0:47">
+                <Image x="-512" originX="0" originY="0" assetId="0:10"><ClippingShape sourceId="0:48"/></Image>
+                <Shape id="0:48"><Rectangle width="512" height="512" originX="0" originY="0"/></Shape>
+            </Node>
+        </Node>
+        <Node x="112" y="216" name="Base enraizada del arbusto">
+            <Image x="-112" y="-90.8" scaleX="0.291667" scaleY="0.291667" originX="0" originY="0" assetId="0:11" name="Hojas">
+                <ClippingShape sourceId="0:27"/>
+            </Image>
+        </Node>
+        <Node x="112" y="353" opacity="0" name="Kusi" id="0:20">
+            <Node x="-102.5" y="-176.64" scaleX="0.3675" scaleY="0.3675" name="Encuadre" id="0:22">
+                <Image originX="0" originY="0" assetId="0:10" name="Hoja de poses" id="0:21">
+                    <ClippingShape sourceId="0:23"/>
+                    <ClippingShape sourceId="0:27"/>
+                </Image>
+                <Shape name="Recorte de celda" id="0:23">
+                    <Rectangle width="512" height="512" originX="0" originY="0"/>
+                </Shape>
+            </Node>
+        </Node>
+        <Node x="65" y="184" rotation="-0.314" scaleX="0.175" scaleY="0.175" name="Rama izquierda" id="0:30">
+            <Image x="-192" y="-334" originX="0" originY="0" assetId="0:12"><ClippingShape sourceId="0:40"/></Image>
+            <Shape x="-192" y="-334" id="0:40"><Rectangle width="384" height="384" originX="0" originY="0"/></Shape>
+        </Node>
+        <Node x="112" y="177" rotation="-0.087" scaleX="0.1575" scaleY="0.1575" name="Rama central" id="0:31">
+            <Image x="-576" y="-334" originX="0" originY="0" assetId="0:12"><ClippingShape sourceId="0:41"/></Image>
+            <Shape x="-192" y="-334" id="0:41"><Rectangle width="384" height="384" originX="0" originY="0"/></Shape>
+        </Node>
+        <Node x="159" y="181" rotation="0.314" scaleX="0.1633" scaleY="0.1633" name="Rama derecha" id="0:32">
+            <Image x="-192" y="-718" originX="0" originY="0" assetId="0:12"><ClippingShape sourceId="0:42"/></Image>
+            <Shape x="-192" y="-334" id="0:42"><Rectangle width="384" height="384" originX="0" originY="0"/></Shape>
+        </Node>
+        <Shape name="Límite al salir de atrás de las hojas" id="0:27">
+            <Rectangle width="224" height="202" originX="0" originY="0"/>
+        </Shape>
+
+        <StateMachine name="KusiIngreso" id="0:50">
+            <!-- La pose puede cambiar de inmediato por privacidad sin interrumpir el animado de las hojas. -->
+            <StateMachineLayer name="Poses">
+                <AnyState x="0" y="120">
+                    <StateTransition stateToId="0:70"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="0"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:71"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="1"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:72"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="2"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:73"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="3"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:74"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="4"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:75"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="5"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:76"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:61" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="6"/>
+                    </TransitionViewModelCondition></StateTransition>
+                </AnyState>
+                <EntryState x="-220" y="0"><StateTransition stateToId="0:70"/></EntryState>
+                <AnimationState x="280" y="0" animationId="0:80" id="0:70"/>
+                <AnimationState x="280" y="110" animationId="0:81" id="0:71"/>
+                <AnimationState x="280" y="220" animationId="0:82" id="0:72"/>
+                <AnimationState x="280" y="330" animationId="0:83" id="0:73"/>
+                <AnimationState x="280" y="440" animationId="0:84" id="0:74"/>
+                <AnimationState x="280" y="550" animationId="0:85" id="0:75"/>
+                <AnimationState x="280" y="660" animationId="0:86" id="0:76"/>
+            </StateMachineLayer>
+            <StateMachineLayer name="Movimiento">
+                <AnyState x="0" y="120">
+                    <StateTransition stateToId="0:90"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="0"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:91"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="1"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:92"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="2"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:93"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="3"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:94"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="4"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:95"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="5"/>
+                    </TransitionViewModelCondition></StateTransition>
+                </AnyState>
+                <EntryState x="-220" y="0"><StateTransition stateToId="0:91"/></EntryState>
+                <AnimationState x="280" y="0" animationId="0:100" id="0:90"/>
+                <AnimationState x="280" y="110" animationId="0:101" reset="true" id="0:91"/>
+                <AnimationState x="280" y="220" animationId="0:102" reset="true" id="0:92"/>
+                <AnimationState x="280" y="330" animationId="0:103" reset="true" id="0:93"/>
+                <AnimationState x="280" y="440" animationId="0:104" reset="true" id="0:94"/>
+                <AnimationState x="280" y="550" animationId="0:105" reset="true" id="0:95"/>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <LinearAnimation name="Asomado" duration="1" id="0:80">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-102.5"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Mira el DNI apoyado en el panel" duration="1" id="0:81">
+            <KeyedObject objectId="0:22"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Ojos tapados" duration="1" id="0:82">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-1024"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-85.5"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Un ojo" duration="1" id="0:83">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="-512"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-102.5"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Risa" duration="1" id="0:84">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-512"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="-512"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-94"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Guiño y saludo" duration="1" id="0:85">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-1024"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="-512"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-85.5"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+
+        <LinearAnimation name="Alegre mirando al frente" duration="1" id="0:86">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="-1024"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="-94"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:47"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+
+        <LinearAnimation name="Quieto" duration="1" id="0:100">
+            <KeyedObject objectId="0:46">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="scaleY"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="180"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30"><KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="-0.314"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:31"><KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="-0.087"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:32"><KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0.314"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:33"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:34"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:35"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Hojas inquietas" fps="60" duration="93" loopValue="loop" id="0:101">
+            <KeyedObject objectId="0:46"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="353"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="-0.314"/><KeyFrameDouble frame="20" value="-0.19"/>
+                <KeyFrameDouble frame="35" value="-0.57"/><KeyFrameDouble frame="57" value="-0.09"/>
+                <KeyFrameDouble frame="77" value="-0.40"/><KeyFrameDouble frame="93" value="-0.314"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:31"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="-0.087"/><KeyFrameDouble frame="26" value="-0.23"/>
+                <KeyFrameDouble frame="44" value="0.23"/><KeyFrameDouble frame="66" value="-0.194"/>
+                <KeyFrameDouble frame="93" value="-0.087"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:32"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="0.314"/><KeyFrameDouble frame="19" value="0.37"/>
+                <KeyFrameDouble frame="43" value="0.62"/><KeyFrameDouble frame="64" value="0.13"/>
+                <KeyFrameDouble frame="79" value="0.39"/><KeyFrameDouble frame="93" value="0.314"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:33">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="96"/><KeyFrameDouble frame="28" value="96"/><KeyFrameDouble frame="73" value="58"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="164"/><KeyFrameDouble frame="28" value="164"/><KeyFrameDouble frame="48" value="126"/><KeyFrameDouble frame="73" value="163"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="28" value="0"/><KeyFrameDouble frame="73" value="-2.3"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="28" value="0"/><KeyFrameDouble frame="35" value="1"/><KeyFrameDouble frame="63" value="0.9"/><KeyFrameDouble frame="73" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:34"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:35"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Sale de atrás de las hojas" fps="60" duration="43" id="0:102">
+            <KeyedObject objectId="0:46"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="353" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="20" value="172" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="43" value="180"/>
+                </KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="-0.314"/><KeyFrameDouble frame="10" value="-0.70"/>
+                <KeyFrameDouble frame="23" value="-0.21"/><KeyFrameDouble frame="32" value="-0.40"/>
+                <KeyFrameDouble frame="43" value="-0.314"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:31"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="-0.087"/><KeyFrameDouble frame="12" value="0.22"/>
+                <KeyFrameDouble frame="29" value="-0.16"/><KeyFrameDouble frame="43" value="-0.087"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:32"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="0.314"/><KeyFrameDouble frame="12" value="0.77"/>
+                <KeyFrameDouble frame="26" value="0.19"/><KeyFrameDouble frame="43" value="0.314"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:33">
+                <KeyedProperty property="x"><KeyFrameDouble frame="0" value="96"/><KeyFrameDouble frame="33" value="29"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="164"/><KeyFrameDouble frame="16" value="111"/><KeyFrameDouble frame="35" value="167"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="-0.52"/><KeyFrameDouble frame="36" value="-2.7"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="5" value="1"/><KeyFrameDouble frame="26" value="0.9"/><KeyFrameDouble frame="35" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:34">
+                <KeyedProperty property="x"><KeyFrameDouble frame="3" value="135"/><KeyFrameDouble frame="39" value="207"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="3" value="164"/><KeyFrameDouble frame="19" value="98"/><KeyFrameDouble frame="39" value="167"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="3" value="0.61"/><KeyFrameDouble frame="39" value="2.82"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="4" value="0"/><KeyFrameDouble frame="9" value="1"/><KeyFrameDouble frame="30" value="0.9"/><KeyFrameDouble frame="39" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:35">
+                <KeyedProperty property="x"><KeyFrameDouble frame="6" value="112"/><KeyFrameDouble frame="43" value="143"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="6" value="162"/><KeyFrameDouble frame="24" value="76"/><KeyFrameDouble frame="43" value="150"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="6" value="-0.5"/><KeyFrameDouble frame="43" value="2.6"/></KeyedProperty>
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="6" value="0"/><KeyFrameDouble frame="12" value="1"/><KeyFrameDouble frame="34" value="0.9"/><KeyFrameDouble frame="43" value="0"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Cosquillas" fps="60" duration="36" id="0:103">
+            <KeyedObject objectId="0:46"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="180"/><KeyFrameDouble frame="18" value="170"/><KeyFrameDouble frame="36" value="180"/></KeyedProperty>
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="12" value="0.057"/>
+                    <KeyFrameDouble frame="24" value="-0.057"/><KeyFrameDouble frame="36" value="0"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="-0.314"/><KeyFrameDouble frame="8" value="-0.56"/>
+                <KeyFrameDouble frame="20" value="-0.20"/><KeyFrameDouble frame="36" value="-0.314"/>
+            </KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:32"><KeyedProperty property="rotation">
+                <KeyFrameDouble frame="0" value="0.314"/><KeyFrameDouble frame="11" value="0.49"/>
+                <KeyFrameDouble frame="25" value="0.23"/><KeyFrameDouble frame="36" value="0.314"/>
+            </KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Se inclina al escribir" fps="60" duration="22" id="0:104">
+            <KeyedObject objectId="0:46">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="scaleY"><KeyFrameDouble frame="0" value="1"/><KeyFrameDouble frame="10" value="0.98"/><KeyFrameDouble frame="22" value="1"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="180"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:31"><KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="-0.087"/><KeyFrameDouble frame="10" value="-0.19"/><KeyFrameDouble frame="22" value="-0.087"/></KeyedProperty></KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Saluda mientras espera" fps="60" duration="40" id="0:105">
+            <KeyedObject objectId="0:46"><KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="0"/></KeyedProperty></KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="opacity"><KeyFrameDouble frame="0" value="1"/></KeyedProperty>
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="180"/><KeyFrameDouble frame="18" value="174.6"/><KeyFrameDouble frame="40" value="180"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="18" value="-0.070"/><KeyFrameDouble frame="40" value="0"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+
+    <ViewModel defaultInstanceId="0:63" name="KusiIngreso" id="0:60">
+        <ViewModelPropertyNumber name="pose" id="0:61"/>
+        <ViewModelPropertyNumber name="movimiento" id="0:62"/>
+        <ViewModelInstance exports="true" name="Predeterminado" id="0:63">
+            <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="0:61"/>
+            <ViewModelInstanceNumber propertyValue="1" viewModelPropertyId="0:62"/>
+        </ViewModelInstance>
+    </ViewModel>
+</Rive>

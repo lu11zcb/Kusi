@@ -1,0 +1,85 @@
+<Rive version="1" kind="fragment">
+    <ImageAsset file="../../app/src/main/assets/vestidor/0-0-0-0.webp" id="0:1"/>
+
+    <Artboard width="384" height="384" name="Vestidor" defaultStateMachineId="0:50" viewModelId="0:60" viewModelInstanceId="0:71" id="0:10">
+        <Node x="192" y="365" scaleX="1.37142857" scaleY="1.37142857" name="Avatar" id="0:20">
+            <Shape x="-112" y="-210" name="Una pose" id="0:22">
+                <Rectangle width="224" height="224" originX="0" originY="0"/>
+            </Shape>
+            <Image x="-112" y="-210" originX="0" originY="0" assetId="0:1" name="Ilustración completa">
+                <ClippingShape sourceId="0:22"/>
+                <DataBindContext sourcePathIds="0:60-0:61" propertyKey="13"/>
+                <DataBindContext sourcePathIds="0:60-0:63" propertyKey="14"/>
+                <DataBindContext sourcePathIds="0:60-0:64" propertyKey="206"/>
+            </Image>
+        </Node>
+
+        <StateMachine name="MiCuy" id="0:50">
+            <StateMachineLayer name="Reacciones">
+                <AnyState x="0" y="130">
+                    <StateTransition stateToId="0:51"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="0"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:52"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="1"/>
+                    </TransitionViewModelCondition></StateTransition>
+                    <StateTransition stateToId="0:53"><TransitionViewModelCondition opValue="equal">
+                        <TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="0:60-0:62" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator>
+                        <TransitionValueNumberComparator value="2"/>
+                    </TransitionViewModelCondition></StateTransition>
+                </AnyState>
+                <EntryState x="0" y="0"><StateTransition stateToId="0:51"/></EntryState>
+                <AnimationState x="280" y="0" animationId="0:80" id="0:51"/>
+                <AnimationState x="280" y="110" animationId="0:81" reset="true" id="0:52"/>
+                <AnimationState x="280" y="220" animationId="0:82" reset="true" id="0:53"/>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <LinearAnimation name="De pie" duration="1" id="0:80">
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="y"><KeyFrameDouble frame="0" value="365"/></KeyedProperty>
+                <KeyedProperty property="rotation"><KeyFrameDouble frame="0" value="0"/></KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Saluda con la patita" fps="60" duration="29" id="0:81">
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="365"/><KeyFrameDouble frame="12" value="357"/>
+                    <KeyFrameDouble frame="29" value="365"/>
+                </KeyedProperty>
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="8" value="-0.044"/>
+                    <KeyFrameDouble frame="19" value="0.046"/><KeyFrameDouble frame="29" value="0"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+        <LinearAnimation name="Salta al guardar" fps="60" duration="37" id="0:82">
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble frame="0" value="365" interpolationType="cubic"><CubicEaseInterpolator x1="0.23" y1="1" x2="0.32" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="17" value="334" interpolationType="cubic"><CubicEaseInterpolator x1="0.42" y1="0" x2="1" y2="1"/></KeyFrameDouble>
+                    <KeyFrameDouble frame="37" value="365"/>
+                </KeyedProperty>
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble frame="0" value="0"/><KeyFrameDouble frame="10" value="-0.078"/>
+                    <KeyFrameDouble frame="24" value="0.086"/><KeyFrameDouble frame="37" value="0"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+
+    <ViewModel defaultInstanceId="0:71" name="MiCuy" id="0:60">
+        <ViewModelPropertyNumber name="pelajeX" id="0:61"/>
+        <ViewModelPropertyNumber name="reaccion" id="0:62"/>
+        <ViewModelPropertyNumber name="poseY" id="0:63"/>
+        <ViewModelPropertyAssetImage name="ilustracion" id="0:64"/>
+        <ViewModelInstance exports="true" name="Predeterminado" id="0:71">
+            <ViewModelInstanceNumber propertyValue="-112" viewModelPropertyId="0:61"/>
+            <ViewModelInstanceNumber propertyValue="0" viewModelPropertyId="0:62"/>
+            <ViewModelInstanceNumber propertyValue="-210" viewModelPropertyId="0:63"/>
+            <ViewModelInstanceAssetImage propertyValue="0:1" viewModelPropertyId="0:64"/>
+        </ViewModelInstance>
+    </ViewModel>
+</Rive>

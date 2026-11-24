@@ -4,7 +4,11 @@ import android.app.Application
 import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -15,9 +19,14 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
     // dice «Tu profe te avisará» y ofrece buscar de nuevo: no hay un juego de ejemplo.
     var biblioteca by mutableStateOf(EstadoBibliotecaInfantil()); private set
     var cierre by mutableStateOf(EstadoCierreInfantil()); private set
+    private var logrosDeCuenta by mutableStateOf<Pair<String, EstadoLogrosInfantil>?>(null)
+    private var consultaLogros: Job? = null
+    val logros: EstadoLogrosInfantil
+        get() = logrosDeCuenta?.takeIf { it.first == cuenta?.id }?.second ?: EstadoLogrosInfantil()
     private val registroJuego = RegistroAvisosJuego()
     private var propietarioBiblioteca: String? = null
     private var partidaActual: String? = null
+    private var juegoActual: String? = null
     var cuenta by mutableStateOf<Cuenta?>(null); private set
     var ocupado by mutableStateOf(false); private set
     var mensaje by mutableStateOf<String?>(null); private set
@@ -51,7 +60,12 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                 // Al volver a primer plano se consulta de nuevo aunque sea la misma
                 // cuenta: el docente pudo asignar una actividad mientras la app dormía.
                 if (validado && id != null) cargarBiblioteca()
-                if (id == null) { propietarioBiblioteca = null; biblioteca = EstadoBibliotecaInfantil(); registroJuego.limpiar(); partidaActual = null; cierre = EstadoCierreInfantil() }
+                if (validado && id != null && logrosDeCuenta?.first == id) cargarLogros()
+                if (id == null) {
+                    consultaLogros?.cancel()
+                    logrosDeCuenta = null
+                }
+                if (id == null) { propietarioBiblioteca = null; biblioteca = EstadoBibliotecaInfantil(); registroJuego.limpiar(); partidaActual = null; juegoActual = null; cierre = EstadoCierreInfantil() }
             }
         }
     }
@@ -84,14 +98,51 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
         viewModelScope.launch {
             try {
                 val juegos = withContext(Dispatchers.IO) { api.juegosDePrueba() }
+                if (cuenta?.id != propietario) return@launch
+                val pausasConocidas = biblioteca.aventuras.filter { it.enPausa }.map { it.id }.toSet()
+                val pausas = juegos.map { juego ->
+                    async(Dispatchers.IO) {
+                        val guardada = try {
+                            cuenta?.id == propietario && api.consultarAvanceJuego(juego.id) != null
+                        } catch (cancelada: CancellationException) {
+                            throw cancelada
+                        } catch (_: Exception) {
+                            juego.id in pausasConocidas
+                        }
+                        juego.id to guardada
+                    }
+                }.awaitAll().toMap()
                 if (cuenta?.id == propietario) biblioteca = EstadoBibliotecaInfantil(juegos.map {
                     val presentacion = presentacionJuego(it)
                     AventuraInfantil(it.id, presentacion.titulo, presentacion.curso,
                         presentacion.mision, presentacion.consigna, paquete = it.paquete,
-                        icono = iconoCursoInfantil(presentacion.curso, presentacion.clasificacion), nuevo = it.nuevo)
+                        icono = iconoCursoInfantil(presentacion.curso, presentacion.clasificacion), nuevo = it.nuevo,
+                        enPausa = pausas[it.id] == true)
                 })
+            } catch (cancelada: CancellationException) {
+                throw cancelada
             } catch (_: Exception) {
                 if (cuenta?.id == propietario) biblioteca = EstadoBibliotecaInfantil(error = "No se pudieron cargar los juegos de tu clase. Vuelve a intentarlo.")
+            }
+        }
+    }
+
+    fun cargarLogros() {
+        if (!validado) return
+        val propietario = cuenta?.id ?: return
+        if (logros.cargando) return
+        consultaLogros?.cancel()
+        logrosDeCuenta = propietario to logros.copy(cargando = true, error = null)
+        consultaLogros = viewModelScope.launch {
+            try {
+                val resumen = withContext(Dispatchers.IO) { api.logrosEstudiante() }
+                if (cuenta?.id == propietario) logrosDeCuenta = propietario to EstadoLogrosInfantil(resumen)
+            } catch (cancelada: CancellationException) {
+                throw cancelada
+            } catch (_: Exception) {
+                if (cuenta?.id == propietario) logrosDeCuenta = propietario to logros.copy(
+                    cargando = false, error = "No pudimos actualizar tus logros.",
+                )
             }
         }
     }
@@ -128,13 +179,20 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
             check(cuenta?.id == propietario) { "La sesión de esta partida cambió." }
             api.guardarAvanceJuego(juegoId, punto)
         }
+        if (cuenta?.id == propietario) mostrarPausa(juegoId, true)
+    }
+
+    private fun mostrarPausa(juegoId: String, guardada: Boolean) {
+        biblioteca = biblioteca.copy(aventuras = biblioteca.aventuras.map {
+            if (it.id == juegoId) it.copy(enPausa = guardada) else it
+        })
     }
 
     fun registrarAvisoJuego(juegoId: String, recibido: org.json.JSONObject) {
         if (!validado) return
         val aviso = avisoDelJuego(recibido, juegoId)
         val partida = aviso.optString("partida")
-        if (partidaActual != partida) { partidaActual = partida; cierre = EstadoCierreInfantil() }
+        if (partidaActual != partida) { partidaActual = partida; juegoActual = juegoId; cierre = EstadoCierreInfantil() }
         registroJuego.agregar(aviso)
         if (aviso.optString("tipo") == "fin") cierre = cierre.copy(total = aviso.optInt("niveles", 3))
         reenviarAvisosJuego()
@@ -154,6 +212,7 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                     cierre = cierre.copy(completados = resumen.optInt("niveles_completados"), guardando = registroJuego.cantidadPendientes() > 0,
                         guardado = resumen.optBoolean("termino") && registroJuego.cantidadPendientes() == 0,
                         puntos = if (resumen.has("puntos")) resumen.optInt("puntos").coerceIn(0, 20) else null)
+                    if (cierre.guardado) juegoActual?.let { mostrarPausa(it, false) }
                 }
             } catch (_: Exception) {
                 if (cuenta?.id == propietario) cierre = cierre.copy(guardando = false, error = "Quedó avance por guardar. Puedes volver a enviarlo.", guardado = false)

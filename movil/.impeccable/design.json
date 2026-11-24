@@ -1,0 +1,714 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-20T09:05:18Z",
+  "title": "Design System: Kusi · app infantil Android",
+  "extensions": {
+    "colorMeta": {
+      "light-primary": {
+        "role": "primary",
+        "displayName": "Terracota de acción"
+      },
+      "light-primary-container": {
+        "role": "primary",
+        "displayName": "Dorado de invitación"
+      },
+      "light-secondary-container": {
+        "role": "secondary",
+        "displayName": "Jardín"
+      },
+      "light-tertiary-container": {
+        "role": "tertiary",
+        "displayName": "Cielo"
+      },
+      "light-background": {
+        "role": "neutral",
+        "displayName": "Crema"
+      },
+      "light-surface": {
+        "role": "neutral",
+        "displayName": "Papel"
+      },
+      "dark-background": {
+        "role": "neutral",
+        "displayName": "Noche andina"
+      }
+    },
+    "typographyMeta": {
+      "headline-large": {
+        "displayName": "Saludo y título principal",
+        "purpose": "Fredoka; conserva escala sp y ajuste de fuente."
+      },
+      "body-medium": {
+        "displayName": "Lectura e instrucciones",
+        "purpose": "Nunito; no depende de TTS para comunicar."
+      },
+      "label-large": {
+        "displayName": "Acción principal",
+        "purpose": "Nunito Bold en BotonKusi."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [],
+    "native": {
+      "extensionVersion": 1,
+      "platform": "android",
+      "module": "movil",
+      "implementation": [
+        "Kotlin",
+        "Jetpack Compose",
+        "Material 3"
+      ],
+      "sourceDate": "2026-10-20",
+      "authority": "movil/DESIGN.md",
+      "formatLimits": {
+        "units": "Las cadenas dp y sp son unidades Android; no son equivalentes CSS ni px de captura.",
+        "componentColors": "El frontmatter muestra la variante light. Las asociaciones semánticas de native.components y colorSchemes resuelven dark.",
+        "components": "components raíz queda vacío: no hay snippets HTML/CSS ni renderizador Compose en el panel web del sidecar.",
+        "tonalRamps": "No existe escala tonal propia extraída. No se sintetizaron rampas como si fueran tokens de la implementación.",
+        "inheritedMaterial": "Roles, elevación, foco, formas y movimiento no personalizados permanecen heredados de Material 3; no se asignan valores inventados.",
+        "generatedAt": "Momento de documentación; no afirma una nueva ejecución de QA."
+      },
+      "colorSchemes": {
+        "light": {
+          "primary": "{colors.light-primary}",
+          "onPrimary": "{colors.light-on-primary}",
+          "primaryContainer": "{colors.light-primary-container}",
+          "onPrimaryContainer": "{colors.light-on-primary-container}",
+          "secondary": "{colors.light-secondary}",
+          "onSecondary": "{colors.light-on-secondary}",
+          "secondaryContainer": "{colors.light-secondary-container}",
+          "onSecondaryContainer": "{colors.light-on-secondary-container}",
+          "tertiary": "{colors.light-tertiary}",
+          "onTertiary": "{colors.light-on-tertiary}",
+          "tertiaryContainer": "{colors.light-tertiary-container}",
+          "onTertiaryContainer": "{colors.light-on-tertiary-container}",
+          "background": "{colors.light-background}",
+          "onBackground": "{colors.light-on-background}",
+          "surface": "{colors.light-surface}",
+          "onSurface": "{colors.light-on-surface}",
+          "surfaceVariant": "{colors.light-surface-variant}",
+          "onSurfaceVariant": "{colors.light-on-surface-variant}",
+          "outline": "{colors.light-outline}",
+          "outlineVariant": "{colors.light-outline-variant}",
+          "error": "{colors.light-error}",
+          "onError": "{colors.light-on-error}",
+          "errorContainer": "{colors.light-error-container}",
+          "onErrorContainer": "{colors.light-on-error-container}"
+        },
+        "dark": {
+          "primary": "{colors.dark-primary}",
+          "onPrimary": "{colors.dark-on-primary}",
+          "primaryContainer": "{colors.dark-primary-container}",
+          "onPrimaryContainer": "{colors.dark-on-primary-container}",
+          "secondary": "{colors.dark-secondary}",
+          "onSecondary": "{colors.dark-on-secondary}",
+          "secondaryContainer": "{colors.dark-secondary-container}",
+          "onSecondaryContainer": "{colors.dark-on-secondary-container}",
+          "tertiary": "{colors.dark-tertiary}",
+          "onTertiary": "{colors.dark-on-tertiary}",
+          "tertiaryContainer": "{colors.dark-tertiary-container}",
+          "onTertiaryContainer": "{colors.dark-on-tertiary-container}",
+          "background": "{colors.dark-background}",
+          "onBackground": "{colors.dark-on-background}",
+          "surface": "{colors.dark-surface}",
+          "onSurface": "{colors.dark-on-surface}",
+          "surfaceVariant": "{colors.dark-surface-variant}",
+          "onSurfaceVariant": "{colors.dark-on-surface-variant}",
+          "outline": "{colors.dark-outline}",
+          "outlineVariant": "{colors.dark-outline-variant}",
+          "error": "{colors.dark-error}",
+          "onError": "{colors.dark-on-error}",
+          "errorContainer": "{colors.dark-error-container}",
+          "onErrorContainer": "{colors.dark-on-error-container}"
+        }
+      },
+      "themeSelection": {
+        "source": "TemaKusi",
+        "default": "isSystemInDarkTheme()",
+        "dynamicColor": false,
+        "courseSelection": "coloresCurso usa isSystemInDarkTheme(); no un proveedor de tema independiente."
+      },
+      "courseColors": [
+        {
+          "id": "matematica",
+          "label": "Matemática",
+          "icon": "app/src/main/res/drawable/ic_calculator.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-matematica-light-container}",
+              "content": "{colors.course-matematica-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-matematica-dark-container}",
+              "content": "{colors.course-matematica-dark-content}"
+            }
+          }
+        },
+        {
+          "id": "comunicacion",
+          "label": "Comunicación",
+          "icon": "app/src/main/res/drawable/ic_chat_circle_text.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-comunicacion-light-container}",
+              "content": "{colors.course-comunicacion-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-comunicacion-dark-container}",
+              "content": "{colors.course-comunicacion-dark-content}"
+            }
+          }
+        },
+        {
+          "id": "personal",
+          "label": "Personal Social",
+          "icon": "app/src/main/res/drawable/ic_users.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-personal-light-container}",
+              "content": "{colors.course-personal-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-personal-dark-container}",
+              "content": "{colors.course-personal-dark-content}"
+            }
+          }
+        },
+        {
+          "id": "ciencia",
+          "label": "Ciencia y Tecnología",
+          "icon": "app/src/main/res/drawable/ic_flask.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-ciencia-light-container}",
+              "content": "{colors.course-ciencia-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-ciencia-dark-container}",
+              "content": "{colors.course-ciencia-dark-content}"
+            }
+          }
+        },
+        {
+          "id": "arte",
+          "label": "Arte y Cultura",
+          "icon": "app/src/main/res/drawable/ic_palette.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-arte-light-container}",
+              "content": "{colors.course-arte-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-arte-dark-container}",
+              "content": "{colors.course-arte-dark-content}"
+            }
+          }
+        },
+        {
+          "id": "religion",
+          "label": "Educación Religiosa",
+          "icon": "app/src/main/res/drawable/ic_hands_praying.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-religion-light-container}",
+              "content": "{colors.course-religion-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-religion-dark-container}",
+              "content": "{colors.course-religion-dark-content}"
+            }
+          }
+        },
+        {
+          "id": "ingles",
+          "label": "Inglés",
+          "icon": "app/src/main/res/drawable/ic_globe_hemisphere_west.xml",
+          "colors": {
+            "light": {
+              "container": "{colors.course-ingles-light-container}",
+              "content": "{colors.course-ingles-light-content}"
+            },
+            "dark": {
+              "container": "{colors.course-ingles-dark-container}",
+              "content": "{colors.course-ingles-dark-content}"
+            }
+          }
+        }
+      ],
+      "typography": {
+        "scale": {
+          "display-large": "{typography.display-large}",
+          "display-medium": "{typography.display-medium}",
+          "display-small": "{typography.display-small}",
+          "headline-large": "{typography.headline-large}",
+          "headline-medium": "{typography.headline-medium}",
+          "headline-small": "{typography.headline-small}",
+          "title-large": "{typography.title-large}",
+          "title-medium": "{typography.title-medium}",
+          "title-small": "{typography.title-small}",
+          "body-large": "{typography.body-large}",
+          "body-medium": "{typography.body-medium}",
+          "body-small": "{typography.body-small}",
+          "label-large": "{typography.label-large}",
+          "label-medium": "{typography.label-medium}",
+          "label-small": "{typography.label-small}"
+        },
+        "textStyleWeights": "Los valores fontWeight del frontmatter son FontWeight declarados; los ejes de los recursos se registran por separado.",
+        "fontResolution": [
+          {
+            "family": "Fredoka",
+            "resource": "app/src/main/res/font/fredoka.ttf",
+            "declaredWeight": 500,
+            "variableAxis": {
+              "wght": 600
+            }
+          },
+          {
+            "family": "Nunito",
+            "resource": "app/src/main/res/font/nunito.ttf",
+            "declaredWeight": 400,
+            "variableAxis": {
+              "wght": 500
+            }
+          },
+          {
+            "family": "Nunito",
+            "resource": "app/src/main/res/font/nunito.ttf",
+            "declaredWeight": 500,
+            "variableAxis": {
+              "wght": 600
+            }
+          },
+          {
+            "family": "Nunito",
+            "resource": "app/src/main/res/font/nunito.ttf",
+            "declaredWeight": 700,
+            "variableAxis": {
+              "wght": 750
+            }
+          }
+        ],
+        "explicitFallback": false,
+        "letterSpacing": "Not customized"
+      },
+      "shapes": {
+        "extraSmall": "{rounded.extra-small}",
+        "small": "{rounded.small}",
+        "medium": "{rounded.medium}",
+        "large": "{rounded.large}",
+        "extraLarge": "{rounded.extra-large}"
+      },
+      "targets": {
+        "minimumPolicyDp": 48,
+        "explicit": [
+          {
+            "component": "BotonKusi",
+            "minimumHeightRef": "{components.button-primary.height}"
+          },
+          {
+            "component": "TopAppBar IconButton / password visibility",
+            "sizeDp": 56
+          },
+          {
+            "component": "remember-session row / TextButton / tonal voice",
+            "minimumHeightDp": 48
+          },
+          {
+            "component": "access retry OutlinedButton",
+            "minimumHeightDp": 52
+          },
+          {
+            "component": "help OutlinedButton",
+            "minimumHeightDp": 56
+          }
+        ],
+        "distinction": "IconoKusi base 28 dp describe el dibujo, no el área táctil. Los mínimos permiten expansión vertical.",
+        "verificationLimit": "No se realizó una auditoría integral TalkBack ni una medición de todos los objetivos y separaciones."
+      },
+      "navigation": {
+        "compact": {
+          "widthBelowDp": 600,
+          "material": "NavigationBar"
+        },
+        "expanded": {
+          "widthFromDp": 600,
+          "material": "NavigationRail"
+        },
+        "destinations": [
+          {
+            "id": "inicio",
+            "label": "Inicio",
+            "icon": "ic_house"
+          },
+          {
+            "id": "cursos",
+            "label": "Cursos",
+            "icon": "ic_books"
+          },
+          {
+            "id": "cuy",
+            "label": "Mi cuy",
+            "icon": "ic_student"
+          }
+        ],
+        "hiddenWhen": [
+          "ingreso",
+          "contraseña temporal",
+          "cuenta no estudiante",
+          "ayuda"
+        ],
+        "backOrder": [
+          "cerrar ayuda",
+          "cerrar ficha de curso",
+          "volver a Inicio desde otro destino",
+          "dejar Back al sistema en Inicio"
+        ],
+        "state": "rememberSaveable ligado a cuenta.id",
+        "predictiveBack": "Sin animación personalizada extraída; hardware no comprobado."
+      },
+      "layout": {
+        "contentMaxWidthDp": 960,
+        "wideLoginFormMaxWidthDp": 480,
+        "activationMaxWidthDp": 600,
+        "courseGrid": {
+          "material": "GridCells.Adaptive",
+          "compactMinWidthDp": 168,
+          "expandedMinWidthDp": 208,
+          "largeFontMinWidthDp": 220,
+          "largeFontCondition": "LocalDensity.current.fontScale > 1.2f",
+          "priority": [
+            "largeFont",
+            "expanded",
+            "compact"
+          ],
+          "paddingRef": "{spacing.space-20}",
+          "gapRef": "{spacing.space-14}",
+          "observed": "Teléfono: 2 columnas normal y 1 a fuente 1,3; tablet de la matriz: 4 columnas. No son columnas fijas para cualquier ancho."
+        }
+      },
+      "nativeInsets": {
+        "activity": "MainActivity.enableEdgeToEdge()",
+        "scaffold": "Scaffold content padding aplicado mediante Modifier.padding(margen)",
+        "keyboard": [
+          "EntradaInfantil: imePadding + verticalScroll",
+          "ActivacionInfantil: imePadding + verticalScroll"
+        ],
+        "source": "MainActivity.kt y PantallasInfantiles.kt",
+        "limits": [
+          "No captura de teclado abierto en la evidencia",
+          "No consumeWindowInsets personalizado extraído",
+          "No prueba de recorte/predictive Back en hardware"
+        ]
+      },
+      "depth": {
+        "customShadows": false,
+        "card": "Material Card defaults; no niveles propios extraídos",
+        "surfaceBorder": "1 dp con outlineVariant en TarjetaKusi",
+        "hero": {
+          "landscapeAlpha": 0.4,
+          "gradient": "tertiaryContainer opaco → mismo color con alpha 0.28"
+        }
+      },
+      "motion": {
+        "customDurations": false,
+        "continuousCharacterAnimation": false,
+        "implementation": "Interacción y estados heredados de Material 3; sin catálogo Kusi de movimiento",
+        "verification": "No auditoría específica de todas las animaciones o preferencias en hardware"
+      },
+      "components": [
+        {
+          "name": "BotonKusi",
+          "kind": "button",
+          "refersTo": "button-primary",
+          "source": "ComponentesKusi.kt",
+          "material": "Button",
+          "colorRoles": {
+            "container": "primaryContainer",
+            "content": "onPrimaryContainer"
+          },
+          "heightSemantics": "minimum",
+          "states": [
+            "enabled",
+            "disabled",
+            "Material press/focus"
+          ],
+          "content": "Etiqueta labelLarge e icono opcional; no hover propio."
+        },
+        {
+          "name": "Escuchar",
+          "kind": "button",
+          "refersTo": "button-listen",
+          "source": "PantallasInfantiles.kt:SaludoInfantil",
+          "material": "FilledTonalButton",
+          "colorRoles": {
+            "container": "surface",
+            "content": "onSurface"
+          },
+          "heightSemantics": "minimum",
+          "states": [
+            "Material press/focus"
+          ],
+          "content": "Voz del sistema con alternativa escrita."
+        },
+        {
+          "name": "CampoClaveKusi",
+          "kind": "input",
+          "refersTo": "input-password",
+          "source": "ComponentesKusi.kt",
+          "material": "OutlinedTextField",
+          "colorRoles": "Inherited Material defaults",
+          "states": [
+            "hidden",
+            "visible",
+            "enabled",
+            "disabled",
+            "focused"
+          ],
+          "content": "IconButton de 56 dp con descripción; no colores de campo personalizados."
+        },
+        {
+          "name": "TarjetaKusi",
+          "kind": "card",
+          "refersTo": "card-surface",
+          "source": "ComponentesKusi.kt",
+          "material": "Surface",
+          "colorRoles": {
+            "container": "surface",
+            "outline": "outlineVariant"
+          },
+          "borderDp": 1,
+          "spacing": "{spacing.space-16}",
+          "content": "Columna con padding del token; sin sombra propia."
+        },
+        {
+          "name": "CursoTarjeta",
+          "kind": "card",
+          "refersTo": "course-card",
+          "source": "PantallasInfantiles.kt",
+          "material": "Card(onClick)",
+          "colorRoles": "extensions.native.courseColors",
+          "heightSemantics": "minimum",
+          "content": "Icono, nombre completo e invitación. Catálogo local de áreas."
+        },
+        {
+          "name": "AvisoKusi",
+          "kind": "custom",
+          "refersTo": "notice-info",
+          "variants": [
+            "notice-info",
+            "notice-error"
+          ],
+          "source": "ComponentesKusi.kt",
+          "material": "Surface",
+          "colorRoles": {
+            "info": {
+              "container": "tertiaryContainer",
+              "content": "onTertiaryContainer"
+            },
+            "error": {
+              "container": "errorContainer",
+              "content": "onErrorContainer"
+            }
+          },
+          "semantics": {
+            "liveRegion": "Polite"
+          },
+          "content": "Aviso persistente en flujo; Snackbar separado para voz no disponible."
+        },
+        {
+          "name": "Navegación infantil",
+          "kind": "nav",
+          "refersTo": "navigation-surface",
+          "source": "PantallasInfantiles.kt:AplicacionInfantil",
+          "material": [
+            "NavigationBar",
+            "NavigationBarItem",
+            "NavigationRail",
+            "NavigationRailItem"
+          ],
+          "colorRoles": {
+            "container": "surface",
+            "item": "Inherited Material defaults"
+          },
+          "content": "Inicio, Cursos y Mi cuy; adaptación por ancho."
+        }
+      ],
+      "assets": {
+        "illustrations": [
+          {
+            "resource": "app/src/main/res/drawable/kusi_guia.png",
+            "origin": "ImageGen integrado con juego/public/dibujos/kusi-frente.png como referencia",
+            "transform": "Reducción proporcional con alpha conservado",
+            "role": "Cuy guía y bienvenida"
+          },
+          {
+            "resource": "app/src/main/res/drawable/cuy_amigo.png",
+            "origin": "juego/public/dibujos/cuy-nino-frente.png",
+            "transform": "Copia sin cambios de contenido",
+            "role": "Compañero infantil"
+          },
+          {
+            "resource": "app/src/main/res/drawable/paisaje_kusi.png",
+            "origin": "web/src/assets/kusi/paisaje-andes.webp",
+            "transform": "Copia sin cambios de contenido",
+            "role": "Fondo andino"
+          }
+        ],
+        "provenance": "app/src/main/assets/licencias/ilustraciones.json; procedencia embebida informada por escaneo de tres PNG",
+        "fonts": {
+          "license": "OFL-1.1",
+          "files": [
+            "app/src/main/assets/licencias/fredoka-OFL.txt",
+            "app/src/main/assets/licencias/nunito-OFL.txt"
+          ]
+        },
+        "icons": {
+          "family": "Phosphor Duotone",
+          "format": "Android VectorDrawable",
+          "count": 20,
+          "license": "MIT",
+          "revision": "2b75f3ad12b420c9504ef05df8d2564a28f8500e",
+          "manifest": "app/src/main/assets/licencias/phosphor-procedencia.json"
+        },
+        "educationalAi": "La IA ilustrativa es ayuda al desarrollo; no genera contenido jugable ni sustituye revisión docente."
+      },
+      "source": {
+        "checkout": "D:/Escritorio/Kusi",
+        "baseCommit": "a2e866b97e4dd68091d3c28c0f675789a33fae1a",
+        "sources": [
+          {
+            "path": "movil/app/src/main/java/pe/kusi/movil/MainActivity.kt",
+            "sha256": "f5e3f76483cbf1cb03ca9bf0cd26aff973cee5650f524e2293a2d9beec311b84"
+          },
+          {
+            "path": "movil/app/src/main/java/pe/kusi/movil/TemaKusi.kt",
+            "sha256": "412d2395f567ad6b9cd7b9f745cdcecc2bcbb7e786037cb7187790853bb6004b"
+          },
+          {
+            "path": "movil/app/src/main/java/pe/kusi/movil/ComponentesKusi.kt",
+            "sha256": "da3bc3e16cbec51ba219be4ede23522f0bf0d8cf8de50c36afd4a616a4337b13"
+          },
+          {
+            "path": "movil/app/src/main/java/pe/kusi/movil/PantallasInfantiles.kt",
+            "sha256": "af299c0141f370c06db6e4938fb5667261e658cffe1704277549ee6aa9f721df"
+          },
+          {
+            "path": "movil/app/src/main/java/pe/kusi/movil/AccesoViewModel.kt",
+            "sha256": "8bed1726d11e320f52fbd467cbd7d23e48daf47b1f8b0a748cc875a367b7d088"
+          },
+          {
+            "path": "movil/app/src/main/assets/licencias/ilustraciones.json",
+            "sha256": "762d633b30071ec5e634f7f49a76c68a7241b16599c9b5866240b7ba3a157cbb"
+          },
+          {
+            "path": "movil/app/src/main/assets/licencias/phosphor-procedencia.json",
+            "sha256": "db22ab4511adff85ca4383d1cf5b5c61b7e7b117b64bfcc1bd2824011076803e"
+          }
+        ],
+        "historicalRootPreserved": [
+          {
+            "path": "PRODUCT.md",
+            "sha256": "d3177be8c5cbe7f6b8660990b387a2343b87df60baa868923c52bcf93d2a4469"
+          },
+          {
+            "path": "DESIGN.md",
+            "sha256": "cdd9ae33ca982a32f2e8b6289f83a43ee2d40bd5a3718f2fdb703e502ebb3295"
+          },
+          {
+            "path": ".impeccable/design.json",
+            "sha256": "9b908207505c96bd6f1105f43abd1efbc75a06c99d1c6e2bc87d30de732e15b1"
+          }
+        ]
+      },
+      "provenance": {
+        "extraction": "Lectura directa de cinco Kotlin, recursos y manifiestos; sin editar UI ni ejecutar launcher, compilaciones o emulador en este cierre documental.",
+        "brief": {
+          "document": "DIRECCION.md",
+          "scope": "Informe de entrega; no es dependencia local del módulo ni archivo incluido en la app."
+        },
+        "references": {
+          "document": "REFERENCIAS.md",
+          "scope": "Informe de entrega; no es dependencia local del módulo ni archivo incluido en la app."
+        },
+        "technicalEvidence": {
+          "document": "VERIFICACION.md",
+          "scope": "Informe de entrega; no es dependencia local del módulo ni archivo incluido en la app."
+        },
+        "independentReview": {
+          "document": "REVISION-INDEPENDIENTE.md",
+          "scope": "Informe de entrega; no es dependencia local del módulo ni archivo incluido en la app."
+        },
+        "verdict": "ship; único P2 resuelto y regresiones asociadas, sin nueva auditoría completa",
+        "evidenceReceived": {
+          "unitTestsPassed": 4,
+          "realIntegrationTestsSkipped": 2,
+          "instrumentedJourneys": 3,
+          "screenshots": 24,
+          "modes": [
+            "light",
+            "dark",
+            "fontScale 1.3",
+            "tablet"
+          ],
+          "environment": "Emulador temporal Android 17/API 37; tablet configurada en el mismo emulador"
+        },
+        "excludedClaims": [
+          "pruebas con niños/docentes",
+          "hardware real",
+          "calidad real de TTS",
+          "biblioteca de juegos conectada",
+          "generación educativa nueva",
+          "resultados de aprendizaje",
+          "cierre HU46"
+        ]
+      }
+    }
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "Un compañero cuy para descubrir",
+    "overview": "El sistema infantil de Kusi usa cuyes e ilustración andina, superficies crema y acentos de vino/terracota y dorado. Fredoka aporta una voz amable a los títulos; Nunito sostiene instrucciones y controles. La identidad procede de Kusi y se amplía para primero de primaria, con la referencia de 6–7 años de Luis; su adecuación todavía debe evaluarse con niños.\n\nEsta guía es la autoridad visual delimitada de `movil`: documenta el acceso real, la activación de contraseña, el inicio, el catálogo local de siete áreas, sus fichas, Mi cuy y la ayuda. Se apoya en Kotlin, Jetpack Compose y Material 3. El marco web, sus antecedentes Segoe/MarcoPanel y el anexo docente conservan su propio ámbito en `../DESIGN.md`.",
+    "keyCharacteristics": [
+      "Cuy guía e ilustraciones propias de Kusi.",
+      "Controles Material 3, texto breve y acciones grandes.",
+      "Barra de tres destinos en teléfono y rail en anchos amplios.",
+      "Esquemas claro y oscuro explícitos; texto en sp y medidas de interfaz en dp.",
+      "Catálogo de áreas claramente separado de la biblioteca de juegos pendiente."
+    ],
+    "rules": [
+      {
+        "name": "La pareja de color",
+        "body": "Resolver fondo y contenido como pareja del mismo esquema; conservar nombre e icono junto al color de cada área.",
+        "section": "colors"
+      },
+      {
+        "name": "Escala del sistema",
+        "body": "Usar los roles de TipografiaKusi y permitir el aumento de fuente del dispositivo; resolver falta de ancho con distribución y desplazamiento.",
+        "section": "typography"
+      },
+      {
+        "name": "Dos ámbitos",
+        "body": "Aplicar esta guía solo a movil; conservar la historia y los tokens de las superficies web en su documentación propia.",
+        "section": "layout"
+      },
+      {
+        "name": "Estado real",
+        "body": "Mostrar acceso, espera, error y biblioteca pendiente con sus estados reales; una tarjeta visual no demuestra asignación ni disponibilidad de un juego.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do Reutilizar TemaKusi, los componentes compartidos y las parejas de color por área.",
+      "Do Conservar nombre completo, icono y color de cada área; permitir que el texto envuelva.",
+      "Do Mantener texto escrito equivalente a la ayuda por voz y explicar su indisponibilidad.",
+      "Do Comprobar cambios visuales con capturas nativas, incluidos oscuro, fuente grande y ancho amplio."
+    ],
+    "donts": [
+      "Don't Extender los tokens históricos web Segoe/MarcoPanel o la antigua exclusión de azul a la app infantil.",
+      "Don't Representar el catálogo local como matrículas o juegos consultados al servidor.",
+      "Don't Añadir puntos, rachas, avisos, progreso o personalización que no estén implementados.",
+      "Don't Presentar ilustraciones generadas con IA o síntesis de voz como generación educativa jugable."
+    ]
+  }
+}

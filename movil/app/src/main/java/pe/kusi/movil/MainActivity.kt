@@ -83,6 +83,7 @@ fun AccesoPantalla(modelo: AccesoViewModel = viewModel()) {
     AplicacionInfantil(EstadoEntradaKusi(cuenta, modelo.ocupado, modelo.mensaje, modelo.validado, modelo.iniciando, modelo.claveTemporalDisponible),
         ingresar = modelo::ingresar, cambiarClave = modelo::cambiar, comprobar = modelo::comprobar, salir = modelo::salir,
         biblioteca = modelo.biblioteca, reintentarBiblioteca = modelo::cargarBiblioteca,
+        logros = modelo.logros, recargarLogros = modelo::cargarLogros,
         cierre = modelo.cierre, reintentarGuardado = modelo::reenviarAvisosJuego,
         alVerMision = modelo::marcarAventuraVista,
         contenidoJuego = { aventura, finalizar, volver ->

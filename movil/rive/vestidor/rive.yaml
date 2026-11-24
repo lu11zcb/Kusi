@@ -1,0 +1,4 @@
+name: kusi_vestidor
+main: Vestidor
+output:
+  dir: ../../app/src/main/res/raw
