@@ -2,93 +2,92 @@ import { useEffect, useState } from 'react'
 import imagenAdministrador from '../assets/kusi/hero-administrador.webp'
 import { Icono } from '../componentes/Icono'
 import type { NombreIcono } from '../componentes/Icono'
-import { primerNombre, saludo } from '../componentes/apariencia'
-import { listarCursos } from '../servicios/cursos'
-import { listarAsignaciones, listarVinculos } from '../servicios/educacion'
-import { listarUsuarios } from '../servicios/usuarios'
-import { PrimerosPasos } from '../componentes/PrimerosPasos'
-
-type Conteos = { usuarios: number | null; cursos: number | null; vinculos: number | null; asignaciones: number | null }
+import { iniciales, primerNombre, saludo } from '../componentes/apariencia'
+import { listarSecciones } from '../servicios/educacion'
+import { consultarResumenAdministracion } from '../servicios/usuarios'
+import type { ResumenAdministracion } from '../servicios/usuarios'
+import type { Rol } from '../servicios/django'
+import { ResumenJuegos } from './ResumenJuegos'
 
 const accesos: readonly { id: string; titulo: string; detalle: string; icono: NombreIcono; color: string }[] = [
-  { id: 'registro', titulo: 'Registrar usuario', detalle: 'Docentes y estudiantes', icono: 'registrar', color: 'c-dorado' },
-  { id: 'estudiantes', titulo: 'Estudiantes', detalle: 'Cuentas y secciones', icono: 'usuarios', color: 'c-rojo' },
-  { id: 'cursos', titulo: 'Catálogo de cursos', detalle: 'Nombres de los cursos', icono: 'libro', color: 'c-cielo' },
-  { id: 'secciones', titulo: 'Crear sección', detalle: 'Primero y segundo de primaria', icono: 'aula', color: 'c-verde' },
-  { id: 'docentes', titulo: 'Docentes', detalle: 'Cuentas y cursos asignados', icono: 'enlace', color: 'c-morado' },
-  { id: 'administradores', titulo: 'Administradores', detalle: 'Datos, roles y acceso', icono: 'pizarra', color: 'c-rosa' },
+  { id: 'registro', titulo: 'Registrar usuario', detalle: 'Crear una cuenta de acceso', icono: 'registrar', color: 'c-dorado' },
+  { id: 'secciones', titulo: 'Crear sección', detalle: 'Añadir un grupo para el año escolar', icono: 'aula', color: 'c-verde' },
+  { id: 'vinculos', titulo: 'Vincular estudiantes', detalle: 'Elegir la sección de cada estudiante', icono: 'enlace', color: 'c-rojo' },
+  { id: 'asignaciones', titulo: 'Asignar docentes', detalle: 'Elegir un curso y una sección', icono: 'pizarra', color: 'c-morado' },
 ]
+const nombresRol: Record<Rol, string> = { administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante' }
+const fechaCorta = new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' })
 
 export function InicioAdministracion({ nombre, ir }: { nombre: string; ir: (seccion: string) => void }) {
-  const [conteos, establecerConteos] = useState<Conteos>({ usuarios: null, cursos: null, vinculos: null, asignaciones: null })
+  const [resumen, establecerResumen] = useState<ResumenAdministracion | null>(null)
+  const [secciones, establecerSecciones] = useState<number | null>(null)
+  const [errorResumen, establecerErrorResumen] = useState(false)
+  const [errorSecciones, establecerErrorSecciones] = useState(false)
   useEffect(() => {
     let vigente = true
-    const poner = (campo: keyof Conteos, valor: number) => { if (vigente) establecerConteos((anterior) => ({ ...anterior, [campo]: valor })) }
-    // Cada número aparece al llegar; si Spring no responde, se muestra "—" y lo demás sigue.
-    listarUsuarios('', 1).then((r) => poner('usuarios', r.total)).catch(() => poner('usuarios', -1))
-    listarCursos().then((r) => poner('cursos', r.cursos.length)).catch(() => poner('cursos', -1))
-    listarVinculos().then((r) => poner('vinculos', r.vinculos.length)).catch(() => poner('vinculos', -1))
-    listarAsignaciones().then((r) => poner('asignaciones', r.asignaciones.length)).catch(() => poner('asignaciones', -1))
+    // Las cuentas y los cursos se muestran aunque el servicio de secciones esté caído.
+    consultarResumenAdministracion()
+      .then((datos) => { if (vigente) establecerResumen(datos) })
+      .catch(() => { if (vigente) establecerErrorResumen(true) })
+    listarSecciones()
+      .then((datos) => { if (vigente) establecerSecciones(datos.secciones.length) })
+      .catch(() => { if (vigente) establecerErrorSecciones(true) })
     return () => { vigente = false }
   }, [])
 
-  const mostrar = (valor: number | null) => valor === null ? '…' : valor < 0 ? '—' : String(valor)
-  const pasos = [
-    { texto: 'Registrar docentes y estudiantes', hecho: (conteos.usuarios ?? 0) > 1, destino: 'registro' },
-    { texto: 'Revisar el catálogo de cursos', hecho: (conteos.cursos ?? 0) > 0, destino: 'cursos' },
-    { texto: 'Crear las secciones', hecho: (conteos.vinculos ?? 0) > 0 || (conteos.asignaciones ?? 0) > 0, destino: 'secciones' },
-    { texto: 'Vincular estudiantes', hecho: (conteos.vinculos ?? 0) > 0, destino: 'vinculos' },
-    { texto: 'Asignar docentes', hecho: (conteos.asignaciones ?? 0) > 0, destino: 'asignaciones' },
+  const conteos: { id: string; titulo: string; icono: NombreIcono; color: string; valor: number | null | undefined; error: boolean }[] = [
+    { id: 'estudiantes', titulo: 'Estudiantes', icono: 'estudiantes', color: 'c-rojo', valor: resumen?.estudiantes, error: errorResumen },
+    { id: 'docentes', titulo: 'Docentes', icono: 'pizarra', color: 'c-morado', valor: resumen?.docentes, error: errorResumen },
+    { id: 'secciones', titulo: 'Secciones', icono: 'aula', color: 'c-verde', valor: secciones, error: errorSecciones },
+    { id: 'cursos', titulo: 'Cursos', icono: 'libro', color: 'c-cielo', valor: resumen?.cursos, error: errorResumen },
   ]
-  const hechos = pasos.filter((paso) => paso.hecho).length
 
   return <>
     <section className="hero paisaje" aria-labelledby="saludo-admin">
       <div className="hero-texto">
         <h1 id="saludo-admin">¡{saludo()},<br /><span>{primerNombre(nombre)}!</span></h1>
-        <p>Organiza tu escuela para que los docentes creen juegos con Kusi.</p>
+        <p>Administra las cuentas, secciones y cursos de tu escuela.</p>
         <button type="button" onClick={() => ir('registro')}>Registrar usuario <Icono nombre="flecha" /></button>
       </div>
       <div className="hero-imagen hero-administrador" style={{ backgroundImage: 'url(' + imagenAdministrador + ')' }} role="img" aria-label="Kusi organiza las cuentas y secciones de la escuela con una lista y carpetas" />
     </section>
 
-    <div className="estadisticas">
-      <button type="button" className="estadistica" onClick={() => ir('usuarios')}>
-        <span className="icono-grande c-rojo"><Icono nombre="usuarios" /></span>
-        <span><strong>{mostrar(conteos.usuarios)}</strong><small>Usuarios</small></span>
-      </button>
-      <button type="button" className="estadistica" onClick={() => ir('cursos')}>
-        <span className="icono-grande c-cielo"><Icono nombre="libro" /></span>
-        <span><strong>{mostrar(conteos.cursos)}</strong><small>Cursos</small></span>
-      </button>
-      <button type="button" className="estadistica" onClick={() => ir('vinculos')}>
-        <span className="icono-grande c-morado"><Icono nombre="enlace" /></span>
-        <span><strong>{mostrar(conteos.vinculos)}</strong><small>Estudiantes vinculados</small></span>
-      </button>
-      <button type="button" className="estadistica" onClick={() => ir('asignaciones')}>
-        <span className="icono-grande c-verde"><Icono nombre="pizarra" /></span>
-        <span><strong>{mostrar(conteos.asignaciones)}</strong><small>Asignaciones</small></span>
-      </button>
-    </div>
+    <section className="estadisticas admin-estadisticas" aria-label="Resumen de la escuela">
+      {conteos.map(({ id, titulo, icono, color, valor, error }) => <button key={id} type="button" className="estadistica" onClick={() => ir(id)}>
+        <span className={'icono-grande ' + color}><Icono nombre={icono} /></span>
+        <span>
+          <strong>{valor ?? <span aria-label={error ? 'Sin datos' : 'Cargando'}>{error ? '—' : '…'}</span>}</strong>
+          <small>{titulo}</small>
+        </span>
+      </button>)}
+    </section>
+    <ResumenJuegos abrir={() => ir('juegos')} />
 
-    <div className="contenido-con-lateral">
-      <div>
-        <div className="encabezado-seccion"><h2>Acciones rápidas</h2></div>
+    <div className="contenido-con-lateral admin-inicio-contenido">
+      <section aria-labelledby="admin-acciones-rapidas">
+        <div className="encabezado-seccion"><h2 id="admin-acciones-rapidas">Acciones rápidas</h2></div>
         <div className="mosaicos">
           {accesos.map((acceso) => <button key={acceso.id} type="button" className="mosaico" onClick={() => ir(acceso.id)}>
             <span className={'icono-grande ' + acceso.color}><Icono nombre={acceso.icono} /></span>
             <span><strong>{acceso.titulo}</strong><small>{acceso.detalle}</small></span>
           </button>)}
         </div>
-      </div>
-      <aside className="lateral-derecho" aria-label="Primeros pasos">
-        <PrimerosPasos pasos={pasos} alElegir={ir} cargando={Object.values(conteos).some((valor) => valor === null)} />
-        <div className="tarjeta tarjeta-premio">
-          <span className="icono-grande c-morado" aria-hidden="true"><Icono nombre={hechos === pasos.length ? 'check' : 'aula'} /></span>
-          <strong>{hechos === pasos.length ? '¡Tu escuela está lista!' : 'Prepara el aula de Kusi'}</strong>
-          <p>{hechos === pasos.length ? 'Los docentes ya pueden crear propuestas de juego.' : 'Completa los pasos para que los docentes empiecen a crear juegos.'}</p>
-        </div>
-      </aside>
+      </section>
+      <section className="tarjeta admin-recientes" aria-labelledby="admin-usuarios-recientes">
+        <h2 id="admin-usuarios-recientes">Últimos usuarios registrados</h2>
+        {errorResumen && <p role="status">No se pudo cargar el registro de usuarios recientes.</p>}
+        {!resumen && !errorResumen && <p role="status">Cargando usuarios recientes…</p>}
+        {resumen && (resumen.usuarios_recientes.length === 0 ? <p>Aún no hay cuentas registradas.</p> :
+          <ul className="admin-personas">
+            {resumen.usuarios_recientes.map((usuario) => <li key={usuario.id}>
+              <span className={'admin-avatar ' + (usuario.roles.includes('docente') ? 'docente' : '')} aria-hidden="true">{iniciales(usuario.nombre)}</span>
+              <div className="admin-persona-nombre">
+                <strong>{usuario.nombre}</strong>
+                <span>{usuario.roles.map((rol) => nombresRol[rol]).join(' · ')} · <time dateTime={usuario.fecha_creacion}>{fechaCorta.format(new Date(usuario.fecha_creacion))}</time></span>
+              </div>
+            </li>)}
+          </ul>)}
+      </section>
     </div>
   </>
 }

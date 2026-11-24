@@ -3,7 +3,7 @@ from django.contrib.auth.models import Group
 from django.contrib.sessions.models import Session
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET, require_POST, require_http
 
 from .acceso_views import ROLES, datos_usuario, leer_json
 from .forms import FormularioEdicionUsuario
-from .models import CambioUsuario, Usuario
+from .models import CambioUsuario, Curso, Usuario
 from .permisos import exigir_administrador
 from .servicios import generar_contrasena_temporal
 
@@ -32,6 +32,28 @@ def revocar_sesiones_usuario(usuario):
             claves.append(sesion.session_key)
     if claves:
         Session.objects.filter(session_key__in=claves).delete()
+
+
+@never_cache
+@require_GET
+def resumen_administracion(request):
+    rechazo = exigir_administrador(request)
+    if rechazo is not None:
+        return rechazo
+    recientes = Usuario.objects.filter(groups__name__in=ROLES).distinct().order_by("-fecha_creacion", "-id")
+    recientes = recientes.prefetch_related(Prefetch(
+        "groups", queryset=Group.objects.filter(name__in=ROLES).order_by("name"), to_attr="roles_escolares",
+    ))[:5]
+    # La portada necesita solo datos de alta de las cuentas escolares.
+    return JsonResponse({
+        "estudiantes": Usuario.objects.filter(groups__name="estudiante").count(),
+        "docentes": Usuario.objects.filter(groups__name="docente").count(),
+        "cursos": Curso.objects.count(),
+        "usuarios_recientes": [{
+            "id": str(usuario.pk), "nombre": usuario.nombre, "fecha_creacion": usuario.fecha_creacion.isoformat(),
+            "roles": [rol.name for rol in usuario.roles_escolares],
+        } for usuario in recientes],
+    })
 
 
 @never_cache

@@ -10,6 +10,12 @@ export type RegistroCreado = {
   contrasena_temporal: string
 }
 
+export function errorNombreCompleto(nombre: string): string {
+  const limpio = nombre.trim()
+  if (!limpio) return 'El nombre completo es obligatorio.'
+  return limpio.split(/\s+/).length < 2 ? 'Escribe nombres y apellidos (al menos dos palabras).' : ''
+}
+
 export class ErrorApi extends Error {
   estado: number
   errores: ErroresRegistro
@@ -80,7 +86,11 @@ export async function obtenerContextoRegistro(signal?: AbortSignal): Promise<Con
 export async function registrarUsuario(datos: DatosRegistro): Promise<RegistroCreado> {
   // Renueva CSRF por si la sesión cambió en otra pestaña. Nunca reintenta el POST.
   const contexto = await obtenerContextoRegistro()
-  const mensajeIncierto = 'No se pudo confirmar el registro. Comprueba la conexión y verifica el correo antes de volver a enviarlo.'
+  const esEstudiante = datos.rol === 'estudiante'
+  const identificacion = esEstudiante ? 'el DNI' : 'el correo'
+  const mensajeIncierto = 'No se pudo confirmar el registro. Comprueba la conexión y verifica ' + identificacion + ' antes de volver a enviarlo.'
+  // La cuenta del estudiante se identifica por DNI, incluso si se cambió el rol en el formulario.
+  const cuerpo = esEstudiante ? { nombre: datos.nombre, dni: datos.dni, rol: datos.rol } : datos
   let respuesta: Response
   try {
     respuesta = await fetch('/api/cuentas/usuarios/', {
@@ -93,7 +103,7 @@ export async function registrarUsuario(datos: DatosRegistro): Promise<RegistroCr
         'Content-Type': 'application/json',
         'X-CSRFToken': contexto.csrf_token,
       },
-      body: JSON.stringify(datos),
+      body: JSON.stringify(cuerpo),
     })
   } catch {
     throw new ErrorApi(mensajeIncierto, 0)

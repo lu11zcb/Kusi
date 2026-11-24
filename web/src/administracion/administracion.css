@@ -20,6 +20,37 @@
 .panel-administracion .admin-indicacion { padding:1.5rem; background:#f7efe3; border-radius:16px; color:#79645c }
 .panel-administracion .admin-superficie form>fieldset { max-width:46rem }
 .panel-administracion .campo label { font-size:.9rem }
+.panel-administracion .admin-estadisticas { grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)) }
+.panel-administracion .admin-estadisticas .estadistica { padding:.85rem; gap:.65rem }
+.panel-administracion .admin-estadisticas .icono-grande { width:40px; height:40px; border-radius:13px }
+.panel-administracion .admin-inicio-contenido { grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); margin-top:1.5rem }
+.panel-administracion .admin-recientes h2 { margin:0 0 1rem; font-size:1.25rem }
+.panel-administracion .admin-recientes .admin-personas li { padding:.7rem .85rem }
+.panel-administracion .admin-recientes .admin-avatar { width:38px; height:38px; border-radius:12px }
+.panel-administracion .admin-juegos-resumen { margin-top:1.5rem }
+.panel-administracion .admin-juegos-cabecera,.panel-administracion .admin-juegos-aviso { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem }
+.panel-administracion .admin-juegos-cabecera h2 { display:flex; align-items:center; gap:.65rem; margin:0 }
+.panel-administracion .admin-juegos-indicadores { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:1rem; align-items:start; margin-top:1rem }
+.panel-administracion .admin-juegos-totales { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; margin:0 }
+.panel-administracion .admin-juegos-totales div { display:grid; gap:.35rem; align-content:start; padding:.8rem; border-radius:14px; background:#f7f0e6 }
+.panel-administracion .admin-juegos-totales dt { font-size:.85rem; color:#6b5245 }
+.panel-administracion .admin-juegos-totales dd { grid-row:1; margin:0; color:var(--vino); font-size:1.55rem; font-weight:900 }
+.panel-administracion .admin-juegos-destacados h3 { margin:0 0 .55rem; font-size:1rem }
+.panel-administracion .admin-juegos-destacados ol { margin:0; padding-left:1.55rem }
+.panel-administracion .admin-juegos-destacados li { padding:.25rem 0; overflow-wrap:anywhere }
+.panel-administracion .admin-juegos-destacados li strong { float:right; margin-left:.6rem; color:var(--vino) }
+.panel-administracion .admin-juegos-desplazamiento { overflow-x:auto; border:1px solid #eadcc9; border-radius:16px }
+.panel-administracion .admin-juegos-desplazamiento:focus-visible { outline:2px solid var(--vino); outline-offset:2px }
+.panel-administracion .admin-juegos-tabla { width:100%; min-width:680px; border-collapse:collapse; text-align:left; font-size:.9rem }
+.panel-administracion .admin-juegos-tabla caption { padding:.75rem; text-align:left; font-weight:800; color:var(--vino) }
+.panel-administracion .admin-juegos-tabla th,.panel-administracion .admin-juegos-tabla td { padding:.75rem; border-top:1px solid #f0e5d7; overflow-wrap:anywhere }
+.panel-administracion .admin-juegos-tabla thead { background:#f7f0e6; color:#6b5245 }
+.panel-administracion .admin-juegos-tabla tbody { background:white }
+.panel-administracion .admin-juegos-tabla [data-estado=generando] { background:#fff0cd; color:#765322 }
+.panel-administracion .admin-juegos-tabla [data-estado=listo_para_probar] { background:#e9f4ff; color:#316791 }
+.panel-administracion .admin-juegos-tabla [data-estado=publicado] { background:#e4f4e8; color:#2d7147 }
+.panel-administracion .admin-juegos-tabla [data-estado=fallido],.panel-administracion .admin-juego-fallo { color:#933d35; font-weight:900 }
+@media(max-width:740px) { .panel-administracion .admin-juegos-indicadores { grid-template-columns:minmax(0,1fr) } }
 .panel-administracion .admin-filtros { display:flex; align-items:flex-end; flex-wrap:wrap; gap:1rem; padding:1.15rem; background:#f7f0e6; border-radius:18px }
 .panel-administracion .admin-filtros .campo { margin:0; flex:1; min-width:180px }
 .panel-administracion .admin-filtros .admin-buscar { flex:2; min-width:min(100%,260px) }
@@ -47,20 +78,29 @@
 .panel-administracion .admin-vacio h2 { margin:1rem 0 .3rem }
 .panel-administracion .admin-vacio p { color:#79645c; margin:.3rem 0 }
 .panel-administracion .admin-ficha-cabecera { display:flex; align-items:center; gap:1.3rem; border-bottom:1px solid #eadfce; padding:.4rem 0 1.6rem; margin-bottom:1.6rem }
-.panel-administracion .admin-ficha-cabecera h1 { margin:.4rem 0 }
-.panel-administracion .admin-ficha-cabecera p { margin:.3rem 0; color:#79645c }
-.panel-administracion .admin-ficha-cabecera .acciones { margin:.6rem 0 0 }
+.panel-administracion .admin-ficha-identidad { min-width:0 }
+.panel-administracion .admin-ficha-cabecera h1 { margin:0 0 .85rem; overflow-wrap:anywhere }
+.panel-administracion .admin-ficha-resumen { display:flex; flex-wrap:wrap; column-gap:1.6rem; row-gap:.65rem; margin:0 }
+.panel-administracion .admin-ficha-resumen>div { min-width:0 }
+.panel-administracion .admin-ficha-resumen dt { color:#79645c; font-size:.85rem; font-weight:800 }
+.panel-administracion .admin-ficha-resumen dd { display:flex; align-items:center; min-height:1.8rem; margin:.2rem 0 0; font-weight:800; overflow-wrap:anywhere }
 .panel-administracion .admin-ficha-columnas { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr); gap:1.8rem; align-items:start }
 .panel-administracion .admin-datos { padding:1.3rem; background:#f8f1e7; border-radius:22px; min-width:0 }
 .panel-administracion .admin-datos h2 { margin-top:0 }
+.panel-administracion .admin-acceso { padding:.1rem 0 1rem }
+.panel-administracion .admin-acceso h3 { margin:0 0 .4rem; font-size:1.05rem }
+.panel-administracion .admin-acceso p { margin:0 0 .65rem }
+.panel-administracion .admin-acceso-estado { padding:1rem 0 0; border-top:1px solid #e6d6c0 }
 .panel-administracion details { border-top:1px solid #e6d6c0; padding:1rem 0 }
 .panel-administracion summary { cursor:pointer; font-weight:900; color:#6b4230; min-height:28px }
 .panel-administracion .admin-datos form { margin-top:.9rem }
 .panel-administracion .admin-historial { margin-top:1.5rem }
 .panel-administracion .admin-relacion h1 { font-size:1.45rem }
+.panel-administracion .admin-relaciones .admin-relacion h2:first-child { margin-top:0 }
 .panel-administracion .admin-relacion form { padding:1.1rem; background:white; border:1px solid #eadcc9; border-radius:18px }
 .panel-administracion .admin-relacion legend { font-size:.9rem; color:#957251 }
 .panel-administracion .admin-relacion .lista-buscable { margin-bottom:1rem }
+.panel-administracion .admin-relacion .lista-gestion { margin-bottom:1.35rem }
 .panel-administracion .admin-relacion .lista-gestion li { background:white; border-width:1px; border-radius:14px }
 .panel-administracion .admin-exito { display:flex; gap:.7rem; align-items:center; padding:1rem; border-radius:15px; background:#e4f4e8; color:#2d7147!important }
 .panel-administracion .admin-cursos { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); list-style:none; margin:0; padding:0; gap:1.1rem }
@@ -89,6 +129,7 @@
 @media(min-width:1100px) { .panel-administracion .doc-alternar-menu { display:none } }
 @media(max-width:860px) { .panel-administracion .tablero-lateral { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px } .panel-administracion .doc-alternar-menu { display:inline-flex; font-size:.8rem; padding:.6rem .8rem; box-shadow:none } .panel-administracion .doc-menu-plegable { display:none; grid-column:1/-1; overflow:visible } .panel-administracion .doc-menu-abierto { display:grid; grid-template-columns:1fr 1fr } .panel-administracion .menu button { width:100%; font-size:.9rem } .panel-administracion .lateral-pie { grid-column:1/-1 } .panel-administracion .tarjeta-promo { display:none } }
 @media(max-width:1100px) { .panel-administracion .admin-ficha-columnas { grid-template-columns:1fr } .panel-administracion .admin-cursos { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+@media(max-width:980px) { .panel-administracion .admin-inicio-contenido { grid-template-columns:minmax(0,1fr) } }
 @media(max-width:650px) { .panel-administracion .admin-encabezado { align-items:flex-start; flex-direction:column } .panel-administracion .admin-ilustracion-icono { display:none } .panel-administracion .admin-roles { grid-template-columns:1fr; gap:.7rem } .panel-administracion .admin-superficie .admin-rol { min-height:90px; display:grid; grid-template-columns:44px 1fr; gap:.25rem .8rem; padding:1rem } .panel-administracion .admin-rol svg { grid-row:span 2 } .panel-administracion .admin-personas li { flex-wrap:wrap; padding:1rem; gap:.7rem } .panel-administracion .admin-personas .admin-estado { margin-left:60px } .panel-administracion .admin-personas li>button { margin-left:auto } .panel-administracion .admin-filtros { padding:.9rem } .panel-administracion .admin-cursos,.panel-administracion .admin-secciones { grid-template-columns:1fr } .panel-administracion .admin-ficha-cabecera { align-items:flex-start } .panel-administracion .admin-avatar.grande { width:54px;height:54px;font-size:1.2rem } }
 @media(prefers-reduced-motion:reduce) { .panel-administracion *, .panel-administracion *::before { animation:none!important; transition:none!important; transform:none!important } }
 @media(max-width:650px) { .panel-administracion .marca small { display:none } .panel-administracion .admin-personas li { display:grid; grid-template-columns:48px minmax(0,1fr) } .panel-administracion .admin-persona-nombre { grid-column:2 } .panel-administracion .admin-personas .admin-estado { grid-column:2; justify-self:start; margin-left:0 } .panel-administracion .admin-personas li>button { grid-column:2; justify-self:stretch; margin-left:0 } }

@@ -33,24 +33,36 @@ class DniEstudianteTests(TestCase):
         return cliente, cliente.post(reverse("acceso:ingresar"), json.dumps(datos), content_type="application/json", HTTP_X_CSRFTOKEN=token)
 
     def test_registra_estudiante_con_dni_y_sin_correo(self):
-        respuesta = self.registrar({"nombre": "Luis Niño", "correo": "", "dni": "70000002", "rol": "estudiante"})
+        respuesta = self.registrar({"nombre": "Luis Niño", "dni": "70000002", "rol": "estudiante"})
         self.assertEqual(respuesta.status_code, 201)
         self.assertEqual(respuesta.json()["usuario"]["dni"], "70000002")
         self.assertIsNone(respuesta.json()["usuario"]["correo"])
         self.assertEqual(len(respuesta.json()["contrasena_temporal"]), 10)
         self.assertTrue(Usuario.objects.get(dni="70000002").debe_cambiar_contrasena)
 
+    def test_registro_descarta_el_correo_que_envia_un_cliente_anterior(self):
+        respuesta = self.registrar({
+            "nombre": "Ana Nueva", "correo": self.docente.correo, "dni": "70000002", "rol": "estudiante",
+        })
+        self.assertEqual(respuesta.status_code, 201)
+        self.assertIsNone(respuesta.json()["usuario"]["correo"])
+        self.assertIsNone(Usuario.objects.get(dni="70000002").correo)
+        self.docente.refresh_from_db()
+        self.assertEqual(self.docente.correo, "docente-dni@example.com")
+
     def test_dni_obligatorio_valido_y_unico_para_estudiantes(self):
         for dni, mensaje in (("", "obligatorio"), ("1234567", "8 dígitos"), ("1234567a", "8 dígitos"), ("70000001", "Ya existe")):
             with self.subTest(dni=dni):
-                respuesta = self.registrar({"nombre": "Niño", "correo": "", "dni": dni, "rol": "estudiante"})
+                respuesta = self.registrar({"nombre": "Niño Ficticio", "dni": dni, "rol": "estudiante"})
                 self.assertEqual(respuesta.status_code, 400)
                 self.assertIn(mensaje, respuesta.json()["errores"]["dni"][0]["message"])
 
     def test_adultos_siguen_necesitando_correo(self):
-        respuesta = self.registrar({"nombre": "Docente", "correo": "", "dni": "70000003", "rol": "docente"})
-        self.assertEqual(respuesta.status_code, 400)
-        self.assertIn("correo", respuesta.json()["errores"])
+        for rol in ("docente", "administrador"):
+            with self.subTest(rol=rol):
+                respuesta = self.registrar({"nombre": "Persona Adulta", "rol": rol})
+                self.assertEqual(respuesta.status_code, 400)
+                self.assertEqual(set(respuesta.json()["errores"]), {"correo"})
 
     def test_estudiante_ingresa_con_dni_y_mensaje_generico_si_falla(self):
         _, respuesta = self.ingresar({"dni": "70000001", "contrasena": "ClaveEstudiante2026!"})

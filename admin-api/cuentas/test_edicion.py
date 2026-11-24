@@ -54,7 +54,7 @@ class EdicionTests(TestCase):
     def test_validacion_duplicados_tipos_y_campos_ajenos(self):
         for datos in (
             {"nombre": "", "correo": "otro@example.com"}, {"nombre": "x" * 151, "correo": "otro@example.com"},
-            {"nombre": "Nombre", "correo": "invalido"}, {"nombre": "Nombre", "correo": "ADMIN-EDICION@EXAMPLE.COM"},
+            {"nombre": "Nombre válido", "correo": "invalido"}, {"nombre": "Nombre válido", "correo": "ADMIN-EDICION@EXAMPLE.COM"},
             {"nombre": 3, "correo": "otro@example.com"}, {"nombre": "Nombre"},
             {"nombre": "Nombre", "correo": "otro@example.com", "password": "impuesta"},
             {"nombre": "Nombre", "correo": "otro@example.com", "is_active": False},
@@ -65,10 +65,20 @@ class EdicionTests(TestCase):
         self.assertEqual(self.persona.correo, "editar@example.com")
         self.assertFalse(CambioUsuario.objects.exists())
 
+    def test_nombre_anterior_de_una_palabra_se_conserva_al_editar_el_correo(self):
+        Usuario.objects.filter(pk=self.persona.pk).update(nombre="Nombre")
+        self.assertEqual(self.guardar(nombre="Nombre", correo="nuevo@example.com").status_code, 200)
+        respuesta = self.guardar(nombre="Otro", correo="nuevo@example.com")
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertEqual(respuesta.json()["errores"]["nombre"][0]["code"], "nombre_incompleto")
+        self.persona.refresh_from_db()
+        self.assertEqual(self.persona.nombre, "Nombre")
+        self.assertEqual(self.persona.correo, "nuevo@example.com")
+
     def test_fallo_historial_revierte_edicion_completa(self):
         with patch("cuentas.gestion_views.CambioUsuario.objects.create", side_effect=IntegrityError("Fallo QA")):
             with self.assertRaises(IntegrityError):
-                self.guardar(nombre="Nuevo", correo="nuevo@example.com")
+                self.guardar(nombre="Nombre nuevo", correo="nuevo@example.com")
         self.persona.refresh_from_db()
         self.assertEqual(self.persona.nombre, "Nombre original")
         self.assertEqual(self.persona.correo, "editar@example.com")

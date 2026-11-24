@@ -7,6 +7,13 @@ export type CambioUsuario = {
   anterior: Record<string, unknown>; actual: Record<string, unknown>
 }
 export type DetalleUsuario = { usuario: UsuarioAdministrado; historial: CambioUsuario[] }
+export type ResumenAdministracion = {
+  estudiantes: number
+  docentes: number
+  cursos: number
+  usuarios_recientes: { id: string; nombre: string; roles: Rol[]; fecha_creacion: string }[]
+}
+export const consultarResumenAdministracion = () => solicitar<ResumenAdministracion>('/api/cuentas/administracion/resumen/')
 export const listarUsuarios = (buscar: string, pagina: number) => solicitar<{
   usuarios: UsuarioAdministrado[]; pagina: number; paginas: number; total: number
 }>('/api/cuentas/usuarios/listado/?' + new URLSearchParams({ buscar, pagina: String(pagina) }))

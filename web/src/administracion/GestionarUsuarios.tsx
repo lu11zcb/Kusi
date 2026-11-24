@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { flushSync } from 'react-dom'
-import { ErrorApi } from '../servicios/django'
+import { ErrorApi, errorNombreCompleto } from '../servicios/django'
 import type { ErroresRegistro, Rol } from '../servicios/django'
 import { CampoFormulario } from '../componentes/CampoFormulario'
 import { asignarRoles, cambiarEstadoUsuario, consultarUsuario, editarUsuario, generarContrasenaTemporal, listarUsuarios, refrescarUsuarioGuardado } from '../servicios/usuarios'
@@ -23,6 +23,7 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso, rolInicia
   const [estadoFiltro, establecerEstadoFiltro] = useState('todos')
   const [relacionOcupada, establecerRelacionOcupada] = useState(false)
   const [detalle, establecerDetalle] = useState<DetalleUsuario | null>(null)
+  const [resumenSecciones, establecerResumenSecciones] = useState('Cargando…')
   const [roles, establecerRoles] = useState<Rol[]>([])
   const [datos, establecerDatos] = useState({ nombre: '', correo: '', dni: '' })
   const [erroresCampos, establecerErroresCampos] = useState<ErroresRegistro>({})
@@ -50,6 +51,7 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso, rolInicia
     bloqueo.current = true
     establecerOcupado(true)
     establecerError(''); establecerMensaje(''); establecerDetalle(null); establecerContrasenaNueva('')
+    establecerResumenSecciones('Cargando…')
     try {
       const datos = await consultarUsuario(id)
       establecerDetalle(datos); establecerRoles(datos.usuario.roles)
@@ -112,6 +114,13 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso, rolInicia
   async function guardarDatos(evento: FormEvent) {
     evento.preventDefault()
     if (!detalle || bloqueo.current) return
+    const errorNombre = datos.nombre.trim() === detalle.usuario.nombre.trim() ? '' : errorNombreCompleto(datos.nombre)
+    if (errorNombre) {
+      establecerErroresCampos({ nombre: [errorNombre] })
+      establecerError('Revisa los datos del usuario.')
+      establecerMensaje('')
+      return
+    }
     bloqueo.current = true; establecerOcupado(true); establecerError(''); establecerMensaje(''); establecerErroresCampos({})
     try {
       const resultado = await editarUsuario(detalle.usuario.id, datos)
@@ -128,8 +137,11 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso, rolInicia
   const paginas = Math.max(1, Math.ceil(filtrados.length / 10))
   const visibles = filtrados.slice((pagina - 1) * 10, pagina * 10)
   const plural = rolInicial === 'estudiante' ? 'Estudiantes' : rolInicial === 'docente' ? 'Docentes' : rolInicial === 'administrador' ? 'Administradores' : 'Personas'
+  const usuario = detalle?.usuario
+  const esEstudiante = usuario?.roles.includes('estudiante')
+  const esDocente = usuario?.roles.includes('docente')
   return <section className="admin-superficie">
-    {!detalle ? <>
+    {!detalle || !usuario ? <>
       <header className="admin-encabezado"><div><span className="admin-antetitulo">PERSONAS QUE HACEN KUSI</span><h1>{plural}</h1><p>{rolInicial === 'estudiante' ? 'Cada estudiante, su cuenta y su sección en un mismo lugar.' : rolInicial === 'docente' ? 'Consulta sus cuentas y organiza qué enseña cada docente.' : 'Mantén los datos, permisos y accesos de administración al día.'}</p></div>{alRegistrar && <button type="button" onClick={alRegistrar} disabled={ocupado}><IconoGestion nombre="mas" />Registrar {rolInicial ?? 'persona'}</button>}</header>
       <form className="admin-filtros" role="search" onSubmit={(evento) => { evento.preventDefault(); establecerFiltro(buscar); establecerPagina(1) }}>
         <div className="campo admin-buscar"><label htmlFor="buscar-usuarios">Buscar {plural.toLocaleLowerCase('es')}</label><div><IconoGestion nombre="buscar" /><input id="buscar-usuarios" placeholder="Nombre, correo o DNI…" value={buscar} onChange={(evento) => { establecerBuscar(evento.target.value); establecerFiltro(evento.target.value); establecerPagina(1) }} maxLength={150} disabled={ocupado} /></div></div>
@@ -148,20 +160,44 @@ export function GestionarUsuarios({ usuarioActualId, actualizarAcceso, rolInicia
         {paginas > 1 && <div className="acciones"><button type="button" className="secundario" disabled={pagina <= 1 || ocupado} onClick={() => establecerPagina(pagina - 1)}>Anterior</button><span>Página {pagina} de {paginas}</span><button type="button" className="secundario" disabled={pagina >= paginas || ocupado} onClick={() => establecerPagina(pagina + 1)}>Siguiente</button></div>}
       </section>}
     </> : <>
-      <button type="button" className="secundario admin-volver" disabled={ocupado || !!contrasenaNueva} onClick={() => { establecerDetalle(null); establecerError(''); establecerMensaje('') }}><IconoGestion nombre="atras" />Volver a {plural.toLocaleLowerCase('es')}</button>
-      <header className="admin-ficha-cabecera"><span className="admin-avatar grande" aria-hidden="true">{iniciales(detalle.usuario.nombre)}</span><div><span className="admin-antetitulo">FICHA DE LA CUENTA</span><h1 id="usuario-elegido" ref={titulo} tabIndex={-1}>{detalle.usuario.nombre}</h1><p>{detalle.usuario.dni ? 'DNI ' + detalle.usuario.dni : detalle.usuario.correo ?? 'Sin correo'}</p><div className="acciones">{detalle.usuario.roles.map((rol) => <span className="admin-etiqueta" key={rol}>{etiquetas[rol]}</span>)}<span className={'admin-estado ' + (detalle.usuario.activo ? 'activo' : '')}>{detalle.usuario.activo ? 'Activa' : 'Desactivada'}</span></div></div></header>
+      <button type="button" className="secundario admin-volver" disabled={ocupado || relacionOcupada || !!contrasenaNueva} onClick={() => { establecerDetalle(null); establecerError(''); establecerMensaje('') }}><IconoGestion nombre="atras" />Volver a {plural.toLocaleLowerCase('es')}</button>
+      <header className="admin-ficha-cabecera">
+        <span className={'admin-avatar grande ' + (esDocente ? 'docente' : '')} aria-hidden="true">{iniciales(usuario.nombre)}</span>
+        <div className="admin-ficha-identidad">
+          <h1 id="usuario-elegido" ref={titulo} tabIndex={-1}>{usuario.nombre}</h1>
+          <dl className="admin-ficha-resumen">
+            {esEstudiante ? <>
+              <div><dt>DNI</dt><dd>{usuario.dni ?? 'Sin registrar'}</dd></div>
+              <div><dt>Sección</dt><dd>{resumenSecciones}</dd></div>
+            </> : <div><dt>Correo</dt><dd>{usuario.correo ?? 'Sin registrar'}</dd></div>}
+            <div><dt>Rol</dt><dd>{usuario.roles.map((rol) => etiquetas[rol]).join(' · ') || 'Sin rol escolar'}</dd></div>
+            <div><dt>Estado de la cuenta</dt><dd><span className={'admin-estado ' + (usuario.activo ? 'activo' : '')}>{usuario.activo ? 'Activa' : 'Desactivada'}</span></dd></div>
+          </dl>
+        </div>
+      </header>
       {error && <p role="alert" className="error-resumen">{error}</p>}{mensaje && <p role="status" className="admin-exito"><IconoGestion nombre="check" />{mensaje}</p>}
       {contrasenaNueva ? <div className="confirmacion" role="status"><h2>Entrega esta contraseña de forma privada</h2><dl><dt>Contraseña temporal</dt><dd><code className="contrasena">{contrasenaNueva}</code></dd></dl><p>Solo se muestra ahora. La persona deberá cambiarla al ingresar.</p><button type="button" onClick={() => establecerContrasenaNueva('')}>Ya la entregué</button></div> : <>
         <div className="admin-ficha-columnas"><div className="admin-relaciones">
-          {detalle.usuario.roles.includes('estudiante') && <GestionarVinculos key={'v-' + detalle.usuario.id} estudianteInicial={detalle.usuario.id} bloqueadoExterno={ocupado} alCambiarBloqueo={establecerRelacionOcupada} />}
-          {detalle.usuario.roles.includes('docente') && <AsignarDocentes key={'a-' + detalle.usuario.id} docenteInicial={detalle.usuario.id} bloqueadoExterno={ocupado} alCambiarBloqueo={establecerRelacionOcupada} />}
-          {!detalle.usuario.roles.includes('estudiante') && !detalle.usuario.roles.includes('docente') && <div className="admin-vacio"><IconoGestion nombre="personas" /><h2>Acceso de administración</h2><p>Desde esta cuenta se organizan usuarios, secciones y cursos de Kusi.</p></div>}
+          {esEstudiante && <GestionarVinculos key={usuario.id} estudianteInicial={usuario.id} cuentaActiva={usuario.activo} alCambiarResumen={establecerResumenSecciones} bloqueadoExterno={ocupado} alCambiarBloqueo={establecerRelacionOcupada} />}
+          {esDocente && <AsignarDocentes key={usuario.id} docenteInicial={usuario.id} cuentaActiva={usuario.activo} bloqueadoExterno={ocupado} alCambiarBloqueo={establecerRelacionOcupada} />}
+          {!esEstudiante && !esDocente && <div className="admin-vacio"><IconoGestion nombre="personas" /><h2>Acceso de administración</h2><p>Desde esta cuenta se organizan usuarios, secciones y cursos de Kusi.</p></div>}
         </div><aside className="admin-datos"><h2>Datos y acceso</h2>
-          <details open><summary>Editar datos personales</summary><form onSubmit={guardarDatos}><fieldset disabled={ocupado || relacionOcupada}>
-            {(['nombre', 'correo', ...((detalle.usuario.roles.includes('estudiante') || roles.includes('estudiante')) ? ['dni'] : [])] as ('nombre'|'correo'|'dni')[]).map((campo) => <CampoFormulario key={campo} id={'editar-' + campo} etiqueta={campo === 'nombre' ? 'Nombre completo' : campo === 'correo' ? 'Correo de la cuenta' : 'DNI del estudiante'} errores={erroresCampos[campo]}><input id={'editar-' + campo} type={campo === 'correo' ? 'email' : 'text'} value={datos[campo]} required={campo === 'nombre'} maxLength={campo === 'nombre' ? 150 : campo === 'dni' ? 8 : 254} inputMode={campo === 'dni' ? 'numeric' : undefined} aria-invalid={!!erroresCampos[campo]?.length} aria-describedby={erroresCampos[campo]?.length ? 'editar-' + campo + '-error' : undefined} onChange={(evento) => establecerDatos({ ...datos, [campo]: campo === 'dni' ? evento.target.value.replace(/\D/g,'') : evento.target.value })} /></CampoFormulario>)}
+          <section className="admin-acceso" aria-labelledby="admin-titulo-contrasena">
+            <h3 id="admin-titulo-contrasena">Contraseña temporal</h3>
+            {usuario.id === usuarioActualId ? <p>Usa «Cambiar contraseña» para actualizar la de tu cuenta.</p> :
+              <p>Se muestra una vez y se cambia al ingresar.</p>}
+            {usuario.id !== usuarioActualId && (usuario.activo ?
+              <button type="button" className="secundario" disabled={ocupado || relacionOcupada} onClick={generarContrasena}>Generar contraseña temporal</button> :
+              <p>Activa la cuenta para generar una contraseña temporal.</p>)}
+          </section>
+          <details><summary>Editar datos personales</summary><form onSubmit={guardarDatos}><fieldset disabled={ocupado || relacionOcupada}>
+            {(['nombre', 'correo', ...((esEstudiante || roles.includes('estudiante')) ? ['dni'] : [])] as ('nombre'|'correo'|'dni')[]).map((campo) => <CampoFormulario key={campo} id={'editar-' + campo} etiqueta={campo === 'nombre' ? 'Nombre completo' : campo === 'correo' ? 'Correo de la cuenta' : 'DNI del estudiante'} errores={erroresCampos[campo]}><input id={'editar-' + campo} type={campo === 'correo' ? 'email' : 'text'} value={datos[campo]} required={campo === 'nombre'} maxLength={campo === 'nombre' ? 150 : campo === 'dni' ? 8 : 254} inputMode={campo === 'dni' ? 'numeric' : undefined} aria-invalid={!!erroresCampos[campo]?.length} aria-describedby={erroresCampos[campo]?.length ? 'editar-' + campo + '-error' : undefined} onChange={(evento) => establecerDatos({ ...datos, [campo]: campo === 'dni' ? evento.target.value.replace(/\D/g,'') : evento.target.value })} /></CampoFormulario>)}
           </fieldset><button type="submit" disabled={ocupado || relacionOcupada}>{ocupado ? 'Guardando…' : 'Guardar datos'}</button></form></details>
           <details><summary>Roles y permisos</summary><form onSubmit={guardar}><fieldset disabled={ocupado || relacionOcupada}><legend className="solo-lectores">Roles escolares</legend><p id="ayuda-roles">Administrador y docente pueden combinarse. Estudiante se asigna solo.</p>{(Object.keys(etiquetas) as Rol[]).map((rol) => <label className="opcion" key={rol}><input type="checkbox" checked={roles.includes(rol)} aria-describedby="ayuda-roles" onChange={(evento) => establecerRoles(evento.target.checked ? (rol === 'estudiante' ? [rol] : [...roles.filter((actual) => actual !== 'estudiante'), rol]) : roles.filter((actual) => actual !== rol))} />{etiquetas[rol]}</label>)}</fieldset><button type="submit" disabled={ocupado || relacionOcupada || roles.length === 0}>Guardar roles</button></form></details>
-          <details><summary>Contraseña y estado</summary><p>La contraseña nueva cierra las sesiones anteriores. Desactivar conserva los datos y el historial.</p><div className="acciones">{detalle.usuario.id !== usuarioActualId && detalle.usuario.activo && <button type="button" className="secundario" disabled={ocupado || relacionOcupada} onClick={generarContrasena}>Generar contraseña temporal</button>}<button type="button" className="secundario" disabled={ocupado || relacionOcupada} onClick={cambiarEstado}>{detalle.usuario.activo ? 'Desactivar cuenta' : 'Activar cuenta'}</button></div></details>
+          <section className="admin-acceso admin-acceso-estado" aria-labelledby="admin-titulo-estado">
+            <h3 id="admin-titulo-estado">Estado de la cuenta</h3>
+            <button type="button" className="secundario" disabled={ocupado || relacionOcupada} onClick={cambiarEstado}>{usuario.activo ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
+          </section>
         </aside></div>
         <details className="admin-historial"><summary>Historial de cambios</summary>{detalle.historial.length === 0 ? <p>Esta cuenta todavía no tiene cambios registrados.</p> : <ol className="historial">{detalle.historial.map((cambio) => <li key={cambio.id}><strong>{cambio.tipo === 'roles' ? 'Cambio de roles' : cambio.tipo === 'estado' ? 'Cambio de estado' : cambio.tipo === 'contrasena_temporal' ? 'Contraseña temporal generada' : 'Cambio de datos'}</strong><p>{new Date(cambio.fecha).toLocaleString('es-PE')} · {cambio.administrador}</p><p>Antes: {Object.entries(cambio.anterior).map(([campo, valor]) => campo + ': ' + String(valor)).join(' · ')}</p><p>Después: {Object.entries(cambio.actual).map(([campo, valor]) => campo + ': ' + String(valor)).join(' · ')}</p></li>)}</ol>}</details>
       </>}

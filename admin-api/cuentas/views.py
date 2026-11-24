@@ -109,6 +109,11 @@ def registrar_usuario(request):
             status=400,
         )
 
+    # Algunos clientes antiguos todavía envían correo. Las cuentas nuevas de
+    # estudiantes se crean solo con DNI, sin guardar ese dato adicional.
+    if datos.get("rol") == "estudiante":
+        datos.pop("correo", None)
+
     # Comprobamos los campos antes de intentar guardar la cuenta.
     formulario = FormularioRegistroUsuario(datos)
 

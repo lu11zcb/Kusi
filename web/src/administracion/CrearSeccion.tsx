@@ -5,7 +5,7 @@ import type { Seccion } from '../servicios/secciones'
 import { listarSecciones } from '../servicios/educacion'
 import { IconoDocente as IconoGestion } from '../docente/IconoDocente'
 
-export function CrearSeccion({ alCambiarBloqueo }: { alCambiarBloqueo?: (bloqueado: boolean) => void }) {
+export function CrearSeccion({ alCambiarBloqueo, alRegistrarDocente }: { alCambiarBloqueo?: (bloqueado: boolean) => void; alRegistrarDocente: () => void }) {
   const [grado, establecerGrado] = useState(1)
   const [nombre, establecerNombre] = useState('')
   const [anio, establecerAnio] = useState(String(new Date().getFullYear()))
@@ -34,7 +34,9 @@ export function CrearSeccion({ alCambiarBloqueo }: { alCambiarBloqueo?: (bloquea
     finally { bloqueo.current = false; establecerOcupado(false) }
   }
   return <>
-    <header className="admin-encabezado"><div><span className="admin-antetitulo">UN LUGAR PARA APRENDER JUNTOS</span><h1>Secciones</h1><p>Organiza los grupos de primero y segundo de primaria por año escolar.</p></div><span className="admin-ilustracion-icono"><IconoGestion nombre="secciones" /></span></header>
+    <header className="admin-encabezado"><div><h1>Secciones</h1><p>Organiza los grupos de primero y segundo de primaria por año escolar.</p></div>
+      <button type="button" className="secundario" disabled={ocupado} onClick={alRegistrarDocente}><IconoGestion nombre="mas" />Registrar docente</button>
+    </header>
     {error && <p className="error-resumen" role="alert">{error}</p>}
     {resultado && <p role="status" className="admin-exito"><IconoGestion nombre="check" />Sección {resultado.nombre} creada para {resultado.anio_escolar}.</p>}
     <div className="admin-secciones"><form onSubmit={guardar}><h2>Crear una sección</h2><fieldset disabled={ocupado}>

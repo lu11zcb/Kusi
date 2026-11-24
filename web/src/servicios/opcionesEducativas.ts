@@ -22,7 +22,9 @@ export async function listarUsuariosEducativos(): Promise<UsuarioAdministrado[]>
 
 // «Primero de primaria» o «Segundo de primaria», según el grado de la sección.
 export const nombreGrado = (grado: number) => (grado === 2 ? 'Segundo' : 'Primero') + ' de primaria'
-export const nombreSeccion = (seccion: SeccionEducativa) => `${seccion.nombre} · ${seccion.grado}° de primaria · ${seccion.anio_escolar}`
+export const nombreSeccion = (seccion: SeccionEducativa) => seccion.nombre + ' · ' + seccion.grado + '° de primaria · ' + seccion.anio_escolar
+export const compararSecciones = (primera: SeccionEducativa, segunda: SeccionEducativa) =>
+  segunda.anio_escolar - primera.anio_escolar || primera.grado - segunda.grado || primera.nombre.localeCompare(segunda.nombre, 'es', { numeric: true })
 export const nombreCuenta = (usuario: UsuarioAdministrado) => `${usuario.nombre}${usuario.correo ? ' · ' + usuario.correo : usuario.dni ? ' · DNI ' + usuario.dni : ''}`
 
 export type OpcionLista = { id: string; nombre: string }

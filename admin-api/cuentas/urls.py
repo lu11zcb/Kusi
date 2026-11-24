@@ -6,6 +6,7 @@ from . import cursos_views, gestion_views, views
 app_name = "cuentas"
 
 urlpatterns = [
+    path("administracion/resumen/", gestion_views.resumen_administracion, name="resumen_administracion"),
     path("registro/contexto/", views.contexto_registro, name="contexto_registro"),
     path("usuarios/", views.registrar_usuario, name="registrar_usuario"),
     path("usuarios/listado/", gestion_views.listar_usuarios, name="listar_usuarios"),

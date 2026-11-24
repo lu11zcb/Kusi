@@ -88,6 +88,15 @@ class RegistroUsuariosTests(TestCase):
                 respuesta = self.registrar(datos)
                 self.assertEqual(respuesta.status_code, 400)
                 self.assertEqual(set(respuesta.json()["errores"]), {"nombre", "correo", "rol"})
+                self.assertEqual(respuesta.json()["errores"]["nombre"][0]["message"], "El nombre completo es obligatorio.")
+        self.assertEqual(Usuario.objects.count(), 1)
+
+    def test_nombre_completo_es_obligatorio_para_los_tres_roles(self):
+        for rol in ("administrador", "docente", "estudiante"):
+            with self.subTest(rol=rol):
+                respuesta = self.registrar({**self.datos, "nombre": "  Persona  ", "rol": rol, "dni": "40000001"})
+                self.assertEqual(respuesta.status_code, 400)
+                self.assertEqual(respuesta.json()["errores"]["nombre"][0]["code"], "nombre_incompleto")
         self.assertEqual(Usuario.objects.count(), 1)
 
     def test_correo_invalido_rol_ajeno_y_limites(self):

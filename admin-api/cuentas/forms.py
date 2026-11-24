@@ -3,6 +3,12 @@ from django import forms
 from .models import Usuario
 
 
+def validar_nombre_completo(nombre):
+    if len(nombre.split()) < 2:
+        raise forms.ValidationError("Escribe nombres y apellidos (al menos dos palabras).", code="nombre_incompleto")
+    return nombre
+
+
 def validar_dni(valor, excluir=None):
     dni = (valor or "").strip() or None
     if dni is None:
@@ -27,8 +33,8 @@ class FormularioRegistroUsuario(forms.Form):
     nombre = forms.CharField(
         max_length=150,
         error_messages={
-            "required": "El nombre es obligatorio.",
-            "max_length": "El nombre no puede superar los 150 caracteres.",
+            "required": "El nombre completo es obligatorio.",
+            "max_length": "El nombre completo no puede superar los 150 caracteres.",
         },
     )
 
@@ -57,6 +63,9 @@ class FormularioRegistroUsuario(forms.Form):
 
     dni = forms.CharField(required=False, max_length=8)
 
+    def clean_nombre(self):
+        return validar_nombre_completo(self.cleaned_data["nombre"])
+
     def clean_correo(self):
         # Django llama a este método al validar el campo correo.
         correo = self.cleaned_data["correo"].strip().lower() or None
@@ -79,13 +88,20 @@ class FormularioRegistroUsuario(forms.Form):
 
 
 class FormularioEdicionUsuario(forms.Form):
-    nombre = forms.CharField(max_length=150, error_messages={"required": "El nombre es obligatorio."})
+    nombre = forms.CharField(max_length=150, error_messages={"required": "El nombre completo es obligatorio."})
     correo = forms.EmailField(max_length=254, required=False, error_messages={"invalid": "Escribe un correo válido."})
     dni = forms.CharField(required=False, max_length=8)
 
     def __init__(self, datos, usuario):
         super().__init__(datos)
         self.usuario = usuario
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data["nombre"]
+        # Una cuenta anterior puede conservar su nombre al editar otros datos.
+        if nombre == self.usuario.nombre.strip():
+            return self.usuario.nombre
+        return validar_nombre_completo(nombre)
 
     def clean_correo(self):
         correo = self.cleaned_data["correo"].strip().lower() or None
