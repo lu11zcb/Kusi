@@ -19,9 +19,12 @@ public class ActividadesEstudianteService {
     private final ObjectMapper json;
     private final TransactionTemplate transaccion;
     private final DjangoInternoClient django;
+    private final MonedasEstudianteService monedas;
 
-    public ActividadesEstudianteService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion, DjangoInternoClient django) {
+    public ActividadesEstudianteService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion,
+                                       DjangoInternoClient django, MonedasEstudianteService monedas) {
         this.jdbc = jdbc; this.json = json; this.transaccion = transaccion; this.django = django;
+        this.monedas = monedas;
     }
 
     private record Juego(UUID id, UUID actividad, String paquete, UUID seccion) {}
@@ -248,27 +251,59 @@ public class ActividadesEstudianteService {
         });
     }
 
-    /** Se llama dentro de la transacción del aviso. El bloqueo serializa partidas simultáneas de la actividad. */
+    /** Se llama dentro de la transacción del aviso, con la partida bloqueada. */
     public void registrarPuntos(UUID estudiante, boolean pruebaDocente, JsonNode aviso) {
         if (pruebaDocente || !aviso.hasNonNull("juego_id")) return;
         String tipo = aviso.path("tipo").asText();
         if (!tipo.equals("reto_completado") && !tipo.equals("fin")) return;
         Juego juego = juego(UUID.fromString(aviso.path("juego_id").asText()));
+        String partida = aviso.path("partida").asText();
+        int orden = aviso.path("orden").asInt();
+        // Dos partidas pueden mejorar el mismo reto o terminar casi a la vez.
         jdbc.query("select id from edu.solicitudes_propuesta where id = ? for update", fila -> {}, juego.actividad());
         if (tipo.equals("fin")) {
+            int otrosFines = jdbc.queryForObject("select count(*) from edu.avisos_partida where partida_id = ? and tipo = 'fin' and orden <> ?",
+                    Integer.class, partida, orden);
+            if (otrosFines > 0) return;
+            comprobarAvisosAnteriores(partida, orden);
             jdbc.update("update edu.avances_actividad set completada = true where estudiante_id = ? and actividad_id = ? and partida_id = ?",
-                    estudiante, juego.actividad(), aviso.path("partida").asText());
+                    estudiante, juego.actividad(), partida);
+            monedas.premiarFin(estudiante, juego.actividad(), partida, puntos(estudiante, juego.actividad()));
             return;
         }
         int totalRetos = retos(juego), nivel = aviso.path("nivel").asInt();
         if (nivel < 1 || nivel > totalRetos) throw new IllegalArgumentException("El reto completado no pertenece a este juego.");
-        Integer existente = jdbc.queryForObject("select count(*) from edu.puntos_reto where estudiante_id = ? and actividad_id = ? and nivel = ?",
+        comprobarAvisosAnteriores(partida, orden);
+        int cerrados = jdbc.queryForObject("select count(*) from edu.avisos_partida where partida_id = ? and orden < ? "
+                + "and (tipo in ('fin', 'fallo') or (tipo = 'reto_completado' and nivel = ?))", Integer.class, partida, orden, nivel);
+        if (cerrados > 0) return;
+
+        List<String> acciones = jdbc.queryForList("select contenido from edu.avisos_partida where partida_id = ? and nivel = ? "
+                + "and tipo = 'accion' and orden < ?", String.class, partida, nivel, orden);
+        long errores = acciones.stream().map(this::leer).map(accion -> accion.path("correcto"))
+                .filter(correcto -> correcto.isBoolean() && !correcto.booleanValue()).count();
+        int maximo = (int) Math.round(20.0 * nivel / totalRetos) - (int) Math.round(20.0 * (nivel - 1) / totalRetos);
+        int resultado = Math.max((maximo + 1) / 2, maximo - (int) errores);
+        List<Integer> anteriores = jdbc.queryForList("select puntos from edu.puntos_reto where estudiante_id = ? and actividad_id = ? and nivel = ?",
                 Integer.class, estudiante, juego.actividad(), nivel);
-        if (existente != null && existente > 0) return;
-        int puntos = (int) Math.round(20.0 * nivel / totalRetos) - (int) Math.round(20.0 * (nivel - 1) / totalRetos);
-        puntos = Math.min(puntos, Math.max(0, 20 - puntos(estudiante, juego.actividad())));
-        jdbc.update("insert into edu.puntos_reto(estudiante_id, actividad_id, nivel, puntos, generacion_id, partida_id) values (?, ?, ?, ?, ?, ?)",
-                estudiante, juego.actividad(), nivel, puntos, juego.id(), aviso.path("partida").asText());
+        int mejor = anteriores.isEmpty() ? 0 : anteriores.get(0);
+        // Una versión corregida puede repartir los 20 de otra forma. Solo se añade la mejora que cabe.
+        int mejora = Math.min(resultado - mejor, 20 - puntos(estudiante, juego.actividad()));
+        if (anteriores.isEmpty()) {
+            jdbc.update("insert into edu.puntos_reto(estudiante_id, actividad_id, nivel, puntos, generacion_id, partida_id) "
+                    + "values (?, ?, ?, ?, ?, ?)", estudiante, juego.actividad(), nivel, mejora, juego.id(), partida);
+        } else if (mejora > 0) {
+            jdbc.update("update edu.puntos_reto set puntos = ?, generacion_id = ?, partida_id = ? "
+                    + "where estudiante_id = ? and actividad_id = ? and nivel = ?",
+                    mejor + mejora, juego.id(), partida, estudiante, juego.actividad(), nivel);
+        }
+    }
+
+    private void comprobarAvisosAnteriores(String partida, int orden) {
+        int anteriores = jdbc.queryForObject("select count(*) from edu.avisos_partida where partida_id = ? and orden < ?",
+                Integer.class, partida, orden);
+        // El móvil puede reenviar el cierre. Esperar avisos previos evita premiar antes de contar sus errores.
+        if (anteriores != orden - 1) throw conflicto("Todavía falta confirmar avisos anteriores de esta partida.");
     }
 
     private int puntos(UUID estudiante, UUID actividad) {

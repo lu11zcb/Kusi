@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -22,7 +24,7 @@ public class ResultadosService {
 
     // Se comprueba el curso, la sección y el año vigentes en TODAS las lecturas.
     // Conocer un identificador o haber creado antes el juego no concede acceso.
-    private static final String ALCANCE = " from edu.solicitudes_propuesta s join edu.secciones sec on sec.id = s.seccion_id "
+    static final String ALCANCE = " from edu.solicitudes_propuesta s join edu.secciones sec on sec.id = s.seccion_id "
             + "where s.docente_id = ? and exists (select 1 from edu.asignaciones_docente a where a.docente_id = ? "
             + "and a.curso_id = s.curso_id and a.seccion_id = s.seccion_id and a.anio_escolar = sec.anio_escolar) "
             + "and exists (select 1 from edu.generaciones g where g.solicitud_id = s.id and g.publicada = true) ";
@@ -72,6 +74,147 @@ public class ResultadosService {
         return partidas(actividad, estudiante).getOrDefault(estudiante, List.of());
     }
 
+    private static final Duration VENTANA_ACTIVIDAD = Duration.ofSeconds(90);
+
+    public List<Map<String, Object>> enVivo(UUID docente, UUID actividad) {
+        UUID seccion = seccion(docente, actividad);
+        Map<String, Integer> nivelesPorJuego = new HashMap<>();
+        jdbc.query("select id, paquete from edu.generaciones where solicitud_id = ? and publicada = true", fila -> {
+            String paquete = fila.getString(2);
+            nivelesPorJuego.put(fila.getString(1), paquete == null ? 0 : leer(paquete).path("retos").size());
+        }, actividad);
+        nivelesPorJuego.keySet().forEach(juego -> actividades.materializar(UUID.fromString(juego)));
+
+        // El envío exacto y el vínculo vigente determinan quién aparece en el seguimiento.
+        Map<UUID, Set<String>> envios = new HashMap<>();
+        jdbc.query("select d.estudiante_id, g.id from edu.generaciones g join edu.destinatarios_actividad d on d.generacion_id = g.id "
+                + "where g.solicitud_id = ? and g.publicada = true and exists (select 1 from edu.vinculos_estudiante v "
+                + "join edu.secciones sec on sec.id = v.seccion_id where v.seccion_id = ? and v.anio_escolar = sec.anio_escolar "
+                + "and v.retirado_en is null and v.estudiante_id = d.estudiante_id)", fila -> {
+            envios.computeIfAbsent(fila.getObject(1, UUID.class), id -> new HashSet<>()).add(fila.getString(2));
+        }, actividad, seccion);
+        if (envios.isEmpty()) return List.of();
+
+        Map<UUID, List<SeguimientoPartida>> jugadas = jugadasEnVivo(actividad, envios, nivelesPorJuego);
+        Map<UUID, Integer> puntos = new HashMap<>();
+        jdbc.query("select r.estudiante_id, sum(r.puntos) from edu.puntos_reto r join edu.partidas p on p.id = r.partida_id "
+                + "where r.actividad_id = ? and p.prueba_docente = false and p.usuario_id = r.estudiante_id group by r.estudiante_id",
+                fila -> { puntos.put(fila.getObject(1, UUID.class), fila.getInt(2)); }, actividad);
+
+        Instant ahora = Instant.now();
+        List<Map<String, Object>> filas = new ArrayList<>();
+        envios.keySet().forEach(estudiante -> {
+            List<SeguimientoPartida> partidas = jugadas.getOrDefault(estudiante, List.of());
+            SeguimientoPartida actual = partidas.stream().max(Comparator.comparing(partida -> partida.ultimoAviso)).orElse(null);
+            Map<String, Object> cuenta = django.validarCuenta(estudiante, "estudiante");
+            Map<String, Object> fila = new LinkedHashMap<>();
+            fila.put("id", estudiante);
+            fila.put("nombre", cuenta.getOrDefault("nombre", "Estudiante"));
+            fila.put("estado", actual == null ? "sin_iniciar" : actual.estado(ahora));
+            fila.put("pausa_guardada", actual != null && actual.pausaGuardada());
+            int nivel = actual == null ? 0 : actual.nivelActual();
+            fila.put("nivel", nivel == 0 ? null : nivel);
+            fila.put("errores_nivel", nivel == 0 ? 0 : actual.erroresPorNivel.getOrDefault(nivel, 0));
+            fila.put("errores_total", partidas.stream().mapToInt(partida -> partida.errores).sum());
+            fila.put("ayudas_usadas", partidas.stream().mapToInt(partida -> partida.ayudas).sum());
+            fila.put("incidencias_tecnicas", partidas.stream().mapToInt(partida -> partida.incidencias).sum());
+            fila.put("puntos", puntos.getOrDefault(estudiante, 0));
+            fila.put("segundos_desde_ultimo_aviso", actual == null ? null : Math.max(0, Duration.between(actual.ultimoAviso, ahora).getSeconds()));
+            filas.add(fila);
+        });
+        filas.sort(Comparator.comparing(fila -> fila.get("nombre").toString(), String.CASE_INSENSITIVE_ORDER));
+        return filas;
+    }
+
+    private Map<UUID, List<SeguimientoPartida>> jugadasEnVivo(UUID actividad, Map<UUID, Set<String>> envios,
+                                                            Map<String, Integer> nivelesPorJuego) {
+        Map<UUID, List<SeguimientoPartida>> resultado = new HashMap<>();
+        Map<String, Optional<SeguimientoPartida>> porPartida = new LinkedHashMap<>();
+        String estudiantes = String.join(", ", Collections.nCopies(envios.size(), "?"));
+        List<Object> parametros = new ArrayList<>();
+        parametros.add(actividad);
+        parametros.addAll(envios.keySet());
+        jdbc.query("select p.id, p.usuario_id, a.orden, a.tipo, a.nivel, a.contenido, a.creado_en, av.ultimo_orden, av.nivel "
+                + "from edu.partidas p join edu.avisos_partida a on a.partida_id = p.id left join edu.avances_actividad av "
+                + "on av.partida_id = p.id and av.estudiante_id = p.usuario_id and av.actividad_id = ? and av.completada = false "
+                + "where p.prueba_docente = false and p.usuario_id in (" + estudiantes + ") order by p.creado_en desc, p.id, a.orden", fila -> {
+            String id = fila.getString(1);
+            UUID estudiante = fila.getObject(2, UUID.class);
+            String contenido = fila.getString(6);
+            if (!porPartida.containsKey(id)) {
+                // El primer aviso fija el juego. Los avisos antiguos sin esa relación
+                // no sirven para identificar en qué actividad estaba jugando el estudiante.
+                String juego = leer(contenido).path("juego_id").asText();
+                if (envios.get(estudiante).contains(juego)) {
+                    SeguimientoPartida partida = new SeguimientoPartida(nivelesPorJuego.getOrDefault(juego, 0), fila.getInt(8), fila.getInt(9));
+                    porPartida.put(id, Optional.of(partida));
+                    resultado.computeIfAbsent(estudiante, clave -> new ArrayList<>()).add(partida);
+                } else {
+                    porPartida.put(id, Optional.empty());
+                }
+            }
+            SeguimientoPartida partida = porPartida.get(id).orElse(null);
+            if (partida == null) return;
+            String tipo = fila.getString(4);
+            JsonNode correcto = tipo.equals("accion") ? leer(contenido).path("correcto") : null;
+            partida.registrar(fila.getInt(3), tipo, fila.getInt(5), correcto != null && correcto.isBoolean() && !correcto.booleanValue(),
+                    fila.getTimestamp(7).toInstant());
+        }, parametros.toArray());
+        return resultado;
+    }
+
+    private static final class SeguimientoPartida {
+        private final int niveles, ordenPausa, nivelPausa;
+        private final Map<Integer, Integer> erroresPorNivel = new HashMap<>();
+        private Instant ultimoAviso = Instant.MIN;
+        private int orden, nivel, errores, ayudas, incidencias;
+        private boolean completada, fallo;
+
+        private SeguimientoPartida(int niveles, int ordenPausa, int nivelPausa) {
+            this.niveles = niveles;
+            this.ordenPausa = ordenPausa;
+            this.nivelPausa = nivelPausa;
+        }
+
+        private void registrar(int orden, String tipo, int nivel, boolean error, Instant recibido) {
+            this.orden = orden;
+            // La recepción mide presencia. El orden del juego mide avance, incluso
+            // si una acción de un nivel anterior llega tarde por la red.
+            if (recibido.isAfter(ultimoAviso)) ultimoAviso = recibido;
+            switch (tipo) {
+                case "incidencia" -> incidencias++;
+                case "fallo" -> { fallo = true; incidencias++; }
+                case "fin" -> completada = true;
+                case "ayuda" -> ayudas++;
+                case "accion" -> {
+                    if (error) {
+                        errores++;
+                        erroresPorNivel.merge(nivel, 1, Integer::sum);
+                    }
+                }
+            }
+            if (!tipo.equals("incidencia") && !tipo.equals("fallo") && nivel > 0) {
+                // El reproductor no siempre emite un aviso al abrir el nivel siguiente.
+                this.nivel = tipo.equals("reto_completado") && nivel < niveles ? nivel + 1 : nivel;
+            }
+        }
+
+        private boolean pausaGuardada() { return !completada && !fallo && ordenPausa > 0 && orden <= ordenPausa; }
+
+        private int nivelActual() { return pausaGuardada() ? nivelPausa : nivel; }
+
+        private String estado(Instant ahora) {
+            if (completada) return "completada";
+            if (pausaGuardada() || fallo || ultimoAviso.isBefore(ahora.minus(VENTANA_ACTIVIDAD))) return "en_pausa";
+            return "jugando";
+        }
+    }
+
+    private JsonNode leer(String contenido) {
+        try { return json.readTree(contenido); }
+        catch (JsonProcessingException error) { throw new IllegalStateException("No se pudo leer el contenido guardado.", error); }
+    }
+
     private Map<UUID, List<Map<String, Object>>> partidas(UUID actividad) {
         return partidas(actividad, null);
     }
@@ -93,9 +236,7 @@ public class ResultadosService {
                 + "join edu.solicitudes_propuesta s on s.seccion_id = v.seccion_id join edu.secciones sec on sec.id = v.seccion_id "
                 + "where s.id = ? and v.estudiante_id = p.usuario_id and v.anio_escolar = sec.anio_escolar) "
                 + filtro + "order by p.creado_en, p.id, a.orden", fila -> {
-            JsonNode aviso;
-            try { aviso = json.readTree(fila.getString(3)); }
-            catch (JsonProcessingException error) { throw new IllegalStateException("No se pudo leer un aviso guardado."); }
+            JsonNode aviso = leer(fila.getString(3));
             UUID propietario = fila.getObject(2, UUID.class);
             agrupadas.computeIfAbsent(fila.getString(1), clave -> new Avisos(propietario, new ArrayList<>())).contenido().add(aviso);
         }, parametros);

@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -44,6 +45,8 @@ class ActividadesEstudianteTest {
     Seccion seccion;
     Generacion juego;
     static final String CSRF = "csrf-sintetico-avance";
+    private static final String ESTUDIANTE = "/api/edu/estudiante/";
+    private static final String AVISOS = "/api/edu/partidas/avisos/";
 
     @BeforeEach void preparar() {
         docente = UUID.randomUUID(); estudiante = UUID.randomUUID(); otro = UUID.randomUUID(); curso = UUID.randomUUID();
@@ -87,6 +90,25 @@ class ActividadesEstudianteTest {
     private String ruta(Generacion generacion) { return "/api/edu/estudiante/juegos/" + generacion.getId() + "/avance/"; }
     private ObjectNode checkpoint(String partida, int orden, int nivel) { return json.createObjectNode().put("partida", partida).put("orden", orden).put("nivel", nivel); }
     private int puntos(Map<String, Object> resultado) { return (Integer) ((Map<?, ?>) resultado.get("resumen")).get("puntos"); }
+    private int monedas(Map<String, Object> resultado) { return (Integer) ((Map<?, ?>) resultado.get("resumen")).get("monedas_ganadas"); }
+
+    private ObjectNode completarRetos(String partida, int... erroresPorReto) {
+        int orden = 1;
+        for (int nivel = 1; nivel <= erroresPorReto.length; nivel++) {
+            for (int i = 0; i < erroresPorReto[nivel - 1]; i++) {
+                partidas.guardar(estudiante, false, aviso(juego, partida, orden++, "accion", nivel).put("correcto", false));
+            }
+            partidas.guardar(estudiante, false, aviso(juego, partida, orden++, "reto_completado", nivel));
+        }
+        return aviso(juego, partida, orden, "fin", erroresPorReto.length);
+    }
+
+    private void comprobarFin(ObjectNode fin, int puntos, int monedas, boolean duplicado) throws Exception {
+        enviar(AVISOS, "estudiante", json.createObjectNode().set("aviso", fin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.duplicado").value(duplicado))
+                .andExpect(jsonPath("$.resumen.puntos").value(puntos))
+                .andExpect(jsonPath("$.resumen.monedas_ganadas").value(monedas));
+    }
 
     @Test void pausaConfirmadaConservaVersionRetoYOrdenAlExistirUnEnvioNuevo() throws Exception {
         String partida = UUID.randomUUID().toString();
@@ -204,6 +226,109 @@ class ActividadesEstudianteTest {
             assertEquals(7, puntos(segunda.get(5, TimeUnit.SECONDS)));
         }
         assertEquals(1, jdbc.queryForObject("select count(*) from edu.puntos_reto where actividad_id = ? and estudiante_id = ?", Integer.class, actividad, estudiante));
+    }
+
+    @Test void descuentaSoloAccionesIncorrectasDelRetoYConservaSuMejorPuntaje() {
+        String partida = UUID.randomUUID().toString();
+        ObjectNode error = aviso(juego, partida, 1, "accion", 1).put("correcto", false);
+        partidas.guardar(estudiante, false, error);
+        assertEquals(true, partidas.guardar(estudiante, false, error).get("duplicado"));
+        partidas.guardar(estudiante, false, aviso(juego, partida, 2, "accion", 1).put("correcto", "false"));
+        partidas.guardar(estudiante, false, aviso(juego, partida, 3, "accion", 1).put("correcto", true));
+        partidas.guardar(estudiante, false, aviso(juego, partida, 4, "ayuda", 1).put("ayuda", 1));
+        partidas.guardar(estudiante, false, aviso(juego, partida, 5, "incidencia", 1).put("detalle", "El sonido se cortó"));
+        assertEquals(6, puntos(partidas.guardar(estudiante, false, aviso(juego, partida, 6, "reto_completado", 1))));
+        assertEquals(12, puntos(partidas.guardar(estudiante, false, aviso(juego, partida, 7, "reto_completado", 2))));
+        completarRetos(UUID.randomUUID().toString(), 8);
+        assertEquals(12, puntos(partidas.guardar(estudiante, false, aviso(juego, partida, 8, "reto_completado", 1))));
+        ObjectNode fin = completarRetos(UUID.randomUUID().toString(), 0, 0, 0);
+        assertEquals(20, puntos(partidas.guardar(estudiante, false, fin)));
+    }
+
+    @Test void esperaLosErroresAnterioresAntesDeCalcularElReto() {
+        String partida = UUID.randomUUID().toString();
+        ObjectNode reto = aviso(juego, partida, 2, "reto_completado", 1);
+        var error = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> partidas.guardar(estudiante, false, reto));
+        assertEquals(409, error.getStatusCode().value());
+        partidas.guardar(estudiante, false, aviso(juego, partida, 1, "accion", 1).put("correcto", false));
+        assertEquals(6, puntos(partidas.guardar(estudiante, false, reto)));
+    }
+
+    @Test void conviertePuntosSoloAlTerminarYPremiaHastaTresPracticas() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        ObjectNode fin = completarRetos(partida, 5, 0, 0);
+        String resumen = "/api/edu/partidas/" + partida + "/";
+        leer(resumen, "estudiante").andExpect(jsonPath("$.resumen.puntos").value(17))
+                .andExpect(jsonPath("$.resumen.monedas_ganadas").value(0));
+        leer(ESTUDIANTE + "monedas/", "estudiante").andExpect(jsonPath("$.saldo").value(0));
+        comprobarFin(fin, 17, 22, false);
+        comprobarFin(fin, 17, 22, true);
+        comprobarFin(fin.deepCopy().put("orden", fin.path("orden").asInt() + 1), 17, 22, false);
+        leer(resumen, "estudiante").andExpect(jsonPath("$.resumen.monedas_ganadas").value(22));
+        leer(resumen, "otro").andExpect(status().isNotFound());
+
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 2, 0, 0), 18, 3, false);
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 5, 0, 0), 18, 2, false);
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 1, 0, 0), 19, 3, false);
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 0, 0, 0), 20, 0, false);
+        leer(ESTUDIANTE + "monedas/", "estudiante").andExpect(jsonPath("$.saldo").value(30));
+        assertEquals(4, jdbc.queryForObject("select count(*) from edu.movimientos_monedas where actividad_id = ?", Integer.class, actividad));
+    }
+
+    @Test void dosFinesSimultaneosConviertenCadaPuntoUnaVez() throws Exception {
+        ObjectNode primero = completarRetos(UUID.randomUUID().toString(), 0, 0, 0);
+        ObjectNode segundo = completarRetos(UUID.randomUUID().toString(), 0, 0, 0);
+        var salida = new CountDownLatch(1);
+        try (var hilos = Executors.newFixedThreadPool(2)) {
+            var uno = hilos.submit(() -> { salida.await(); return monedas(partidas.guardar(estudiante, false, primero)); });
+            var dos = hilos.submit(() -> { salida.await(); return monedas(partidas.guardar(estudiante, false, segundo)); });
+            salida.countDown();
+            assertEquals(Set.of(25, 2), Set.of(uno.get(5, TimeUnit.SECONDS), dos.get(5, TimeUnit.SECONDS)));
+        }
+    }
+
+    @Test void tiendaCompraConSaldoPropioYRechazaDuplicadosYPrendasFueraDelCatalogo() throws Exception {
+        String compras = ESTUDIANTE + "tienda/compras/";
+        ObjectNode chalina = json.createObjectNode().put("prenda_id", "chalina");
+        enviar(compras, "estudiante", chalina).andExpect(status().isConflict());
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 0, 0, 0), 20, 25, false);
+        leer(ESTUDIANTE + "tienda/", "estudiante").andExpect(status().isOk())
+                .andExpect(jsonPath("$.prendas.length()").value(6))
+                .andExpect(jsonPath("$.prendas[*].precio", contains(20, 20, 40, 40, 60, 60)))
+                .andExpect(jsonPath("$.prendas[0].comprada").value(false));
+        enviar(compras, "otro", chalina).andExpect(status().isConflict());
+        enviar(compras, "otro", chalina.deepCopy().put("estudiante_id", estudiante.toString())).andExpect(status().isBadRequest());
+        enviar(compras, "docente", chalina).andExpect(status().isForbidden());
+        leer(ESTUDIANTE + "monedas/", "docente").andExpect(status().isForbidden());
+        enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "logro")).andExpect(status().isNotFound());
+        enviar(compras, "estudiante", chalina).andExpect(status().isOk())
+                .andExpect(jsonPath("$.prenda_id").value("chalina")).andExpect(jsonPath("$.saldo").value(5));
+        enviar(compras, "estudiante", chalina).andExpect(status().isConflict());
+        leer(ESTUDIANTE + "tienda/", "estudiante").andExpect(jsonPath("$.prendas[0].comprada").value(true));
+        leer(ESTUDIANTE + "tienda/", "otro").andExpect(jsonPath("$.prendas[0].comprada").value(false));
+        leer(ESTUDIANTE + "monedas/", "estudiante").andExpect(jsonPath("$.saldo").value(5));
+    }
+
+    @Test void comprasSimultaneasNoPuedenGastarElMismoSaldo() throws Exception {
+        comprobarFin(completarRetos(UUID.randomUUID().toString(), 0, 0, 0), 20, 25, false);
+        String compras = ESTUDIANTE + "tienda/compras/";
+        var salida = new CountDownLatch(1);
+        try (var hilos = Executors.newFixedThreadPool(2)) {
+            var una = hilos.submit(() -> {
+                salida.await();
+                return enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "chalina"))
+                        .andReturn().getResponse().getStatus();
+            });
+            var otra = hilos.submit(() -> {
+                salida.await();
+                return enviar(compras, "estudiante", json.createObjectNode().put("prenda_id", "lentes"))
+                        .andReturn().getResponse().getStatus();
+            });
+            salida.countDown();
+            assertEquals(Set.of(200, 409), Set.of(una.get(5, TimeUnit.SECONDS), otra.get(5, TimeUnit.SECONDS)));
+        }
+        leer(ESTUDIANTE + "monedas/", "estudiante").andExpect(jsonPath("$.saldo").value(5));
     }
 
     @Test void pruebasDocentesYPartidasAntiguasSinJuegoNoGananPuntos() {
@@ -334,7 +459,10 @@ class ActividadesEstudianteTest {
         partidas.guardar(docente, true, aviso(juego, partida, 1, "inicio", 1));
         partidas.guardar(docente, true, aviso(juego, partida, 2, "accion", 1).put("respuesta", "llama").put("correcto", true));
         partidas.guardar(docente, true, aviso(juego, partida, 3, "reto_completado", 1));
-        assertEquals(0, puntos(partidas.guardar(docente, true, aviso(juego, partida, 4, "fin", 3))));
+        Map<String, Object> fin = partidas.guardar(docente, true, aviso(juego, partida, 4, "fin", 3));
+        assertEquals(0, puntos(fin));
+        assertEquals(0, monedas(fin));
+        assertEquals(0, jdbc.queryForObject("select count(*) from edu.movimientos_monedas where partida_id = ?", Integer.class, partida));
         assertEquals(0, jdbc.queryForObject("select count(*) from edu.puntos_reto where partida_id = ?", Integer.class, partida));
         leer("/api/edu/resultados/actividades/" + actividad + "/estudiantes/", "docente")
                 .andExpect(jsonPath("$.estudiantes.length()").value(1)).andExpect(jsonPath("$.estudiantes[0].partidas").value(0))

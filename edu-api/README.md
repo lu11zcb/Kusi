@@ -157,3 +157,17 @@ Por defecto (`PROPUESTAS_POR=taller`), la propuesta no la escribe Spring: `crear
 Un trabajo que no está `en_proceso` no se cierra (409), y uno que no existe da 404. Los estados son los de la tabla: `pendiente`, `en_proceso`, `listo` y `fallido`. Pruebas: `TallerBuzonTest` (de punta a punta, con H2) y `ValidadorPaqueteTallerTest`.
 
 > **Para revisar (Jesús):** las rutas, la clave, los 30 minutos y la V10 los hizo Luis sobre el buzón de la V9 el 9 de noviembre. Falta tu revisión del contrato.
+
+## Puntos, monedas y tienda del estudiante
+
+La actividad reparte 20 puntos entre sus retos. Cada respuesta incorrecta baja un punto hasta llegar a la mitad del valor del reto, redondeada hacia arriba. La actividad conserva el mejor puntaje confirmado de cada reto, hasta 20 puntos en total. Las ayudas y las incidencias técnicas se cuentan por separado.
+
+`POST /api/edu/partidas/avisos/` y `GET /api/edu/partidas/{id}/` devuelven `resumen.puntos` con el total de la actividad y `resumen.monedas_ganadas` con el premio de la partida. Al confirmar el primer `fin` desde la V16, se convierten los puntos acumulados y se agregan 5 monedas. Las siguientes tres partidas terminadas convierten los puntos que falten por pagar y agregan 2 monedas cada una. Consultar o reenviar un cierre devuelve su premio guardado. Las pruebas docentes devuelven cero en los dos campos.
+
+| Ruta | Respuesta |
+| --- | --- |
+| `GET /api/edu/estudiante/monedas/` | `saldo` de la cuenta en sesión |
+| `GET /api/edu/estudiante/tienda/` | `prendas` con `id`, `nombre`, `precio` y `comprada` |
+| `POST /api/edu/estudiante/tienda/compras/` | Recibe `prenda_id` y devuelve `prenda_id` y el `saldo` actualizado |
+
+La compra usa el CSRF de las demás escrituras educativas. Responde 404 para prendas fuera del catálogo y 409 por saldo insuficiente o por una prenda que el estudiante ya compró.

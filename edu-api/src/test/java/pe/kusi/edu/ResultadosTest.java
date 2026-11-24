@@ -14,6 +14,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import pe.kusi.edu.model.*;
 import pe.kusi.edu.repository.*;
+import pe.kusi.edu.service.ActividadesEstudianteService;
 import pe.kusi.edu.service.DjangoInternoClient;
 import pe.kusi.edu.service.PartidasService;
 import java.sql.Timestamp;
@@ -38,6 +39,7 @@ class ResultadosTest {
     @Autowired PropuestaRepository propuestas;
     @Autowired GeneracionRepository generaciones;
     @Autowired PartidasService partidas;
+    @Autowired ActividadesEstudianteService actividades;
     @MockitoBean DjangoInternoClient django;
     UUID docente, estudiante, otroEstudiante, curso, actividad;
     Seccion seccion;
@@ -70,6 +72,93 @@ class ResultadosTest {
     }
     private org.springframework.test.web.servlet.ResultActions leer(String ruta, String sesion) throws Exception {
         return mvc.perform(get(ruta).cookie(new Cookie("sessionid", sesion)));
+    }
+
+    private String rutaEnVivo() { return BASE + actividad + "/en-vivo/"; }
+
+    @Test
+    void enVivoMuestraNivelErroresAyudasPuntosYEstadosSegunLosAvisosGuardados() throws Exception {
+        juego.guardarPaquete("{\"familia\":\"formas\",\"retos\":[{},{}]}");
+        generaciones.saveAndFlush(juego);
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(partida, 1, "inicio"));
+        for (int orden = 2; orden <= 4; orden++) {
+            partidas.guardar(estudiante, false, aviso(partida, orden, "accion").put("correcto", false));
+        }
+        partidas.guardar(estudiante, false, aviso(partida, 5, "accion").put("atrapado", true));
+        partidas.guardar(estudiante, false, aviso(partida, 6, "accion").put("correcto", "false"));
+        partidas.guardar(estudiante, false, aviso(partida, 7, "accion").put("correcto", true));
+        partidas.guardar(estudiante, false, aviso(partida, 8, "incidencia").put("detalle", "Faltó un recurso"));
+        ObjectNode ayuda = aviso(partida, 9, "ayuda").put("ayuda", 1);
+        partidas.guardar(estudiante, false, ayuda);
+        partidas.guardar(estudiante, false, ayuda);
+
+        leer(rutaEnVivo(), "docente").andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.estudiantes[0].estado").value("jugando"))
+                .andExpect(jsonPath("$.estudiantes[0].nivel").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].errores_nivel").value(3))
+                .andExpect(jsonPath("$.estudiantes[0].errores_total").value(3))
+                .andExpect(jsonPath("$.estudiantes[0].ayudas_usadas").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].incidencias_tecnicas").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].puntos").value(0))
+                .andExpect(jsonPath("$.estudiantes[1].estado").value("sin_iniciar"))
+                .andExpect(jsonPath("$.estudiantes[1].nivel").isEmpty())
+                .andExpect(jsonPath("$.estudiantes[1].segundos_desde_ultimo_aviso").isEmpty());
+
+        partidas.guardar(estudiante, false, aviso(partida, 10, "reto_completado"));
+        leer(rutaEnVivo(), "docente").andExpect(jsonPath("$.estudiantes[0].nivel").value(2))
+                .andExpect(jsonPath("$.estudiantes[0].errores_nivel").value(0))
+                .andExpect(jsonPath("$.estudiantes[0].puntos").value(7));
+        // La pausa confirmada tiene prioridad incluso con un aviso recién recibido.
+        actividades.guardarAvance(estudiante, juego.getId(), json.createObjectNode().put("partida", partida).put("orden", 10).put("nivel", 2));
+        leer(rutaEnVivo(), "docente").andExpect(jsonPath("$.estudiantes[0].estado").value("en_pausa"))
+                .andExpect(jsonPath("$.estudiantes[0].pausa_guardada").value(true));
+        partidas.guardar(estudiante, false, aviso(partida, 11, "accion").put("nivel", 2).put("correcto", false));
+        leer(rutaEnVivo(), "docente").andExpect(jsonPath("$.estudiantes[0].estado").value("jugando"))
+                .andExpect(jsonPath("$.estudiantes[0].pausa_guardada").value(false))
+                .andExpect(jsonPath("$.estudiantes[0].errores_nivel").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].errores_total").value(4));
+
+        // El tiempo viene del servidor. Un reenvío del aviso anterior no actualiza la presencia.
+        jdbc.update("update edu.avisos_partida set creado_en = ? where partida_id = ?", Timestamp.from(Instant.now().minusSeconds(95)), partida);
+        partidas.guardar(estudiante, false, ayuda);
+        leer(rutaEnVivo(), "docente").andExpect(jsonPath("$.estudiantes[0].estado").value("en_pausa"))
+                .andExpect(jsonPath("$.estudiantes[0].pausa_guardada").value(false))
+                .andExpect(jsonPath("$.estudiantes[0].segundos_desde_ultimo_aviso").value(org.hamcrest.Matchers.greaterThanOrEqualTo(95)));
+
+        ObjectNode fin = aviso(partida, 12, "fin"); fin.remove("nivel");
+        partidas.guardar(estudiante, false, fin);
+        leer(rutaEnVivo(), "docente").andExpect(jsonPath("$.estudiantes[0].estado").value("completada"))
+                .andExpect(jsonPath("$.estudiantes[0].nivel").value(2));
+        partidas.guardar(estudiante, false, aviso(UUID.randomUUID().toString(), 1, "inicio"));
+        leer(rutaEnVivo(), "docente").andExpect(jsonPath("$.estudiantes[0].estado").value("jugando"))
+                .andExpect(jsonPath("$.estudiantes[0].nivel").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].errores_nivel").value(0))
+                .andExpect(jsonPath("$.estudiantes[0].errores_total").value(4))
+                .andExpect(jsonPath("$.estudiantes[0].puntos").value(7));
+    }
+
+    @Test
+    void enVivoProtegeLaSeccionYExcluyePruebasDocentesYAvisosSinActividad() throws Exception {
+        ObjectNode sinJuego = aviso(UUID.randomUUID().toString(), 1, "accion").put("correcto", false);
+        sinJuego.remove("juego_id");
+        partidas.guardar(estudiante, false, sinJuego);
+        String prueba = UUID.randomUUID().toString();
+        partidas.guardar(docente, true, aviso(prueba, 1, "accion").put("correcto", false));
+        // Se fuerza el mismo dueño que una partida estudiantil para probar que la
+        // marca de prueba se respeta independientemente de pertenecer a la sección.
+        jdbc.update("update edu.partidas set usuario_id = ? where id = ?", estudiante, prueba);
+        jdbc.update("update edu.vinculos_estudiante set creado_en = ? where estudiante_id = ?", Timestamp.from(Instant.now().plusSeconds(60)), otroEstudiante);
+        leer(rutaEnVivo(), "docente").andExpect(status().isOk()).andExpect(jsonPath("$.estudiantes.length()").value(1))
+                .andExpect(jsonPath("$.estudiantes[0].estado").value("sin_iniciar"))
+                .andExpect(jsonPath("$.estudiantes[0].errores_total").value(0));
+        clearInvocations(django);
+        leer(rutaEnVivo(), "otro").andExpect(status().isNotFound());
+        leer(rutaEnVivo(), "admin").andExpect(status().isForbidden());
+        leer(rutaEnVivo(), "estudiante").andExpect(status().isForbidden());
+        jdbc.update("delete from edu.asignaciones_docente where docente_id = ?", docente);
+        leer(rutaEnVivo(), "docente").andExpect(status().isNotFound());
+        verify(django, never()).validarCuenta(any(), any());
     }
 
     @Test

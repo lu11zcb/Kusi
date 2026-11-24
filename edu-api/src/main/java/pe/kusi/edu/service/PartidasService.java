@@ -23,9 +23,12 @@ public class PartidasService {
     private final ObjectMapper json;
     private final TransactionTemplate transaccion;
     private final ActividadesEstudianteService actividades;
+    private final MonedasEstudianteService monedas;
 
-    public PartidasService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion, ActividadesEstudianteService actividades) {
+    public PartidasService(JdbcTemplate jdbc, ObjectMapper json, TransactionTemplate transaccion,
+                           ActividadesEstudianteService actividades, MonedasEstudianteService monedas) {
         this.jdbc = jdbc; this.json = json; this.transaccion = transaccion; this.actividades = actividades;
+        this.monedas = monedas;
     }
 
     public Map<String, Object> guardar(UUID usuario, boolean pruebaDocente, JsonNode aviso) {
@@ -105,7 +108,8 @@ public class PartidasService {
         Boolean docente = jdbc.queryForObject("select prueba_docente from edu.partidas where id = ?", Boolean.class, partida);
         return Map.of("partida", partida, "prueba_docente", Boolean.TRUE.equals(docente), "ayudas_usadas", ayudas,
                 "niveles_completados", niveles, "termino", finales > 0,
-                "puntos", Boolean.TRUE.equals(docente) ? 0 : actividades.puntosPartida(usuario, partida), "puntos_maximos", 20);
+                "puntos", Boolean.TRUE.equals(docente) ? 0 : actividades.puntosPartida(usuario, partida), "puntos_maximos", 20,
+                "monedas_ganadas", Boolean.TRUE.equals(docente) ? 0 : monedas.ganadasEnPartida(usuario, partida));
     }
 
     private void comprobarPropietario(UUID usuario, String partida) {

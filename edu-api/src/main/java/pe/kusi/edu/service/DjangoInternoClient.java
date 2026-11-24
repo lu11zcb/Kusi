@@ -77,14 +77,35 @@ public class DjangoInternoClient {
     }
 
     public Map<String,Object> validarCuenta(UUID id, String rolEsperado) {
+        Map<String,Object> usuario = consultarCuenta(id);
+        Object rolesValue = usuario.get("roles");
+        if (!Boolean.TRUE.equals(usuario.get("activo")) || !(rolesValue instanceof List<?> roles) || !roles.contains(rolEsperado))
+            throw new IllegalArgumentException("La cuenta debe existir, estar activa y tener el rol "+rolEsperado+".");
+        return usuario;
+    }
+
+    // El historial sigue teniendo autor aunque su cuenta esté inactiva. Si ahora
+    // pertenece a un estudiante, su nombre no puede salir en el panel de juegos.
+    public String nombreDocenteHistorico(UUID id) {
+        try {
+            Map<String,Object> cuenta = consultarCuenta(id);
+            if (cuenta.get("roles") instanceof List<?> roles
+                    && !roles.contains("estudiante")
+                    && cuenta.get("nombre") instanceof String nombre && !nombre.isBlank()) {
+                return nombre;
+            }
+        } catch (IllegalArgumentException ex) {
+            // Una cuenta eliminada tampoco hace desaparecer los juegos que dejó.
+        }
+        return "Docente no disponible";
+    }
+
+    private Map<String,Object> consultarCuenta(UUID id) {
         HttpHeaders headers=cabeceras();
         try {
             ResponseEntity<Map> respuesta=http.exchange(djangoUrl+"/api/interno/cuentas/"+id+"/",HttpMethod.GET,
                 new HttpEntity<>(headers),Map.class);
-            Map<String,Object> usuario=usuario(respuesta);
-            Object rolesValue=usuario.get("roles");
-            if (!Boolean.TRUE.equals(usuario.get("activo")) || !(rolesValue instanceof List<?> roles) || !roles.contains(rolEsperado)) throw new IllegalArgumentException("La cuenta debe existir, estar activa y tener el rol "+rolEsperado+".");
-            return usuario;
+            return usuario(respuesta);
         } catch (RestClientResponseException ex) {
             throw falloHttp(ex,"No se pudo validar la cuenta. Comprueba que exista y esté activa.",true);
         } catch (RestClientException ex) {

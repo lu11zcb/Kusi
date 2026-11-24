@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.kusi.edu.service.DjangoInternoClient;
 import pe.kusi.edu.service.ActividadesEstudianteService;
+import pe.kusi.edu.service.MonedasEstudianteService;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,8 +17,11 @@ import java.util.UUID;
 public class JuegosEstudianteController {
     private final DjangoInternoClient django;
     private final ActividadesEstudianteService actividades;
-    public JuegosEstudianteController(DjangoInternoClient django, ActividadesEstudianteService actividades) {
+    private final MonedasEstudianteService monedas;
+    public JuegosEstudianteController(DjangoInternoClient django, ActividadesEstudianteService actividades,
+                                      MonedasEstudianteService monedas) {
         this.django = django; this.actividades = actividades;
+        this.monedas = monedas;
     }
 
     private UUID estudiante(String sesion) {
@@ -44,6 +48,24 @@ public class JuegosEstudianteController {
     public ResponseEntity<Map<String, Object>> visto(@CookieValue(value = "sessionid", required = false) String sesion, @PathVariable UUID id) {
         actividades.visto(estudiante(sesion), id);
         return sinCache(Map.of("guardado", true));
+    }
+    @GetMapping("/monedas/")
+    public ResponseEntity<Map<String, Object>> saldo(@CookieValue(value = "sessionid", required = false) String sesion) {
+        return sinCache(Map.of("saldo", monedas.saldo(estudiante(sesion))));
+    }
+    @GetMapping("/tienda/")
+    public ResponseEntity<Map<String, Object>> tienda(@CookieValue(value = "sessionid", required = false) String sesion) {
+        return sinCache(Map.of("prendas", monedas.tienda(estudiante(sesion))));
+    }
+    @PostMapping("/tienda/compras/")
+    public ResponseEntity<Map<String, Object>> comprar(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                       @RequestBody JsonNode datos) {
+        UUID estudiante = estudiante(sesion);
+        JsonNode prenda = datos.path("prenda_id");
+        if (!datos.isObject() || datos.size() != 1 || !prenda.isTextual() || prenda.asText().isBlank()) {
+            throw new IllegalArgumentException("Indica solo la prenda que quieres comprar.");
+        }
+        return sinCache(monedas.comprar(estudiante, prenda.asText()));
     }
     private ResponseEntity<Map<String, Object>> sinCache(Map<String, Object> datos) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(datos);

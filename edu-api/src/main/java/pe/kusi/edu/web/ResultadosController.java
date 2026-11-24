@@ -36,6 +36,11 @@ public class ResultadosController {
     public ResponseEntity<Map<String, Object>> estudiantes(@CookieValue(value = "sessionid", required = false) String sesion, @PathVariable UUID actividad) {
         return respuesta("estudiantes", resultados.estudiantes(docente(sesion), actividad));
     }
+    @GetMapping("/actividades/{actividad}/en-vivo/")
+    public ResponseEntity<Map<String, Object>> enVivo(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                      @PathVariable UUID actividad) {
+        return respuesta("estudiantes", resultados.enVivo(docente(sesion), actividad));
+    }
     @GetMapping("/actividades/{actividad}/estudiantes/{estudiante}/")
     public ResponseEntity<Map<String, Object>> respuestas(@CookieValue(value = "sessionid", required = false) String sesion,
                                                         @PathVariable UUID actividad, @PathVariable UUID estudiante) {
