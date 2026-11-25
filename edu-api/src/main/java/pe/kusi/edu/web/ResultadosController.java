@@ -28,6 +28,17 @@ public class ResultadosController {
     private ResponseEntity<Map<String, Object>> respuesta(String clave, Object valor) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(Map.of(clave, valor));
     }
+    // La ficha de un estudiante (sus juegos, errores, ayudas y puntos) y quién va mejor en
+    // cada sección. Solo el docente de la sección.
+    @GetMapping("/estudiantes/{estudiante}/")
+    public ResponseEntity<Map<String, Object>> fichaEstudiante(@CookieValue(value = "sessionid", required = false) String sesion,
+                                                             @PathVariable UUID estudiante) {
+        return respuesta("ficha", resultados.fichaEstudiante(docente(sesion), estudiante));
+    }
+    @GetMapping("/ranking/")
+    public ResponseEntity<Map<String, Object>> ranking(@CookieValue(value = "sessionid", required = false) String sesion) {
+        return respuesta("secciones", resultados.ranking(docente(sesion)));
+    }
     @GetMapping("/actividades/")
     public ResponseEntity<Map<String, Object>> actividades(@CookieValue(value = "sessionid", required = false) String sesion) {
         return respuesta("actividades", resultados.actividades(docente(sesion)));

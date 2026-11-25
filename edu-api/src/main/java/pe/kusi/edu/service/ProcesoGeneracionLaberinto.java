@@ -179,6 +179,10 @@ public class ProcesoGeneracionLaberinto {
     }
 
     private Generacion terminar(Generacion generacion, ObjectNode guion, int intentos, boolean mapaBase, JsonNode reparaciones) {
+        // El juego se llama como lo propuso Kusi; el título del guion queda solo para las
+        // propuestas anteriores a los títulos.
+        propuestaRepository.findById(generacion.getPropuestaId()).map(Propuesta::getTitulo)
+                .filter(titulo -> !titulo.isBlank()).ifPresent(titulo -> guion.put("titulo", titulo));
         ConstructorGuion.ponerProcedencia(guion, generador.proveedor(), generador.modelo(), intentos, mapaBase, reparaciones);
         try {
             generacion.guardarPaquete(json.writeValueAsString(guion));

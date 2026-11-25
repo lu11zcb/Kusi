@@ -52,6 +52,8 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         propiedades.put("regla_juego", Map.of("type", "string", "enum", List.of(REGLA_ORDEN, REGLA_SOLO_CLASE, "ninguna")));
         propiedades.put("objetivo", texto);
         propiedades.put("historia", texto);
+        // El nombre va después de la historia: primero se diseña el juego y luego se le pone nombre.
+        propiedades.put("titulo", texto);
         for (String campo : List.of("acciones", "reglas", "retos", "ayudas", "recursos", "objetos")) propiedades.put(campo, lista);
         return Map.of("type", "object", "properties", propiedades,
                 "required", List.copyOf(propiedades.keySet()), "additionalProperties", false);
@@ -68,6 +70,7 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         if ("observaciones".equals(e.tipo())) {
             texto.append("\n\nAjusta esta propuesta según las observaciones del docente, sin cambiar lo que no menciona.");
             texto.append("\nSi las observaciones no piden otro juego ni otra regla, conserva «tipo_juego» y «regla_juego» como están.");
+            texto.append("\nConserva el «titulo», salvo que las observaciones cambien la idea del juego o pidan otro nombre.");
             texto.append("\nPropuesta actual: ").append(json.writeValueAsString(e.propuestaBase()));
             texto.append("\nObservaciones: ").append(e.observaciones());
         } else if ("alternativa".equals(e.tipo())) {
@@ -120,6 +123,7 @@ public class GeneradorPropuestasIa implements GeneradorPropuestas {
         - "regla_juego": "orden" o "solo_clase" si es el laberinto; "ninguna" si es otro juego. Todo lo demás debe seguir lo que elegiste.
         - "objetivo": una sola oración que empieza con «El juego ayuda a practicar» y dice qué practica. No prometas que los niños aprenderán o entenderán: un juego no lo asegura.
         - "historia": un único texto (string, nunca una lista), con 2 o 3 oraciones cortas: de qué trata el juego y qué practica el niño.
+        - "titulo": el nombre del juego, de 2 a 6 palabras y de 60 caracteres como máximo, como el título de un cuento o de una aventura. Nombra la misión o el lugar del juego; no repite el tema tal como lo escribió el docente.
         - "acciones": lo que hace el niño.
         - "reglas": cómo se juega.
         - "retos": los desafíos de cada nivel, de más fácil a más difícil.

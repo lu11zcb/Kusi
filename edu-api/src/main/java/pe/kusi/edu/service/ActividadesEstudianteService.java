@@ -98,7 +98,7 @@ public class ActividadesEstudianteService {
         materializarPendientes();
         // Una pausa pendiente conserva la versión exacta. Sin pausa, se muestra el
         // último envío de esta actividad que fue asignado a este estudiante.
-        return jdbc.query("select g.id, s.tema, g.paquete, d.vista_en from edu.generaciones g "
+        return jdbc.query("select g.id, " + TituloJuego.SQL + ", g.paquete, d.vista_en from edu.generaciones g "
                 + "join edu.solicitudes_propuesta s on s.id = g.solicitud_id "
                 + "join edu.destinatarios_actividad d on d.generacion_id = g.id and d.estudiante_id = ? "
                 + "where g.publicada = true and g.estado = 'lista' and s.retirada_en is null and exists (select 1 from edu.vinculos_estudiante v "

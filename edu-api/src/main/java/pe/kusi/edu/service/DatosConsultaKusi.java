@@ -29,7 +29,7 @@ class DatosConsultaKusi {
     }
 
     Clase cargar(UUID docente, UUID id) {
-        String seleccion = "select s.id, sec.id, s.curso_id, sec.grado, s.tema" + ResultadosService.ALCANCE;
+        String seleccion = "select s.id, sec.id, s.curso_id, sec.grado, " + TituloJuego.SQL + ResultadosService.ALCANCE;
         Actividad actual = jdbc.query(seleccion + "and s.id = ?", this::actividad, docente, docente, id).stream()
                 .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No se encontró esta actividad en tus secciones."));

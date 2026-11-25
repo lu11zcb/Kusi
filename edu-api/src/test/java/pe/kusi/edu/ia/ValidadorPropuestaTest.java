@@ -24,6 +24,23 @@ class ValidadorPropuestaTest {
         return datos;
     }
 
+    // El título es el nombre del juego que ven el docente, el estudiante y el administrador.
+    // Es opcional (sin él, la versión hereda el anterior o se muestra el tema), pero si viene
+    // tiene que ser un texto que quepa en una tarjeta.
+    @Test
+    void elTituloDelJuegoSeLimpiaYCabeEnUnaTarjeta() throws Exception {
+        Map<String, Object> conTitulo = propuesta();
+        conTitulo.put("titulo", "  La isla de los patrones  ");
+        assertEquals("La isla de los patrones", validador.validar(conTitulo, null).titulo());
+        assertNull(validador.validar(propuesta(), null).titulo());
+
+        for (Object invalido : List.of("", "   ", "x".repeat(ValidadorPropuesta.LARGO_TITULO + 1), 7)) {
+            Map<String, Object> malo = propuesta();
+            malo.put("titulo", invalido);
+            assertThrows(FalloGeneracion.class, () -> validador.validar(malo, null), "título: " + invalido);
+        }
+    }
+
     @Test
     void laReglaDelJuegoPuedeSerOrdenOSoloClase() throws Exception {
         Map<String, Object> conOrden = propuesta();

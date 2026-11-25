@@ -12,7 +12,9 @@ public class ValidadorPropuesta {
     // tipoJuego: "laberinto" si Kusi ya sabe construir el juego que se propone, "otro" si el
     // tema pide otro juego u otros dibujos, o null si la respuesta no lo dice (las ediciones
     // del docente y las propuestas anteriores), y entonces se hereda.
-    public record Resultado(String objetivo, String origenObjetivo, String historia, List<String> acciones, List<String> reglas, List<String> retos, List<String> ayudas, List<String> recursos, String reglaJuego, String tipoJuego) {}
+    // titulo: el nombre del juego que propone Kusi, o null si la respuesta no lo trae (la
+    // nueva versión hereda entonces el de la anterior).
+    public record Resultado(String objetivo, String origenObjetivo, String historia, List<String> acciones, List<String> reglas, List<String> retos, List<String> ayudas, List<String> recursos, String reglaJuego, String tipoJuego, String titulo) {}
 
     private static final Set<String> REGLAS_DEL_JUEGO=Set.of(CatalogoLaberinto.REGLA_ORDEN, CatalogoLaberinto.REGLA_SOLO_CLASE);
     public static final String TIPO_LABERINTO="laberinto";
@@ -21,6 +23,8 @@ public class ValidadorPropuesta {
     private static final String SIN_REGLA="ninguna";
     // Lo que puede aparecer en «objetos» sin ser un alimento: los personajes y la salida.
     private static final Set<String> PERSONAJES=Set.of("cuy", "kusi", "zorro", "portal", "puerta");
+    // Cabe en una tarjeta del panel y en la lista de la app.
+    public static final int LARGO_TITULO=60;
 
     public Resultado validar(Map<String,Object> respuesta, String objetivoDocente) throws FalloGeneracion {
         if (respuesta == null) throw invalida();
@@ -34,9 +38,10 @@ public class ValidadorPropuesta {
         String tipoJuego=tipoJuego(tipoPedido(respuesta.get("tipo_juego")), reglaJuego, objetos);
         // Otro juego no tiene regla de laberinto, aunque la IA haya escrito una.
         if (TIPO_OTRO.equals(tipoJuego)) reglaJuego=null;
+        String titulo=respuesta.get("titulo") == null ? null : texto(respuesta.get("titulo"), LARGO_TITULO).strip();
         // El objetivo del docente nunca se sustituye por el del proveedor.
-        if (objetivoDocente != null) return new Resultado(objetivoDocente, "docente", historia, acciones, reglas, retos, ayudas, recursos, reglaJuego, tipoJuego);
-        return new Resultado(texto(respuesta.get("objetivo"), 4000), "ia", historia, acciones, reglas, retos, ayudas, recursos, reglaJuego, tipoJuego);
+        if (objetivoDocente != null) return new Resultado(objetivoDocente, "docente", historia, acciones, reglas, retos, ayudas, recursos, reglaJuego, tipoJuego, titulo);
+        return new Resultado(texto(respuesta.get("objetivo"), 4000), "ia", historia, acciones, reglas, retos, ayudas, recursos, reglaJuego, tipoJuego, titulo);
     }
 
     // HU28: la regla del juego es opcional (las propuestas anteriores no la elegían ni

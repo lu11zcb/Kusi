@@ -30,8 +30,10 @@ public class ResultadosService {
             + "and exists (select 1 from edu.generaciones g where g.solicitud_id = s.id and g.publicada = true) ";
 
     public List<Map<String, Object>> actividades(UUID docente) {
-        return jdbc.query("select s.id, s.tema, sec.nombre, s.retirada_en " + ALCANCE + "order by s.creado_en desc, s.id",
-                (fila, indice) -> Map.<String, Object>of("id", fila.getObject(1, UUID.class), "titulo", fila.getString(2), "seccion", fila.getString(3), "retirada", fila.getTimestamp(4) != null), docente, docente);
+        // curso_id: el panel muestra el ícono y el nombre del curso, como en «Mis juegos».
+        return jdbc.query("select s.id, " + TituloJuego.SQL + ", sec.nombre, s.retirada_en, s.curso_id " + ALCANCE + "order by s.creado_en desc, s.id",
+                (fila, indice) -> Map.<String, Object>of("id", fila.getObject(1, UUID.class), "titulo", fila.getString(2), "seccion", fila.getString(3),
+                        "retirada", fila.getTimestamp(4) != null, "curso_id", fila.getObject(5, UUID.class)), docente, docente);
     }
 
     private UUID seccion(UUID docente, UUID actividad) {
@@ -58,8 +60,7 @@ public class ResultadosService {
         List<Map<String, Object>> filas = new ArrayList<>();
         for (UUID estudiante : estudiantes) {
             List<Map<String, Object>> jugadas = partidas.getOrDefault(estudiante, List.of());
-            String estado = jugadas.stream().anyMatch(p -> p.get("estado").equals("completada")) ? "completada"
-                    : jugadas.stream().anyMatch(p -> p.get("estado").equals("en_curso")) ? "en_curso" : "sin_iniciar";
+            String estado = estadoDe(jugadas);
             Map<String, Object> cuenta = django.validarCuenta(estudiante, "estudiante");
             filas.add(Map.of("id", estudiante, "nombre", cuenta.getOrDefault("nombre", "Estudiante"), "estado", estado,
                     "partidas", jugadas.size(), "ayudas_usadas", jugadas.stream().mapToInt(p -> (Integer) p.get("ayudas_usadas")).sum()));
@@ -72,6 +73,121 @@ public class ResultadosService {
         if (!destinatarios(docente, actividad).contains(estudiante))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este estudiante en la actividad.");
         return partidas(actividad, estudiante).getOrDefault(estudiante, List.of());
+    }
+
+    // Un estudiante es «de este docente» si está vinculado este año a una sección donde el
+    // docente tiene una asignación vigente. Conocer su identificador no concede acceso.
+    private static final String ESTUDIANTE_DEL_DOCENTE = "select 1 from edu.vinculos_estudiante v "
+            + "join edu.secciones sec on sec.id = v.seccion_id where v.estudiante_id = ? and v.retirado_en is null "
+            + "and v.anio_escolar = sec.anio_escolar and exists (select 1 from edu.asignaciones_docente a "
+            + "where a.docente_id = ? and a.seccion_id = v.seccion_id and a.anio_escolar = sec.anio_escolar)";
+
+    // La ficha de un estudiante para su docente: cada juego que le envió, si lo jugó, cómo le
+    // fue (errores, ayudas y puntos) y cuándo jugó por última vez. Los nombres los pone el
+    // panel con su propia lista; aquí solo van identificadores y números.
+    public Map<String, Object> fichaEstudiante(UUID docente, UUID estudiante) {
+        if (jdbc.queryForList(ESTUDIANTE_DEL_DOCENTE, Integer.class, estudiante, docente).isEmpty())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró este estudiante en tus secciones.");
+        List<Map<String, Object>> juegos = new ArrayList<>();
+        int puntosTotales = 0, completadas = 0, errores = 0, ayudas = 0;
+        for (Map<String, Object> actividad : actividades(docente)) {
+            UUID id = (UUID) actividad.get("id");
+            if (!destinatarios(docente, id).contains(estudiante)) continue;
+            List<Map<String, Object>> jugadas = partidas(id, estudiante).getOrDefault(estudiante, List.of());
+            String estado = estadoDe(jugadas);
+            int erroresJuego = jugadas.stream().mapToInt(ResultadosService::errores).sum();
+            int ayudasJuego = jugadas.stream().mapToInt(p -> (Integer) p.get("ayudas_usadas")).sum();
+            Integer puntos = jdbc.queryForObject("select coalesce(sum(puntos), 0) from edu.puntos_reto where estudiante_id = ? and actividad_id = ?",
+                    Integer.class, estudiante, id);
+            List<java.sql.Timestamp> ultima = jdbc.queryForList("select actualizado_en from edu.avances_actividad where estudiante_id = ? and actividad_id = ?",
+                    java.sql.Timestamp.class, estudiante, id);
+            Map<String, Object> fila = new LinkedHashMap<>();
+            fila.put("id", id);
+            fila.put("titulo", actividad.get("titulo"));
+            fila.put("seccion", actividad.get("seccion"));
+            // Para el ícono y el nombre del curso, como en «Mis juegos».
+            fila.put("curso_id", actividad.get("curso_id"));
+            fila.put("estado", estado);
+            fila.put("partidas", jugadas.size());
+            fila.put("errores", erroresJuego);
+            fila.put("ayudas_usadas", ayudasJuego);
+            fila.put("puntos", puntos == null ? 0 : puntos);
+            fila.put("ultima_vez", ultima.isEmpty() || ultima.get(0) == null ? null : ultima.get(0).toInstant());
+            juegos.add(fila);
+            puntosTotales += puntos == null ? 0 : puntos;
+            if (estado.equals("completada")) completadas++;
+            errores += erroresJuego;
+            ayudas += ayudasJuego;
+        }
+        Map<String, Object> totales = new LinkedHashMap<>();
+        totales.put("juegos", juegos.size());
+        totales.put("completados", completadas);
+        totales.put("puntos", puntosTotales);
+        totales.put("errores", errores);
+        totales.put("ayudas_usadas", ayudas);
+        return Map.of("estudiante", estudiante, "totales", totales, "juegos", juegos);
+    }
+
+    // Quién va mejor en cada sección del docente: los puntos que ganó cada estudiante en los
+    // juegos de este docente y cuántos terminó. Pedir ayuda no resta puntos (HU67).
+    public List<Map<String, Object>> ranking(UUID docente) {
+        Map<UUID, Map<String, Object>> secciones = new LinkedHashMap<>();
+        jdbc.query("select v.seccion_id, sec.nombre, sec.anio_escolar, v.estudiante_id, "
+                + "coalesce((select sum(pr.puntos) from edu.puntos_reto pr join edu.solicitudes_propuesta s on s.id = pr.actividad_id "
+                + "where pr.estudiante_id = v.estudiante_id and s.docente_id = ? and s.seccion_id = v.seccion_id), 0), "
+                + "(select count(*) from edu.avances_actividad av join edu.solicitudes_propuesta s on s.id = av.actividad_id "
+                + "where av.estudiante_id = v.estudiante_id and s.docente_id = ? and s.seccion_id = v.seccion_id and av.completada = true), "
+                + "(select max(pr.creado_en) from edu.puntos_reto pr join edu.solicitudes_propuesta s on s.id = pr.actividad_id "
+                + "where pr.estudiante_id = v.estudiante_id and s.docente_id = ? and s.seccion_id = v.seccion_id) "
+                + "from edu.vinculos_estudiante v join edu.secciones sec on sec.id = v.seccion_id "
+                + "where v.retirado_en is null and v.anio_escolar = sec.anio_escolar and exists (select 1 from edu.asignaciones_docente a "
+                + "where a.docente_id = ? and a.seccion_id = v.seccion_id and a.anio_escolar = sec.anio_escolar) "
+                + "order by sec.anio_escolar desc, sec.grado, sec.nombre, v.estudiante_id", fila -> {
+            UUID seccion = fila.getObject(1, UUID.class);
+            Map<String, Object> grupo = secciones.computeIfAbsent(seccion, clave -> {
+                Map<String, Object> nuevo = new LinkedHashMap<>();
+                nuevo.put("id", clave);
+                try { nuevo.put("nombre", fila.getString(2)); nuevo.put("anio_escolar", fila.getInt(3)); }
+                catch (java.sql.SQLException error) { throw new IllegalStateException(error); }
+                nuevo.put("estudiantes", new ArrayList<Map<String, Object>>());
+                return nuevo;
+            });
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> estudiantes = (List<Map<String, Object>>) grupo.get("estudiantes");
+            // puntos_hasta: cuándo ganó su último punto, es decir, cuándo llegó a sus puntos. Con
+            // los mismos puntos va primero el que llegó antes (null: todavía sin puntos).
+            Map<String, Object> puesto = new LinkedHashMap<>();
+            puesto.put("id", fila.getObject(4, UUID.class));
+            puesto.put("puntos", fila.getInt(5));
+            puesto.put("completados", fila.getInt(6));
+            puesto.put("puntos_hasta", fila.getTimestamp(7) == null ? null : fila.getTimestamp(7).toInstant());
+            estudiantes.add(puesto);
+        }, docente, docente, docente, docente);
+        for (Map<String, Object> grupo : secciones.values()) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> estudiantes = (List<Map<String, Object>>) grupo.get("estudiantes");
+            // Más puntos primero; con los mismos puntos, el que llegó antes.
+            estudiantes.sort(Comparator.comparing((Map<String, Object> e) -> (Integer) e.get("puntos")).reversed()
+                    .thenComparing(e -> (Instant) e.get("puntos_hasta"), Comparator.nullsLast(Comparator.naturalOrder())));
+        }
+        return List.copyOf(secciones.values());
+    }
+
+    private static String estadoDe(List<Map<String, Object>> jugadas) {
+        return jugadas.stream().anyMatch(p -> p.get("estado").equals("completada")) ? "completada"
+                : jugadas.stream().anyMatch(p -> p.get("estado").equals("en_curso")) ? "en_curso" : "sin_iniciar";
+    }
+
+    // Respuestas incorrectas de una partida (las comprobadas como «correcto: false»).
+    @SuppressWarnings("unchecked")
+    private static int errores(Map<String, Object> partida) {
+        int total = 0;
+        for (Object reto : (List<Object>) partida.getOrDefault("retos", List.of())) {
+            for (Object respuesta : (List<Object>) ((Map<String, Object>) reto).getOrDefault("respuestas", List.of())) {
+                if (Boolean.FALSE.equals(((Map<String, Object>) respuesta).get("correcto"))) total++;
+            }
+        }
+        return total;
     }
 
     private static final Duration VENTANA_ACTIVIDAD = Duration.ofSeconds(90);

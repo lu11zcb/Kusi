@@ -224,9 +224,12 @@ public class PropuestasService {
                 // El objetivo conserva su origen si no se cambió; si se editó, pasa a ser del docente.
                 String origenObjetivo=r.objetivo().equals(base.getObjetivo()) ? base.getOrigenObjetivo() : "docente";
                 // HU28: el docente edita los textos, no la regla ni el tipo de juego: la versión nueva conserva los de la base.
-                propuestas.saveAndFlush(new Propuesta(id, siguiente, "docente", version, null, r.objetivo(), origenObjetivo, r.historia(),
+                Propuesta editada=new Propuesta(id, siguiente, "docente", version, null, r.objetivo(), origenObjetivo, r.historia(),
                     aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()),
-                    null, null, base.getReglaJuego(), base.getTipoJuego()));
+                    null, null, base.getReglaJuego(), base.getTipoJuego());
+                // El docente edita los textos, no el nombre del juego.
+                editada.setTitulo(base.getTitulo());
+                propuestas.saveAndFlush(editada);
             });
         } catch (DataIntegrityViolationException carrera) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Se guardó otra versión al mismo tiempo. Revisa la versión actual.");
@@ -321,11 +324,14 @@ public class PropuestasService {
         String tipoJuego=r.tipoJuego() != null ? r.tipoJuego() : tipoHeredado;
         String reglaJuego=ValidadorPropuesta.TIPO_OTRO.equals(tipoJuego) ? null : r.reglaJuego() != null ? r.reglaJuego() : reglaHeredada;
         transaccion.executeWithoutResult(estado -> {
-            int version=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id).map(p -> p.getVersion()+1).orElse(1);
+            Optional<Propuesta> anterior=propuestas.findFirstBySolicitudIdOrderByVersionDesc(id);
+            int version=anterior.map(p -> p.getVersion()+1).orElse(1);
             Propuesta nueva=new Propuesta(id, version, "ia", versionBase, observaciones, r.objetivo(), r.origenObjetivo(), r.historia(),
                 aJson(r.acciones()), aJson(r.reglas()), aJson(r.retos()), aJson(r.ayudas()), r.recursos() == null ? null : aJson(r.recursos()),
                 proveedor, modelo, reglaJuego, tipoJuego);
             nueva.setFuentes(fuentes);
+            // Si la respuesta no trae título, el juego conserva el nombre que ya tenía.
+            nueva.setTitulo(r.titulo() != null ? r.titulo() : anterior.map(Propuesta::getTitulo).orElse(null));
             propuestas.saveAndFlush(nueva);
             solicitudes.terminarGeneracion(id, "generada", null, Instant.now());
         });
@@ -565,6 +571,8 @@ public class PropuestasService {
 
     public Map<String,Object> contenido(Propuesta p) {
         Map<String,Object> d=new LinkedHashMap<>();
+        // El nombre del juego (null en las propuestas anteriores a V21).
+        d.put("titulo", p.getTitulo());
         d.put("objetivo", p.getObjetivo()); d.put("historia", p.getHistoria());
         d.put("acciones", lista(p.getAcciones())); d.put("reglas", lista(p.getReglas()));
         d.put("retos", lista(p.getRetos())); d.put("ayudas", lista(p.getAyudas()));

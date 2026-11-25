@@ -141,6 +141,56 @@ class JuegosAdministracionTest {
         }
     }
 
+    // El administrador abre un juego y ve lo que escribió el docente, cada versión con la
+    // corrección que pidió y cada guion con sus comprobaciones. El título es el que propuso Kusi.
+    @Test void administradorVeElDetalleDeUnJuegoConElPedidoLasCorreccionesYElGuion() throws Exception {
+        UUID docente = UUID.randomUUID();
+        UUID curso = UUID.randomUUID();
+        Seccion seccion = secciones.saveAndFlush(new Seccion("Primero B", 1, 2026));
+        when(django.nombreCurso(curso)).thenReturn("Comunicación");
+        doCallRealMethod().when(django).validarAdministrador(nullable(String.class));
+        when(django.validarSesion("admin")).thenReturn(Map.of("roles", List.of("administrador")));
+        when(django.validarSesion("docente")).thenReturn(Map.of("id", docente, "roles", List.of("docente")));
+
+        UUID id = UUID.randomUUID();
+        solicitudes.saveAndFlush(new SolicitudPropuesta(id, docente, curso, seccion.getId(), "las vocales",
+                "Reconocer la a y la e", "preparacion", "Usar animales de la sierra"));
+        Propuesta primera = new Propuesta(id, 1, "ia", null, null, "Practicar vocales", "docente", "Kusi viaja",
+                "[\"Tocar\"]", "[\"Una regla\"]", "[\"Reto\"]", "[\"Pista\"]", null, "taller", "proponedor");
+        primera.setTitulo("Las vocales congeladas");
+        propuestas.saveAndFlush(primera);
+        Propuesta corregida = new Propuesta(id, 2, "ia", 1, "Que sea más corto", "Practicar vocales", "docente", "Kusi viaja corto",
+                "[\"Tocar\"]", "[\"Una regla\"]", "[\"Reto\"]", "[\"Pista\"]", null, "taller", "proponedor");
+        corregida.setTitulo("Las vocales congeladas");
+        corregida.revisar("aprobada", docente);
+        propuestas.saveAndFlush(corregida);
+        Generacion juego = new Generacion(id, corregida.getId(), 2);
+        juego.registrarEstado("lista", null);
+        juego.guardarPaquete(json.createObjectNode().put("titulo", "Otro nombre del guion").toString());
+        generaciones.saveAndFlush(juego);
+        jdbc.update("insert into edu.etapas_generacion (id, generacion_id, etapa, estado, mensaje, creado_en) values (?, ?, ?, ?, ?, current_timestamp)",
+                UUID.randomUUID(), juego.getId(), "comprobacion", "fallida", "Un objeto quedó sobre un muro.");
+
+        String ruta = RUTA + "detalle/" + id + "/";
+        mvc.perform(get(ruta).cookie(new Cookie("sessionid", "admin")))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.juego.titulo").value("Las vocales congeladas"))
+                .andExpect(jsonPath("$.juego.curso").value("Comunicación"))
+                .andExpect(jsonPath("$.pedido.tema").value("las vocales"))
+                .andExpect(jsonPath("$.pedido.objetivo_docente").value("Reconocer la a y la e"))
+                .andExpect(jsonPath("$.pedido.instrucciones").value("Usar animales de la sierra"))
+                .andExpect(jsonPath("$.versiones.length()").value(2))
+                .andExpect(jsonPath("$.versiones[0].version").value(2))
+                .andExpect(jsonPath("$.versiones[0].observaciones").value("Que sea más corto"))
+                .andExpect(jsonPath("$.versiones[0].contenido.historia").value("Kusi viaja corto"))
+                .andExpect(jsonPath("$.generaciones[0].estado").value("lista"))
+                .andExpect(jsonPath("$.generaciones[0].etapas[0].mensaje").value("Un objeto quedó sobre un muro."))
+                .andExpect(jsonPath("$.generaciones[0].guion.titulo").value("Otro nombre del guion"));
+        // Solo el administrador; un juego que no existe responde 404.
+        mvc.perform(get(ruta).cookie(new Cookie("sessionid", "docente"))).andExpect(status().isForbidden());
+        mvc.perform(get(RUTA + "detalle/" + UUID.randomUUID() + "/").cookie(new Cookie("sessionid", "admin"))).andExpect(status().isNotFound());
+    }
+
     private Propuesta propuesta(UUID docente, UUID curso, UUID seccion, String tema) {
         UUID id = UUID.randomUUID();
         solicitudes.saveAndFlush(new SolicitudPropuesta(id, docente, curso, seccion, tema, null, "refuerzo", null));

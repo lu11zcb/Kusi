@@ -156,6 +156,27 @@ class PropuestasRevisionSimuladaTest {
         assertEquals(1, solicitudes.count());
     }
 
+    // El juego se muestra con el nombre que propone Kusi, no con el tema que escribió el
+    // docente. Una corrección que no trae otro nombre conserva el que ya tenía.
+    @Test
+    void simulado_el_titulo_del_juego_lo_propone_kusi_y_se_conserva_al_corregir() throws Exception {
+        Map<String,Object> conTitulo=new HashMap<>(propuestaIa("Historia simulada 1"));
+        conTitulo.put("titulo","La feria de las sumas");
+        when(generador.generar(any())).thenReturn(conTitulo);
+        UUID id=crearGenerada("preparacion",null);
+        leer(BASE+id+"/","ses-docente").andExpect(jsonPath("$.solicitud.tema").value("Sumas"))
+            .andExpect(jsonPath("$.solicitud.propuesta.titulo").value("La feria de las sumas"));
+
+        when(generador.generar(any())).thenReturn(propuestaIa("Historia ajustada"));
+        escribir(BASE+id+"/versiones/1/observaciones/","ses-docente",Map.of("observaciones","Más corta")).andExpect(status().isCreated())
+            .andExpect(jsonPath("$.solicitud.propuesta.version").value(2))
+            .andExpect(jsonPath("$.solicitud.propuesta.titulo").value("La feria de las sumas"));
+        ArgumentCaptor<EntradaGeneracion> entrada=ArgumentCaptor.forClass(EntradaGeneracion.class);
+        verify(generador, times(2)).generar(entrada.capture());
+        // La IA recibe el nombre actual para conservarlo si las observaciones no lo cambian.
+        assertEquals("La feria de las sumas", entrada.getValue().propuestaBase().get("titulo"));
+    }
+
     @Test
     void simulado_hu22_observaciones_crean_version_nueva_y_conservan_la_anterior() throws Exception {
         UUID id=crearGenerada("preparacion",null);

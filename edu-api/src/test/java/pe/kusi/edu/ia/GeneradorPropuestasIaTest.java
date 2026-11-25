@@ -73,7 +73,7 @@ class GeneradorPropuestasIaTest {
         assertTrue(formato.path("json_schema").path("strict").asBoolean());
         var esquema = formato.path("json_schema").path("schema");
         assertFalse(esquema.path("additionalProperties").asBoolean());
-        assertEquals(10, esquema.path("required").size());
+        assertEquals(11, esquema.path("required").size());
         assertEquals("string", esquema.path("properties").path("historia").path("type").asText());
         assertEquals("array", esquema.path("properties").path("acciones").path("type").asText());
         assertEquals("string", esquema.path("properties").path("acciones").path("items").path("type").asText());
@@ -93,7 +93,8 @@ class GeneradorPropuestasIaTest {
     @Test void elEsquemaPideElTipoDeJuegoYLaReglaAntesQueElResto() throws Exception {
         JsonNode esquema = json.valueToTree(GeneradorPropuestasIa.esquema());
 
-        assertEquals(List.of("tipo_juego", "regla_juego", "objetivo", "historia", "acciones", "reglas", "retos", "ayudas",
+        // El título va después de la historia: primero se diseña el juego y luego se le pone nombre.
+        assertEquals(List.of("tipo_juego", "regla_juego", "objetivo", "historia", "titulo", "acciones", "reglas", "retos", "ayudas",
             "recursos", "objetos"), textos(esquema.get("required")));
         assertEquals(List.of("laberinto", "otro"), textos(esquema.at("/properties/tipo_juego/enum")));
         assertEquals("string", esquema.at("/properties/regla_juego/type").asText());

@@ -20,6 +20,7 @@ public class JuegosAdministracionService {
     private static final String JUEGOS = """
             with intentos as (
                 select s.id, s.docente_id, s.curso_id, s.seccion_id, s.tema, s.retirada_en,
+                    %s as titulo_propuesta,
                     g.estado,
                     row_number() over juego_reciente as intento,
                     min(g.creado_en) over (partition by s.id) as fecha,
@@ -33,7 +34,7 @@ public class JuegosAdministracionService {
                 %s
                 window juego_reciente as (partition by s.id order by g.creado_en desc, g.id desc)
             ), juegos as (
-                select id, docente_id, curso_id, seccion_id, tema, fecha, visible_id,
+                select id, docente_id, curso_id, seccion_id, tema, titulo_propuesta, fecha, visible_id,
                     case when retirada_en is not null then 'retirado'
                          when tiene_publicacion = 1 then 'publicado'
                          when estado = 'lista' then 'listo_para_probar'
@@ -54,34 +55,38 @@ public class JuegosAdministracionService {
         this.json = json;
     }
 
-    public record Docente(UUID id, String nombre, long juegos_creados) {}
+    // ultimo_juego_en: cuándo creó el último de sus juegos, es decir, cuándo llegó a su
+    // cantidad. Si dos docentes tienen los mismos juegos, va primero el que llegó antes.
+    public record Docente(UUID id, String nombre, long juegos_creados, Instant ultimo_juego_en) {}
     public record Totales(long creados, long publicados, long en_preparacion) {}
     public record Resumen(Totales totales, List<Docente> docentes) {}
     public record Juego(UUID id, String titulo, String curso, String seccion, Integer anio_escolar,
                         String estado, Instant creado_en, boolean fallo_generacion) {}
-    private record ConteoDocente(UUID id, long creados, long publicados, long enPreparacion) {}
+    private record ConteoDocente(UUID id, long creados, long publicados, long enPreparacion, Instant ultimoJuegoEn) {}
 
     public Resumen resumen() {
         // El listado incluye docentes con asignación que todavía no empezaron un juego.
         // La consulta no pasa por matrículas, destinatarios, partidas ni resultados.
-        List<ConteoDocente> conteos = jdbc.query(JUEGOS.formatted("") + """
+        List<ConteoDocente> conteos = jdbc.query(JUEGOS.formatted(TituloJuego.SQL, "") + """
                 , docentes as (
                     select docente_id from edu.asignaciones_docente
                     union select docente_id from juegos
                 )
                 select d.docente_id, count(j.id) as creados,
                     count(case when j.estado = 'publicado' then 1 end) as publicados,
-                    count(case when j.estado in ('generando', 'listo_para_probar') then 1 end) as en_preparacion
+                    count(case when j.estado in ('generando', 'listo_para_probar') then 1 end) as en_preparacion,
+                    max(j.fecha) as ultimo_juego_en
                 from docentes d left join juegos j on j.docente_id = d.docente_id
                 group by d.docente_id
                 """, (fila, indice) -> new ConteoDocente(fila.getObject("docente_id", UUID.class),
-                fila.getLong("creados"), fila.getLong("publicados"), fila.getLong("en_preparacion")));
+                fila.getLong("creados"), fila.getLong("publicados"), fila.getLong("en_preparacion"),
+                fila.getTimestamp("ultimo_juego_en") == null ? null : fila.getTimestamp("ultimo_juego_en").toInstant()));
 
         Totales totales = new Totales(conteos.stream().mapToLong(ConteoDocente::creados).sum(),
                 conteos.stream().mapToLong(ConteoDocente::publicados).sum(),
                 conteos.stream().mapToLong(ConteoDocente::enPreparacion).sum());
         List<Docente> docentes = conteos.stream()
-                .map(conteo -> new Docente(conteo.id(), django.nombreDocenteHistorico(conteo.id()), conteo.creados()))
+                .map(conteo -> new Docente(conteo.id(), django.nombreDocenteHistorico(conteo.id()), conteo.creados(), conteo.ultimoJuegoEn()))
                 .sorted(Comparator.comparing(Docente::nombre, String.CASE_INSENSITIVE_ORDER).thenComparing(Docente::id))
                 .toList();
         return new Resumen(totales, docentes);
@@ -90,15 +95,15 @@ public class JuegosAdministracionService {
     public List<Juego> juegosDe(UUID docente) {
         record Fila(UUID id, String titulo, UUID curso, String seccion, Integer anio, String estado,
                     Instant creadoEn, boolean fallo) {}
-        List<Fila> juegos = jdbc.query(JUEGOS.formatted("where s.docente_id = ?") + """
-                select j.id, j.tema, j.curso_id, sec.nombre as seccion, sec.anio_escolar,
+        List<Fila> juegos = jdbc.query(JUEGOS.formatted(TituloJuego.SQL, "where s.docente_id = ?") + """
+                select j.id, j.tema, j.titulo_propuesta, j.curso_id, sec.nombre as seccion, sec.anio_escolar,
                     j.estado, j.fecha, j.fallo_generacion, g.paquete
                 from juegos j
                 join edu.generaciones g on g.id = j.visible_id
                 left join edu.secciones sec on sec.id = j.seccion_id
                 order by j.fecha desc, j.id
                 """, (fila, indice) -> new Fila(fila.getObject("id", UUID.class),
-                titulo(fila.getString("paquete"), fila.getString("tema")), fila.getObject("curso_id", UUID.class),
+                titulo(fila.getString("titulo_propuesta"), fila.getString("paquete"), fila.getString("tema")), fila.getObject("curso_id", UUID.class),
                 fila.getString("seccion"), fila.getObject("anio_escolar", Integer.class), fila.getString("estado"),
                 fila.getTimestamp("fecha").toInstant(), fila.getBoolean("fallo_generacion")), docente);
 
@@ -118,8 +123,11 @@ public class JuegosAdministracionService {
         }
     }
 
-    private String titulo(String paquete, String tema) {
-        // Para una generación en curso o un paquete antiguo, el tema sigue identificando el juego.
+    private String titulo(String tituloPropuesta, String paquete, String tema) {
+        // Primero el título que propuso Kusi (TituloJuego.SQL ya cae en el tema si no hay
+        // título; por eso se compara con el tema). Un juego anterior a los títulos usa el de
+        // su guion, y una generación en curso o un paquete antiguo, el tema.
+        if (tituloPropuesta != null && !tituloPropuesta.equals(tema)) return tituloPropuesta;
         if (paquete != null) {
             try {
                 JsonNode contenido = json.readTree(paquete);

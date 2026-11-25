@@ -161,10 +161,71 @@ class ResultadosTest {
         verify(django, never()).validarCuenta(any(), any());
     }
 
+    // «Mis estudiantes»: la ficha de un estudiante junta sus juegos, errores, ayudas y puntos,
+    // y el ranking ordena cada sección por puntos. Otro docente no puede ver a ese estudiante.
+    @Test
+    void laFichaDelEstudianteJuntaSusJuegosYElRankingOrdenaCadaSeccionPorPuntos() throws Exception {
+        String partida = UUID.randomUUID().toString();
+        partidas.guardar(estudiante, false, aviso(partida, 1, "inicio"));
+        partidas.guardar(estudiante, false, aviso(partida, 2, "accion").put("respuesta", "Cuadrado").put("correcto", false));
+        partidas.guardar(estudiante, false, aviso(partida, 3, "ayuda").put("ayuda", 1));
+        partidas.guardar(estudiante, false, aviso(partida, 4, "accion").put("respuesta", "Círculo").put("correcto", true));
+        jdbc.update("delete from edu.puntos_reto where estudiante_id = ?", estudiante);
+        jdbc.update("insert into edu.puntos_reto (estudiante_id, actividad_id, nivel, puntos, generacion_id, partida_id) values (?, ?, 1, 7, ?, ?)",
+                estudiante, actividad, juego.getId(), partida);
+
+        leer("/api/edu/resultados/estudiantes/" + estudiante + "/", "docente").andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.ficha.totales.juegos").value(1))
+                .andExpect(jsonPath("$.ficha.totales.puntos").value(7))
+                .andExpect(jsonPath("$.ficha.juegos[0].titulo").value("Clasificar formas"))
+                .andExpect(jsonPath("$.ficha.juegos[0].curso_id").value(curso.toString()))
+                .andExpect(jsonPath("$.ficha.juegos[0].partidas").value(1))
+                .andExpect(jsonPath("$.ficha.juegos[0].errores").value(1))
+                .andExpect(jsonPath("$.ficha.juegos[0].ayudas_usadas").value(1))
+                .andExpect(jsonPath("$.ficha.juegos[0].puntos").value(7));
+        leer("/api/edu/resultados/estudiantes/" + otroEstudiante + "/", "docente")
+                .andExpect(jsonPath("$.ficha.juegos[0].estado").value("sin_iniciar"))
+                .andExpect(jsonPath("$.ficha.totales.puntos").value(0));
+
+        leer("/api/edu/resultados/ranking/", "docente").andExpect(status().isOk())
+                .andExpect(jsonPath("$.secciones.length()").value(1))
+                .andExpect(jsonPath("$.secciones[0].nombre").value(seccion.getNombre()))
+                .andExpect(jsonPath("$.secciones[0].estudiantes[0].id").value(estudiante.toString()))
+                .andExpect(jsonPath("$.secciones[0].estudiantes[0].puntos").value(7))
+                .andExpect(jsonPath("$.secciones[0].estudiantes[1].puntos").value(0));
+
+        // Con los mismos puntos va primero el que llegó antes a ellos.
+        String partidaOtro = UUID.randomUUID().toString();
+        partidas.guardar(otroEstudiante, false, aviso(partidaOtro, 1, "inicio"));
+        jdbc.update("insert into edu.puntos_reto (estudiante_id, actividad_id, nivel, puntos, generacion_id, partida_id, creado_en) "
+                + "values (?, ?, 1, 7, ?, ?, timestamp with time zone '2026-01-01 08:00:00+00')", otroEstudiante, actividad, juego.getId(), partidaOtro);
+        leer("/api/edu/resultados/ranking/", "docente")
+                .andExpect(jsonPath("$.secciones[0].estudiantes[0].id").value(otroEstudiante.toString()))
+                .andExpect(jsonPath("$.secciones[0].estudiantes[0].puntos").value(7))
+                .andExpect(jsonPath("$.secciones[0].estudiantes[1].id").value(estudiante.toString()))
+                .andExpect(jsonPath("$.secciones[0].estudiantes[1].puntos").value(7));
+
+        // Otro docente, un estudiante ajeno o un administrador no ven esta ficha.
+        leer("/api/edu/resultados/estudiantes/" + estudiante + "/", "otro").andExpect(status().isNotFound());
+        leer("/api/edu/resultados/ranking/", "otro").andExpect(jsonPath("$.secciones").isEmpty());
+        leer("/api/edu/resultados/estudiantes/" + UUID.randomUUID() + "/", "docente").andExpect(status().isNotFound());
+        leer("/api/edu/resultados/estudiantes/" + estudiante + "/", "admin").andExpect(status().isForbidden());
+    }
+
+    // Sin título (propuestas anteriores) se ve el tema; con título, el nombre que propuso Kusi.
+    @Test
+    void laActividadSeMuestraConElTituloQuePropusoKusi() throws Exception {
+        leer(BASE, "docente").andExpect(jsonPath("$.actividades[0].titulo").value("Clasificar formas"));
+        jdbc.update("update edu.propuestas set titulo = ? where solicitud_id = ?", "El taller de las formas", actividad);
+        leer(BASE, "docente").andExpect(jsonPath("$.actividades[0].titulo").value("El taller de las formas"));
+    }
+
     @Test
     void muestraSinIniciarEnCursoYCompletadaConRespuestasGenericasSinDuplicados() throws Exception {
         leer(BASE, "docente").andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(jsonPath("$.actividades[0].titulo").value("Clasificar formas"));
+                .andExpect(jsonPath("$.actividades[0].titulo").value("Clasificar formas"))
+                .andExpect(jsonPath("$.actividades[0].curso_id").value(curso.toString()));
         String partida = UUID.randomUUID().toString();
         partidas.guardar(estudiante, false, aviso(partida, 1, "listo"));
         leer(BASE + actividad + "/estudiantes/", "docente").andExpect(jsonPath("$.estudiantes[0].estado").value("sin_iniciar"));
