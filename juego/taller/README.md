@@ -11,7 +11,7 @@ Lo hace un equipo de cuatro roles que solo usa las piezas del
 | [reglas.md](reglas.md) | Las reglas que cumple todo juego nuevo: qué puede usar del kit, el protagonista, los niños, la seguridad y los límites. |
 | [entrega.md](entrega.md) | Qué archivos entrega cada juego nuevo, cómo se registra y qué evidencia se guarda. |
 | [revision.md](revision.md) | Cómo se revisa un juego y cada pieza nueva antes de que llegue al docente. |
-| [agentes/](agentes/) | Las instrucciones de cada rol: [proponedor](agentes/proponedor.md), [supervisor](agentes/supervisor.md), [programador](agentes/programador.md), [dibujante](agentes/dibujante.md) y [revisor](agentes/revisor.md). |
+| [agentes/](agentes/) | Las instrucciones de cada rol: [proponedor](agentes/proponedor.md), [supervisor](agentes/supervisor.md), [programador](agentes/programador.md), [dibujante](agentes/dibujante.md), [revisor](agentes/revisor.md) y [sabio](agentes/sabio.md). |
 
 ## La propuesta también pasa por el taller
 
@@ -114,6 +114,12 @@ npm run taller -- --una-vez
   rol `proponedor` (puede leer `juego/` y buscar en internet; escribe solo
   `propuesta.json` y notas en la carpeta del trabajo; sin Bash). Sin ese rol el
   trabajo falla y entra el respaldo. Sus pruebas están en `pruebas/logica/proponer.test.js`.
+- **Kusi Sabio** (las preguntas del docente sobre su clase o sobre el panel) las atiende `trabajador/consultar.js`, en
+  su propia cola (`/interno/taller/consultas/`) y aparte de los juegos: una pregunta no espera a que termine un juego.
+  `roles.local.json` necesita el rol `sabio` ([instrucciones](agentes/sabio.md)): solo lee el `consulta.json` de su
+  carpeta temporal y responde con un JSON corto; sin Bash, sin escribir y sin buscar en internet. El contexto lo arma
+  Spring y no trae nombres, DNI ni ids de estudiantes. Si el sabio falla o tarda, Spring responde con la IA de reserva.
+  Una respuesta tarda unos 20 segundos. Sus pruebas: `pruebas/logica/consultar.test.js`.
 - **El taller mira la pantalla por el docente.** Además de las comprobaciones de código, `trabajador/pantalla.js`
   abre el juego, toma tres capturas (al empezar, un momento después y tras mover el joystick) y se las devuelve al
   supervisor como corrección si ve **franjas vacías del color del lienzo** (cámara recortada), un **mundo liso y vacío**

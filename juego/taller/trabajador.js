@@ -17,6 +17,7 @@ import { leerAgentes, leerRoles, lanzar, cortarActivos } from './trabajador/role
 import { comprobarJuego } from './trabajador/comprobar.js'
 import { procesarTrabajo } from './trabajador/procesar.js'
 import { procesarPropuesta } from './trabajador/proponer.js'
+import { atenderConsultas } from './trabajador/consultar.js'
 
 const decir = (texto) => console.log('[taller] ' + texto)
 const unaVez = process.argv.includes('--una-vez')
@@ -71,6 +72,11 @@ const salir = () => {
   if (vite) try { process.kill(-vite.pid, 'SIGTERM') } catch { /* ya terminó */ }
 }
 process.on('SIGINT', () => { decir('Saliendo.'); salir(); process.exit(0) })
+// Las preguntas a Kusi Sabio se atienden aparte de los juegos: un docente no espera a que termine un juego.
+if (!unaVez && roles.sabio) {
+  decir('Kusi Sabio atiende las preguntas de los docentes.')
+  atenderConsultas({ buzon, roles, agentes, lanzar, seguir: () => !saliendo, registrar: decir })
+}
 process.on('SIGTERM', () => { salir(); process.exit(0) })
 
 let ultimoProblema = null

@@ -4,10 +4,12 @@ import { INTERVALO_SONDEO_MS } from './pausa.js'
 
 export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch, ahora = Date.now }) {
   const raiz = url.replace(/\/+$/, '') + '/interno/taller/trabajos/'
+  // Las preguntas a Kusi Sabio tienen su propia cola: no esperan detrás de un juego.
+  const raizConsultas = url.replace(/\/+$/, '') + '/interno/taller/consultas/'
   let espera = null
 
-  async function pedir(ruta, cuerpo) {
-    const respuesta = await pedirHttp(raiz + ruta, {
+  async function pedir(ruta, cuerpo, base = raiz) {
+    const respuesta = await pedirHttp(base + ruta, {
       method: 'POST',
       headers: { 'X-Taller-Clave': clave, 'Content-Type': 'application/json' },
       body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
@@ -68,5 +70,16 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch, ahora = D
     },
     // Si el trabajo era una propuesta, Spring usa su respaldo; el trabajador no lo sabe ni lo necesita.
     fallo: (id, motivo) => pedir(id + '/fallo', { motivo }),
+    // La pregunta a Kusi Sabio más antigua ({ id, con_actividad, contexto }), o null si no hay.
+    async siguienteConsulta() {
+      const { estado, datos } = await pedir('siguiente', undefined, raizConsultas)
+      if (estado === 204) return null
+      if (estado === 200 && datos?.consulta?.id) return datos.consulta
+      throw new Error('Las consultas respondieron ' + estado + ': ' + (datos?.mensaje ?? 'sin mensaje'))
+    },
+    // { texto, graficos, mostrar_quienes_necesitan_ayuda }: 200 lista, 422 con motivos, 409 si ya respondió la reserva.
+    respuestaConsulta: (id, cuerpo) => pedir(id + '/respuesta', cuerpo, raizConsultas),
+    // Spring responde con la reserva.
+    falloConsulta: (id, motivo) => pedir(id + '/fallo', { motivo }, raizConsultas),
   }
 }

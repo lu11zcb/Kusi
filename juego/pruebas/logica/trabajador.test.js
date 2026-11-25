@@ -83,7 +83,7 @@ test('arma la línea de comando de un rol con sus marcadores, y un marcador sin 
 
 test('los roles salen de taller/agentes/ y los subagentes del supervisor son el programador y el revisor', async () => {
   const agentes = await leerAgentes()
-  assert.deepEqual(Object.keys(agentes).sort(), ['dibujante', 'programador', 'proponedor', 'revisor', 'supervisor'])
+  assert.deepEqual(Object.keys(agentes).sort(), ['dibujante', 'programador', 'proponedor', 'revisor', 'sabio', 'supervisor'])
   assert.match(agentes.supervisor.instrucciones, /^# Supervisor/)
   const json = JSON.parse(subagentes(agentes, ['programador', 'revisor']))
   assert.deepEqual(Object.keys(json), ['programador', 'revisor'])
