@@ -2,6 +2,9 @@ import type { SolicitudPropuesta } from '../servicios/propuestas'
 import type { IconoDocenteNombre } from './IconoDocente'
 
 export const normalizarBusqueda = (texto: string) => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim()
+// El juego se llama como lo propuso Kusi. Mientras no hay propuesta, o si es anterior a
+// los títulos, se usa el tema que escribió el docente.
+export const tituloDelJuego = (solicitud: Pick<SolicitudPropuesta, 'tema' | 'propuesta'>) => solicitud.propuesta?.titulo?.trim() || solicitud.tema
 const cursos: Record<string, { tono: string; icono: IconoDocenteNombre }> = {
   matematica: { tono: 'cielo', icono: 'matematica' }, comunicacion: { tono: 'terracota', icono: 'comunicacion' },
   'personal social': { tono: 'dorado', icono: 'personal' }, 'ciencia y tecnologia': { tono: 'verde', icono: 'ciencia' },

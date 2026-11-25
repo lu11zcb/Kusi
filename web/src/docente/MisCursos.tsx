@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SelectorDesplegable } from '../componentes/SelectorDesplegable'
 import type { ContextosPropuestas } from '../servicios/propuestas'
 import { CabeceraDocente, CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 import { identidadCurso, normalizarBusqueda } from './utilidadesDocente'
@@ -19,7 +20,8 @@ export function MisCursos({ contextos, error, crear, recargar }: { contextos: Co
     {!!asignaciones.length && <>
       <div className="doc-herramientas">
         <div className="doc-busqueda"><label htmlFor="doc-buscar-curso">Buscar curso o sección</label><div><IconoDocente nombre="buscar" /><input id="doc-buscar-curso" type="search" value={buscar} onChange={(e) => establecerBuscar(e.target.value)} placeholder="Por ejemplo, Matemática" /></div></div>
-        <div className="doc-filtro"><label htmlFor="doc-seccion-curso">Sección</label><select id="doc-seccion-curso" value={seccion} onChange={(e) => establecerSeccion(e.target.value)}><option value="">Todas las secciones</option>{secciones.map(([id, s]) => <option key={id} value={id}>{s.nombre} · {s.anio}</option>)}</select></div>
+        <div className="doc-filtro"><label id="doc-seccion-curso-etiqueta" htmlFor="doc-seccion-curso">Sección</label><SelectorDesplegable id="doc-seccion-curso" valor={seccion} alCambiar={establecerSeccion}
+          opciones={[{ id: '', nombre: 'Todas las secciones' }, ...secciones.map(([id, s]) => ({ id, nombre: s.nombre + ' · ' + s.anio }))]} /></div>
       </div>
       <p className="doc-resultados" role="status">{visibles.length} {visibles.length === 1 ? 'curso y sección' : 'cursos y secciones'}{buscar || seccion ? ' en esta búsqueda' : ' para primero de primaria'}</p>
       {!visibles.length && <MensajeDocente titulo="No encontramos ese curso"><p>Prueba otro nombre o vuelve a mostrar todos tus cursos.</p><button className="secundario" type="button" onClick={() => { establecerBuscar(''); establecerSeccion('') }}>Limpiar búsqueda y filtros</button></MensajeDocente>}

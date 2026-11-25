@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { SelectorDesplegable } from '../componentes/SelectorDesplegable'
 import type { FormEvent } from 'react'
 import { RevisionPropuesta } from './RevisionPropuesta'
 import { GestorSolicitud, obtenerContextosPropuestas } from '../servicios/propuestas'
@@ -69,7 +70,11 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
       {error && <div ref={errorRef} tabIndex={-1}><MensajeDocente titulo="Vamos a recuperar tu idea" error><p>{error}</p></MensajeDocente></div>}
       <div className="doc-crear-distribucion"><form className="doc-formulario" onSubmit={enviar}>
         <fieldset disabled={ocupado || revisando}><legend>¿Qué quieres trabajar en clase?</legend>
-          <div className="campo"><label htmlFor="curso-propuesta">Curso y sección</label><select id="curso-propuesta" value={seleccionVigente} onChange={(e) => cambiar('seleccion', e.target.value)} disabled={cargando || !contextos?.contextos.length} required><option value="">Elige un curso de tu clase</option>{contextos?.contextos.map((c) => <option key={c.curso_id + '/' + (c.seccion_id ?? '')} value={c.curso_id + '/' + (c.seccion_id ?? '')}>{c.curso_nombre}{c.seccion_nombre ? ' · ' + c.seccion_nombre : ''}</option>)}</select></div>
+          <div className="campo"><label id="curso-propuesta-etiqueta" htmlFor="curso-propuesta">Curso y sección</label><SelectorDesplegable id="curso-propuesta" valor={seleccionVigente} alCambiar={(valor) => cambiar('seleccion', valor)}
+            required disabled={ocupado || revisando || cargando || !contextos?.contextos.length} opciones={[
+              { id: '', nombre: 'Elige un curso de tu clase' },
+              ...(contextos?.contextos ?? []).map((c) => ({ id: c.curso_id + '/' + (c.seccion_id ?? ''), nombre: c.curso_nombre + (c.seccion_nombre ? ' · ' + c.seccion_nombre : '') })),
+            ]} /></div>
           <div className="campo"><label htmlFor="tema-propuesta">¿Qué tema quieres enseñar? <span>Obligatorio</span></label><textarea id="tema-propuesta" value={tema} onChange={(e) => cambiar('tema', e.target.value)} required maxLength={2000} rows={3} placeholder="Por ejemplo: patrones con frutas" /><p className="doc-ayuda">Puedes contar qué necesitan practicar tus estudiantes.</p></div>
           <div className="campo"><label htmlFor="objetivo-propuesta">¿Qué deben aprender? <span>Opcional</span></label><textarea id="objetivo-propuesta" value={objetivo} onChange={(e) => cambiar('objetivo', e.target.value)} maxLength={4000} rows={3} placeholder="Por ejemplo: reconocer un patrón y continuarlo" /><p className="doc-ayuda">Si lo dejas vacío, Kusi te propondrá un objetivo.</p></div>
           <details className="doc-opcional" open={instrucciones ? true : undefined}><summary>Algo más que Kusi deba saber <span>Opcional</span></summary><div className="campo"><label htmlFor="instrucciones-propuesta">Tus indicaciones</label><textarea id="instrucciones-propuesta" value={instrucciones} onChange={(e) => cambiar('instrucciones', e.target.value)} maxLength={4000} rows={3} placeholder="Por ejemplo: dar instrucciones cortas y pistas sencillas" /></div></details>

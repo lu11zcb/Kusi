@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { SelectorDesplegable } from '../componentes/SelectorDesplegable'
 import { consultarSolicitud, eliminarSolicitud } from '../servicios/propuestas'
 import type { ContextosPropuestas, SolicitudPropuesta } from '../servicios/propuestas'
 import { CabeceraDocente, CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
-import { normalizarBusqueda } from './utilidadesDocente'
+import { normalizarBusqueda, tituloDelJuego } from './utilidadesDocente'
 import { IconoDocente } from './IconoDocente'
 import { RevisionPropuesta } from './RevisionPropuesta'
 import { cargarTrabajos, estadoTrabajo, mensajeDocente } from './trabajosDocente'
@@ -13,7 +14,7 @@ function ConfirmarEliminacion({ solicitud, ocupado, cancelar, confirmar }: { sol
   const dialogo = useRef<HTMLDialogElement>(null)
   useEffect(() => { dialogo.current?.showModal() }, [])
   return <dialog ref={dialogo} className="doc-dialogo" aria-labelledby="titulo-eliminar-juego" onCancel={(e) => { e.preventDefault(); if (!ocupado) cancelar() }}>
-    <h2 id="titulo-eliminar-juego">¿Eliminar este juego?</h2><p>Eliminarás «{solicitud.tema}», su idea y los juegos que preparaste con ella. También dejará de aparecer en la app de tu clase. No se puede recuperar.</p>
+    <h2 id="titulo-eliminar-juego">¿Eliminar este juego?</h2><p>Eliminarás «{tituloDelJuego(solicitud)}», su idea y los juegos que preparaste con ella. También dejará de aparecer en la app de tu clase. No se puede recuperar.</p>
     <div className="acciones"><button type="button" className="secundario" autoFocus disabled={ocupado} onClick={cancelar}>Conservar mi juego</button><button type="button" className="doc-eliminar" disabled={ocupado} onClick={confirmar}>{ocupado ? 'Eliminando…' : 'Eliminar juego'}</button></div>
   </dialog>
 }
@@ -48,7 +49,7 @@ export function MisPropuestas({ contextos, crear, alOcupar, activo, abrirId }: {
   const seccionDe = (solicitud: SolicitudPropuesta) => contextos?.contextos.find((c) => c.curso_id === solicitud.curso_id && c.seccion_id === solicitud.seccion_id)?.seccion_nombre ?? undefined
   const visibles = (trabajos ?? []).filter((trabajo) => (!curso || trabajo.solicitud.curso_id === curso)
     && (!estado || estadoTrabajo(trabajo).clave === estado)
-    && normalizarBusqueda(trabajo.solicitud.tema + ' ' + nombreCurso(trabajo.solicitud.curso_id)).includes(normalizarBusqueda(buscar)))
+    && normalizarBusqueda(tituloDelJuego(trabajo.solicitud) + ' ' + trabajo.solicitud.tema + ' ' + nombreCurso(trabajo.solicitud.curso_id)).includes(normalizarBusqueda(buscar)))
   function ocupar(valor: boolean) { establecerOcupado(valor); alOcupar(valor) }
   function actualizar(solicitud: SolicitudPropuesta) { establecerActual(solicitud); establecerRecarga((n) => n + 1) }
   function volver() { establecerActual(null); establecerRecarga((n) => n + 1); requestAnimationFrame(() => lista.current?.focus()) }
@@ -66,13 +67,14 @@ export function MisPropuestas({ contextos, crear, alOcupar, activo, abrirId }: {
       {trabajos === null && !error && <CargandoDocente texto="Buscando tus juegos…" />}
       {trabajos?.length === 0 && <MensajeDocente titulo="Tu primer juego empieza con una idea"><p>Elige qué quieres enseñar y prepara una propuesta para tu clase.</p><button type="button" onClick={crear}>Crear mi primera propuesta<IconoDocente nombre="flecha" /></button></MensajeDocente>}
       {!!trabajos?.length && <>
-        <div className="doc-herramientas"><div className="doc-busqueda"><label htmlFor="doc-buscar-propuesta">Buscar juego</label><div><IconoDocente nombre="buscar" /><input id="doc-buscar-propuesta" type="search" value={buscar} onChange={(e) => establecerBuscar(e.target.value)} placeholder="Tema o curso" /></div></div><div className="doc-filtro"><label htmlFor="doc-curso-propuesta">Curso</label><select id="doc-curso-propuesta" value={curso} onChange={(e) => establecerCurso(e.target.value)}><option value="">Todos los cursos</option>{cursos.map(([id, nombre]) => <option value={id} key={id}>{nombre}</option>)}</select></div></div>
+        <div className="doc-herramientas"><div className="doc-busqueda"><label htmlFor="doc-buscar-propuesta">Buscar juego</label><div><IconoDocente nombre="buscar" /><input id="doc-buscar-propuesta" type="search" value={buscar} onChange={(e) => establecerBuscar(e.target.value)} placeholder="Nombre, tema o curso" /></div></div><div className="doc-filtro"><label id="doc-curso-propuesta-etiqueta" htmlFor="doc-curso-propuesta">Curso</label><SelectorDesplegable id="doc-curso-propuesta" valor={curso} alCambiar={establecerCurso}
+          opciones={[{ id: '', nombre: 'Todos los cursos' }, ...cursos.map(([id, nombre]) => ({ id, nombre }))]} /></div></div>
         <div className="doc-filtros-estado" role="group" aria-label="Filtrar mis juegos">{filtros.map((f) => <button type="button" className="secundario" key={f.id} aria-pressed={estado === f.id} onClick={() => establecerEstado(f.id)}>{f.nombre}<span>{(trabajos ?? []).filter((s) => !f.id || estadoTrabajo(s).clave === f.id).length}</span></button>)}</div>
         <p className="doc-resultados" role="status">{visibles.length} {visibles.length === 1 ? 'juego' : 'juegos'}{buscar || estado || curso ? ' en esta búsqueda' : ''}</p>
         {!visibles.length && <MensajeDocente titulo="No hay juegos con estos filtros"><p>Prueba otro tema, curso o estado.</p><button className="secundario" type="button" onClick={() => { establecerBuscar(''); establecerCurso(''); establecerEstado('') }}>Mostrar todos mis juegos</button></MensajeDocente>}
         <ul className="doc-propuestas">{visibles.map((trabajo) => { const s = trabajo.solicitud; const situacion = estadoTrabajo(trabajo); return <li key={s.id_solicitud}>
-          <div className="doc-juego-ficha"><IconoCurso nombre={nombreCurso(s.curso_id)} /><div className="doc-propuesta-datos"><h2>{s.tema}</h2><p>{nombreCurso(s.curso_id)}{seccionDe(s) ? ' · ' + seccionDe(s) : ''}</p></div><span className={'doc-estado doc-estado-' + situacion.clave}>{situacion.etiqueta}</span></div>
-          <div className="doc-juego-acciones"><button type="button" className="doc-eliminar secundario" disabled={ocupado} onClick={() => establecerPorEliminar(s)} aria-label={'Eliminar ' + s.tema}>Eliminar</button><button type="button" disabled={ocupado} onClick={() => establecerActual(s)}>{situacion.accion}<IconoDocente nombre="flecha" /></button></div>
+          <div className="doc-juego-ficha"><IconoCurso nombre={nombreCurso(s.curso_id)} /><div className="doc-propuesta-datos"><h2>{tituloDelJuego(s)}</h2><p>{nombreCurso(s.curso_id)}{seccionDe(s) ? ' · ' + seccionDe(s) : ''}</p></div><span className={'doc-estado doc-estado-' + situacion.clave}>{situacion.etiqueta}</span></div>
+          <div className="doc-juego-acciones"><button type="button" className="doc-eliminar secundario" disabled={ocupado} onClick={() => establecerPorEliminar(s)} aria-label={'Eliminar ' + tituloDelJuego(s)}>Eliminar</button><button type="button" disabled={ocupado} onClick={() => establecerActual(s)}>{situacion.accion}<IconoDocente nombre="flecha" /></button></div>
         </li> })}</ul>
       </>}
     </div>}

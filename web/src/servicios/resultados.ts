@@ -1,7 +1,8 @@
 import { enviar, solicitar } from './http'
 import { ErrorApi } from './django'
 
-export type ActividadResultado = { id: string; titulo: string; seccion: string; retirada?: boolean }
+// curso_id: para mostrar el ícono y el nombre del curso (las respuestas anteriores no lo traen).
+export type ActividadResultado = { id: string; titulo: string; seccion: string; retirada?: boolean; curso_id?: string }
 export type DestinatarioActividad = { id: string; nombre: string; asignado: boolean }
 export type EstadoResultado = 'sin_iniciar' | 'en_curso' | 'completada'
 export type EstudianteResultado = { id: string; nombre: string; estado: EstadoResultado; partidas: number; ayudas_usadas: number }
@@ -72,4 +73,33 @@ export async function respuestasResultados(actividad: string, estudiante: string
 export async function retirarActividad(actividad: string): Promise<void> {
   const datos = await enviar<{ guardado: boolean }>(base + encodeURIComponent(actividad) + '/retirar/', {})
   if (datos.guardado !== true) throw new ErrorApi('Actualiza la actividad para confirmar su retiro.', 502)
+}
+
+// «Mis estudiantes»: la ficha de un estudiante (cada juego que recibió, si lo jugó, sus
+// errores, ayudas y puntos) y quién va mejor en cada sección. Spring manda identificadores
+// y números; los nombres salen de la lista de estudiantes del docente.
+export type JuegoDelEstudiante = {
+  id: string; titulo: string; seccion: string; curso_id?: string; estado: EstadoResultado; partidas: number
+  errores: number; ayudas_usadas: number; puntos: number; ultima_vez: string | null
+}
+export type FichaEstudianteResultado = {
+  estudiante: string
+  totales: { juegos: number; completados: number; puntos: number; errores: number; ayudas_usadas: number }
+  juegos: JuegoDelEstudiante[]
+}
+// puntos_hasta: cuándo ganó su último punto (con los mismos puntos, va primero quien llegó antes).
+export type PuestoRanking = { id: string; puntos: number; completados: number; puntos_hasta?: string | null }
+export type SeccionRanking = { id: string; nombre: string; anio_escolar: number; estudiantes: PuestoRanking[] }
+const resultados = '/api/edu/resultados/'
+export async function fichaEstudianteResultados(estudiante: string, signal?: AbortSignal): Promise<FichaEstudianteResultado> {
+  const datos = await solicitar<unknown>(resultados + 'estudiantes/' + encodeURIComponent(estudiante) + '/', { signal })
+  const ficha = objeto(datos) ? datos.ficha : null
+  if (!objeto(ficha) || !objeto(ficha.totales) || !Array.isArray(ficha.juegos) || !ficha.juegos.every(j => objeto(j) && texto(j.id) && texto(j.titulo) && estado(j.estado)
+    && cantidad(j.errores) && cantidad(j.ayudas_usadas) && cantidad(j.puntos) && cantidad(j.partidas)))
+    throw new ErrorApi('No pudimos confirmar el avance de este estudiante. Vuelve a cargarlo.', 502)
+  return ficha as FichaEstudianteResultado
+}
+export async function rankingResultados(signal?: AbortSignal): Promise<SeccionRanking[]> {
+  return lista(await solicitar<unknown>(resultados + 'ranking/', { signal }), 'secciones', s => objeto(s) && texto(s.id) && texto(s.nombre)
+    && Array.isArray(s.estudiantes) && s.estudiantes.every(e => objeto(e) && texto(e.id) && cantidad(e.puntos) && cantidad(e.completados))) as SeccionRanking[]
 }

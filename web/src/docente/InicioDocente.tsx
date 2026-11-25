@@ -9,6 +9,7 @@ import type { ContextosPropuestas } from '../servicios/propuestas'
 import { cargarTrabajos, estadoTrabajo } from './trabajosDocente'
 import type { TrabajoDocente } from './trabajosDocente'
 import { IconoDocente } from './IconoDocente'
+import { tituloDelJuego } from './utilidadesDocente'
 import { CargandoDocente, IconoCurso, MensajeDocente } from './ElementosDocente'
 
 type Propiedades = { nombre: string; contextos: ContextosPropuestas | null; ir: (seccion: string, curso?: string, juego?: string) => void; errorCursos?: string; recargarCursos?: () => void }
@@ -51,7 +52,7 @@ export function InicioDocente({ nombre, contextos, ir, errorCursos = '', recarga
     </div>
     <div className="contenido-con-lateral"><div>
       <div className="encabezado-seccion"><h2>Continúa con tu juego</h2><button type="button" className="secundario" onClick={() => ir('propuestas')}>Mis juegos<Icono nombre="flecha" /></button></div>
-      {trabajos === null ? <CargandoDocente texto="Buscando dónde te quedaste…" /> : ultima ? <article className="tarjeta continuar"><IconoCurso nombre={nombreCurso(ultima.solicitud.curso_id)} /><div className="datos"><strong>{ultima.solicitud.tema}</strong><small>{nombreCurso(ultima.solicitud.curso_id)} · {estadoTrabajo(ultima).etiqueta}</small></div><button type="button" onClick={() => ir('propuestas', '', ultima.solicitud.id_solicitud)}>{estadoTrabajo(ultima).accion}<Icono nombre="flecha" /></button></article>
+      {trabajos === null ? <CargandoDocente texto="Buscando dónde te quedaste…" /> : ultima ? <article className="tarjeta continuar"><IconoCurso nombre={nombreCurso(ultima.solicitud.curso_id)} /><div className="datos"><strong>{tituloDelJuego(ultima.solicitud)}</strong><small>{nombreCurso(ultima.solicitud.curso_id)} · {estadoTrabajo(ultima).etiqueta}</small></div><button type="button" onClick={() => ir('propuestas', '', ultima.solicitud.id_solicitud)}>{estadoTrabajo(ultima).accion}<Icono nombre="flecha" /></button></article>
         : <MensajeDocente titulo="Tu primer juego empieza aquí"><p>Cuéntale a Kusi qué quieres trabajar con tu clase.</p><button type="button" onClick={() => ir('solicitar')}>Preparar mi primera idea</button></MensajeDocente>}
       <div className="encabezado-seccion"><h2>Acciones rápidas</h2></div><div className="mosaicos">
         <button className="mosaico" type="button" onClick={() => ir('solicitar')}><span className="icono-grande c-dorado"><Icono nombre="varita" /></span><span><strong>Crear propuesta</strong><small>Una idea para tu clase</small></span></button>

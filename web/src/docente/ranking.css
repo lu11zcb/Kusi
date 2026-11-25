@@ -1,0 +1,45 @@
+/* Secciones con la tarjeta de Mis cursos y totales con la de Inicio. */
+.panel-docente .doc-ranking { margin-bottom: 1.5rem; }
+.panel-docente .doc-ranking .doc-encabezado-seccion p { margin: .25rem 0 0; color: var(--doc-suave); }
+.panel-docente .doc-ranking-secciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 18px;
+}
+.panel-docente .doc-ranking-secciones .doc-ranking-seccion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.panel-docente .doc-ranking-seccion .doc-cabecera-titulo { align-items: center; }
+.panel-docente .doc-ranking-seccion .doc-cabecera-titulo h3,
+.panel-docente .doc-ranking-seccion > p { margin: 0; }
+.panel-docente .doc-ranking-seccion > p { color: var(--doc-suave); }
+.panel-docente .doc-ranking-primero { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .65rem; }
+.panel-docente .doc-ranking-primero > span:last-child { color: var(--doc-suave); }
+.panel-docente .doc-ranking-seccion > .doc-ranking-ver { margin-top: auto; text-align: start; }
+
+.panel-docente .doc-avance-cabecera .doc-avatar.grande {
+  width: clamp(48px, 6vw, 64px);
+  height: clamp(48px, 6vw, 64px);
+  font-size: 1.25rem;
+}
+.panel-docente .doc-avance-estudiante .doc-avance-totales {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  margin: 0 0 1.5rem;
+}
+.panel-docente .doc-avance-totales > .estadistica {
+  display: grid;
+  align-content: start;
+  gap: .45rem;
+  min-width: 0;
+}
+.panel-docente .doc-avance-totales dd { margin: 0; font-variant-numeric: tabular-nums; }
+.panel-docente .doc-avance-totales small { margin-top: .55rem; font-size: .9rem; }
+.panel-docente .doc-avance-juegos .doc-persona > .icono-grande {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.panel-docente .doc-avance-juegos .doc-persona > .icono-grande .doc-icono { width: 22px; height: 22px; }

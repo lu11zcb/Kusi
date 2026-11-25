@@ -16,6 +16,8 @@ export type EntradaPropuesta = {
 }
 export type DatosSolicitud = Omit<EntradaPropuesta, 'objetivo' | 'instrucciones'> & { id_solicitud: string; objetivo: string | null; instrucciones: string | null }
 export type Propuesta = {
+  // El nombre del juego que propuso Kusi; null en las propuestas anteriores a los títulos.
+  titulo?: string | null
   id: string; objetivo: string; origen_objetivo: 'docente' | 'ia'; historia: string
   acciones: string[]; reglas: string[]; retos: string[]; ayudas: string[]
   // HU20-HU25: datos de la versión y su revisión.
@@ -50,6 +52,7 @@ function propuestaValida(valor: unknown): valor is Propuesta {
     && (valor.origen_objetivo === 'docente' || valor.origen_objetivo === 'ia')
     && (valor.regla_juego === undefined || valor.regla_juego === null || valor.regla_juego === 'orden' || valor.regla_juego === 'solo_clase')
     && (valor.tipo_juego === undefined || valor.tipo_juego === null || valor.tipo_juego === 'laberinto' || valor.tipo_juego === 'otro')
+    && (valor.titulo === undefined || valor.titulo === null || typeof valor.titulo === 'string')
     && (valor.se_puede_generar === undefined || typeof valor.se_puede_generar === 'boolean')
     && texto(valor.historia, 10000) && lista(valor.acciones) && lista(valor.reglas) && lista(valor.retos) && lista(valor.ayudas)
 }
