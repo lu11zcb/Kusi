@@ -158,6 +158,21 @@ Un trabajo que no está `en_proceso` no se cierra (409), y uno que no existe da 
 
 > **Para revisar (Jesús):** las rutas, la clave, los 30 minutos y la V10 los hizo Luis sobre el buzón de la V9 el 9 de noviembre. Falta tu revisión del contrato.
 
+## Kusi Sabio: el ayudante del docente
+
+El docente pregunta sobre una actividad de su sección (qué reforzar, quién necesita ayuda, gráficos) o sobre cómo usar el
+panel. `POST /api/edu/sabio/consultas/` recibe `actividad_id` (opcional; sin él, la pregunta es sobre el panel), `pregunta`
+(hasta 600 caracteres) e `historial` (hasta 4 intercambios), y devuelve el `id`. `GET /api/edu/sabio/consultas/{id}/`
+responde `pensando` o `lista` con `texto`, `graficos` (con sus barras) y `quienes_necesitan_ayuda` (con nombres). Solo el
+docente de la sección; las pruebas del docente no cuentan.
+
+El contexto que sale hacia quien responde se guarda en `consultas_sabio` (V18) y **no lleva nombres, DNI ni ids de
+estudiantes**: solo datos del grupo, el juego, el currículo del grado y [la guía del panel](../web/GUIA-DEL-PANEL.md). Las
+palabras de la pregunta que no son de enseñanza se cambian por «…». Responde el taller (rol `sabio`, por
+`/interno/taller/consultas/siguiente`, `{id}/respuesta` y `{id}/fallo`, con `X-Taller-Clave`). Si nadie la toma en 20 s
+(`kusi.sabio-espera-taller-seg`) o el taller no responde en 150 s (`kusi.sabio-tiempo-taller-seg`), responde la IA de reserva;
+sin ella, un mensaje amable con todos los gráficos y la lista. «Quién necesita ayuda» lo calcula Spring sin IA.
+
 ## Puntos, monedas y tienda del estudiante
 
 La actividad reparte 20 puntos entre sus retos. Cada respuesta incorrecta baja un punto hasta llegar a la mitad del valor del reto, redondeada hacia arriba. La actividad conserva el mejor puntaje confirmado de cada reto, hasta 20 puntos en total. Las ayudas y las incidencias técnicas se cuentan por separado.
