@@ -46,7 +46,8 @@ export function pedidoParaElSupervisor({ trabajo, carpeta, juegoUrl, correccion,
     'Cada encargo puede tardar varios minutos: dale 13 minutos de espera. Responde un JSON: con «siguiente»: «revisor», ' +
       'pásale el juego a tu revisor; con «corregir», vuelve a llamarlo con --correccion y los «no» del revisor.',
     'El kit, la biblioteca y el resto de juego/ son de solo lectura para todos.',
-    'Usa las piezas del kit y de la biblioteca (biblioteca.json: «taller» son juegos ya enviados a una clase, con su carpeta; ' +
+    'Usa las piezas del kit y de la biblioteca (biblioteca.json: «taller» son juegos ya enviados a una clase o juegos modelo («modelo»: true, ' +
+      'hechos y revisados por el equipo: léelos como ejemplo de un juego terminado), con su carpeta; ' +
       '«piezas_aprobadas» trae el archivo de cada pieza aprobada: cópialo tal cual a piezas/ y no necesita revisión). Si falta una pieza, pídesela al dibujante. Una pieza sola (por ejemplo, una corrección):',
     '  node ' + path.join(CARPETA_TALLER, 'dibujar.mjs') + ' --carpeta ' + carpeta +
       ' --id <id> --que "<qué es, en inglés>" [--apoyado] [--fondo | --cuento | --figura | --criatura | --tira <2-4>] [--correccion "<lo que dijo el revisor>"]',

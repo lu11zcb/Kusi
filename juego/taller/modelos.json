@@ -1,0 +1,19 @@
+{
+  "nota": "Juegos modelo: los hizo el equipo con el supervisor, el programador y el dibujante, revisando cada pieza a mano (correcciones 1 a 90, reglas.md sección 14). Entran a la biblioteca del supervisor como juegos terminados y con sus piezas aprobadas. Sus carpetas viven en taller/trabajos/ (no se suben): en otra máquina se omiten.",
+  "modelos": [
+    {
+      "trabajo": "32982efd-9127-45a8-b857-dd6e1cd9a260",
+      "titulo": "El traje de Inti",
+      "familia": "traje_inti",
+      "tema": "Partes externas del cuerpo humano (Ciencia y Tecnología, 1.º)",
+      "como_se_juega": "Explora una plaza con el joystick, recoge las prendas y viste a Inti nombrando cada parte del cuerpo."
+    },
+    {
+      "trabajo": "764bce40-9f31-4592-99c7-818886b65cc4",
+      "titulo": "Las vocales congeladas",
+      "familia": "vocales_hielo",
+      "tema": "Las vocales y las vocales fuertes y débiles (Comunicación, 1.º)",
+      "como_se_juega": "Lanza bolas de nieve a los bloques de hielo con la vocal que pide el coro de pingüinos; usa el canto y el micrófono."
+    }
+  ]
+}

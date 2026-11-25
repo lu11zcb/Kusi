@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { esIdTrabajo, PATRON_PIEZA } from '#kit/reproductor/datos/registroJuegos.js'
-import { CARPETA_JUEGO } from './configuracion.js'
+import { CARPETA_JUEGO, CARPETA_TALLER } from './configuracion.js'
 
 export function carpetaDe(trabajos, id) {
   if (!esIdTrabajo(id)) throw new Error('El trabajo «' + String(id) + '» no es un id válido.')
@@ -17,7 +17,24 @@ export function carpetaDe(trabajos, id) {
 // juegos/ y los del taller que el docente ya envió a su clase, con sus piezas aprobadas.
 // «enviados» es lo que responde Spring; aquí se agrega dónde está cada pieza en esta Mac
 // y su huella, para que el supervisor la copie y el trabajador la reconozca como aprobada.
-export async function armarBiblioteca({ enviados = [], trabajos = path.join(CARPETA_JUEGO, 'taller', 'trabajos') } = {}) {
+// Qué tipo de pieza es, por su nombre (como las nombra el dibujante).
+export function tipoDePieza(id) {
+  if (id.startsWith('fondo-cuento-')) return 'cuento'
+  if (id.startsWith('fondo-')) return 'fondo'
+  if (id.startsWith('criatura-')) return 'criatura'
+  if (id.startsWith('figura-')) return 'figura'
+  return 'objeto'
+}
+
+// Los juegos modelo de taller/modelos.json: hechos y revisados por el equipo. Todas sus
+// piezas cuentan como aprobadas. Un modelo cuya carpeta no está en esta Mac se omite.
+export async function leerModelos(archivo = path.join(CARPETA_TALLER, 'modelos.json')) {
+  if (!existsSync(archivo)) return []
+  const datos = JSON.parse(await readFile(archivo, 'utf8'))
+  return (datos.modelos ?? []).filter((modelo) => esIdTrabajo(modelo.trabajo))
+}
+
+export async function armarBiblioteca({ enviados = [], trabajos = path.join(CARPETA_JUEGO, 'taller', 'trabajos'), modelos = null } = {}) {
   const carpetaJuegos = path.join(CARPETA_JUEGO, 'juegos')
   const ejemplos = []
   for (const entrada of await readdir(carpetaJuegos, { withFileTypes: true })) {
@@ -45,6 +62,21 @@ export async function armarBiblioteca({ enviados = [], trabajos = path.join(CARP
     }
     taller.push({ trabajo: juego.trabajo, familia: juego.familia, titulo: juego.titulo, carpeta: path.join(carpeta, 'juego'),
       readme: path.join(carpeta, 'juego', 'README.md'), piezas })
+  }
+  for (const modelo of modelos ?? await leerModelos()) {
+    const carpeta = path.join(trabajos, modelo.trabajo)
+    if (!existsSync(path.join(carpeta, 'juego', 'juego.js')) || taller.some((juego) => juego.trabajo === modelo.trabajo)) continue
+    const piezas = []
+    for (const entrada of await readdir(path.join(carpeta, 'piezas'), { withFileTypes: true }).catch(() => [])) {
+      const id = entrada.name.replace(/\.png$/, '')
+      if (!entrada.isFile() || !entrada.name.endsWith('.png') || !PATRON_PIEZA.test(id)) continue
+      const archivo = path.join(carpeta, 'piezas', entrada.name)
+      const datos = { id, tipo: tipoDePieza(id), nombre: id, trabajo: modelo.trabajo, archivo, sha256: await huellaDe(archivo) }
+      piezas.push(datos)
+      piezasAprobadas.push(datos)
+    }
+    taller.push({ trabajo: modelo.trabajo, familia: modelo.familia, titulo: modelo.titulo, modelo: true, tema: modelo.tema,
+      como_se_juega: modelo.como_se_juega, carpeta: path.join(carpeta, 'juego'), readme: path.join(carpeta, 'juego', 'README.md'), piezas })
   }
   return {
     ejemplos,
