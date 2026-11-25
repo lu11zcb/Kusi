@@ -211,6 +211,14 @@ export async function procesarTrabajo(trabajo, dependencias) {
         registrar, lanzarVoz: dependencias.lanzarVoz, archivosMotor: dependencias.archivosMotor,
       })
       if (voz.motivo) registrar('Trabajo ' + trabajo.id + ' (voz). ' + voz.motivo)
+      // La portada (la imagen del juego en la app) solo se dibuja si el trabajador la recibe:
+      // las pruebas con programas simulados no la piden.
+      if (dependencias.dibujarPortada) {
+        const portada = await dependencias.dibujarPortada({
+          carpeta, roles, lanzarRol: lanzar, registrar, restanteMs: limiteMs - (ahora() - inicio),
+        })
+        if (portada.motivo) registrar('Trabajo ' + trabajo.id + ' (portada). ' + portada.motivo)
+      }
       const evidencia = await evidenciaActual('listo', notaDeEntrega)
       const respuesta = await buzon.resultado(trabajo.id, { paquete: revision.paquete, piezas, evidencia })
       if (respuesta.estado === 200) {

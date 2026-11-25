@@ -16,6 +16,7 @@ import { armarBiblioteca } from './trabajador/carpeta.js'
 import { leerAgentes, leerRoles, lanzar, cortarActivos } from './trabajador/roles.js'
 import { comprobarJuego } from './trabajador/comprobar.js'
 import { procesarTrabajo } from './trabajador/procesar.js'
+import { dibujarPortada } from './trabajador/portada.js'
 import { procesarPropuesta } from './trabajador/proponer.js'
 import { atenderConsultas } from './trabajador/consultar.js'
 
@@ -114,6 +115,7 @@ while (!saliendo) {
       const final = await procesarTrabajo(trabajo, {
         buzon, roles, agentes, lanzar, comprobar: comprobarJuego, biblioteca,
         trabajos: configuracion.trabajos, juegoUrl: configuracion.juegoUrl, limiteMs: configuracion.limiteMs,
+        dibujarPortada,
       })
       decir('Trabajo ' + trabajo.id + ' terminado: ' + final.resultado + '.')
     } catch (error) {

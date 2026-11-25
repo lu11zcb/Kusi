@@ -32,7 +32,7 @@ const LAMINA = path.join(CARPETA_JUEGO, 'kit', 'estilo', 'lamina-modelos.png')
 
 // El pedido a la herramienta de imágenes (guía de estilo, sección 13). Va en inglés: las
 // piezas aprobadas del kit salieron de pedidos en inglés y estas frases ya funcionaron.
-export function pedidoDeDibujo({ id, que, fondo, cuento = false, figura = false, criatura = false, tira = null, mundo = null, intento, correccion }) {
+export function pedidoDeDibujo({ id, que, fondo, cuento = false, portada = false, figura = false, criatura = false, tira = null, mundo = null, intento, correccion }) {
   const archivo = id + '-intento-' + intento + '.png'
   const partes = tira !== null
     ? [
@@ -61,6 +61,18 @@ export function pedidoDeDibujo({ id, que, fondo, cuento = false, figura = false,
         'Style: hand-painted cartoon style for children, warm dark brown outlines (#4b210e), thick, even and closed all around, simple cel-like soft shading with one base color, one shadow and one highlight, light from the upper left, vivid warm colors, simple rounded shapes. Make it charming, expressive and creative, with a bit of personality (decorations, patterns, a friendly simple face with two dark dot eyes and a small smile if it is a doll or a creature), not a plain boring shape. Not pixel art, not realistic 3D, no textures, no long gradients.',
         'Background: plain flat white. No ground, no shadow on the ground, no scenery, no other objects. No words, no labels, no letters, no numbers, no logos.',
         'Do not copy any character, brand or style from other games or films.',
+      ]
+    : portada
+    // La portada del juego: lo que ve el niño en la lista de la app para reconocerlo. Sin
+    // personajes (un Kusi dibujado aquí no saldría igual al de verdad) y sin letras (el
+    // título lo pone la app y los niños de 1.º todavía no leen).
+    ? [
+        'Use your image generation tool to create ONE landscape 16:9 cover illustration for a children game, then copy it into the current folder as ' + archivo + '.',
+        'Scene: ' + que + '. The place of the adventure with its two or three most important objects, big and easy to recognize at a glance, bright, cheerful and inviting, so a 6 year old child wants to play it.',
+        'No people, no animals and no characters at all: show the place and the objects of the game.',
+        'One clear center of interest, simple background, strong friendly colors; it must still read well when shown small on a phone.',
+        'No text, no letters, no numbers, no logos, no signs with words.',
+        'Style: hand-painted cartoon style for children, warm and cozy colors, warm brown outlines on buildings and objects, dark green outlines on plants, soft shading, not pixel art, not realistic 3D.',
       ]
     : cuento
     ? [
@@ -145,7 +157,7 @@ async function anotar(carpeta, id, datos) {
 }
 
 // «lanzarRol» permite probarlo sin la herramienta de imágenes real.
-export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false, cuento = false, figura = false, criatura = false, tira = null, mundo = null, correccion = null }, { roles, lanzarRol = lanzar } = {}) {
+export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false, cuento = false, portada = false, figura = false, criatura = false, tira = null, mundo = null, correccion = null }, { roles, lanzarRol = lanzar } = {}) {
   const inicio = Date.now()
   const carpetaReal = path.resolve(carpeta)
   if (!esIdTrabajo(path.basename(carpetaReal)) || !existsSync(path.join(carpetaReal, 'trabajo.json'))) {
@@ -159,8 +171,11 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
   }
   const esLamina = PATRON_LAMINA.test(id ?? '')
   const nombre = id ?? ''
-  const exclusivos = [fondo, cuento, figura, criatura, esTira].filter(Boolean).length
-  const tipoEsperado = cuento ? esLamina
+  const exclusivos = [fondo, cuento, portada, figura, criatura, esTira].filter(Boolean).length
+  // La portada del juego se llama siempre «portada» (el trabajador la dibuja al terminar).
+  const tipoEsperado = portada ? nombre === 'portada'
+    : nombre === 'portada' ? false
+    : cuento ? esLamina
     : fondo ? nombre.startsWith('fondo-') && !esLamina
       : figura ? nombre.startsWith('figura-') && nombre.length > 'figura-'.length
         : criatura ? nombre.startsWith('criatura-') && nombre.length > 'criatura-'.length
@@ -188,7 +203,7 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
   await rm(temporal, { recursive: true, force: true })
   await mkdir(temporal, { recursive: true })
   if (existsSync(LAMINA)) await copyFile(LAMINA, path.join(temporal, 'lamina-modelos.png'))
-  const pedido = pedidoDeDibujo({ id, que, fondo, cuento, figura, criatura, tira, mundo, intento, correccion })
+  const pedido = pedidoDeDibujo({ id, que, fondo, cuento, portada, figura, criatura, tira, mundo, intento, correccion })
   const comando = armarComando(roles.dibujante, { pedido, temporal, carpeta: carpetaReal, juego: CARPETA_JUEGO, raiz: path.resolve(CARPETA_JUEGO, '..') })
   let ejecucion
   try {
@@ -220,8 +235,8 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
     try {
       if (esTira) await prepararTiraFigura(origen, pieza, tira)
       else if (criatura) await prepararCriatura(origen, pieza)
-      else await prepararPieza(origen, pieza, { apoyado, fondo: fondo || cuento, figura })
-      const filtro = comprobarPieza(pieza, { fondo: fondo || cuento, figura, criatura })
+      else await prepararPieza(origen, pieza, { apoyado, fondo: fondo || cuento || portada, figura })
+      const filtro = comprobarPieza(pieza, { fondo: fondo || cuento || portada, figura, criatura })
       const noes = filtro.respuestas.filter((respuesta) => !respuesta.si)
       resultado = { pasa: filtro.pasa, respuestas: noes.map(({ pregunta, motivo }) => ({ pregunta, motivo })) }
       if (!filtro.pasa) resultado.motivo = noes.map((respuesta) => respuesta.motivo).join(' ')
@@ -233,7 +248,7 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
   if (!resultado.pasa) await rm(pieza, { force: true })
   const tokens = Number((/tokens used\s*\n?\s*([\d,.]+)/i.exec(ejecucion.salida + ejecucion.errores)?.[1] ?? '0').replace(/[,.]/g, ''))
   const segundos = Math.round((Date.now() - inicio) / 1000)
-  const tipo = esTira ? 'tira-figura' : criatura ? 'criatura' : figura ? 'figura' : cuento ? 'cuento' : fondo ? 'fondo' : 'objeto'
+  const tipo = esTira ? 'tira-figura' : criatura ? 'criatura' : figura ? 'figura' : portada ? 'portada' : cuento ? 'cuento' : fondo ? 'fondo' : 'objeto'
   await anotar(carpetaReal, id, { tipo, intentos: intento, pasa: resultado.pasa, imagenes: existsSync(origen) ? 1 : 0,
     tokens, costo_por_imagen_usd: roles.dibujante.costo_por_imagen_usd ?? null, segundos })
   await appendFile(path.join(carpetaReal, 'piezas', 'pedidos.md'),
@@ -247,7 +262,7 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   const { values } = parseArgs({ options: {
     carpeta: { type: 'string' }, id: { type: 'string' }, que: { type: 'string' },
-    apoyado: { type: 'boolean', default: false }, fondo: { type: 'boolean', default: false }, cuento: { type: 'boolean', default: false }, figura: { type: 'boolean', default: false }, criatura: { type: 'boolean', default: false }, mundo: { type: 'string' }, correccion: { type: 'string' },
+    apoyado: { type: 'boolean', default: false }, fondo: { type: 'boolean', default: false }, cuento: { type: 'boolean', default: false }, portada: { type: 'boolean', default: false }, figura: { type: 'boolean', default: false }, criatura: { type: 'boolean', default: false }, mundo: { type: 'string' }, correccion: { type: 'string' },
     tira: { type: 'string' },
   } })
   // El dibujante solo necesita su rol; las claves del buzón corresponden al trabajador.

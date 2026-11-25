@@ -72,6 +72,7 @@ dónde sale ese contenido.
     "regla_juego": "orden | solo_clase | ninguna",
     "objetivo": "El juego ayuda a practicar …",
     "historia": "2 o 3 oraciones cortas, en un solo texto",
+    "titulo": "el nombre del juego",
     "acciones": ["…"],
     "reglas": ["…"],
     "retos": ["…"],
@@ -90,6 +91,11 @@ dónde sale ese contenido.
   pedido trae `objetivoDocente` u `objetivoFijo`, se conserva tal cual (Spring
   pone el suyo): escribe igualmente uno que lo respete.
 - `historia`: un único texto (nunca una lista).
+- `titulo`: el nombre del juego, de 2 a 6 palabras y 60 caracteres como máximo, como
+  el título de un cuento o de una aventura. Nombra la misión o el lugar del juego; no
+  repite el tema tal como lo escribió el docente. Es lo que ven el docente, los
+  estudiantes y el administrador. Si ajustas una propuesta, conserva su título salvo
+  que las observaciones cambien la idea del juego o pidan otro nombre.
 - `acciones`, `reglas`, `retos`, `ayudas` y `recursos`: de 2 o 3 textos cortos
   cada una. Los `retos` van de lo más fácil a lo más difícil.
 - `objetos`: los nombres de las cosas que el niño recoge, ordena o usa, sin

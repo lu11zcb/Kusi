@@ -142,6 +142,9 @@ igual en Vite y en `node --test` ([entrega.md](entrega.md), sección 3).
 - Le hablan al niño de tú. No nombran al cuy ni a ninguna persona.
 - Kusi habla siempre en primera persona y nunca dice «Kusi» de sí mismo. El narrador del cuento puede nombrarlo.
 - Los alimentos se escriben con su nombre de verdad: «plátano», «piña».
+- El nombre del juego (`titulo` del guion) es el `titulo` de la propuesta aprobada,
+  tal cual. Si la propuesta no trae título (propuestas anteriores), se inventa uno
+  corto con la misma idea; nunca se usa el tema del docente como nombre.
 
 ## 8. Datos de los niños
 
