@@ -24,6 +24,8 @@ def crear_cuenta(datos_validados):
     with transaction.atomic():
         usuario = Usuario.objects.create_user(
             nombre=datos_validados["nombre"],
+            nombres=datos_validados["nombres"],
+            apellidos=datos_validados["apellidos"],
             correo=datos_validados["correo"],
             dni=datos_validados.get("dni"),
             password=contrasena_temporal,

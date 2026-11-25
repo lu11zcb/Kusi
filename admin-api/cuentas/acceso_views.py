@@ -26,7 +26,8 @@ ROLES = ("administrador", "docente", "estudiante")
 
 def datos_usuario(usuario):
     return {
-        "id": str(usuario.id), "nombre": usuario.nombre, "correo": usuario.correo, "dni": usuario.dni,
+        "id": str(usuario.id), "nombre": usuario.nombre, "nombres": usuario.nombres, "apellidos": usuario.apellidos,
+        "correo": usuario.correo, "dni": usuario.dni,
         "roles": list(usuario.groups.filter(name__in=ROLES).order_by("name").values_list("name", flat=True)),
         "debe_cambiar_contrasena": usuario.debe_cambiar_contrasena,
     }

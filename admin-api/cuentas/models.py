@@ -71,7 +71,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         editable=False,
     )
 
+    # Nombre completo («nombres apellidos»): lo leen Spring, la app y los paneles.
     nombre = models.CharField(max_length=150)
+    # Las dos partes por separado, para editarlas sin adivinar dónde empieza el apellido.
+    # Las cuentas creadas antes de separarlas las tienen vacías y conservan solo «nombre».
+    nombres = models.CharField(max_length=150, blank=True, default="")
+    apellidos = models.CharField(max_length=150, blank=True, default="")
     # Obligatorio para administradores y docentes (lo exige el formulario).
     correo = models.EmailField(unique=True, null=True, blank=True)
     # HU12: con su DNI el estudiante ingresa a la app móvil.

@@ -15,7 +15,7 @@ class EdicionTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = Usuario.objects.create_superuser("admin-edicion@example.com", "ClaveSegura2026!", nombre="Admin QA")
-        cls.persona = Usuario.objects.create_user("editar@example.com", "ClavePersona2026!", nombre="Nombre original", debe_cambiar_contrasena=False)
+        cls.persona = Usuario.objects.create_user("editar@example.com", "ClavePersona2026!", nombre="Nombre original", nombres="Nombre", apellidos="original", debe_cambiar_contrasena=False)
         cls.persona.groups.add(Group.objects.create(name="docente"))
 
     def setUp(self):
@@ -30,7 +30,7 @@ class EdicionTests(TestCase):
     def test_edicion_persiste_uuid_roles_contrasena_e_historial(self):
         identificador, hash_original = self.persona.pk, self.persona.password
         CambioUsuario.objects.create(usuario=self.persona, administrador=self.admin, tipo="roles", anterior={"roles": []}, actual={"roles": ["docente"]})
-        respuesta = self.guardar(nombre=" Nombre actualizado ", correo=" NUEVO@EXAMPLE.COM ")
+        respuesta = self.guardar(nombres=" Nombre ", apellidos=" actualizado ", correo=" NUEVO@EXAMPLE.COM ")
         self.assertEqual(respuesta.status_code, 200)
         self.persona.refresh_from_db()
         self.assertEqual(self.persona.pk, identificador)
@@ -40,24 +40,28 @@ class EdicionTests(TestCase):
         self.assertEqual(detalle["usuario"]["nombre"], "Nombre actualizado")
         self.assertEqual(detalle["usuario"]["roles"], ["docente"])
         self.assertEqual(len(detalle["historial"]), 2)
-        self.assertEqual(detalle["historial"][0]["anterior"], {"nombre": "Nombre original", "correo": "editar@example.com", "dni": None})
-        self.assertEqual(detalle["historial"][0]["actual"], {"nombre": "Nombre actualizado", "correo": "nuevo@example.com", "dni": None})
+        self.assertEqual(detalle["historial"][0]["anterior"], {"nombres": "Nombre", "apellidos": "original", "correo": "editar@example.com", "dni": None})
+        self.assertEqual(detalle["historial"][0]["actual"], {"nombres": "Nombre", "apellidos": "actualizado", "correo": "nuevo@example.com", "dni": None})
         self.assertNotIn(hash_original, str(detalle))
         self.assertNotIn("password", str(detalle))
         self.assertIn("no-store", respuesta.headers["Cache-Control"])
 
     def test_mismo_correo_propio_es_valido_y_no_duplica_historial(self):
         for _ in range(2):
-            self.assertEqual(self.guardar(nombre=self.persona.nombre, correo="EDITAR@EXAMPLE.COM").status_code, 200)
+            self.assertEqual(self.guardar(nombres=self.persona.nombres, apellidos=self.persona.apellidos, correo="EDITAR@EXAMPLE.COM").status_code, 200)
         self.assertFalse(CambioUsuario.objects.exists())
 
     def test_validacion_duplicados_tipos_y_campos_ajenos(self):
         for datos in (
-            {"nombre": "", "correo": "otro@example.com"}, {"nombre": "x" * 151, "correo": "otro@example.com"},
-            {"nombre": "Nombre válido", "correo": "invalido"}, {"nombre": "Nombre válido", "correo": "ADMIN-EDICION@EXAMPLE.COM"},
-            {"nombre": 3, "correo": "otro@example.com"}, {"nombre": "Nombre"},
-            {"nombre": "Nombre", "correo": "otro@example.com", "password": "impuesta"},
-            {"nombre": "Nombre", "correo": "otro@example.com", "is_active": False},
+            {"nombres": "", "apellidos": "Quispe", "correo": "otro@example.com"},
+            {"nombres": "Ana", "apellidos": " ", "correo": "otro@example.com"},
+            {"nombres": "x" * 75, "apellidos": "y" * 75, "correo": "otro@example.com"},
+            {"nombres": "Ana", "apellidos": "Quispe", "correo": "invalido"},
+            {"nombres": "Ana", "apellidos": "Quispe", "correo": "ADMIN-EDICION@EXAMPLE.COM"},
+            {"nombres": 3, "apellidos": "Quispe", "correo": "otro@example.com"}, {"nombres": "Ana", "apellidos": "Quispe"},
+            {"nombre": "Ana Quispe", "correo": "otro@example.com"},
+            {"nombres": "Ana", "apellidos": "Quispe", "correo": "otro@example.com", "password": "impuesta"},
+            {"nombres": "Ana", "apellidos": "Quispe", "correo": "otro@example.com", "is_active": False},
         ):
             with self.subTest(datos=datos):
                 self.assertEqual(self.guardar(**datos).status_code, 400)
@@ -65,20 +69,28 @@ class EdicionTests(TestCase):
         self.assertEqual(self.persona.correo, "editar@example.com")
         self.assertFalse(CambioUsuario.objects.exists())
 
-    def test_nombre_anterior_de_una_palabra_se_conserva_al_editar_el_correo(self):
-        Usuario.objects.filter(pk=self.persona.pk).update(nombre="Nombre")
-        self.assertEqual(self.guardar(nombre="Nombre", correo="nuevo@example.com").status_code, 200)
-        respuesta = self.guardar(nombre="Otro", correo="nuevo@example.com")
+    def test_cuenta_anterior_sin_partes_las_completa_al_editar(self):
+        # Antes solo se guardaba el nombre completo: al editar se piden las dos partes.
+        Usuario.objects.filter(pk=self.persona.pk).update(nombre="Nombre", nombres="", apellidos="")
+        respuesta = self.guardar(nombres="Nombre", apellidos="", correo="nuevo@example.com")
         self.assertEqual(respuesta.status_code, 400)
-        self.assertEqual(respuesta.json()["errores"]["nombre"][0]["code"], "nombre_incompleto")
+        self.assertEqual(respuesta.json()["errores"]["apellidos"][0]["code"], "required")
+        self.assertEqual(self.guardar(nombres="Nombre", apellidos="Quispe", correo="nuevo@example.com").status_code, 200)
         self.persona.refresh_from_db()
-        self.assertEqual(self.persona.nombre, "Nombre")
-        self.assertEqual(self.persona.correo, "nuevo@example.com")
+        self.assertEqual((self.persona.nombre, self.persona.nombres, self.persona.apellidos), ("Nombre Quispe", "Nombre", "Quispe"))
+
+    def test_mover_una_palabra_entre_nombres_y_apellidos_es_un_cambio(self):
+        # El nombre completo no cambia, pero sí dónde empieza el apellido.
+        self.assertEqual(self.guardar(nombres="Ana María", apellidos="Quispe", correo="editar@example.com").status_code, 200)
+        self.assertEqual(self.guardar(nombres="Ana", apellidos="María Quispe", correo="editar@example.com").status_code, 200)
+        self.persona.refresh_from_db()
+        self.assertEqual((self.persona.nombre, self.persona.nombres, self.persona.apellidos), ("Ana María Quispe", "Ana", "María Quispe"))
+        self.assertEqual(CambioUsuario.objects.filter(usuario=self.persona, tipo="datos").count(), 2)
 
     def test_fallo_historial_revierte_edicion_completa(self):
         with patch("cuentas.gestion_views.CambioUsuario.objects.create", side_effect=IntegrityError("Fallo QA")):
             with self.assertRaises(IntegrityError):
-                self.guardar(nombre="Nombre nuevo", correo="nuevo@example.com")
+                self.guardar(nombres="Nombre", apellidos="nuevo", correo="nuevo@example.com")
         self.persona.refresh_from_db()
         self.assertEqual(self.persona.nombre, "Nombre original")
         self.assertEqual(self.persona.correo, "editar@example.com")
@@ -89,17 +101,17 @@ class EdicionTests(TestCase):
             if usuario:
                 self.client.force_login(usuario)
             self.token = self.client.get(reverse("acceso:sesion")).json()["csrf_token"]
-            self.assertEqual(self.guardar(nombre="Nuevo", correo="nuevo@example.com").status_code, estado)
+            self.assertEqual(self.guardar(nombres="Nuevo", apellidos="Nombre", correo="nuevo@example.com").status_code, estado)
         self.admin.debe_cambiar_contrasena = True
         self.admin.save()
         self.client.force_login(self.admin)
         self.token = self.client.get(reverse("acceso:sesion")).json()["csrf_token"]
-        self.assertEqual(self.guardar(nombre="Nuevo", correo="nuevo@example.com").status_code, 403)
+        self.assertEqual(self.guardar(nombres="Nuevo", apellidos="Nombre", correo="nuevo@example.com").status_code, 403)
 
     def test_csrf_y_recurso_inexistente(self):
         self.assertEqual(self.client.patch(self.url, '{}', content_type="application/json").status_code, 403)
         self.url = reverse("cuentas:editar_usuario", args=["00000000-0000-0000-0000-000000000000"])
-        self.assertEqual(self.guardar(nombre="Nuevo", correo="nuevo@example.com").status_code, 404)
+        self.assertEqual(self.guardar(nombres="Nuevo", apellidos="Nombre", correo="nuevo@example.com").status_code, 404)
 
     def test_administrador_activa_y_desactiva_cuenta_con_historial(self):
         url = reverse("cuentas:cambiar_estado_usuario", args=[self.persona.pk])

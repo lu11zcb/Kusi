@@ -33,7 +33,7 @@ class DniEstudianteTests(TestCase):
         return cliente, cliente.post(reverse("acceso:ingresar"), json.dumps(datos), content_type="application/json", HTTP_X_CSRFTOKEN=token)
 
     def test_registra_estudiante_con_dni_y_sin_correo(self):
-        respuesta = self.registrar({"nombre": "Luis Niño", "dni": "70000002", "rol": "estudiante"})
+        respuesta = self.registrar({"nombres": "Luis", "apellidos": "Niño", "dni": "70000002", "rol": "estudiante"})
         self.assertEqual(respuesta.status_code, 201)
         self.assertEqual(respuesta.json()["usuario"]["dni"], "70000002")
         self.assertIsNone(respuesta.json()["usuario"]["correo"])
@@ -42,7 +42,7 @@ class DniEstudianteTests(TestCase):
 
     def test_registro_descarta_el_correo_que_envia_un_cliente_anterior(self):
         respuesta = self.registrar({
-            "nombre": "Ana Nueva", "correo": self.docente.correo, "dni": "70000002", "rol": "estudiante",
+            "nombres": "Ana", "apellidos": "Nueva", "correo": self.docente.correo, "dni": "70000002", "rol": "estudiante",
         })
         self.assertEqual(respuesta.status_code, 201)
         self.assertIsNone(respuesta.json()["usuario"]["correo"])
@@ -53,14 +53,14 @@ class DniEstudianteTests(TestCase):
     def test_dni_obligatorio_valido_y_unico_para_estudiantes(self):
         for dni, mensaje in (("", "obligatorio"), ("1234567", "8 dígitos"), ("1234567a", "8 dígitos"), ("70000001", "Ya existe")):
             with self.subTest(dni=dni):
-                respuesta = self.registrar({"nombre": "Niño Ficticio", "dni": dni, "rol": "estudiante"})
+                respuesta = self.registrar({"nombres": "Niño", "apellidos": "Ficticio", "dni": dni, "rol": "estudiante"})
                 self.assertEqual(respuesta.status_code, 400)
                 self.assertIn(mensaje, respuesta.json()["errores"]["dni"][0]["message"])
 
     def test_adultos_siguen_necesitando_correo(self):
         for rol in ("docente", "administrador"):
             with self.subTest(rol=rol):
-                respuesta = self.registrar({"nombre": "Persona Adulta", "rol": rol})
+                respuesta = self.registrar({"nombres": "Persona", "apellidos": "Adulta", "rol": rol})
                 self.assertEqual(respuesta.status_code, 400)
                 self.assertEqual(set(respuesta.json()["errores"]), {"correo"})
 
@@ -127,10 +127,10 @@ class DniEstudianteTests(TestCase):
     def test_edicion_conserva_o_cambia_el_dni(self):
         cliente, token = self.cliente(self.admin)
         ruta = reverse("cuentas:editar_usuario", args=[self.estudiante.pk])
-        respuesta = cliente.patch(ruta, json.dumps({"nombre": "Ana Editada", "correo": ""}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
+        respuesta = cliente.patch(ruta, json.dumps({"nombres": "Ana", "apellidos": "Editada", "correo": ""}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(respuesta.json()["usuario"]["dni"], "70000001")
-        respuesta = cliente.patch(ruta, json.dumps({"nombre": "Ana Editada", "correo": "", "dni": "70000005"}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
+        respuesta = cliente.patch(ruta, json.dumps({"nombres": "Ana", "apellidos": "Editada", "correo": "", "dni": "70000005"}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(respuesta.json()["usuario"]["dni"], "70000005")
-        respuesta = cliente.patch(ruta, json.dumps({"nombre": "Ana Editada", "correo": "", "dni": ""}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
+        respuesta = cliente.patch(ruta, json.dumps({"nombres": "Ana", "apellidos": "Editada", "correo": "", "dni": ""}), content_type="application/json", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(respuesta.status_code, 400)

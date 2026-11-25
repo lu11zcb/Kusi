@@ -141,21 +141,23 @@ def editar_usuario(request, usuario_id):
     datos, error = leer_json(request)
     if error is not None:
         return error
-    if set(datos) not in ({"nombre", "correo"}, {"nombre", "correo", "dni"}) or any(not isinstance(valor, str) for valor in datos.values()):
-        return JsonResponse({"mensaje": "Envía únicamente nombre, correo y DNI como texto."}, status=400)
+    if set(datos) not in ({"nombres", "apellidos", "correo"}, {"nombres", "apellidos", "correo", "dni"}) or any(not isinstance(valor, str) for valor in datos.values()):
+        return JsonResponse({"mensaje": "Envía únicamente nombres, apellidos, correo y DNI como texto."}, status=400)
     try:
         with transaction.atomic():
             usuario = get_object_or_404(Usuario.objects.select_for_update(), pk=usuario_id)
             formulario = FormularioEdicionUsuario({**datos, "dni": datos.get("dni", usuario.dni or "")}, usuario)
             if not formulario.is_valid():
                 return JsonResponse({"mensaje": "Revisa los datos del usuario.", "errores": formulario.errors.get_json_data()}, status=400)
-            anterior = {"nombre": usuario.nombre, "correo": usuario.correo, "dni": usuario.dni}
-            actual = dict(formulario.cleaned_data)
+            # El historial compara las partes: mover una palabra de nombres a apellidos también es un cambio.
+            campos = ("nombres", "apellidos", "correo", "dni")
+            anterior = {campo: getattr(usuario, campo) for campo in campos}
+            actual = {campo: formulario.cleaned_data[campo] for campo in campos}
             if anterior != actual:
-                usuario.nombre = actual["nombre"]
-                usuario.correo = actual["correo"]
-                usuario.dni = actual["dni"]
-                usuario.save(update_fields=["nombre", "correo", "dni"])
+                usuario.nombre = formulario.cleaned_data["nombre"]
+                for campo in campos:
+                    setattr(usuario, campo, actual[campo])
+                usuario.save(update_fields=["nombre", *campos])
                 CambioUsuario.objects.create(usuario=usuario, administrador=request.user, tipo="datos", anterior=anterior, actual=actual)
     except IntegrityError:
         if datos.get("dni") and Usuario.objects.filter(dni=datos["dni"].strip()).exclude(pk=usuario_id).exists():

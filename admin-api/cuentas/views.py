@@ -100,7 +100,7 @@ def registrar_usuario(request):
 
     errores_tipo = {
         campo: [{"message": "Este dato debe ser un texto.", "code": "invalid_type"}]
-        for campo in ("nombre", "correo", "rol", "dni")
+        for campo in ("nombres", "apellidos", "correo", "rol", "dni")
         if campo in datos and not isinstance(datos[campo], str)
     }
     if errores_tipo:
@@ -167,6 +167,8 @@ def registrar_usuario(request):
             "usuario": {
                 "id": str(usuario.id),
                 "nombre": usuario.nombre,
+                "nombres": usuario.nombres,
+                "apellidos": usuario.apellidos,
                 "correo": usuario.correo,
                 "dni": usuario.dni,
                 "rol": formulario.cleaned_data["rol"],

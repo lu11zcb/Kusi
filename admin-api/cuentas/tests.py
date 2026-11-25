@@ -29,7 +29,8 @@ class RegistroUsuariosTests(TestCase):
         self.url = reverse("cuentas:registrar_usuario")
         self.url_contexto = reverse("cuentas:contexto_registro")
         self.datos = {
-            "nombre": "Persona de prueba",
+            "nombres": "Persona",
+            "apellidos": "de prueba",
             "correo": "persona@example.com",
             "rol": "docente",
         }
@@ -49,7 +50,7 @@ class RegistroUsuariosTests(TestCase):
             self.assertIn(directiva, respuesta.headers["Cache-Control"])
 
     def test_registro_persiste_uuid_hash_rol_y_cambio_obligatorio(self):
-        self.datos.update(nombre="  Persona de prueba  ", correo=" Persona@EXAMPLE.COM ")
+        self.datos.update(nombres="  Persona ", apellidos=" de   prueba  ", correo=" Persona@EXAMPLE.COM ")
         respuesta = self.registrar(HTTP_ORIGIN="http://testserver")
         self.assertEqual(respuesta.status_code, 201)
         datos = respuesta.json()
@@ -57,6 +58,9 @@ class RegistroUsuariosTests(TestCase):
         self.assertIsInstance(usuario.id, uuid.UUID)
         self.assertEqual(datos["usuario"]["id"], str(usuario.id))
         self.assertEqual(datos["usuario"]["nombre"], "Persona de prueba")
+        # Las partes se guardan aparte y sin espacios de más; el nombre completo las une.
+        self.assertEqual((usuario.nombres, usuario.apellidos), ("Persona", "de prueba"))
+        self.assertEqual((datos["usuario"]["nombres"], datos["usuario"]["apellidos"]), ("Persona", "de prueba"))
         self.assertEqual(datos["usuario"]["correo"], "persona@example.com")
         self.assertEqual(datos["usuario"]["rol"], "docente")
         temporal = datos["contrasena_temporal"]
@@ -83,27 +87,41 @@ class RegistroUsuariosTests(TestCase):
                 self.assertFalse(usuario.is_superuser)
 
     def test_campos_faltantes_vacios_o_solo_espacios(self):
-        for datos in ({}, {"nombre": "  ", "correo": " ", "rol": ""}):
+        for datos in ({}, {"nombres": "  ", "apellidos": " ", "correo": " ", "rol": ""}):
             with self.subTest(datos=datos):
                 respuesta = self.registrar(datos)
                 self.assertEqual(respuesta.status_code, 400)
-                self.assertEqual(set(respuesta.json()["errores"]), {"nombre", "correo", "rol"})
-                self.assertEqual(respuesta.json()["errores"]["nombre"][0]["message"], "El nombre completo es obligatorio.")
+                self.assertEqual(set(respuesta.json()["errores"]), {"nombres", "apellidos", "correo", "rol"})
+                self.assertEqual(respuesta.json()["errores"]["nombres"][0]["message"], "Escribe sus nombres.")
+                self.assertEqual(respuesta.json()["errores"]["apellidos"][0]["message"], "Escribe sus apellidos.")
         self.assertEqual(Usuario.objects.count(), 1)
 
-    def test_nombre_completo_es_obligatorio_para_los_tres_roles(self):
+    def test_nombres_y_apellidos_son_obligatorios_para_los_tres_roles(self):
         for rol in ("administrador", "docente", "estudiante"):
             with self.subTest(rol=rol):
-                respuesta = self.registrar({**self.datos, "nombre": "  Persona  ", "rol": rol, "dni": "40000001"})
+                respuesta = self.registrar({**self.datos, "apellidos": "  ", "rol": rol, "dni": "40000001"})
                 self.assertEqual(respuesta.status_code, 400)
-                self.assertEqual(respuesta.json()["errores"]["nombre"][0]["code"], "nombre_incompleto")
+                self.assertEqual(respuesta.json()["errores"]["apellidos"][0]["code"], "required")
+        self.assertEqual(Usuario.objects.count(), 1)
+
+    def test_nombres_y_apellidos_juntos_caben_en_el_nombre_completo(self):
+        # 75 + espacio + 75 = 151: cada parte es válida, pero juntas no caben en la cuenta.
+        respuesta = self.registrar({**self.datos, "nombres": "a" * 75, "apellidos": "b" * 75})
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertIn("150", respuesta.json()["errores"]["apellidos"][0]["message"])
+        self.assertEqual(self.registrar({**self.datos, "nombres": "a" * 75, "apellidos": "b" * 74}).status_code, 201)
+
+    def test_el_nombre_completo_anterior_ya_no_se_acepta(self):
+        datos = {key: valor for key, valor in self.datos.items() if key not in ("nombres", "apellidos")}
+        respuesta = self.registrar({**datos, "nombre": "Persona de prueba"})
+        self.assertEqual(respuesta.status_code, 400)
         self.assertEqual(Usuario.objects.count(), 1)
 
     def test_correo_invalido_rol_ajeno_y_limites(self):
         for campo, valor in (
             ("correo", "correo-invalido"),
             ("rol", "superusuario"),
-            ("nombre", "a" * 151),
+            ("nombres", "a" * 151),
             ("correo", "a" * 243 + "@example.com"),
         ):
             with self.subTest(campo=campo, valor=valor):
@@ -123,7 +141,7 @@ class RegistroUsuariosTests(TestCase):
         self.assertEqual(Usuario.objects.count(), 1)
 
     def test_rechaza_campos_json_que_no_son_texto(self):
-        for campo, valor in (("nombre", []), ("correo", {}), ("rol", None), ("nombre", 123)):
+        for campo, valor in (("nombres", []), ("correo", {}), ("rol", None), ("apellidos", 123)):
             with self.subTest(campo=campo, valor=valor):
                 respuesta = self.registrar({**self.datos, campo: valor})
                 self.assertEqual(respuesta.status_code, 400)

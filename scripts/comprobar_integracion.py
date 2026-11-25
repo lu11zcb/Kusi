@@ -246,16 +246,16 @@ class DomingoTests(unittest.TestCase):
 
     def test_cuentas_roles_edicion_catalogo_regresion_hu01_hu02_hu03_hu04(self):
         admin = Cliente(); admin.ingreso("qa-admin@example.com")
-        estado, datos = admin.django("/api/cuentas/usuarios/", {"nombre": "Cuenta registro QA", "correo": "registro-integracion@example.com", "rol": "docente"})
+        estado, datos = admin.django("/api/cuentas/usuarios/", {"nombres": "Cuenta registro", "apellidos": "QA", "correo": "registro-integracion@example.com", "rol": "docente"})
         self.assertEqual(estado, 201, datos)
         self.assertEqual(len(datos["contrasena_temporal"]), 10)
         identidad = datos["usuario"]["id"]
-        self.assertEqual(admin.django("/api/cuentas/usuarios/", {"nombre": "Duplicado", "correo": "REGISTRO-INTEGRACION@example.com", "rol": "docente"})[0], 400)
+        self.assertEqual(admin.django("/api/cuentas/usuarios/", {"nombres": "Duplicado", "apellidos": "QA", "correo": "REGISTRO-INTEGRACION@example.com", "rol": "docente"})[0], 400)
         self.assertEqual(admin.django("/api/cuentas/usuarios/" + identidad + "/roles/", {"roles": ["administrador", "docente"]})[0], 200)
         # PATCH conserva UUID/hash/roles y registra historial (Django real).
         token = admin.pedir(8000, "/api/acceso/sesion/")[1]["csrf_token"]
         peticion = urllib.request.Request("http://127.0.0.1:8000/api/cuentas/usuarios/" + identidad + "/datos/",
-            json.dumps({"nombre": "Nombre editado QA", "correo": "editado-integracion@example.com"}).encode(),
+            json.dumps({"nombres": "Nombre editado", "apellidos": "QA", "correo": "editado-integracion@example.com"}).encode(),
             {"Content-Type": "application/json", "X-CSRFToken": token}, method="PATCH")
         with admin.http.open(peticion) as respuesta:
             self.assertEqual(respuesta.status, 200)

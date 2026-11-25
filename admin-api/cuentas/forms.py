@@ -3,10 +3,40 @@ from django import forms
 from .models import Usuario
 
 
-def validar_nombre_completo(nombre):
-    if len(nombre.split()) < 2:
-        raise forms.ValidationError("Escribe nombres y apellidos (al menos dos palabras).", code="nombre_incompleto")
-    return nombre
+LARGO_NOMBRE_COMPLETO = 150
+
+
+def limpiar_parte_nombre(texto):
+    # Quita los espacios de más: «Ana  María » se guarda como «Ana María».
+    return " ".join(texto.split())
+
+
+def campo_parte_nombre(parte):
+    return forms.CharField(
+        max_length=LARGO_NOMBRE_COMPLETO,
+        error_messages={
+            "required": "Escribe sus " + parte + ".",
+            "max_length": "Los " + parte + " no pueden superar los " + str(LARGO_NOMBRE_COMPLETO) + " caracteres.",
+        },
+    )
+
+
+def unir_partes_nombre(formulario, datos):
+    """Nombres y apellidos llegan por separado; la cuenta guarda además el nombre completo."""
+    nombres = datos.get("nombres")
+    apellidos = datos.get("apellidos")
+    # Si falta una parte, su campo ya tiene el error que lo explica.
+    if not nombres or not apellidos:
+        return datos
+    nombre = nombres + " " + apellidos
+    if len(nombre) > LARGO_NOMBRE_COMPLETO:
+        formulario.add_error(
+            "apellidos",
+            "Entre nombres y apellidos no pueden pasar de " + str(LARGO_NOMBRE_COMPLETO) + " caracteres.",
+        )
+    else:
+        datos["nombre"] = nombre
+    return datos
 
 
 def validar_dni(valor, excluir=None):
@@ -30,13 +60,8 @@ def exigir_identificacion(formulario, es_estudiante, datos):
 
 class FormularioRegistroUsuario(forms.Form):
     # Los campos son obligatorios por defecto.
-    nombre = forms.CharField(
-        max_length=150,
-        error_messages={
-            "required": "El nombre completo es obligatorio.",
-            "max_length": "El nombre completo no puede superar los 150 caracteres.",
-        },
-    )
+    nombres = campo_parte_nombre("nombres")
+    apellidos = campo_parte_nombre("apellidos")
 
     # Comprueba que el texto tenga un formato válido de correo.
     correo = forms.EmailField(
@@ -63,8 +88,11 @@ class FormularioRegistroUsuario(forms.Form):
 
     dni = forms.CharField(required=False, max_length=8)
 
-    def clean_nombre(self):
-        return validar_nombre_completo(self.cleaned_data["nombre"])
+    def clean_nombres(self):
+        return limpiar_parte_nombre(self.cleaned_data["nombres"])
+
+    def clean_apellidos(self):
+        return limpiar_parte_nombre(self.cleaned_data["apellidos"])
 
     def clean_correo(self):
         # Django llama a este método al validar el campo correo.
@@ -84,11 +112,12 @@ class FormularioRegistroUsuario(forms.Form):
     def clean(self):
         datos = super().clean()
         exigir_identificacion(self, datos.get("rol") == "estudiante", datos)
-        return datos
+        return unir_partes_nombre(self, datos)
 
 
 class FormularioEdicionUsuario(forms.Form):
-    nombre = forms.CharField(max_length=150, error_messages={"required": "El nombre completo es obligatorio."})
+    nombres = campo_parte_nombre("nombres")
+    apellidos = campo_parte_nombre("apellidos")
     correo = forms.EmailField(max_length=254, required=False, error_messages={"invalid": "Escribe un correo válido."})
     dni = forms.CharField(required=False, max_length=8)
 
@@ -96,12 +125,11 @@ class FormularioEdicionUsuario(forms.Form):
         super().__init__(datos)
         self.usuario = usuario
 
-    def clean_nombre(self):
-        nombre = self.cleaned_data["nombre"]
-        # Una cuenta anterior puede conservar su nombre al editar otros datos.
-        if nombre == self.usuario.nombre.strip():
-            return self.usuario.nombre
-        return validar_nombre_completo(nombre)
+    def clean_nombres(self):
+        return limpiar_parte_nombre(self.cleaned_data["nombres"])
+
+    def clean_apellidos(self):
+        return limpiar_parte_nombre(self.cleaned_data["apellidos"])
 
     def clean_correo(self):
         correo = self.cleaned_data["correo"].strip().lower() or None
@@ -115,4 +143,4 @@ class FormularioEdicionUsuario(forms.Form):
     def clean(self):
         datos = super().clean()
         exigir_identificacion(self, self.usuario.groups.filter(name="estudiante").exists(), datos)
-        return datos
+        return unir_partes_nombre(self, datos)
