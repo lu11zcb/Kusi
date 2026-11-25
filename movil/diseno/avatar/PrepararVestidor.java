@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 
 // Preparamos aquí los dibujos finales. Android solo carga el cuadro completo elegido.
@@ -21,11 +20,12 @@ class PrepararVestidor {
     private static final int FUENTE = 384;
     private static final int CUADRO = 224;
     private static final Color TINTA = new Color(0x61341E);
-    private static final String[] CABEZA = {"0", "SOMBRERO", "GORRO", "FLOR", "BOINA", "LAZO", "GORRA_CELESTE"};
+    private static final String[] CABEZA = {"0", "SOMBRERO", "GORRO", "FLOR", "BOINA", "LAZO", "GORRA_CELESTE", "GORRA"};
     private static final String[] LENTES = {"0", "LENTES_AZULES", "LENTES_SOL", "LENTES_MENTA",
-        "LENTES_CORAZON", "LENTES_CUADRADOS"};
-    private static final String[] ROPA = {"0", "BUFANDA", "POLO", "PETO_LILA", "POLERON_MENTA"};
-    private static final String[] MOCHILA = {"0", "MOCHILA", "MOCHILA_FRESA", "MOCHILA_ESPACIO"};
+        "LENTES_CORAZON", "LENTES_CUADRADOS", "LENTES_ESTRELLAS"};
+    private static final String[] ROPA = {"0", "BUFANDA", "POLO", "PETO_LILA", "POLERON_MENTA", "CHALECO"};
+    private static final String[] MOCHILA = {"0", "MOCHILA", "MOCHILA_FRESA", "MOCHILA_ESPACIO", "MOCHILA_MENTA"};
+    private static final int COLUMNAS_ORIGINALES = 4;
     private static final Map<String, BufferedImage> PIEZAS = new HashMap<>();
     private static final Color[] PELAJES = {
         null, new Color(0xE2B783), new Color(0xA1999A), new Color(0xEF963F),
@@ -47,8 +47,10 @@ class PrepararVestidor {
         PIEZAS.put("LENTES_MENTA", cargar(recursos, "lentes_menta"));
         PIEZAS.put("LAZO", cargar(recursos, "lazo"));
         PIEZAS.put("GORRA_CELESTE", cargar(recursos, "gorra_celeste"));
+        PIEZAS.put("GORRA", cargar(recursos, "gorra_exploradora"));
         PIEZAS.put("LENTES_CORAZON", cargar(recursos, "lentes_corazon"));
         PIEZAS.put("LENTES_CUADRADOS", cargar(recursos, "lentes_cuadrados"));
+        PIEZAS.put("LENTES_ESTRELLAS", cargar(recursos, "lentes_estrellas"));
         var muestra = Arrays.asList(args).subList(3, args.length);
         var cuyes = cargarCuyesVestidos(pelajes, ropaDibujada);
 
@@ -57,7 +59,10 @@ class PrepararVestidor {
                 for (String ropa : ROPA) {
                     for (String mochila : MOCHILA) {
                         String nombre = String.join("-", cabeza, lentes, ropa, mochila);
-                        if (!muestra.isEmpty() && !muestra.contains(nombre)) continue;
+                        boolean deTienda = cabeza.equals("GORRA") || lentes.equals("LENTES_ESTRELLAS")
+                            || ropa.equals("CHALECO") || mochila.equals("MOCHILA_MENTA");
+                        if (!muestra.isEmpty() && !muestra.contains(nombre)
+                                && !(muestra.contains("--tienda") && deTienda)) continue;
                         escribirHoja(destino, nombre, cuyes.get(ropa + "-" + mochila), cabeza, lentes);
                     }
                 }
@@ -84,9 +89,9 @@ class PrepararVestidor {
 
     private static Map<String, BufferedImage[][]> cargarCuyesVestidos(BufferedImage base, Path origen) throws IOException {
         Map<String, BufferedImage[][]> resultado = new HashMap<>();
-        var prendas = Stream.concat(Arrays.stream(ROPA), Stream.of("CHALECO")).toList();
-        for (String prenda : prendas) {
+        for (String prenda : ROPA) {
             BufferedImage hoja = ImageIO.read(origen.resolve(prenda + ".png").toFile());
+            BufferedImage menta = ImageIO.read(origen.resolve(prenda + "-MOCHILA_MENTA.png").toFile());
             for (int columna = 0; columna < MOCHILA.length; columna++) {
                 BufferedImage[][] poses = new BufferedImage[2][4];
                 for (int fila = 0; fila < 2; fila++) {
@@ -96,10 +101,14 @@ class PrepararVestidor {
                         }
                         continue;
                     }
-                    int x = columna * hoja.getWidth() / 4;
-                    int y = fila * hoja.getHeight() / 2;
-                    BufferedImage ilustracion = hoja.getSubimage(x, y, (columna + 1) * hoja.getWidth() / 4 - x,
-                        (fila + 1) * hoja.getHeight() / 2 - y);
+                    boolean esMenta = columna == COLUMNAS_ORIGINALES;
+                    BufferedImage fuente = esMenta ? menta : hoja;
+                    int columnas = esMenta ? 1 : COLUMNAS_ORIGINALES;
+                    int indice = esMenta ? 0 : columna;
+                    int x = indice * fuente.getWidth() / columnas;
+                    int y = fila * fuente.getHeight() / 2;
+                    BufferedImage ilustracion = fuente.getSubimage(x, y, (indice + 1) * fuente.getWidth() / columnas - x,
+                        (fila + 1) * fuente.getHeight() / 2 - y);
                     if (prenda.equals("CHALECO")) ilustracion = limpiarBorde(ilustracion);
                     poses[fila][0] = alinearIlustracion(ilustracion);
                     boolean costadosDePelaje = prenda.equals("0") || prenda.equals("BUFANDA");
@@ -247,12 +256,14 @@ class PrepararVestidor {
             case "BOINA" -> estampa(g, cabeza, 108, -5, 175, 79, -0.04);
             case "LAZO" -> estampa(g, cabeza, 221, saludo ? 31 : 34, 82, 52, -0.34);
             case "GORRA_CELESTE" -> estampa(g, cabeza, 104, saludo ? -20 : -17, 198, 104, -0.06);
+            case "GORRA" -> estampa(g, cabeza, 104, saludo ? -20 : -17, 198, 104, -0.06);
         }
         switch (lentes) {
             case "LENTES_AZULES" -> estampa(g, lentes, 98, saludo ? 87 : 91, 185, 75, 0.02);
             case "LENTES_SOL" -> estampa(g, lentes, 90, saludo ? 90 : 94, 200, 71, 0.015);
             case "LENTES_MENTA" -> estampa(g, lentes, 96, saludo ? 88 : 92, 189, 72, 0.02);
             case "LENTES_CORAZON" -> estampa(g, lentes, 95, saludo ? 90 : 94, 189, 69, 0.015);
+            case "LENTES_ESTRELLAS" -> estampa(g, lentes, 93, saludo ? 83 : 87, 196, 85, 0.015);
             case "LENTES_CUADRADOS" -> estampa(g, lentes, 92, saludo ? 89 : 93, 198, 71, 0.02);
         }
         g.dispose();

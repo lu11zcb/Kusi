@@ -368,8 +368,9 @@ class InterfazInfantilTest {
 
     @Test fun vestidor_tiene_un_dibujo_para_cada_combinacion_permitida() {
         val opciones = CategoriaCuy.entries.fold(listOf(AparienciaCuy())) { apariencias, categoria ->
-            val piezas = PiezaCuy.entries.filter { !it.deTienda && it.categoria == categoria }
-            apariencias.flatMap { apariencia -> listOf(apariencia) + piezas.map { apariencia.vestir(categoria, it) } }
+            // Todas las prendas, también las de la tienda: lo que el niño compre se lo tiene que poder poner.
+            val piezas = PiezaCuy.entries.filter { it.categoria == categoria }
+            apariencias.flatMap { apariencia -> listOf(apariencia) + piezas.map { apariencia.vestir(categoria, it, PiezaCuy.entries.toSet()) } }
         }
         val assets = InstrumentationRegistry.getInstrumentation().targetContext.assets
         assertEquals(opciones.map { "${it.archivo}.webp" }.toSet(), assets.list("vestidor")!!.toSet())

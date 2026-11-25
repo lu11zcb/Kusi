@@ -30,32 +30,72 @@ también usa las poses de Compose.
 ## `vestidor/` · pantalla «Crea tu cuy»
 
 El niño elige cada accesorio por separado al crear y al editar su cuy. En
-`app/src/main/assets/vestidor` hay una hoja WebP por combinación de accesorios disponibles.
-Cada hoja contiene cuatro pelajes por fila y dos filas de poses completas. Android pasa la
-hoja elegida a `ilustracion`. El modelo
+`app/src/main/assets/vestidor` hay 1680 hojas WebP transparentes de 896 × 448
+(8 opciones de cabeza × 7 de lentes × 6 de ropa × 5 de mochila, incluida
+la opción sin pieza en cada categoría). Cada hoja contiene los cuatro pelajes en
+columnas (café, crema, gris, caramelo) y las dos poses en filas (reposo y saludo).
+Android pasa la hoja elegida a `ilustracion`. El modelo
 `MiCuy` usa `pelajeX` para la columna y `poseY` para reposo o saludo.
 `reaccion` controla el movimiento de reposo (0), saludo (1) y celebración (2).
-Las ilustraciones de `diseno/avatar/cuy-vestido` traen dos poses de cada prenda
-con cuatro variantes de mochila. También se incluye una vista previa del chaleco coral bloqueado.
-Desde `movil/rive/vestidor/`:
+Los PNG de `diseno/avatar/cuy-vestido` tienen cuatro columnas de origen por ropa
+(sin mochila, miel, fresa y lunar). Cada archivo `<ROPA>-MOCHILA_MENTA.png` aporta
+la quinta columna, con las dos poses. `PrepararMochilaMenta.java` copia la columna
+miel y aplica la paleta de `cuy_mochila_menta.png` mediante máscaras del cuerpo,
+tirantes, bolsillo y broche. Los 6 PNG originales se conservan.
+La vista previa del chaleco coral está en `app/src/main/assets/vestidor_vistas/chaleco.webp`.
 
-```powershell
+Desde `movil/rive/vestidor/` en macOS:
+
+```sh
 rive . --verify
-New-Item -ItemType Directory -Force build
+mkdir -p build
 rive . --screenshot=build/ejemplo.png --data=pelajeX=-560 --data=poseY=-434 --data=reaccion=1 --advance=12
 ```
 
 `rive . --publish` exporta a `app/src/main/res/raw/kusi_vestidor.riv` con una sesión de Rive.
 Compose usa las mismas ilustraciones si el archivo no está disponible o si se desactiva el movimiento.
 
-Para regenerar las hojas desde `movil/` con Java, Node.js y Chrome:
+Desde `movil/` en macOS, prepara las 840 hojas que llevan alguna prenda de la
+tienda. El primer comando Java vuelve a generar las seis variantes menta a
+partir de los originales. Los PNG intermedios se guardan en `app/build/`.
 
-```powershell
-java -Xmx512m diseno/avatar/PrepararVestidor.java app/src/main/res/drawable-nodpi diseno/avatar/cuy-vestido app/build/vestidor-png
-node diseno/avatar/ComprimirVestidor.mjs 'C:/Program Files/Google/Chrome/Application/chrome.exe' app/build/vestidor-png app/build/vestidor-webp app/build
-Get-ChildItem app/build/vestidor-webp -Filter '*.webp' | Where-Object Name -ne 'cuy_chaleco_puesto.webp' | Copy-Item -Destination app/src/main/assets/vestidor
-New-Item -ItemType Directory -Force app/src/main/assets/vestidor_vistas
-Copy-Item app/build/vestidor-webp/cuy_chaleco_puesto.webp app/src/main/assets/vestidor_vistas/chaleco.webp
+```sh
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+mkdir -p app/build
+salida_vestidor=$(mktemp -d app/build/vestidor.XXXXXX)
+"$JAVA_HOME/bin/java" -Djava.awt.headless=true -Xmx512m \
+  diseno/avatar/PrepararMochilaMenta.java diseno/avatar/cuy-vestido
+"$JAVA_HOME/bin/java" -Djava.awt.headless=true -Xmx512m \
+  diseno/avatar/PrepararVestidor.java app/src/main/res/drawable-nodpi \
+  diseno/avatar/cuy-vestido "$salida_vestidor/png" --tienda
+```
+
+Puedes reemplazar `--tienda` por nombres de combinaciones sin extensión para
+generar una muestra. Para comprimir las hojas de la tienda se usó `cwebp` con
+calidad 90 y el canal alfa al 100. `cp -n` conserva las hojas que ya existen.
+
+```sh
+mkdir -p "$salida_vestidor/webp"
+for hoja in "$salida_vestidor"/png/*.png; do
+  nombre=$(basename "$hoja" .png)
+  /opt/homebrew/bin/cwebp -quiet -q 90 -alpha_q 100 "$hoja" \
+    -o "$salida_vestidor/webp/$nombre.webp" || break
+done
+```
+
+Si Chrome puede ejecutarse en el entorno, el compresor del proyecto también
+admite esta ruta de macOS.
+
+```sh
+node diseno/avatar/ComprimirVestidor.mjs \
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' \
+  "$salida_vestidor/png" "$salida_vestidor/webp" "$salida_vestidor"
+```
+
+Para incorporar las 840 hojas a la app después de comprimirlas:
+
+```sh
+cp -n "$salida_vestidor"/webp/*.webp app/src/main/assets/vestidor/
 ```
 
 ## `jardin/` · Inicio sin aventuras

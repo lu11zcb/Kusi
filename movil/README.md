@@ -14,8 +14,9 @@ El vestidor muestra las monedas del niño y vende 4 prendas: lentes estrella y m
 gorra exploradora (40) y chaleco coral (60). Las demás prendas son gratis. El saldo, los precios y lo comprado
 vienen de Spring (`/api/edu/estudiante/monedas/`, `…/tienda/` y `…/tienda/compras/`): la app no descuenta nada
 ni guarda compras. Al tocar una prenda bloqueada, Kusi dice cuánto cuesta y cuántas monedas tiene el niño (o cuántas
-le faltan); si la compra se confirma, el cuy se la pone. Si todavía no existe el dibujo de una combinación con una prenda
-comprada, el vestidor muestra el cuy sin esa prenda en lugar de cerrarse. Al terminar una actividad, la pantalla final
+le faltan); si la compra se confirma, el cuy se la pone. Las 4 prendas tienen su dibujo con todas las demás (1680 hojas en
+`assets/vestidor/`, ver `rive/README.md`). Si faltara la hoja de una combinación, el vestidor muestra el cuy sin las prendas de
+la tienda en lugar de cerrarse. Al terminar una actividad, la pantalla final
 dice cuántas monedas ganó (`monedas_ganadas` del resumen de la partida).
 
 ## Bienvenida con Kusi animado en Compose · 22 de noviembre
