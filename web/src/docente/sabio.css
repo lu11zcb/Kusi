@@ -1,0 +1,423 @@
+/* El chat toma los tonos del panel docente y usa su propia escala de texto y controles. */
+.sabio-boton,
+.sabio-panel {
+  --sabio-papel: #fffcf7;
+  --sabio-vino: #7b342d;
+  --sabio-linea: #e5d7c7;
+  --sabio-suave: #705a52;
+  --sabio-texto: #382924;
+  --sabio-tinte: #f7ede4;
+  font-family: system-ui, sans-serif;
+}
+
+.sabio-boton {
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 40;
+  gap: 9px;
+  min-height: 50px;
+  padding: 6px 16px 6px 7px;
+  border: 1px solid var(--sabio-linea);
+  border-radius: 999px;
+  background: var(--sabio-papel);
+  color: var(--sabio-vino);
+  font-size: 15px;
+  font-weight: 800;
+  text-shadow: none;
+  box-shadow: 0 5px 16px #4e281a1c, 0 1px 3px #4e281a16;
+  transition: transform 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+.sabio-boton[hidden] { display: none; }
+
+.sabio-boton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: none;
+  box-shadow: 0 8px 20px #4e281a26, 0 1px 3px #4e281a16;
+}
+
+.sabio-boton:active:not(:disabled) { transform: translateY(0); }
+.sabio-boton .sabio-logo { width: 36px; }
+
+.sabio-boton:focus-visible,
+.sabio-panel button:focus-visible {
+  outline: 2px solid var(--sabio-vino);
+  outline-offset: 3px;
+}
+
+.sabio-panel {
+  --sabio-margen: 22px;
+  position: fixed;
+  inset: 12px 12px 12px auto;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  width: 432px;
+  overflow: hidden;
+  border: 1px solid var(--sabio-linea);
+  border-radius: 22px;
+  background: var(--sabio-papel);
+  color: var(--sabio-texto);
+  box-shadow: 0 18px 56px #4e281a24, 0 3px 12px #4e281a0e;
+  font-size: 15px;
+  line-height: 1.55;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(18px);
+  /* La visibilidad se retira después del desvanecido para que el cierre también se vea. */
+  transition:
+    transform 260ms cubic-bezier(.2, .72, .26, 1),
+    opacity 260ms ease-out,
+    visibility 0s linear 260ms;
+}
+
+.sabio-panel[data-abierto='true'] {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  transition-delay: 0s;
+}
+
+.sabio-logo {
+  display: block;
+  aspect-ratio: 1;
+  flex: none;
+  border-radius: 50%;
+  background: var(--sabio-tinte);
+  object-fit: contain;
+}
+
+.sabio-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px var(--sabio-margen);
+  border-bottom: 1px solid var(--sabio-linea);
+}
+
+.sabio-cabecera .sabio-logo { width: 42px; }
+
+.sabio-panel h2,
+.sabio-panel h3 {
+  margin: 0;
+  color: var(--sabio-vino);
+  font-family: inherit;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.sabio-cabecera h2 { font-size: 18px; }
+.sabio-cabecera p { margin: 3px 0 0; color: var(--sabio-suave); font-size: 13px; line-height: 1.45; }
+
+.sabio-panel button {
+  min-height: 0;
+  color: var(--sabio-vino);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.sabio-panel button:hover:not(:disabled) { filter: none; }
+.sabio-panel button:active:not(:disabled) { transform: none; box-shadow: none; }
+
+.sabio-panel button svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sabio-panel .sabio-cerrar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  margin-left: auto;
+  padding: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sabio-suave);
+}
+
+.sabio-cerrar:hover:not(:disabled) { background: var(--sabio-tinte); color: var(--sabio-vino); }
+
+.sabio-conversacion {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 22px var(--sabio-margen);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sabio-bienvenida {
+  width: 100%;
+  margin: auto 0;
+  padding: 16px 0;
+  text-align: center;
+}
+
+.sabio-bienvenida .sabio-logo {
+  width: 82px;
+  margin: 0 auto 18px;
+  border: 1px solid var(--sabio-linea);
+  padding: 4px;
+}
+
+.sabio-bienvenida h3 { font-size: 24px; letter-spacing: -.02em; }
+.sabio-bienvenida p { margin: 7px 0 0; color: var(--sabio-suave); }
+
+.sabio-sugerencias {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.sabio-sugerencias button {
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--sabio-linea);
+  border-radius: 13px;
+  background: #fffefa;
+  color: var(--sabio-texto);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out;
+}
+
+.sabio-sugerencias button:hover:not(:disabled) { background: var(--sabio-tinte); border-color: #bd9c8c; }
+.sabio-sugerencias button svg { width: 13px; height: 13px; color: var(--sabio-vino); }
+
+.sabio-registro,
+.sabio-bienvenida { flex-shrink: 0; }
+
+.sabio-mensajes {
+  display: grid;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sabio-turno {
+  display: grid;
+  gap: 15px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sabio-pregunta {
+  justify-self: end;
+  max-width: 85%;
+  padding: 9px 13px 10px;
+  border: 1px solid var(--sabio-linea);
+  border-radius: 16px 16px 5px 16px;
+  background: var(--sabio-tinte);
+}
+
+.sabio-pregunta strong { display: block; margin-bottom: 2px; color: var(--sabio-vino); font-size: 12px; }
+.sabio-pregunta p { margin: 0; white-space: pre-wrap; }
+
+.sabio-respuesta {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sabio-autor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sabio-vino);
+  font-size: 13px;
+}
+
+.sabio-autor .sabio-logo { width: 28px; }
+
+.sabio-texto {
+  display: grid;
+  gap: 8px;
+}
+
+.sabio-texto p { margin: 0; white-space: pre-line; }
+.sabio-texto ol,
+.sabio-texto ul { margin: 0; padding-left: 22px; }
+.sabio-texto ul { list-style: disc; }
+.sabio-texto li + li { margin-top: 4px; }
+
+.sabio-pensando {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  color: var(--sabio-suave);
+}
+
+.sabio-puntos { display: inline-flex; gap: 3px; align-items: center; }
+
+.sabio-puntos i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--sabio-vino);
+  animation: sabio-latido 1200ms ease-in-out infinite;
+}
+
+.sabio-puntos i:nth-child(2) { animation-delay: 140ms; }
+.sabio-puntos i:nth-child(3) { animation-delay: 280ms; }
+
+@keyframes sabio-latido {
+  0%, 60%, 100% { opacity: .45; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+
+.sabio-tarjeta {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--sabio-linea);
+  border-radius: 13px;
+  background: #fffefa;
+  font-size: 13px;
+}
+
+.sabio-tarjeta.sabio-sobre-actividad {
+  background: var(--sabio-tinte);
+  color: var(--sabio-vino);
+  font-weight: 800;
+}
+
+.sabio-tarjeta.sabio-error { border-color: #d29985; background: #fff3ed; color: #982f1e; }
+.sabio-titulo-tarjeta { display: block; color: var(--sabio-vino); font-size: 13px; font-weight: 800; }
+.sabio-nota { color: var(--sabio-suave); }
+.sabio-titulo-tarjeta + .sabio-nota { margin: 5px 0 0; }
+
+.sabio-grafico { display: grid; gap: 10px; margin-top: 8px; }
+
+.sabio-fila-grafico {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  line-height: 1.4;
+}
+
+.sabio-fila-grafico strong { color: var(--sabio-vino); font-variant-numeric: tabular-nums; }
+.sabio-fondo-barra { grid-column: 1 / -1; background: #f1e7da; }
+.sabio-fondo-barra, .sabio-barra { height: 5px; border-radius: 999px; }
+.sabio-barra { background: var(--sabio-vino); }
+
+.sabio-apoyo {
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sabio-apoyo li { padding-top: 7px; }
+.sabio-apoyo li + li { margin-top: 7px; border-top: 1px solid var(--sabio-linea); }
+.sabio-apoyo small { display: block; color: var(--sabio-suave); font-size: 12px; }
+.sabio-estudiantes ol { margin: 5px 0 0; padding-left: 22px; }
+.sabio-estudiantes li + li { margin-top: 3px; }
+.sabio-estudiantes > div + div { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--sabio-linea); }
+
+.sabio-formulario {
+  margin: 0;
+  padding: 12px var(--sabio-margen) 18px;
+  border-top: 1px solid var(--sabio-linea);
+}
+
+.sabio-compositor {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--sabio-linea);
+  border-radius: 16px;
+  background: #fffefa;
+  box-shadow: 0 2px 6px #4e281a0c;
+}
+
+.sabio-compositor:focus-within {
+  border-color: var(--sabio-vino);
+  box-shadow: 0 0 0 2px #7b342d20;
+}
+
+.sabio-campo {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.sabio-campo > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+  /* 5 líneas de 1.5em más los 8px de relleno de arriba y de abajo. */
+  max-height: calc(7.5em + 16px);
+  padding: 8px 8px 8px 10px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.sabio-campo span { visibility: hidden; overflow: hidden; }
+
+.sabio-campo textarea {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  caret-color: var(--sabio-vino);
+  resize: none;
+}
+
+.sabio-campo textarea:focus { outline: 0; background: transparent; box-shadow: none; }
+.sabio-campo textarea::placeholder { color: var(--sabio-suave); opacity: 1; }
+
+.sabio-panel .sabio-enviar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border-radius: 11px;
+  background: var(--sabio-vino);
+  color: var(--sabio-papel);
+}
+
+.sabio-enviar:hover:not(:disabled) { background: #642721; }
+.sabio-panel .sabio-enviar:disabled { background: var(--sabio-tinte); color: var(--sabio-suave); opacity: 1; cursor: default; }
+
+@media (width < 640px) {
+  .sabio-boton {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .sabio-panel {
+    --sabio-margen: 16px;
+    inset: 0;
+    width: auto;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .sabio-cabecera { padding-top: calc(12px + env(safe-area-inset-top)); }
+  .sabio-formulario { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sabio-panel, .sabio-panel[data-abierto='true'], .sabio-boton:hover:not(:disabled) { transform: none; }
+  .sabio-panel, .sabio-boton, .sabio-sugerencias button { transition: none; }
+  .sabio-puntos i { animation: none; }
+}

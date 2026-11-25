@@ -11,10 +11,13 @@ import { MisPropuestas } from './MisPropuestas'
 import { ResultadosDocente } from './ResultadosDocente'
 import { SolicitarPropuesta } from './SolicitarPropuesta'
 import { IconoDocente } from './IconoDocente'
+import { KusiSabio } from './KusiSabio'
+import logoSabio from '../assets/kusi/kusi-sabio.webp'
 import type { BorradorPropuesta } from './SolicitarPropuesta'
 import { mensajeDocente } from './trabajosDocente'
 import './docente.css'
 import './resultados.css'
+import './sabio.css'
 
 const opciones: readonly OpcionMenu[] = [
   { id: 'inicio', etiqueta: 'Inicio', icono: 'inicio', iconoVisual: <IconoDocente nombre="inicio" /> },
@@ -63,5 +66,5 @@ export function PanelDocente({ usuario, salir, cambiarRol }: { usuario: Cuenta; 
     {visitadas.includes('solicitar') && <div hidden={seccion !== 'solicitar'}><SolicitarPropuesta borrador={borrador} alCambiarBorrador={establecerBorrador} alOcupar={establecerOcupado} activo={seccion === 'solicitar'} alSalir={() => ir('propuestas')} /></div>}
     {visitadas.includes('propuestas') && <div hidden={seccion !== 'propuestas'}><MisPropuestas contextos={contextos} crear={() => ir('solicitar')} alOcupar={establecerOcupado} activo={seccion === 'propuestas'} abrirId={abrirJuego} /></div>}
     {visitadas.includes('resultados') && <div hidden={seccion !== 'resultados'}><ResultadosDocente activo={seccion === 'resultados'} /></div>}
-  </Tablero></div>
+  </Tablero><KusiSabio logo={logoSabio} /></div>
 }
