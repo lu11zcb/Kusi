@@ -16,7 +16,7 @@ Quién contesta cada parte:
 
 ### Código
 
-- [ ] ¿Es un PNG con transparencia (RGBA) de 256 × 256?
+- [ ] ¿Es un PNG con transparencia de 256 × 256?
 - [ ] ¿Las cuatro esquinas son totalmente transparentes?
 - [ ] ¿Quedan al menos 8 px transparentes en cada borde?
 - [ ] ¿El lado mayor de la silueta mide entre 180 y 215 px?
@@ -76,7 +76,7 @@ Quién contesta cada parte:
 
 ### Código
 
-- [ ] ¿Es un PNG con transparencia (RGBA) de 768 × 768, de menos de 600 KB?
+- [ ] ¿Es un PNG con transparencia de 768 × 768, de menos de 600 KB?
 - [ ] ¿El lado mayor de la silueta mide entre 600 y 720 px, centrada y con 24 px libres en cada borde?
 - [ ] ¿Es una sola figura, con contorno oscuro y sin halo ni manchas?
 - [ ] ¿El nombre es `figura-<nombre>.png`?

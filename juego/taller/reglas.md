@@ -179,6 +179,11 @@ El juego corre en el celular del niño. Su código **no puede**:
   2 correcciones no pasa la revisión, se usa una pieza del kit o una figura
   simple, dibujada con Phaser: una forma redonda del color del objeto, con
   contorno de tinta.
+- **Dibujos livianos.** Cada pieza que pasa el filtro se guarda sola con una paleta
+  de colores más corta y el mismo tamaño (`kit/herramientas/aligerar_pieza.mjs`): el
+  juego abre rápido en el celular. No hay que pedirlo ni volver a guardarla. Las
+  figuras enteras para cortar (`figura-*` cuadradas) quedan como están. En el código del juego, una imagen
+  se muestra con el tamaño que necesita la pantalla, nunca con uno mayor.
 
 ## 11. Lo que ve el docente
 

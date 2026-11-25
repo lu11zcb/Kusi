@@ -23,6 +23,7 @@ import { esIdTrabajo, PATRON_PIEZA } from '#kit/reproductor/datos/registroJuegos
 import { prepararPieza } from '#kit/herramientas/preparar_pieza.mjs'
 import { prepararCriatura, prepararTiraFigura } from '#kit/herramientas/preparar_criatura.mjs'
 import { cantidadValidaDeCuadros, comprobarPieza } from '#kit/herramientas/comprobar_pieza.mjs'
+import { aligerarPieza } from '#kit/herramientas/aligerar_pieza.mjs'
 
 export const MAX_INTENTOS_PIEZA = 3 // 1 intento y hasta 2 correcciones
 // Las láminas del cuento de apertura: fondo-cuento-1, fondo-cuento-2…
@@ -240,6 +241,9 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
       const noes = filtro.respuestas.filter((respuesta) => !respuesta.si)
       resultado = { pasa: filtro.pasa, respuestas: noes.map(({ pregunta, motivo }) => ({ pregunta, motivo })) }
       if (!filtro.pasa) resultado.motivo = noes.map((respuesta) => respuesta.motivo).join(' ')
+      // Regla del taller: toda pieza que pasa se guarda liviana (mismo tamaño, menos peso),
+      // para que el juego abra rápido en el celular. Es automático: nadie tiene que pedirlo.
+      if (filtro.pasa) await aligerarPieza(pieza)
     } catch (error) {
       resultado = { pasa: false, motivo: 'No se pudo preparar la pieza: ' + error.message }
     }

@@ -7,6 +7,7 @@ desde la carpeta `juego/`.
 | --- | --- | --- |
 | `armar_lamina.mjs` | Arma la [lámina de piezas modelo](../estilo/lamina-modelos.png) de la guía de estilo. | Node |
 | `preparar_pieza.mjs` | Quita el fondo blanco de una pieza nueva con la visión de macOS y la deja en 256 × 256 (`--apoyado`: pies en y = 244) o como fondo de 1672 × 941 (`--fondo`). Compila `preparar_pieza.swift` la primera vez en `.compilado/`, que no se sube. | Node y macOS (Swift viene con las herramientas de línea de comandos) |
+| `aligerar_pieza.mjs` | Vuelve a guardar un PNG con una paleta de hasta 256 colores, con el mismo ancho y alto, para que el juego abra rápido en el celular (un fondo baja de unos 2,5 MB a unos 650 KB). El dibujante la aplica sola a cada pieza que pasa el filtro; las figuras enteras para cortar (`figura-*` cuadradas) no se tocan. Para lo que ya existe: `node kit/herramientas/aligerar_pieza.mjs <carpeta de piezas>`. | Node y `sharp` |
 | `preparar_criatura.mjs` | Prepara una criatura animada: corta la imagen con 3 poses del personaje, quita el fondo de cada una con la visión de macOS y arma la tira de 768 × 256 (3 cuadros, misma escala, pies en y = 244). | Node y macOS |
 | `comprobar_pieza.mjs` | Filtro de una pieza nueva (`--fondo`, `--figura` o `--criatura`). Reconoce las tiras de figura por sus medidas y devuelve las comprobaciones en JSON. | Node |
 | `preparar_fondo_cenital.mjs` | Separa la hoja de plantas de `originales/mundo/` en sus cuatro tiras animadas. | Node y `sips` |

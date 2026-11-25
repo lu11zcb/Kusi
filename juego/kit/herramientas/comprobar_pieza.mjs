@@ -37,13 +37,16 @@ export function cantidadValidaDeCuadros(cantidad) {
   return Number.isInteger(cantidad) && cantidad >= CUADROS_TIRA_FIGURA.minimo && cantidad <= CUADROS_TIRA_FIGURA.maximo
 }
 
-// Lee un PNG de 8 bits por canal, RGB o RGBA, sin entrelazar. Devuelve
-// { ancho, alto, canales, tipo, pixeles } con los píxeles en RGBA.
+// Lee un PNG sin entrelazar: RGB o RGBA de 8 bits por canal, o con paleta (1, 2, 4 u 8 bits,
+// con su transparencia en tRNS), que es como el kit aligera las piezas (aligerar_pieza.mjs).
+// Devuelve { ancho, alto, canales, tipo, pixeles } con los píxeles en RGBA.
 export function leerPng(datos) {
   const firma = [137, 80, 78, 71, 13, 10, 26, 10]
   if (!firma.every((byte, i) => datos[i] === byte)) throw new Error('No es un PNG.')
   let posicion = 8
   let cabecera = null
+  let paleta = null
+  let transparencias = null
   const partes = []
   while (posicion < datos.length) {
     const largo = datos.readUInt32BE(posicion)
@@ -51,26 +54,32 @@ export function leerPng(datos) {
     const cuerpo = datos.subarray(posicion + 8, posicion + 8 + largo)
     if (tipo === 'IHDR') {
       cabecera = { ancho: cuerpo.readUInt32BE(0), alto: cuerpo.readUInt32BE(4), bits: cuerpo[8], tipo: cuerpo[9], entrelazado: cuerpo[12] }
-    } else if (tipo === 'IDAT') partes.push(cuerpo)
+    } else if (tipo === 'PLTE') paleta = cuerpo
+    else if (tipo === 'tRNS') transparencias = cuerpo
+    else if (tipo === 'IDAT') partes.push(cuerpo)
     else if (tipo === 'IEND') break
     posicion += 12 + largo
   }
   if (!cabecera) throw new Error('El PNG no tiene cabecera.')
-  const canales = { 2: 3, 6: 4 }[cabecera.tipo]
-  if (cabecera.bits !== 8 || !canales || cabecera.entrelazado !== 0) {
+  const conPaleta = cabecera.tipo === 3
+  const canales = { 2: 3, 6: 4, 3: 1 }[cabecera.tipo]
+  const bitsValidos = conPaleta ? [1, 2, 4, 8].includes(cabecera.bits) && paleta !== null : cabecera.bits === 8
+  if (!bitsValidos || !canales || cabecera.entrelazado !== 0) {
     return { ...cabecera, canales: null, pixeles: null }
   }
   const crudo = inflateSync(Buffer.concat(partes))
-  const fila = cabecera.ancho * canales
+  // Bytes por fila y bytes por píxel para los filtros (con paleta de pocos bits, un píxel ocupa menos de un byte).
+  const fila = Math.ceil(cabecera.ancho * canales * cabecera.bits / 8)
+  const salto = Math.max(1, (canales * cabecera.bits) >> 3)
   const pixeles = new Uint8Array(cabecera.ancho * cabecera.alto * 4)
   let anterior = new Uint8Array(fila)
   for (let y = 0; y < cabecera.alto; y++) {
     const filtro = crudo[y * (fila + 1)]
     const actual = Uint8Array.from(crudo.subarray(y * (fila + 1) + 1, (y + 1) * (fila + 1)))
     for (let x = 0; x < fila; x++) {
-      const izquierda = x >= canales ? actual[x - canales] : 0
+      const izquierda = x >= salto ? actual[x - salto] : 0
       const arriba = anterior[x]
-      const diagonal = x >= canales ? anterior[x - canales] : 0
+      const diagonal = x >= salto ? anterior[x - salto] : 0
       if (filtro === 1) actual[x] = (actual[x] + izquierda) & 255
       else if (filtro === 2) actual[x] = (actual[x] + arriba) & 255
       else if (filtro === 3) actual[x] = (actual[x] + ((izquierda + arriba) >> 1)) & 255
@@ -82,14 +91,25 @@ export function leerPng(datos) {
     }
     for (let x = 0; x < cabecera.ancho; x++) {
       const destino = (y * cabecera.ancho + x) * 4
-      pixeles[destino] = actual[x * canales]
-      pixeles[destino + 1] = actual[x * canales + 1]
-      pixeles[destino + 2] = actual[x * canales + 2]
-      pixeles[destino + 3] = canales === 4 ? actual[x * canales + 3] : 255
+      if (conPaleta) {
+        // El índice de color ocupa «bits» bits, empezando por los más altos de cada byte.
+        const bit = x * cabecera.bits
+        const indice = (actual[bit >> 3] >> (8 - cabecera.bits - (bit & 7))) & ((1 << cabecera.bits) - 1)
+        pixeles[destino] = paleta[indice * 3] ?? 0
+        pixeles[destino + 1] = paleta[indice * 3 + 1] ?? 0
+        pixeles[destino + 2] = paleta[indice * 3 + 2] ?? 0
+        pixeles[destino + 3] = transparencias && indice < transparencias.length ? transparencias[indice] : 255
+      } else {
+        pixeles[destino] = actual[x * canales]
+        pixeles[destino + 1] = actual[x * canales + 1]
+        pixeles[destino + 2] = actual[x * canales + 2]
+        pixeles[destino + 3] = canales === 4 ? actual[x * canales + 3] : 255
+      }
     }
     anterior = actual
   }
-  return { ...cabecera, canales, pixeles }
+  // Tiene transparencia si es RGBA o si su paleta trae transparencias (tRNS), como las piezas aligeradas.
+  return { ...cabecera, canales, pixeles, conTransparencia: canales === 4 || (conPaleta && transparencias !== null) }
 }
 
 const luminancia = (p, i) => 0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2]
@@ -182,9 +202,9 @@ export function comprobarPieza(archivo, { fondo = false, figura = false, criatur
   const silueta = figura ? SILUETA_FIGURA : SILUETA
   const desvio = figura ? DESVIO_FIGURA : DESVIO_CENTRO
   const pesoMaximo = figura ? PESO_FIGURA : PESO_OBJETO
-  const medidas = imagen.ancho === L && imagen.alto === L && imagen.canales === 4
-  responder('¿Es un PNG con transparencia (RGBA) de ' + L + ' × ' + L + '?', medidas,
-    'Mide ' + imagen.ancho + ' × ' + imagen.alto + (imagen.canales === 4 ? '' : ', sin canal de transparencia de 8 bits') + '.')
+  const medidas = imagen.ancho === L && imagen.alto === L && imagen.conTransparencia
+  responder('¿Es un PNG con transparencia de ' + L + ' × ' + L + '?', medidas,
+    'Mide ' + imagen.ancho + ' × ' + imagen.alto + (imagen.conTransparencia ? '' : ', sin transparencia') + '.')
   if (!medidas) return { pasa: false, respuestas }
   const { pixeles } = imagen
   const alfa = (x, y) => pixeles[(y * L + x) * 4 + 3]
@@ -252,8 +272,8 @@ function comprobarSilueta(alfa, lado, margen, silueta, desvio, responder) {
 }
 
 function comprobarTiraFigura(imagen, cuadros, id, responder) {
-  const transparencia = imagen.canales === 4
-  responder('¿La tira de figura es un PNG con transparencia (RGBA)?', transparencia, 'La tira no tiene canal de transparencia de 8 bits.')
+  const transparencia = imagen.conTransparencia
+  responder('¿La tira de figura es un PNG con transparencia?', transparencia, 'La tira no tiene transparencia.')
   if (!transparencia) return
 
   const pies = []
