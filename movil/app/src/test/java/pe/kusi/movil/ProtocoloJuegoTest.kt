@@ -8,6 +8,17 @@ class ProtocoloJuegoTest {
     private fun aviso(orden: Int = 1) = JSONObject().put("tipo", "ayuda").put("partida", "prueba-1").put("orden", orden)
         .put("momento", "2026-10-26T20:00:00Z").put("nivel", 1).put("ayuda", 2)
 
+    // Un juego del taller trae su portada en la carpeta del trabajo; el laberinto no tiene.
+    @Test fun laPortadaSaleDeLaCarpetaDelTrabajoYElLaberintoNoTiene() {
+        val trabajo = "764bce40-9f31-4592-99c7-818886b65cc4"
+        assertEquals("http://localhost:5174/taller/trabajos/" + trabajo + "/portada.png",
+            portadaDelJuego("http://localhost:5174", "{\"trabajo\":\"" + trabajo + "\"}"))
+        assertNull(portadaDelJuego("http://localhost:5174", "{\"familia\":\"laberinto\"}"))
+        assertNull(portadaDelJuego("http://localhost:5174", "{\"trabajo\":\"../../.env\"}"))
+        assertNull(portadaDelJuego("http://localhost:5174", "no es json"))
+        assertNull(portadaDelJuego("http://localhost:5174", null))
+    }
+
     @Test fun elAnfitrionAdjuntaElJuegoElegidoSinCambiarLaPartidaNiElOrden() {
         val original = aviso(7).put("juego_id", "identificador-recibido-no-autorizado")
         val juego = "11111111-2222-4333-8444-555555555555"

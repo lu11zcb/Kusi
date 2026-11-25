@@ -259,7 +259,7 @@ private fun AventuraTarjeta(aventura: AventuraInfantil, habilitada: Boolean, ele
     Card(onClick = elegir, enabled = habilitada, colors = CardDefaults.cardColors(containerColor = colores.surface), border = androidx.compose.foundation.BorderStroke(2.dp, fondo), shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
         Column {
             Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
-                Image(painterResource(aventura.portada), null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+                PortadaAventura(aventura, Modifier.matchParentSize())
                 Surface(color = fondo, contentColor = tinta, shape = MaterialTheme.shapes.medium, shadowElevation = 2.dp, modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) {
                     Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) { IconoKusi(aventura.icono, modifier = Modifier.size(23.dp)); Text(aventura.curso, style = MaterialTheme.typography.labelMedium) }
                 }

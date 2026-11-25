@@ -32,6 +32,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.graphics.BitmapFactory
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Locale
 
 @Composable
@@ -199,4 +206,30 @@ fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
         hablando = false
         motor.value?.stop()
     })
+}
+
+/** La portada de un juego: la imagen que dibujó el taller si se puede descargar; si no (juego
+ * del laberinto, sin conexión o todavía sin portada), la imagen de siempre. Se pide reducida a
+ * la mitad porque en la tarjeta se ve pequeña y así no se gasta memoria del celular. */
+@Composable
+fun PortadaAventura(aventura: AventuraInfantil, modifier: Modifier = Modifier) {
+    val remota by produceState<ImageBitmap?>(null, aventura.portadaUrl) {
+        val direccion = aventura.portadaUrl ?: return@produceState
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val conexion = URL(direccion).openConnection() as HttpURLConnection
+                conexion.connectTimeout = 5000
+                conexion.readTimeout = 8000
+                try {
+                    if (conexion.responseCode != HttpURLConnection.HTTP_OK) null
+                    else conexion.inputStream.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = 2 }) }?.asImageBitmap()
+                } finally {
+                    conexion.disconnect()
+                }
+            }.getOrNull()
+        }
+    }
+    val imagen = remota
+    if (imagen != null) Image(imagen, null, modifier, contentScale = ContentScale.Crop)
+    else Image(painterResource(aventura.portada), null, modifier, contentScale = ContentScale.Crop)
 }

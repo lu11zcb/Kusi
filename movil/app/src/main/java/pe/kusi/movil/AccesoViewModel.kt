@@ -122,7 +122,7 @@ class AccesoViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
                     AventuraInfantil(it.id, presentacion.titulo, presentacion.curso,
                         presentacion.mision, presentacion.consigna, paquete = it.paquete,
                         icono = iconoCursoInfantil(presentacion.curso, presentacion.clasificacion), nuevo = it.nuevo,
-                        enPausa = pausas[it.id] == true)
+                        enPausa = pausas[it.id] == true, portadaUrl = portadaDelJuego(BuildConfig.JUEGO_URL, it.paquete))
                 })
             } catch (cancelada: CancellationException) {
                 throw cancelada

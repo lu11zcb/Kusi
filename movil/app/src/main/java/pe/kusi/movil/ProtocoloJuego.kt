@@ -12,6 +12,17 @@ data class AvanceJuego(val juegoId: String, val paquete: String, val nivel: Int,
 data class InicioJuego(val aventura: AventuraInfantil, val nivel: Int = 1, val partida: JSONObject? = null)
 private val identificadorJuego = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
+/** La portada que el taller dibujó para un juego suyo (portada.png en la carpeta del trabajo,
+ * servida por el mismo servidor del juego), o null: los juegos del laberinto no la tienen y
+ * la app usa su imagen de siempre. */
+fun portadaDelJuego(juegoUrl: String, paquete: String?): String? = try {
+    val trabajo = paquete?.let { JSONObject(it).optString("trabajo") }
+    if (trabajo == null || !identificadorJuego.matches(trabajo)) null
+    else URI(juegoUrl).resolve("/taller/trabajos/" + trabajo + "/portada.png").toString()
+} catch (_: Exception) {
+    null
+}
+
 /** El anfitrión adjunta el juego que realmente abrió; no cambia el aviso original. */
 fun avisoDelJuego(aviso: JSONObject, juegoId: String): JSONObject {
     require(identificadorJuego.matches(juegoId))
