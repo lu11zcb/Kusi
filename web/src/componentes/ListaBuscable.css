@@ -1,4 +1,4 @@
 .lista-buscable { display: grid; gap: .5rem; min-width: 0; }
 .lista-buscable label, .lista-buscable p { margin: 0; }
 .lista-buscable p { font-size: .875rem; }
-.lista-buscable input, .lista-buscable select { min-width: 0; max-width: 100%; }
+.lista-buscable input, .lista-buscable .selector-desplegable { min-width: 0; max-width: 100%; }

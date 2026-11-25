@@ -7,7 +7,7 @@ const web=fileURLToPath(new URL('../../',import.meta.url))
 const html=web+'/.revision-asignaciones.html',entrada=web+'/.revision-asignaciones.tsx'
 const actividad='11111111-1111-4111-8111-111111111111',anterior='22222222-2222-4222-8222-222222222222',nuevo='33333333-3333-4333-8333-333333333333'
 await writeFile(html,'<html lang="es"><meta charset="utf-8"><div id="root"></div><script type="module" src="/.revision-asignaciones.tsx"></script></html>')
-await writeFile(entrada,"import React from 'react'; import {createRoot} from 'react-dom/client'; import {ResultadosDocente} from './src/docente/ResultadosDocente'; import './src/index.css'; import './src/docente/docente.css'; import './src/docente/resultados.css'; createRoot(document.getElementById('root')!).render(<div className='panel-docente'><ResultadosDocente activo={true}/></div>);")
+await writeFile(entrada,"import React from 'react'; import {createRoot} from 'react-dom/client'; import {ResultadosDocente} from './src/docente/ResultadosDocente'; import './src/index.css'; import './src/App.css'; import './src/componentes/paneles.css'; import './src/docente/docente.css'; import './src/docente/resultados.css'; createRoot(document.getElementById('root')!).render(<div className='panel-docente'><ResultadosDocente activo={true}/></div>);")
 const nav=await chromium.launch()
 try {
  const pag=await nav.newPage({viewport:{width:1280,height:900}}); let asignado=false,fallar=true;const envios=[];const errores=[];pag.on('pageerror',e=>errores.push(e.message))
@@ -22,8 +22,9 @@ try {
   else datos={actividades:[{id:actividad,titulo:'Actividad sintética de sumas',seccion:'Sección de prueba'}]}
   await ruta.fulfill({status,contentType:'application/json',body:JSON.stringify(datos)})
  })
- await pag.goto('http://127.0.0.1:5173/.revision-asignaciones.html')
- await pag.getByLabel('Actividad',{exact:true}).selectOption(actividad)
+ await pag.goto(new URL('/.revision-asignaciones.html', process.env.KUSI_WEB_PRUEBAS_URL ?? 'http://127.0.0.1:5173').href)
+ await pag.getByRole('combobox',{name:'Actividad',exact:true}).click()
+ await pag.getByRole('option',{name:'Actividad sintética de sumas · Sección de prueba',exact:true}).click()
  await pag.getByRole('button',{name:'Asignar a estudiantes nuevos',exact:true}).click()
  await expect(pag.getByRole('checkbox',{name:/Cuenta ya asignada/})).toBeDisabled()
  await expect(pag.getByRole('checkbox',{name:'Cuenta nueva',exact:true})).not.toBeChecked()

@@ -17,8 +17,12 @@ for (const rol of ['estudiante', 'docente', 'administrador']) {
   test('registro de ' + rol + ' fija el rol y pide los datos de esa cuenta', () => {
     const html = renderizar({ rolInicial: rol })
     assert.doesNotMatch(html, /Tipo de cuenta|data-rol=/)
-    assert.match(html, /<label for="nombre">Nombre completo<\/label>/)
+    // Nombres y apellidos van en campos separados para que no falte ninguno.
+    assert.match(html, /<label for="nombre">Nombres<\/label>/)
     assert.match(html, /<input[^>]*id="nombre"[^>]*required=""/)
+    assert.match(html, /<label for="apellidos">Apellidos<\/label>/)
+    assert.match(html, /<input[^>]*id="apellidos"[^>]*required=""/)
+    assert.ok(html.indexOf('for="nombre"') < html.indexOf('for="apellidos"'))
     assert.ok(html.includes('Registrar ' + rol))
     if (rol === 'estudiante') {
       assert.match(html, /<input[^>]*id="dni"[^>]*required=""/)

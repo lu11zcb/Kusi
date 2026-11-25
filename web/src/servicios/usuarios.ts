@@ -21,7 +21,7 @@ export const consultarUsuario = (id: string) => solicitar<DetalleUsuario>('/api/
 export const asignarRoles = (id: string, roles: Rol[]) => enviar<{ usuario: UsuarioAdministrado }>(
   '/api/cuentas/usuarios/' + encodeURIComponent(id) + '/roles/', { roles },
 )
-export const editarUsuario = (id: string, datos: { nombre: string; correo: string; dni: string }) => enviar<{ usuario: UsuarioAdministrado }>(
+export const editarUsuario = (id: string, datos: { nombres: string; apellidos: string; correo: string; dni: string }) => enviar<{ usuario: UsuarioAdministrado }>(
   '/api/cuentas/usuarios/' + encodeURIComponent(id) + '/datos/', datos, 'PATCH',
 )
 

@@ -1,18 +1,21 @@
+import { SelectorDesplegable } from '../componentes/SelectorDesplegable'
 import type { OpcionLista } from '../servicios/opcionesEducativas'
 
-export function SelectorRelacion({ id, etiqueta, opciones, valor, alCambiar, vacio }: {
+type Propiedades = {
   id: string
   etiqueta: string
   opciones: OpcionLista[]
   valor: string
   alCambiar: (id: string) => void
   vacio: string
-}) {
+  deshabilitado?: boolean
+}
+
+export function SelectorRelacion({ id, etiqueta, opciones, valor, alCambiar, vacio, deshabilitado }: Propiedades) {
+  const textoInicial = 'Elige de la lista'
   return <div className="campo">
-    <label htmlFor={id}>{etiqueta}</label>
-    <select id={id} required value={valor} onChange={(evento) => alCambiar(evento.target.value)}>
-      <option value="">{opciones.length ? 'Elige de la lista' : vacio}</option>
-      {opciones.map((opcion) => <option key={opcion.id} value={opcion.id}>{opcion.nombre}</option>)}
-    </select>
+    <label id={id + '-etiqueta'} htmlFor={id}>{etiqueta}</label>
+    <SelectorDesplegable id={id} valor={valor} alCambiar={alCambiar} required disabled={deshabilitado || !opciones.length}
+      textoVacio={vacio} opciones={opciones.length ? [{ id: '', nombre: textoInicial }, ...opciones] : []} />
   </div>
 }

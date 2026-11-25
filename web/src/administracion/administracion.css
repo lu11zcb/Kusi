@@ -27,30 +27,6 @@
 .panel-administracion .admin-recientes h2 { margin:0 0 1rem; font-size:1.25rem }
 .panel-administracion .admin-recientes .admin-personas li { padding:.7rem .85rem }
 .panel-administracion .admin-recientes .admin-avatar { width:38px; height:38px; border-radius:12px }
-.panel-administracion .admin-juegos-resumen { margin-top:1.5rem }
-.panel-administracion .admin-juegos-cabecera,.panel-administracion .admin-juegos-aviso { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem }
-.panel-administracion .admin-juegos-cabecera h2 { display:flex; align-items:center; gap:.65rem; margin:0 }
-.panel-administracion .admin-juegos-indicadores { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:1rem; align-items:start; margin-top:1rem }
-.panel-administracion .admin-juegos-totales { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; margin:0 }
-.panel-administracion .admin-juegos-totales div { display:grid; gap:.35rem; align-content:start; padding:.8rem; border-radius:14px; background:#f7f0e6 }
-.panel-administracion .admin-juegos-totales dt { font-size:.85rem; color:#6b5245 }
-.panel-administracion .admin-juegos-totales dd { grid-row:1; margin:0; color:var(--vino); font-size:1.55rem; font-weight:900 }
-.panel-administracion .admin-juegos-destacados h3 { margin:0 0 .55rem; font-size:1rem }
-.panel-administracion .admin-juegos-destacados ol { margin:0; padding-left:1.55rem }
-.panel-administracion .admin-juegos-destacados li { padding:.25rem 0; overflow-wrap:anywhere }
-.panel-administracion .admin-juegos-destacados li strong { float:right; margin-left:.6rem; color:var(--vino) }
-.panel-administracion .admin-juegos-desplazamiento { overflow-x:auto; border:1px solid #eadcc9; border-radius:16px }
-.panel-administracion .admin-juegos-desplazamiento:focus-visible { outline:2px solid var(--vino); outline-offset:2px }
-.panel-administracion .admin-juegos-tabla { width:100%; min-width:680px; border-collapse:collapse; text-align:left; font-size:.9rem }
-.panel-administracion .admin-juegos-tabla caption { padding:.75rem; text-align:left; font-weight:800; color:var(--vino) }
-.panel-administracion .admin-juegos-tabla th,.panel-administracion .admin-juegos-tabla td { padding:.75rem; border-top:1px solid #f0e5d7; overflow-wrap:anywhere }
-.panel-administracion .admin-juegos-tabla thead { background:#f7f0e6; color:#6b5245 }
-.panel-administracion .admin-juegos-tabla tbody { background:white }
-.panel-administracion .admin-juegos-tabla [data-estado=generando] { background:#fff0cd; color:#765322 }
-.panel-administracion .admin-juegos-tabla [data-estado=listo_para_probar] { background:#e9f4ff; color:#316791 }
-.panel-administracion .admin-juegos-tabla [data-estado=publicado] { background:#e4f4e8; color:#2d7147 }
-.panel-administracion .admin-juegos-tabla [data-estado=fallido],.panel-administracion .admin-juego-fallo { color:#933d35; font-weight:900 }
-@media(max-width:740px) { .panel-administracion .admin-juegos-indicadores { grid-template-columns:minmax(0,1fr) } }
 .panel-administracion .admin-filtros { display:flex; align-items:flex-end; flex-wrap:wrap; gap:1rem; padding:1.15rem; background:#f7f0e6; border-radius:18px }
 .panel-administracion .admin-filtros .campo { margin:0; flex:1; min-width:180px }
 .panel-administracion .admin-filtros .admin-buscar { flex:2; min-width:min(100%,260px) }
@@ -117,13 +93,47 @@
 .panel-administracion [data-tono=morado] { --curso-fondo:#f4edff; --curso-borde:#d9c4f1; --curso-tinta:#7a529e }
 .panel-administracion [data-tono=vino] { --curso-fondo:#f8ecee; --curso-borde:#e7c3c7; --curso-tinta:#954c5c }
 .panel-administracion .admin-editor { margin-top:1.7rem; background:#fff4da; padding:1.4rem; border-radius:18px; max-width:46rem }
-.panel-administracion .admin-secciones { display:grid; grid-template-columns:minmax(280px,.9fr) minmax(0,1.1fr); gap:2rem; align-items:start }
-.panel-administracion .admin-secciones form { margin:0; background:#f7f0e6; padding:1.5rem; border-radius:20px }
-.panel-administracion .admin-grupos { list-style:none; padding:0; margin:0; display:grid; gap:.8rem }
-.panel-administracion .admin-grupos li { display:flex; align-items:center; gap:1rem; border:1px solid #e5d6bf; padding:1rem; border-radius:18px; background:white }
-.panel-administracion .admin-grupos strong { display:block; font-family:var(--letra-titulo); font-size:1.3rem; color:var(--vino) }
-.panel-administracion .admin-grupos span { display:block; color:#79645c; font-size:.85rem }
-.panel-administracion .admin-grupos svg { width:40px; height:40px; color:#54976f }
+.panel-administracion .admin-secciones { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:clamp(1rem,3vw,2rem); align-items:start }
+.panel-administracion .admin-secciones form { margin:0; padding:clamp(1rem,2vw,1.5rem) }
+.panel-administracion .admin-secciones form h2 { margin-top:0 }
+.panel-administracion .admin-superficie .admin-secciones form button[type=submit] { color:var(--vino); text-shadow:none }
+.panel-administracion .admin-secciones-listado {
+  container:admin-secciones / inline-size;
+  min-width:0;
+  padding:clamp(1rem,2vw,1.5rem);
+  border:2px solid var(--borde);
+  border-radius:22px;
+  box-shadow:var(--panel-relieve);
+}
+.panel-administracion .admin-secciones-listado > h2 { margin:0 0 .85rem }
+.panel-administracion .admin-secciones-controles { display:flex; flex-wrap:wrap; align-items:flex-end; gap:.6rem 1rem }
+.panel-administracion .admin-secciones-controles .campo { flex:0 1 8rem; min-width:0; margin:0 }
+.panel-administracion .admin-secciones-controles p { margin:0 }
+.panel-administracion .admin-secciones-controles p[role=status] { align-self:flex-end; padding-block:.4rem; font-size:.87rem }
+.panel-administracion .admin-secciones-grado h3 { margin:1rem 0 .55rem; font-size:1.08rem }
+.panel-administracion .admin-grupos {
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,9rem),1fr));
+  gap:.65rem;
+}
+.panel-administracion .admin-grupos li { display:flex; align-items:center; gap:.55rem; min-width:0; padding:.55rem .65rem }
+.panel-administracion .admin-grupos strong { color:var(--vino); overflow-wrap:anywhere }
+.panel-administracion .admin-grupos .icono-grande { width:34px; height:34px; border-radius:11px }
+.panel-administracion .admin-grupos .icono-grande .icono { width:20px; height:20px }
+.panel-administracion .admin-secciones-paginas { align-items:center; justify-content:space-between; margin:1rem 0 0 }
+.panel-administracion .admin-secciones-paginas span { color:var(--texto-suave); font-size:.85rem; font-weight:800 }
+.panel-administracion .admin-superficie .admin-secciones-paginas button { padding-inline:.75rem; font-size:.85rem }
+@container admin-secciones (max-width: 300px) {
+  .panel-administracion .admin-grupos { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .panel-administracion .admin-grupos li { padding:.45rem; gap:.35rem }
+  .panel-administracion .admin-grupos .icono-grande { width:26px; height:26px; border-radius:8px }
+  .panel-administracion .admin-grupos .icono-grande .icono { width:16px; height:16px }
+  .panel-administracion .admin-secciones-paginas { display:grid; grid-template-columns:1fr 1fr; gap:.55rem }
+  .panel-administracion .admin-secciones-paginas span { grid-area:1 / 1 / auto / -1; text-align:center }
+}
 .panel-administracion .admin-pie { display:flex; justify-content:space-between; color:#9b8170; font-size:.8rem; padding:1.5rem .2rem 0 }
 @keyframes admin-aparecer { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
 @media(min-width:1100px) { .panel-administracion .doc-alternar-menu { display:none } }
@@ -133,3 +143,378 @@
 @media(max-width:650px) { .panel-administracion .admin-encabezado { align-items:flex-start; flex-direction:column } .panel-administracion .admin-ilustracion-icono { display:none } .panel-administracion .admin-roles { grid-template-columns:1fr; gap:.7rem } .panel-administracion .admin-superficie .admin-rol { min-height:90px; display:grid; grid-template-columns:44px 1fr; gap:.25rem .8rem; padding:1rem } .panel-administracion .admin-rol svg { grid-row:span 2 } .panel-administracion .admin-personas li { flex-wrap:wrap; padding:1rem; gap:.7rem } .panel-administracion .admin-personas .admin-estado { margin-left:60px } .panel-administracion .admin-personas li>button { margin-left:auto } .panel-administracion .admin-filtros { padding:.9rem } .panel-administracion .admin-cursos,.panel-administracion .admin-secciones { grid-template-columns:1fr } .panel-administracion .admin-ficha-cabecera { align-items:flex-start } .panel-administracion .admin-avatar.grande { width:54px;height:54px;font-size:1.2rem } }
 @media(prefers-reduced-motion:reduce) { .panel-administracion *, .panel-administracion *::before { animation:none!important; transition:none!important; transform:none!important } }
 @media(max-width:650px) { .panel-administracion .marca small { display:none } .panel-administracion .admin-personas li { display:grid; grid-template-columns:48px minmax(0,1fr) } .panel-administracion .admin-persona-nombre { grid-column:2 } .panel-administracion .admin-personas .admin-estado { grid-column:2; justify-self:start; margin-left:0 } .panel-administracion .admin-personas li>button { grid-column:2; justify-self:stretch; margin-left:0 } }
+
+/* Juegos de los docentes */
+.panel-administracion .admin-juegos-resumen { margin-top:1.5rem; }
+.panel-administracion :is(.admin-juegos-resumen,.admin-juegos-pagina) { container:admin-juegos / inline-size; }
+.panel-administracion :is(.admin-juegos-cabecera,.admin-juegos-aviso) {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:.85rem;
+}
+.panel-administracion .admin-juegos-titulo { display:flex; align-items:center; gap:.85rem; min-width:0; }
+.panel-administracion .admin-juegos-titulo h2 { margin:0; }
+.panel-administracion .admin-juegos-titulo p { margin:.3rem 0 0; color:#674e43; line-height:1.45; }
+.panel-administracion .admin-juegos-indicadores {
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);
+  gap:1rem;
+  align-items:start;
+  margin-top:1.15rem;
+}
+.panel-administracion .admin-juegos-totales {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.6rem;
+  margin:0;
+}
+.panel-administracion .admin-juegos-resumen .icono-grande,
+.panel-administracion .admin-juegos-totales .icono-grande { width:40px; height:40px; border-radius:13px; }
+.panel-administracion .admin-juegos-totales > .estadistica {
+  position:relative;
+  display:grid;
+  grid-template-rows:auto auto;
+  align-content:center;
+  gap:.25rem;
+  min-width:0;
+  padding:.85rem .65rem .85rem 3.75rem;
+  border:2px solid var(--borde);
+  border-radius:22px;
+  background:var(--crema-2);
+}
+.panel-administracion .admin-juegos-totales .icono-grande { position:absolute; inset-inline-start:.65rem; top:calc(50% - 20px); }
+.panel-administracion .admin-juegos-totales .icono-grande svg { width:22px; height:22px; }
+.panel-administracion .admin-juegos-totales dt {
+  color:var(--texto-suave);
+  font-size:.82rem;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.panel-administracion .admin-juegos-totales dd {
+  grid-row:1;
+  margin:0;
+  color:var(--vino);
+  font:600 1.7rem/1 var(--letra-titulo);
+  font-variant-numeric:tabular-nums;
+  overflow-wrap:anywhere;
+}
+.panel-administracion .admin-juegos-destacados {
+  padding:.9rem 1rem;
+  border:2px solid var(--borde);
+  border-radius:22px;
+  background:var(--crema-2);
+}
+.panel-administracion .admin-juegos-destacados h3 { margin:0 0 .45rem; }
+.panel-administracion .admin-juegos-destacados p { margin:0; color:var(--texto-suave); }
+.panel-administracion .admin-juegos-destacados ol { margin:0; padding:0; list-style:none; }
+.panel-administracion .admin-juegos-destacados li { padding:.45rem 0 .45rem .2rem; }
+.panel-administracion .admin-juegos-destacados li + li { border-top:1px solid var(--borde); }
+/* El puesto se dibuja aparte (no con el número de la lista) para mostrar los empates: 1, 1, 3. */
+.panel-administracion .admin-juegos-puesto { display:inline-grid; place-items:center; width:1.7rem; height:1.7rem; border-radius:8px; background:#eae7e5; color:#4d4542; font-size:.8rem; font-weight:900; }
+.panel-administracion .admin-juegos-destacados li[data-puesto="1"] .admin-juegos-puesto { background:#f5d891; color:#633d15; }
+.panel-administracion .admin-juegos-destacados li[data-puesto="3"] .admin-juegos-puesto { background:#efd9ca; color:#713d2f; }
+.panel-administracion .admin-juegos-destacados li > div {
+  display:grid;
+  grid-template-columns:auto auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:.5rem;
+}
+.panel-administracion .admin-juegos-destacados .admin-avatar { width:32px; height:32px; border-radius:10px; font-size:.78rem; color:#28563c; }
+.panel-administracion .admin-juegos-destacado-nombre { font-size:.92rem; font-weight:800; overflow-wrap:anywhere; }
+.panel-administracion .admin-juegos-destacados li strong {
+  padding:.2rem .5rem;
+  border-radius:99px;
+  background:var(--crema-3);
+  color:var(--vino);
+  font-size:.8rem;
+  text-align:end;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.panel-administracion .admin-juegos-docentes { margin-top:1.7rem; }
+.panel-administracion .admin-juegos-docentes h2 { margin:0 0 .7rem; }
+.panel-administracion .admin-juegos-listado-cabecera { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:.3rem 1rem; margin:0 0 .7rem; }
+.panel-administracion .admin-juegos-listado-cabecera h2 { margin:0; }
+.panel-administracion .admin-juegos-listado-cabecera span { color:var(--texto-suave); font-size:.9rem; }
+.panel-administracion .admin-juegos-tabla {
+  overflow:hidden;
+  border:2px solid var(--borde);
+  border-radius:22px;
+  box-shadow:var(--panel-relieve);
+}
+.panel-administracion .admin-juegos-tabla table { width:100%; border-collapse:collapse; font-size:.9rem; text-align:start; }
+.panel-administracion .admin-juegos-tabla :is(th,td) { padding:.85rem .8rem; overflow-wrap:anywhere; }
+.panel-administracion .admin-juegos-tabla th { text-align:start; }
+.panel-administracion .admin-juegos-tabla thead { background:var(--crema-3); color:var(--vino); }
+.panel-administracion .admin-juegos-tabla tbody tr + tr { border-top:2px solid var(--borde); }
+.panel-administracion .admin-juegos-tabla tbody th { width:24%; color:var(--vino); }
+.panel-administracion .admin-juegos-tabla tbody td { color:var(--texto-suave); }
+.panel-administracion .admin-juegos-tabla .admin-estado[data-estado=generando] { background:#fbf0d9; color:#6d481b; }
+.panel-administracion .admin-juegos-tabla .admin-estado[data-estado=listo_para_probar] { background:#e9f4ff; color:#2b5578; }
+.panel-administracion .admin-juegos-tabla .admin-estado[data-estado=publicado] { background:#e9f3eb; color:#28563c; }
+.panel-administracion .admin-juegos-tabla .admin-estado[data-estado=retirado] { background:#f1e9e1; color:#5e4d42; }
+.panel-administracion .admin-juegos-tabla .admin-estado[data-estado=fallido] { background:#fae5e1; color:#8e332b; }
+.panel-administracion .admin-juego-fallo { color:#8e332b; font-weight:900; }
+.panel-administracion .admin-juegos-etiqueta { display:none; }
+@container admin-juegos (min-width: 741px) {
+  .panel-administracion .admin-juegos-indicadores:has(.admin-juegos-destacados li:nth-child(3)) {
+    grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+  }
+  .panel-administracion .admin-juegos-indicadores:has(.admin-juegos-destacados li:nth-child(3)) .admin-juegos-totales {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .panel-administracion .admin-juegos-indicadores:has(.admin-juegos-destacados li:nth-child(3)) .estadistica {
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto;
+    align-items:center;
+    min-height:76px;
+    padding-inline-end:1rem;
+  }
+  .panel-administracion .admin-juegos-indicadores:has(.admin-juegos-destacados li:nth-child(3)) .estadistica dd { grid-column:2; }
+}
+@container admin-juegos (max-width: 740px) {
+  .panel-administracion .admin-juegos-indicadores { grid-template-columns:minmax(0,1fr); }
+}
+@container admin-juegos (max-width: 620px) {
+  .panel-administracion .admin-juegos-tabla { overflow:visible; border:0; box-shadow:none; }
+  .panel-administracion .admin-juegos-tabla table { display:block; }
+  .panel-administracion .admin-juegos-tabla thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .panel-administracion .admin-juegos-tabla tbody { display:grid; gap:.8rem; }
+  .panel-administracion .admin-juegos-tabla tbody tr {
+    display:grid;
+    gap:.45rem;
+    min-width:0;
+    padding:.85rem;
+    border:2px solid var(--borde);
+    border-radius:20px;
+    box-shadow:var(--panel-relieve);
+  }
+  .panel-administracion .admin-juegos-tabla tbody th { width:auto; padding:0 0 .55rem; border-bottom:2px solid var(--borde); }
+  .panel-administracion .admin-juegos-tabla td {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+    align-items:baseline;
+    justify-items:start;
+    gap:.5rem;
+    padding:0;
+  }
+  .panel-administracion .admin-juegos-etiqueta { display:block; color:var(--vino); font-weight:800; }
+}
+@container admin-juegos (max-width: 380px) {
+  .panel-administracion .admin-juegos-titulo { align-items:flex-start; }
+  .panel-administracion .admin-juegos-destacados li > div { grid-template-columns:auto minmax(0,1fr) auto; }
+  .panel-administracion .admin-juegos-destacados .admin-avatar { display:none; }
+  .panel-administracion .admin-juegos-totales { grid-template-columns:minmax(0,1fr); gap:.375rem; }
+  .panel-administracion .admin-juegos-totales > .estadistica {
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:auto;
+    align-items:center;
+    min-height:62px;
+  }
+  .panel-administracion .admin-juegos-totales dd { grid-column:2; }
+}
+
+/* Las fichas usan los mismos bordes, relieves y colores que Inicio y Secciones. */
+.panel-administracion .admin-ficha-usuario :is(.admin-ficha-cabecera,.admin-datos,.admin-historial) {
+  background:var(--crema-2);
+  border:2px solid var(--borde);
+  border-radius:22px;
+  box-shadow:var(--panel-relieve);
+}
+.panel-administracion .admin-ficha-usuario .admin-ficha-cabecera { padding:clamp(1rem,2vw,1.4rem); }
+.panel-administracion .admin-ficha-usuario .admin-ficha-cabecera h1 { font-size:clamp(1.9rem,3vw,2.5rem); }
+.panel-administracion .admin-ficha-usuario .admin-avatar.administrador { background:linear-gradient(180deg,#a57bd8,#7448b0); }
+.panel-administracion .admin-ficha-usuario .admin-ficha-columnas { gap:1.3rem; }
+@media (max-width: 650px) {
+  .panel-administracion .admin-ficha-usuario .admin-ficha-cabecera { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:.85rem; }
+  .panel-administracion .admin-ficha-usuario .admin-ficha-identidad { display:contents; }
+  .panel-administracion .admin-ficha-usuario .admin-ficha-identidad h1 { margin:0; }
+  .panel-administracion .admin-ficha-usuario .admin-ficha-resumen { grid-column:1/-1; column-gap:1rem; }
+}
+.panel-administracion .admin-ficha-usuario .admin-relacion > h2 { margin:0 0 .8rem; }
+.panel-administracion .admin-docente-secciones,.panel-administracion .admin-docente-seccion-cursos { list-style:none; margin:0; padding:0; }
+.panel-administracion .admin-ficha-usuario :is(.admin-docente-secciones,.admin-relacion .lista-gestion) { display:grid; gap:.75rem; }
+.panel-administracion .admin-ficha-usuario :is(.admin-docente-secciones > li,.admin-relacion .lista-gestion > li,.admin-ficha-sin-secciones,.admin-relacion form) {
+  padding:1rem;
+  border:2px solid var(--borde);
+  border-radius:22px;
+  background:var(--crema-2);
+  box-shadow:var(--panel-relieve);
+}
+.panel-administracion .admin-ficha-seccion-titulo { display:flex; align-items:center; gap:.65rem; min-width:0; }
+.panel-administracion .lista-gestion .admin-ficha-seccion-titulo {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  column-gap:.65rem;
+  row-gap:0;
+}
+.panel-administracion .admin-ficha-usuario .admin-ficha-seccion-titulo :is(h3,strong) { margin:0; font:600 1.15rem/1.25 var(--letra-titulo); overflow-wrap:anywhere; }
+.panel-administracion .admin-ficha-usuario .admin-ficha-seccion-titulo :is(p,span:not(.icono-grande)) { margin:.1rem 0 0; color:var(--texto-suave); font-size:.85rem; }
+.panel-administracion .admin-ficha-usuario :is(.admin-ficha-seccion-titulo,.admin-datos h2) .icono-grande { width:40px; height:40px; border-radius:13px; }
+.panel-administracion .admin-ficha-seccion-titulo .icono-grande .icono { width:22px; height:22px; }
+.panel-administracion .admin-ficha-usuario .lista-gestion .icono-grande { grid-row:span 2; margin:0; color:#fff; }
+.panel-administracion .admin-docente-seccion-cursos { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.65rem; }
+.panel-administracion .admin-docente-seccion-cursos > li {
+  background:var(--crema-3);
+  color:var(--vino);
+  font-size:.85rem;
+  font-weight:800;
+  line-height:1.35;
+  padding:.35rem .7rem;
+  border-radius:999px;
+  overflow-wrap:anywhere;
+}
+.panel-administracion .admin-ficha-usuario .admin-relacion form { margin-top:1rem; }
+.panel-administracion .admin-ficha-usuario .admin-relacion form > fieldset {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));
+  gap:.75rem;
+  max-width:none;
+  margin:0;
+}
+.panel-administracion .admin-ficha-usuario .admin-relacion legend { color:var(--vino); margin-bottom:.75rem; font:600 1.15rem var(--letra-titulo); }
+.panel-administracion .admin-ficha-usuario .admin-relacion .campo { margin:0; min-width:0; }
+.panel-administracion .admin-ficha-usuario .admin-relacion form button[type=submit] { grid-column:1/-1; justify-self:start; }
+.panel-administracion .admin-ficha-usuario .admin-datos { padding:1rem; }
+.panel-administracion .admin-ficha-usuario .admin-datos h2 { display:flex; align-items:center; gap:.65rem; margin:0 0 .85rem; }
+.panel-administracion .admin-ficha-usuario .admin-datos > :is(details,.admin-acceso) {
+  padding:0 .85rem;
+  background:var(--crema-3);
+  border:2px solid var(--borde);
+  border-radius:16px;
+}
+.panel-administracion .admin-ficha-usuario .admin-datos > :is(details,.admin-acceso) + :is(details,.admin-acceso) { margin-top:.6rem; }
+.panel-administracion .admin-ficha-usuario .admin-datos .admin-acceso { padding:.8rem .85rem; }
+.panel-administracion .admin-ficha-usuario .admin-acceso h3,
+.panel-administracion .admin-ficha-usuario summary {
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  font:600 1.1rem/1.3 var(--letra-titulo);
+  color:var(--vino);
+}
+.panel-administracion .admin-ficha-usuario .admin-datos p { color:var(--texto-suave); font-size:.9rem; }
+.panel-administracion .admin-ficha-usuario summary { min-height:44px; border-radius:8px; list-style:none; }
+.panel-administracion .admin-ficha-usuario summary::-webkit-details-marker { display:none; }
+.panel-administracion .admin-ficha-usuario :is(summary,h3) > svg { width:20px; height:20px; color:var(--vino-2); }
+.panel-administracion .admin-ficha-usuario summary > svg:last-child { margin-inline-start:auto; }
+.panel-administracion .admin-ficha-usuario details[open] > summary > svg:last-child { rotate:180deg; }
+.panel-administracion .admin-ficha-usuario .admin-datos form { margin:0; padding:.25rem 0 .8rem; }
+.panel-administracion .admin-ficha-usuario .admin-historial { padding:.2rem 1rem; }
+.panel-administracion .admin-ficha-usuario .admin-historial > :is(p,ol) { margin:.3rem 0 .85rem; }
+.panel-administracion .admin-ficha-usuario .admin-historial li + li { border-top:2px solid var(--borde); }
+.panel-administracion .admin-ficha-usuario .admin-historial li p { margin:.3rem 0; color:var(--texto-suave); }
+.panel-administracion .admin-ficha-usuario button:is([type=submit],.confirmacion > button) { color:var(--vino); text-shadow:none; }
+.panel-administracion .admin-ficha-usuario .error-resumen,
+.panel-administracion .admin-ficha-usuario .admin-datos .error-campo { color:#8e332b; }
+.panel-administracion :is(.admin-juegos-resumen,.admin-juegos-pagina,.admin-ficha-usuario) :focus-visible {
+  outline:2px solid var(--vino);
+  outline-offset:2px;
+}
+.panel-administracion .admin-ficha-usuario .admin-ficha-identidad h1:focus-visible,
+.panel-administracion .admin-juegos-pagina h1:focus-visible { outline-offset:4px; }
+
+/* Detalle de un juego (administrador): lo que pidió el docente, versiones y guiones. */
+.panel-administracion .admin-detalle-juego {
+  --detalle-espacio: clamp(.8rem, 2vw, 1.4rem);
+  container: detalle-juego / inline-size;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.panel-administracion .admin-detalle-juego :is(.admin-detalle-cabecera, .admin-detalle-bloque) {
+  padding: var(--detalle-espacio);
+  border: 2px solid var(--borde);
+  border-radius: 20px;
+  background: var(--crema-2);
+  box-shadow: var(--panel-relieve);
+}
+
+.panel-administracion .admin-detalle-cabecera {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .8rem;
+}
+
+.panel-administracion .admin-detalle-icono {
+  display: grid;
+  place-items: center;
+  width: clamp(36px, 6vw, 52px);
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: #f6eae5;
+  color: var(--vino);
+}
+
+.panel-administracion .admin-detalle-icono .icono { width: 24px; height: 24px; }
+.panel-administracion .admin-detalle-cabecera h2 { margin: 0 0 .25rem; font-size: clamp(1.4rem, 3vw, 2.15rem); line-height: 1.15; }
+.panel-administracion .admin-detalle-cabecera p { margin: 0; color: var(--texto-suave); }
+.panel-administracion .admin-detalle-bloque { margin-top: 1.2rem; }
+.panel-administracion .admin-detalle-bloque h3 { margin: 0 0 .35rem; font-size: 1.22rem; }
+.panel-administracion .admin-detalle-bloque > p { margin: 0; color: var(--texto-suave); }
+
+.panel-administracion :is(.admin-detalle-pedido, .admin-detalle-propuesta) { display: grid; gap: .65rem; margin: .8rem 0 0; }
+.panel-administracion .admin-detalle-pedido { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.panel-administracion .admin-detalle-pedido > div:first-child { grid-column: 1/-1; background: #f8efdf; }
+.panel-administracion .admin-detalle-pedido > div { padding: .65rem .8rem; border: 1px solid var(--borde); border-radius: 12px; }
+.panel-administracion :is(.admin-detalle-pedido, .admin-detalle-propuesta) dt { color: var(--vino); font-size: .88rem; font-weight: 900; }
+.panel-administracion :is(.admin-detalle-pedido, .admin-detalle-propuesta) dd { margin: .2rem 0 0; }
+.panel-administracion .admin-detalle-pedido dd { white-space: pre-wrap; }
+.panel-administracion .admin-detalle-vacio { color: var(--texto-suave); font-style: italic; }
+
+.panel-administracion .admin-detalle-lista { list-style: none; margin: .85rem 0 0; padding: 0; display: grid; gap: .65rem; }
+.panel-administracion .admin-detalle-lista:empty { display: none; }
+.panel-administracion .admin-detalle-item { min-width: 0; padding: var(--detalle-espacio); border: 1px solid var(--borde); border-radius: 16px; background: #fff; }
+.panel-administracion :is(.admin-detalle-item-cabecera, .admin-detalle-etapa-cabecera) { display: flex; align-items: baseline; justify-content: space-between; gap: .3rem .85rem; flex-wrap: wrap; }
+.panel-administracion .admin-detalle-item-cabecera h4 { margin: 0; font-size: 1.08rem; }
+.panel-administracion .admin-detalle-meta { margin: .35rem 0 0; color: var(--texto-suave); font-size: .88rem; }
+.panel-administracion .admin-detalle-correccion { margin: .75rem 0 0; padding: .65rem .8rem; border-inline-start: 3px solid #a96b25; border-radius: 10px; background: #fff4da; white-space: pre-wrap; }
+.panel-administracion .admin-detalle-fallo { border-color: #a04b42; background: #fae5e1; color: #8e332b; }
+.panel-administracion .admin-detalle-juego .admin-estado { max-width: 100%; white-space: normal; color: #5e4d42; }
+.panel-administracion .admin-detalle-juego .admin-estado:is([data-estado='aprobada'], [data-estado='lista'], [data-estado='publicado'], [data-estado='completada']) { background: #e9f3eb; color: #28563c; }
+.panel-administracion .admin-detalle-juego .admin-estado:is([data-estado='generando'], [data-estado='correccion'], [data-estado='comprobando'], [data-estado='en_progreso']) { background: #fbf0d9; color: #6d481b; }
+.panel-administracion .admin-detalle-juego .admin-estado:is([data-estado='rechazada'], [data-estado='fallida']) { background: #fae5e1; color: #8e332b; }
+
+.panel-administracion .admin-detalle-etapas { display: grid; gap: .4rem; margin: .8rem 0 0; padding: 0; list-style: none; }
+.panel-administracion .admin-detalle-etapas li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .55rem; align-items: start; padding: .55rem .65rem; border-radius: 10px; background: #faf5ed; }
+.panel-administracion .admin-detalle-etapa-numero { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--crema-3); color: var(--vino); font-size: .78rem; font-weight: 900; }
+.panel-administracion .admin-detalle-etapa-cabecera strong { font-size: .9rem; }
+.panel-administracion .admin-detalle-etapas p { margin: .2rem 0 0; font-size: .88rem; color: var(--texto-suave); }
+
+.panel-administracion .admin-detalle-juego .admin-detalle-desplegable { margin-top: .8rem; border: 1px solid #9d7c69; border-radius: 12px; background: var(--crema-2); }
+.panel-administracion .admin-detalle-juego .admin-detalle-desplegable > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-height: 44px;
+  padding: .55rem .8rem;
+  border-radius: 11px;
+  list-style: none;
+  color: var(--vino);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.panel-administracion .admin-detalle-desplegable > summary::-webkit-details-marker { display: none; }
+.panel-administracion .admin-detalle-desplegable > summary:hover { background: #fff3df; }
+.panel-administracion .admin-detalle-desplegable > summary > .icono { width: 18px; height: 18px; }
+.panel-administracion .admin-detalle-desplegable[open] > summary > .icono { rotate: 180deg; }
+.panel-administracion .admin-detalle-propuesta { margin: 0; padding: .8rem; border-top: 1px solid var(--borde); }
+.panel-administracion .admin-detalle-propuesta ul { margin: 0; padding-inline-start: 1.15rem; }
+.panel-administracion .admin-detalle-guion { max-height: 26rem; overflow: auto; margin: 0 .55rem .55rem; padding: .75rem; border-radius: 8px; background: #f6ead8; color: var(--texto); font-size: .85rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.panel-administracion .admin-detalle-juego :focus-visible { outline: 2px solid var(--vino); outline-offset: 2px; }
+
+@container detalle-juego (max-width: 34rem) {
+  .panel-administracion .admin-detalle-pedido { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-administracion .admin-superficie .admin-detalle-juego button:active:not(:disabled) { transform: none; }
+}
+
+.panel-administracion .admin-juegos-ver-todos { margin-top:.7rem; }

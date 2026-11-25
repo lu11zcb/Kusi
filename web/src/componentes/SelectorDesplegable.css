@@ -1,0 +1,65 @@
+:is(.panel-administracion, .panel-docente) button.selector-desplegable[role=combobox] {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  border: 2px solid #9d7c69;
+  border-radius: 16px;
+  background: var(--crema-2);
+  color: var(--texto);
+  box-shadow: none;
+  text-shadow: none;
+  font: 700 1rem/1.3 var(--letra);
+  text-align: left;
+  overflow-wrap: anywhere;
+  transition: none;
+}
+:is(.panel-administracion, .panel-docente) button.selector-desplegable[role=combobox]:is(:hover:not(:disabled), [aria-expanded=true], :active:not(:disabled)) {
+  background: #fff7e8;
+  border-color: var(--vino-2);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+:is(.panel-administracion, .panel-docente) button.selector-desplegable[role=combobox]:focus-visible {
+  outline: 2px solid var(--vino);
+  outline-offset: 2px;
+}
+:is(.panel-administracion, .panel-docente) button.selector-desplegable[aria-invalid=true] { border-color: var(--error); }
+.selector-desplegable > svg { width: 18px; height: 18px; flex: none; color: var(--vino-2); }
+.selector-desplegable[aria-expanded=true] > svg { rotate: 180deg; }
+
+.selector-desplegable-lista {
+  position: fixed;
+  z-index: 100;
+  margin: 0;
+  padding: .25rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  color: var(--texto);
+  background: var(--crema-2);
+  border: 2px solid #9d7c69;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px #5a1c1528;
+}
+.selector-desplegable-lista > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-height: 44px;
+  padding: .55rem .75rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: .95rem;
+  overflow-wrap: anywhere;
+}
+.selector-desplegable-lista > li[aria-selected=true] { color: var(--vino); font-weight: 900; }
+.selector-desplegable-lista > li:hover { background: var(--crema-3); }
+.selector-desplegable-lista > li[data-activa=true] {
+  background: #fde7b8;
+  box-shadow: inset 3px 0 0 var(--vino-2);
+}
+.selector-desplegable-lista svg { width: 18px; height: 18px; flex: none; }

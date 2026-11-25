@@ -8,12 +8,13 @@ const fuente = await readFile(new URL('../src/servicios/django.ts', import.meta.
 const { outputText } = ts.transpileModule(fuente, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
 })
-const { ErrorApi, errorNombreCompleto, obtenerContextoRegistro, registrarUsuario } = await import(
+const { ErrorApi, obtenerContextoRegistro, registrarUsuario } = await import(
   'data:text/javascript;base64,' + Buffer.from(outputText).toString('base64')
 )
 
 const usuario = { id: 'b0afffc6-0ecb-423c-9795-e23cb68ec504', nombre: 'Persona de prueba', correo: 'persona@example.com' }
-const datos = { nombre: usuario.nombre, correo: usuario.correo, rol: 'docente' }
+// Nombres y apellidos viajan por separado; Django responde con el nombre completo.
+const datos = { nombres: 'Persona', apellidos: 'de prueba', correo: usuario.correo, rol: 'docente' }
 const contexto = { usuario, csrf_token: 'token-de-prueba' }
 // Django devuelve también el DNI (null para adultos, HU12).
 const creado = { usuario: { ...usuario, dni: null, rol: 'docente' }, contrasena_temporal: 'Abcdef2345' }
@@ -147,10 +148,10 @@ test('HU12: registra un estudiante con DNI y sin correo', async (t) => {
   const estudiante = { id: 'c0afffc6-0ecb-423c-9795-e23cb68ec505', nombre: 'Niño de prueba', correo: null, dni: '70000001', rol: 'estudiante' }
   t.mock.method(globalThis, 'fetch', async (ruta, opciones) => {
     if (ruta.endsWith('contexto/')) return json(contexto)
-    assert.deepEqual(JSON.parse(opciones.body), { nombre: estudiante.nombre, dni: '70000001', rol: 'estudiante' })
+    assert.deepEqual(JSON.parse(opciones.body), { nombres: 'Niño', apellidos: 'de prueba', dni: '70000001', rol: 'estudiante' })
     return json({ usuario: estudiante, contrasena_temporal: 'Abcdef2345' }, 201)
   })
-  const resultado = await registrarUsuario({ nombre: estudiante.nombre, correo: 'anterior@example.com', dni: '70000001', rol: 'estudiante' })
+  const resultado = await registrarUsuario({ nombres: 'Niño', apellidos: 'de prueba', correo: 'anterior@example.com', dni: '70000001', rol: 'estudiante' })
   assert.equal(resultado.usuario.dni, '70000001')
   assert.equal(resultado.usuario.correo, null)
 })
@@ -158,11 +159,4 @@ test('HU12: registra un estudiante con DNI y sin correo', async (t) => {
 test('si el registro de un estudiante no se confirma, indica que se compruebe el DNI', async (t) => {
   t.mock.method(globalThis, 'fetch', async (ruta) => ruta.endsWith('contexto/') ? json(contexto) : json({}, 201))
   await assert.rejects(registrarUsuario({ ...datos, dni: '70000002', rol: 'estudiante' }), /verifica el DNI/)
-})
-
-test('exige al menos dos palabras en el nombre completo', () => {
-  assert.equal(errorNombreCompleto('  '), 'El nombre completo es obligatorio.')
-  assert.match(errorNombreCompleto('  Ana  '), /al menos dos palabras/)
-  assert.equal(errorNombreCompleto('  Ana   Ficticia  '), '')
-  assert.equal(errorNombreCompleto('Ana\tFicticia'), '')
 })

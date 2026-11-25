@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Icono } from '../componentes/Icono'
 import { ListaBuscable } from '../componentes/ListaBuscable'
 import { crearVinculo, listarSecciones, listarVinculos, retirarEstudiante } from '../servicios/educacion'
 import type { SeccionEducativa, VinculoEstudiante } from '../servicios/educacion'
@@ -86,10 +87,11 @@ export function GestionarVinculos({ estudianteInicial = '', cuentaActiva = true,
     {mensaje && <p role="status">{mensaje}</p>}
     {!cargando && !errorCarga && <>
       {!estudianteInicial && <h2>Vínculos existentes</h2>}
-      {visibles.length === 0 ? <p>{estudianteInicial ? 'Aún no tiene secciones asignadas.' : 'Aún no hay estudiantes vinculados.'}</p> :
+      {visibles.length === 0 ? <p className={estudianteInicial ? 'admin-ficha-sin-secciones' : undefined}>{estudianteInicial ? 'Aún no tiene secciones asignadas.' : 'Aún no hay estudiantes vinculados.'}</p> :
         <ol className="lista-gestion">
           {visibles.map((vinculo) => <li key={vinculo.id}>
-            <div>
+            <div className={estudianteInicial ? 'admin-ficha-seccion-titulo' : undefined}>
+              {estudianteInicial && <span className="icono-grande c-verde"><Icono nombre="aula" /></span>}
               <strong>{estudianteInicial ? vinculo.seccion.nombre : usuarios.find((usuario) => usuario.id === vinculo.estudiante_id)?.nombre ?? vinculo.estudiante_nombre ?? 'Estudiante no disponible'}</strong>
               <span>{estudianteInicial ? vinculo.seccion.grado + '° de primaria · ' + vinculo.seccion.anio_escolar : nombreSeccion(vinculo.seccion)}{vinculo.retirado ? ' · Retirado' : ''}</span>
             </div>
@@ -103,8 +105,8 @@ export function GestionarVinculos({ estudianteInicial = '', cuentaActiva = true,
       {cuentaActiva ? <form onSubmit={guardar}>
         <fieldset disabled={ocupado || bloqueadoExterno}>
           <legend>{estudianteInicial ? 'Asignar una sección' : 'Vincular un estudiante'}</legend>
-          {!estudianteInicial && <ListaBuscable id="vinculo-estudiante" etiqueta="Estudiante" opciones={estudiantes} valor={estudiante} alCambiar={setEstudiante} vacio="No hay estudiantes activos. Registra una cuenta estudiante para continuar." />}
-          <SelectorRelacion id="vinculo-seccion" etiqueta="Sección" opciones={secciones.map((grupo) => ({ id: grupo.id, nombre: nombreSeccion(grupo) }))} valor={seccion} alCambiar={setSeccion} vacio="No hay secciones disponibles" />
+          {!estudianteInicial && <ListaBuscable id="vinculo-estudiante" etiqueta="Estudiante" opciones={estudiantes} valor={estudiante} alCambiar={setEstudiante} deshabilitado={ocupado || bloqueadoExterno} vacio="No hay estudiantes activos. Registra una cuenta estudiante para continuar." />}
+          <SelectorRelacion id="vinculo-seccion" etiqueta="Sección" opciones={secciones.map((grupo) => ({ id: grupo.id, nombre: nombreSeccion(grupo) }))} valor={seccion} alCambiar={setSeccion} vacio="No hay secciones disponibles" deshabilitado={ocupado || bloqueadoExterno} />
           <button type="submit" disabled={!seleccionValida}>{estudianteInicial ? 'Asignar sección' : 'Vincular estudiante'}</button>
         </fieldset>
       </form> : <p>Activa la cuenta para asignarle una sección.</p>}

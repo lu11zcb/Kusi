@@ -3,10 +3,13 @@ import { flushSync } from 'react-dom'
 import type { FormEvent } from 'react'
 import { IconoDocente as IconoGestion } from '../docente/IconoDocente'
 import { CampoFormulario } from '../componentes/CampoFormulario'
-import { ErrorApi, errorNombreCompleto, registrarUsuario } from '../servicios/django'
+import { ErrorApi, registrarUsuario } from '../servicios/django'
 import type { DatosRegistro, ErroresRegistro, RegistroCreado, Rol } from '../servicios/django'
 
-const datosVacios: DatosRegistro = { nombre: '', correo: '', dni: '', rol: '' }
+const datosVacios: DatosRegistro = { nombres: '', apellidos: '', correo: '', dni: '', rol: '' }
+// Juntos («nombres apellidos») deben caber en los 150 caracteres del nombre completo; Django lo vuelve a revisar.
+const LARGO_PARTE_NOMBRE = 74
+
 const nombresRol: Record<Rol, string> = {
   administrador: 'Administrador', docente: 'Docente', estudiante: 'Estudiante',
 }
@@ -45,10 +48,13 @@ export function RegistrarUsuario({ alCambiarBloqueo, rolInicial }: { alCambiarBl
     evento.preventDefault()
     if (bloqueoEnvio.current) return
     if (!rol) { establecerMensaje('Elige primero estudiante, docente o administrador.'); return }
-    const errorNombre = errorNombreCompleto(datos.nombre)
-    if (errorNombre) {
+    // Se piden por separado para que nadie olvide los apellidos.
+    const faltantes: ErroresRegistro = {}
+    if (!datos.nombres.trim()) faltantes.nombres = ['Escribe sus nombres.']
+    if (!datos.apellidos.trim()) faltantes.apellidos = ['Escribe sus apellidos.']
+    if (faltantes.nombres || faltantes.apellidos) {
       establecerEstadoError(null)
-      establecerErrores({ nombre: [errorNombre] })
+      establecerErrores(faltantes)
       establecerMensaje('Revisa los datos del registro.')
       return
     }
@@ -110,10 +116,15 @@ export function RegistrarUsuario({ alCambiarBloqueo, rolInicial }: { alCambiarBl
       {estadoError === 401 && <p><a href="/">Volver a iniciar sesión</a></p>}
       {rol && <fieldset disabled={enviando}>
         <legend className="solo-lectores">Datos de la cuenta</legend>
-        <CampoFormulario id="nombre" etiqueta="Nombre completo" errores={errores.nombre}>
-          <input ref={nombre} id="nombre" name="nombre" autoComplete="off" required maxLength={150}
-            value={datos.nombre} onChange={(evento) => establecerDatos({ ...datos, nombre: evento.target.value })}
-            aria-invalid={Boolean(errores.nombre?.length)} aria-describedby={errores.nombre?.length ? 'nombre-error' : undefined} />
+        <CampoFormulario id="nombre" etiqueta="Nombres" errores={errores.nombres}>
+          <input ref={nombre} id="nombre" name="nombres" autoComplete="off" required maxLength={LARGO_PARTE_NOMBRE}
+            value={datos.nombres} onChange={(evento) => establecerDatos({ ...datos, nombres: evento.target.value })}
+            aria-invalid={Boolean(errores.nombres?.length)} aria-describedby={errores.nombres?.length ? 'nombre-error' : undefined} />
+        </CampoFormulario>
+        <CampoFormulario id="apellidos" etiqueta="Apellidos" errores={errores.apellidos}>
+          <input id="apellidos" name="apellidos" autoComplete="off" required maxLength={LARGO_PARTE_NOMBRE}
+            value={datos.apellidos} onChange={(evento) => establecerDatos({ ...datos, apellidos: evento.target.value })}
+            aria-invalid={Boolean(errores.apellidos?.length)} aria-describedby={errores.apellidos?.length ? 'apellidos-error' : undefined} />
         </CampoFormulario>
         {rol === 'estudiante' ? <CampoFormulario id="dni" etiqueta="DNI del estudiante" errores={errores.dni}>
           <input id="dni" name="dni" inputMode="numeric" autoComplete="off" maxLength={8} pattern="[0-9]{8}" required

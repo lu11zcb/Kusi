@@ -1,3 +1,5 @@
+@import './SelectorDesplegable.css';
+
 /* Lenguaje visual común: el Inicio de administración es la referencia.
    Los controles de acceso y la app infantil conservan sus propios estilos.
    Las medidas y distribuciones de cada pantalla siguen en sus módulos. */
@@ -95,7 +97,6 @@
 .panel-docente .doc-icono-curso .doc-icono { width: 28px; height: 28px; }
 .panel-administracion .admin-curso > .doc-icono { width: 60px; height: 60px; padding: 14px; border-radius: 18px; color: #fff; background: var(--panel-gradiente); }
 .panel-administracion .admin-ilustracion-icono { color: #fff; background: var(--panel-gradiente); transform: none; box-shadow: 0 5px 0 #e8c88c; }
-.panel-administracion .admin-grupos .doc-icono { width: 52px; height: 52px; padding: 12px; color: #fff; border-radius: 16px; background: linear-gradient(180deg, #5cc58b, #2f9d62); }
 .panel-administracion .admin-superficie .admin-rol { background: var(--crema-2); border: 2px solid var(--borde); border-radius: 22px; color: var(--vino); text-shadow: none; box-shadow: var(--panel-relieve); }
 .panel-administracion .admin-superficie .admin-rol:hover:not(:disabled) { border-color: var(--dorado); filter: none; }
 .panel-administracion .admin-superficie .admin-rol.elegido { border-color: var(--dorado); background: #fff3d6; box-shadow: 0 5px 0 #e4bd7c; }
@@ -163,4 +164,27 @@
   .panel-docente .doc-cabecera-titulo { align-items: flex-start; gap: 12px; }
   .panel-docente .doc-cabecera-titulo > .icono-grande { width: 48px; height: 48px; border-radius: 15px; }
   .panel-docente .doc-cabecera-titulo > .icono-grande .doc-icono { width: 26px; height: 26px; }
+}
+
+/* Menú con rótulos de grupo (administrador y docente): los grupos se acomodan a la misma
+   cuadrícula que los botones originales, así que los botones se ven igual que antes. */
+@media (min-width: 861px) {
+  :is(.panel-administracion, .panel-docente) .tablero-lateral:has(.menu-grupo) { overflow-y:auto; }
+}
+:is(.panel-administracion, .panel-docente) .menu-grupo { display:grid; gap:inherit; min-width:0; }
+:is(.panel-administracion, .panel-docente) .menu-rotulo {
+  grid-column:1/-1;
+  padding:.15rem .65rem;
+  color:#6b5145;
+  font-size:.75rem;
+  font-weight:900;
+  letter-spacing:.035em;
+}
+@media (max-width: 860px) {
+  :is(.panel-administracion, .panel-docente) .menu-grupo { grid-column:1/-1; grid-template-columns:subgrid; }
+}
+@media (max-width: 400px) {
+  :is(.panel-administracion, .panel-docente) .doc-menu-abierto:has(.menu-grupo) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :is(.panel-administracion, .panel-docente) .menu-grupo button { min-width:0; overflow-wrap:anywhere; }
+  :is(.panel-administracion, .panel-docente) .menu-grupo:last-child > button { grid-column:1/-1; }
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Icono } from '../componentes/Icono'
 import { ListaBuscable } from '../componentes/ListaBuscable'
 import { crearAsignacion, listarAsignaciones, listarSecciones } from '../servicios/educacion'
 import type { AsignacionDocente, SeccionEducativa } from '../servicios/educacion'
@@ -9,8 +10,9 @@ import type { UsuarioAdministrado } from '../servicios/usuarios'
 import { compararSecciones, listarUsuariosEducativos, nombreSeccion, opcionesCuentas } from '../servicios/opcionesEducativas'
 import { SelectorRelacion } from './SelectorRelacion'
 
-export function AsignarDocentes({ docenteInicial = '', cuentaActiva = true, alCambiarBloqueo, bloqueadoExterno = false }: {
+export function AsignarDocentes({ docenteInicial = '', disenoFicha = false, cuentaActiva = true, alCambiarBloqueo, bloqueadoExterno = false }: {
   docenteInicial?: string
+  disenoFicha?: boolean
   cuentaActiva?: boolean
   alCambiarBloqueo?: (bloqueado: boolean) => void
   bloqueadoExterno?: boolean
@@ -65,17 +67,18 @@ export function AsignarDocentes({ docenteInicial = '', cuentaActiva = true, alCa
     } catch (fallo) { setError(fallo instanceof Error ? fallo.message : 'No se pudo guardar la asignación.') }
     finally { bloqueo.current = false; setOcupado(false) }
   }
-  return <section className="admin-relacion">
+  return <section className={'admin-relacion' + (disenoFicha ? ' admin-docente-asignaciones' : '')}>
     {docenteInicial ? <h2>Secciones asignadas</h2> : <h1>Asignar docentes a cursos</h1>}
     {cargando && <p role="status">Cargando cursos y secciones…</p>}
     {(errorCarga || error) && <div role="alert" className="error-resumen">
       <p>{errorCarga || error}</p>
       <button type="button" className="secundario" onClick={recargar} disabled={ocupado || bloqueadoExterno}>Volver a cargar listas</button>
     </div>}
-    {mensaje && <p role="status">{mensaje}</p>}
+    {mensaje && <p role="status" className={disenoFicha ? 'admin-exito' : undefined}>{mensaje}</p>}
     {!cargando && !errorCarga && <>
       {!docenteInicial && <h2>Asignaciones existentes</h2>}
-      {visibles.length === 0 ? <p>{docenteInicial ? 'Aún no tiene secciones asignadas.' : 'Aún no hay docentes asignados.'}</p> :
+      {visibles.length === 0 ? <p className={disenoFicha ? 'admin-ficha-sin-secciones' : undefined}>{docenteInicial ? 'Aún no tiene secciones asignadas.' : 'Aún no hay docentes asignados.'}</p> : disenoFicha ?
+        <SeccionesAsignadas asignaciones={visibles} cursos={cursos} /> :
         <ol className="lista-gestion">
           {visibles.map((asignacion) => {
             const grupo = asignacion.seccion
@@ -91,12 +94,36 @@ export function AsignarDocentes({ docenteInicial = '', cuentaActiva = true, alCa
       {cuentaActiva ? <form onSubmit={guardar}>
         <fieldset disabled={ocupado || bloqueadoExterno}>
           <legend>{docenteInicial ? 'Asignar un curso y una sección' : 'Datos de la asignación'}</legend>
-          {!docenteInicial && <ListaBuscable id="asig-docente" etiqueta="Docente" opciones={docentes} valor={docente} alCambiar={setDocente} vacio="No hay docentes activos. Registra una cuenta docente para continuar." />}
-          <SelectorRelacion id="asig-curso" etiqueta="Curso" opciones={cursos} valor={curso} alCambiar={setCurso} vacio="No hay cursos disponibles" />
-          <SelectorRelacion id="asig-seccion" etiqueta="Sección" opciones={secciones.map((grupo) => ({ id: grupo.id, nombre: nombreSeccion(grupo) }))} valor={seccion} alCambiar={setSeccion} vacio="No hay secciones disponibles" />
+          {!docenteInicial && <ListaBuscable id="asig-docente" etiqueta="Docente" opciones={docentes} valor={docente} alCambiar={setDocente} deshabilitado={ocupado || bloqueadoExterno} vacio="No hay docentes activos. Registra una cuenta docente para continuar." />}
+          <SelectorRelacion id="asig-curso" etiqueta="Curso" opciones={cursos} valor={curso} alCambiar={setCurso} vacio="No hay cursos disponibles" deshabilitado={ocupado || bloqueadoExterno} />
+          <SelectorRelacion id="asig-seccion" etiqueta="Sección" opciones={secciones.map((grupo) => ({ id: grupo.id, nombre: nombreSeccion(grupo) }))} valor={seccion} alCambiar={setSeccion} vacio="No hay secciones disponibles" deshabilitado={ocupado || bloqueadoExterno} />
           <button type="submit" disabled={!seleccionValida}>{docenteInicial ? 'Asignar curso y sección' : 'Asignar docente'}</button>
         </fieldset>
       </form> : <p>Activa la cuenta para asignarle un curso y una sección.</p>}
     </>}
   </section>
+}
+
+function SeccionesAsignadas({ asignaciones, cursos }: { asignaciones: AsignacionDocente[]; cursos: Curso[] }) {
+  const grupos = new Map<string, { seccion: SeccionEducativa; materias: AsignacionDocente[] }>()
+  const nombresCursos = new Map(cursos.map((curso) => [curso.id, curso.nombre]))
+
+  // El identificador distingue secciones con el mismo nombre en años diferentes.
+  for (const asignacion of asignaciones) {
+    const grupo = grupos.get(asignacion.seccion.id)
+    if (grupo) grupo.materias.push(asignacion)
+    else grupos.set(asignacion.seccion.id, { seccion: asignacion.seccion, materias: [asignacion] })
+  }
+
+  return <ul className="admin-docente-secciones" role="list">
+    {[...grupos.values()].map(({ seccion, materias }) => <li key={seccion.id}>
+      <div className="admin-ficha-seccion-titulo">
+        <span className="icono-grande c-verde"><Icono nombre="aula" /></span>
+        <div><h3>{seccion.nombre}</h3><p>{seccion.grado + '° de primaria · ' + seccion.anio_escolar}</p></div>
+      </div>
+      <ul className="admin-docente-seccion-cursos" aria-label={'Cursos de ' + nombreSeccion(seccion)} role="list">
+        {materias.map((materia) => <li key={materia.id}>{nombresCursos.get(materia.curso_id) ?? 'Curso no disponible'}</li>)}
+      </ul>
+    </li>)}
+  </ul>
 }

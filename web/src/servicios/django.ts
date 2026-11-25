@@ -1,19 +1,15 @@
 export type Rol = 'administrador' | 'docente' | 'estudiante'
-export type DatosRegistro = { nombre: string; correo: string; dni: string; rol: Rol | '' }
+// Nombres y apellidos se envían por separado; Django guarda además el nombre completo.
+export type DatosRegistro = { nombres: string; apellidos: string; correo: string; dni: string; rol: Rol | '' }
 export type CampoRegistro = keyof DatosRegistro
 export type ErroresRegistro = Partial<Record<CampoRegistro, string[]>>
 // HU12: un estudiante puede no tener correo; se identifica con su DNI.
-export type UsuarioSesion = { id: string; nombre: string; correo: string | null; dni?: string | null }
+// Las cuentas creadas antes de separar el nombre traen «nombres» y «apellidos» vacíos.
+export type UsuarioSesion = { id: string; nombre: string; nombres?: string; apellidos?: string; correo: string | null; dni?: string | null }
 export type ContextoRegistro = { usuario: UsuarioSesion; csrf_token: string }
 export type RegistroCreado = {
   usuario: UsuarioSesion & { rol: Rol }
   contrasena_temporal: string
-}
-
-export function errorNombreCompleto(nombre: string): string {
-  const limpio = nombre.trim()
-  if (!limpio) return 'El nombre completo es obligatorio.'
-  return limpio.split(/\s+/).length < 2 ? 'Escribe nombres y apellidos (al menos dos palabras).' : ''
 }
 
 export class ErrorApi extends Error {
@@ -45,7 +41,7 @@ function esRol(valor: unknown): valor is Rol {
 function leerErrores(valor: unknown): ErroresRegistro {
   if (!esObjeto(valor)) return {}
   const errores: ErroresRegistro = {}
-  for (const campo of ['nombre', 'correo', 'dni', 'rol'] as const) {
+  for (const campo of ['nombres', 'apellidos', 'correo', 'dni', 'rol'] as const) {
     const detalles = valor[campo]
     if (Array.isArray(detalles)) {
       errores[campo] = detalles.flatMap((detalle: unknown) =>
@@ -90,7 +86,7 @@ export async function registrarUsuario(datos: DatosRegistro): Promise<RegistroCr
   const identificacion = esEstudiante ? 'el DNI' : 'el correo'
   const mensajeIncierto = 'No se pudo confirmar el registro. Comprueba la conexión y verifica ' + identificacion + ' antes de volver a enviarlo.'
   // La cuenta del estudiante se identifica por DNI, incluso si se cambió el rol en el formulario.
-  const cuerpo = esEstudiante ? { nombre: datos.nombre, dni: datos.dni, rol: datos.rol } : datos
+  const cuerpo = esEstudiante ? { nombres: datos.nombres, apellidos: datos.apellidos, dni: datos.dni, rol: datos.rol } : datos
   let respuesta: Response
   try {
     respuesta = await fetch('/api/cuentas/usuarios/', {
