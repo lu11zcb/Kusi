@@ -13,10 +13,11 @@ class RecuperacionEstudianteTest(TestCase):
         identidad = estudiante.pk
         fecha = estudiante.fecha_creacion
         from pathlib import Path
-        movil = Path(__file__).resolve().parents[2] / "movil/app/src/main/java/pe/kusi/movil/PantallasReferencia.kt"
+        # La app guarda el cuy con el id de la cuenta (AparienciaCuy.kt): si el id se conserva, el cuy también.
+        movil = Path(__file__).resolve().parents[2] / "movil/app/src/main/java/pe/kusi/movil/AparienciaCuy.kt"
         contrato = movil.read_text(encoding="utf-8")
-        self.assertIn('"creado_${cuenta.id}"', contrato)
-        self.assertIn('"pelaje_${cuenta.id}"', contrato)
+        self.assertIn('"creado_$id"', contrato)
+        self.assertIn('"pelaje_$id"', contrato)
         claves_cuy = (f"creado_{identidad}", f"pelaje_{identidad}")
         anterior = Client(enforce_csrf_checks=True)
         token = anterior.get(reverse("acceso:sesion")).json()["csrf_token"]
