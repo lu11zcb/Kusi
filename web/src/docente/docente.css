@@ -238,7 +238,7 @@
 .panel-docente .doc-generacion-historial button { text-align: left; max-width: 100%; overflow-wrap: anywhere; }
 .panel-docente .doc-generacion-historial button[aria-pressed='true'] { background: #fbe5bc; border-color: #bd9355; }
 .panel-docente .doc-generacion-historial small { display: block; font-weight: 600; margin-top: 4px; }
-.panel-docente .doc-vista-previa { margin-top: 14px; }
+.panel-docente .doc-vista-previa { margin-top: 0; }
 .panel-docente .doc-vista-previa iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--doc-linea); border-radius: 14px; background: #fff7e8; }
 @media (max-width: 600px) {
   .panel-docente .doc-generacion { padding: 18px; }
@@ -321,8 +321,9 @@
 .panel-docente .doc-juego-titulo h2 { margin: 0; }
 .panel-docente .doc-prueba-controles, .panel-docente .doc-envio { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .panel-docente .doc-prueba-controles p, .panel-docente .doc-envio p { font-size: 14px; color: var(--doc-suave); }
-.panel-docente .doc-prueba-controles { margin-bottom: 12px; }
-.panel-docente .doc-prueba-controles p { margin: 0; }
+.panel-docente .doc-prueba-controles { margin-bottom: 14px; align-items: flex-end; }
+.panel-docente .doc-prueba-titulo h2 { margin: 0; }
+.panel-docente .doc-prueba-controles p { margin: 4px 0 0; }
 .panel-docente .doc-envio { margin-top: 24px; border-top: 1px solid var(--doc-linea); padding-top: 22px; }
 .panel-docente .doc-envio p { margin: 6px 0 0; }
 .panel-docente .doc-vista-previa:fullscreen { padding: 16px; background: var(--crema); display: flex; flex-direction: column; }

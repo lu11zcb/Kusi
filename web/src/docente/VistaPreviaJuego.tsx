@@ -1,11 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
 import { atenderMensajeJuego, direccionVistaPrevia, esSalidaDelJuego } from './utilidadesGeneracion'
 import { avisoDelIframe, RegistroAvisos } from '../servicios/partidas'
 import type { AvisoVistaPrevia } from './utilidadesGeneracion'
 
-export function VistaPreviaJuego({ paquete, alCargar }: { paquete: string; alCargar?: (lista: boolean) => void }) {
+// «encabezado» es el título de la tarjeta: va en la misma fila que los botones, para que el juego quede justo debajo.
+export function VistaPreviaJuego({ paquete, alCargar, encabezado }: { paquete: string; alCargar?: (lista: boolean) => void; encabezado?: ReactNode }) {
   const [registro] = useState(() => new RegistroAvisos())
   const marco = useRef<HTMLIFrameElement>(null)
   const contenedor = useRef<HTMLDivElement>(null)
@@ -65,7 +67,7 @@ export function VistaPreviaJuego({ paquete, alCargar }: { paquete: string; alCar
   }
   function abrirOtraVez() { establecerAviso(null); establecerDemora(false); establecerRecarga((valor) => valor + 1) }
   return <div className="doc-vista-previa" ref={contenedor}>
-    <div className="doc-prueba-controles"><p role="status">{aviso?.estado === 'lista' ? 'Juégalo como lo hará tu estudiante.' : aviso?.estado === 'error' ? 'Vamos a abrir el juego otra vez.' : 'Abriendo tu juego…'}</p><div className="acciones">
+    <div className="doc-prueba-controles"><div className="doc-prueba-titulo">{encabezado}<p role="status">{aviso?.estado === 'lista' ? 'Toca el juego para empezar a jugar.' : aviso?.estado === 'error' ? 'Vamos a abrir el juego otra vez.' : 'Abriendo tu juego…'}</p></div><div className="acciones">
       <button type="button" className="secundario" disabled={aviso?.estado !== 'lista'} onClick={reiniciar}><IconoDocente nombre="atras" />Volver a empezar</button>
       <button type="button" className="secundario" onClick={() => { if (ampliado) void document.exitFullscreen().catch(() => undefined); else void contenedor.current?.requestFullscreen?.().catch(() => undefined) }}>{ampliado ? 'Volver al panel' : 'Ampliar juego'}</button>
     </div></div>
