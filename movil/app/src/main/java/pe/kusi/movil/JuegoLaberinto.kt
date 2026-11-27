@@ -18,8 +18,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -100,15 +98,9 @@ fun JuegoLaberinto(
         try { inicio = preparar(aventura) }
         catch (_: Exception) { error = "No pudimos recuperar tu aventura. Vamos a intentarlo otra vez." }
     }
+    // Sin barra de arriba: cada juego trae su propio botón Pausa (con Seguir y Salir), y la barra de la app repetía
+    // la pausa y el volver. El juego usa toda la pantalla. El gesto de volver del celular sigue pausando y guardando.
     Column(Modifier.fillMaxSize()) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                BotonIconoKusi(R.drawable.ic_arrow_left, "Pausar y volver", { if (cargado) pedirPausa() else volver() })
-                Text(inicio?.aventura?.titulo ?: aventura.titulo, style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(end = 12.dp))
-                TextButton(onClick = ::pedirPausa, enabled = cargado && !solicitaPausa) { Text("Pausa") }
-            }
-        }
         if (error != null) Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AvisoKusi(error!!)
             BotonKusi("Intentar otra vez", { recarga += 1 }, icono = R.drawable.ic_kusi_replay)

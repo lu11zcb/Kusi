@@ -1,7 +1,6 @@
 package pe.kusi.movil
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -264,59 +264,42 @@ internal fun FichaDeAventura(
             else -> colores.outlineVariant
         }),
     ) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                SelloDeAventura(aventura, destacada, temaCurso)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    if (aventura.enPausa || aventura.nuevo) {
-                        val pausa = aventura.enPausa
-                        Surface(
-                            shape = RoundedCornerShape(9.dp),
-                            color = if (pausa) Color(0xFFFFECB7) else Color(0xFFDFEED0),
-                            contentColor = if (pausa) Color(0xFF65421B) else Color(0xFF285334),
-                        ) {
-                            Text(if (pausa) "En pausa" else "Nueva",
-                                Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    Text(
-                        aventura.titulo, Modifier.semantics { heading() },
-                        style = if (destacada) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
-                    )
-                    if (temaCurso == null && aventura.curso.isNotBlank()) Text(
-                        aventura.curso, style = MaterialTheme.typography.labelSmall, color = colores.onSurfaceVariant,
-                    )
-                }
-            }
-            BotonKusi(
-                if (aventura.enPausa) "Continuar" else "Ver la misión", elegir, Modifier.fillMaxWidth(),
-                habilitado = habilitada, icono = if (aventura.enPausa) R.drawable.ic_kusi_play else R.drawable.ic_arrow_right,
-                secundario = !destacada && temaCurso == null, compacto = true,
+        Column(Modifier.fillMaxWidth()) {
+            // La portada ocupa el ancho de la ficha y reserva el mismo espacio para el dibujo del curso.
+            PortadaAventura(
+                aventura,
+                Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 16.dp, bottomEnd = 16.dp)),
+                temaCurso,
             )
+            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                if (aventura.enPausa || aventura.nuevo) {
+                    val pausa = aventura.enPausa
+                    Surface(
+                        shape = RoundedCornerShape(9.dp),
+                        color = if (pausa) Color(0xFFFFECB7) else Color(0xFFDFEED0),
+                        contentColor = if (pausa) Color(0xFF65421B) else Color(0xFF285334),
+                    ) {
+                        Text(
+                            if (pausa) "En pausa" else "Nueva",
+                            Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                }
+                Text(
+                    aventura.titulo, Modifier.semantics { heading() },
+                    style = if (destacada) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                )
+                if (temaCurso == null && aventura.curso.isNotBlank()) Text(
+                    aventura.curso, style = MaterialTheme.typography.labelSmall, color = colores.onSurfaceVariant,
+                )
+                BotonKusi(
+                    if (aventura.enPausa) "Continuar" else "Ver la misión", elegir, Modifier.fillMaxWidth(),
+                    habilitado = habilitada, icono = if (aventura.enPausa) R.drawable.ic_kusi_play else R.drawable.ic_arrow_right,
+                    secundario = !destacada && temaCurso == null, compacto = true,
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun SelloDeAventura(aventura: AventuraInfantil, destacada: Boolean, temaCurso: Curso?) {
-    val icono = if (aventura.icono == R.drawable.ic_kusi_compass) iconoCursoInfantil(aventura.curso, false) else aventura.icono
-    val dibujo = temaCurso?.dibujoEnCursos ?: when (icono) {
-        R.drawable.ic_calculator -> R.drawable.kusi_pila_numeros
-        R.drawable.ic_chat_circle_text -> R.drawable.kusi_libro_aventura
-        else -> null
-    }
-    val fondo = temaCurso?.papel ?: when (icono) {
-        R.drawable.ic_calculator -> Color(0xFFEEE4F9)
-        R.drawable.ic_chat_circle_text -> Color(0xFFFFE8B1)
-        else -> Color(0xFFE4F0D3)
-    }
-    Box(
-        Modifier.size(if (destacada) 90.dp else if (temaCurso != null) 76.dp else 70.dp)
-            .background(fondo, RoundedCornerShape(20.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (dibujo != null) Image(painterResource(dibujo), null, Modifier.fillMaxSize().padding(9.dp))
-        else Icon(painterResource(icono), null, Modifier.size(if (destacada) 45.dp else 36.dp),
-            tint = Color(0xFF365C39))
     }
 }

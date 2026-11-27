@@ -100,15 +100,15 @@ class InterfazInfantilTest {
         pantalla.onNodeWithText("Mis cursos").assertIsDisplayed()
         capturar("cursos-cuadricula")
         pantalla.onNodeWithText("Comunicación").assertHasClickAction().performClick()
-        pantalla.onNodeWithText(lectura.titulo).assertIsDisplayed()
+        pantalla.onNodeWithText(lectura.titulo).performScrollTo().assertIsDisplayed()
         pantalla.onNodeWithText(aventura.titulo).assertDoesNotExist()
         pantalla.onNodeWithText("Cursos").assertIsSelected()
         capturar("cursos-con-aventuras")
 
-        pantalla.onNodeWithText("Ver la misión").performClick()
+        pantalla.onNodeWithText("Ver la misión").performScrollTo().performClick()
         pantalla.runOnIdle { assertEquals(lectura, abierta) }
-        pressBack()
-        pantalla.onNodeWithText(lectura.titulo).assertIsDisplayed()
+        pantalla.onNodeWithContentDescription("Volver").assertHasClickAction().performClick()
+        pantalla.onNodeWithText(lectura.titulo).performScrollTo().assertIsDisplayed()
         pantalla.onNodeWithContentDescription("Volver a Mis cursos").assertHasClickAction().performClick()
         pantalla.onNodeWithText("Matemática").assertHasClickAction().assertIsDisplayed()
     }
@@ -536,9 +536,12 @@ class InterfazInfantilTest {
             contenidoJuego={_,fin,_->BotonKusi("Terminar recorrido de prueba",fin)}) } }
         pantalla.onNodeWithText("Mis aventuras").assertIsDisplayed()
         pantalla.onNodeWithText("Cursos").assertIsDisplayed(); pantalla.onNodeWithText("Mi cuy").assertIsDisplayed()
-        pantalla.onNodeWithText("La feria de las cantidades").assertIsDisplayed()
-        pantalla.onNodeWithText("Ver la misión").performClick()
-        pantalla.onNodeWithText("Escuchar la misión").assertExists(); capturar("mision")
+        pantalla.onNodeWithTag("Lista de aventuras").performScrollToNode(hasText(aventura.titulo))
+        pantalla.onNodeWithText(aventura.titulo).performScrollTo().assertIsDisplayed()
+        pantalla.onNodeWithText("Ver la misión").performScrollTo().performClick()
+        pantalla.onNodeWithText(aventura.meta).assertExists()
+        pantalla.onNodeWithText("Escuchar la misión").assertDoesNotExist()
+        capturar("mision")
         pantalla.onNodeWithText("¡Jugar!").performScrollTo().performClick()
         pantalla.onNodeWithText("Terminar recorrido de prueba").performClick()
         pantalla.onNodeWithText("¡Terminaste tu aventura!").assertExists(); capturar("cierre")
@@ -556,11 +559,14 @@ class InterfazInfantilTest {
         pantalla.setContent { TemaKusi { AplicacionInfantil(EstadoEntradaKusi(estudiante,validado=true),{_,_,_->},{_,_,_->},{},{},
             biblioteca=EstadoBibliotecaInfantil(listOf(aventura)),reintentarBiblioteca={busquedas++},
             contenidoJuego={_,_,volver->BotonKusi("Volver de la prueba",volver)}) } }
+        val lista = pantalla.onNodeWithTag("Lista de aventuras")
+        lista.performScrollToNode(hasText("Buscar juegos nuevos"))
         pantalla.onNodeWithText("Buscar juegos nuevos").performScrollTo().performClick()
         pantalla.runOnIdle { assertEquals(1,busquedas) }
         pantalla.onNodeWithContentDescription("Necesito ayuda").performClick()
         pantalla.onNodeWithText("Elige una aventura de tu clase. Toca Ver la misión o Continuar si ya guardaste una partida.").assertExists()
         pantalla.onNodeWithText("¡Entendido!").performClick()
+        lista.performScrollToNode(hasText("Ver la misión"))
         pantalla.onNodeWithText("Ver la misión").performScrollTo().performClick()
         pantalla.onNodeWithContentDescription("Necesito ayuda").performClick()
         pantalla.onNodeWithText(aventura.consigna).assertExists()
@@ -702,9 +708,9 @@ class InterfazInfantilTest {
         pantalla.onNodeWithText("Inicio").assertIsSelected().assertIsDisplayed()
         pantalla.onNodeWithText("Mi cuy").assertIsDisplayed()
         lista.performScrollToIndex(9)
-        pantalla.onAllNodesWithText("Ver la misión").onLast().performClick()
-        pantalla.onNodeWithText("Escuchar la misión").assertExists()
-        pantalla.onNodeWithText("Juego 9").assertIsDisplayed()
+        pantalla.onAllNodesWithText("Ver la misión").onLast().performScrollTo().performClick()
+        pantalla.onNodeWithText("¡Jugar!").assertExists()
+        pantalla.onNodeWithText("Juego 9").performScrollTo().assertIsDisplayed()
     }
 
     @Test fun inicio_prioriza_y_abre_una_partida_guardada() {
@@ -724,11 +730,14 @@ class InterfazInfantilTest {
             }
         }
         pantalla.onNodeWithText("¡Hola, Mateo!").assertIsDisplayed()
-        pantalla.onNodeWithText("En pausa").assertIsDisplayed()
-        pantalla.onNodeWithText("Nueva").assertExists()
         pantalla.onNodeWithContentDescription("Kusi te saluda").assertHasClickAction()
+        val lista = pantalla.onNodeWithTag("Lista de aventuras")
+        lista.performScrollToIndex(1)
+        pantalla.onNodeWithText("En pausa").performScrollTo().assertIsDisplayed()
         pantalla.onNodeWithText("Inicio").assertIsSelected()
         capturar("inicio-nuevo-con-juegos")
+        lista.performScrollToIndex(2)
+        pantalla.onNodeWithText("Nueva").performScrollTo().assertIsDisplayed()
         pantalla.onNodeWithText("Cursos").performClick().assertIsSelected()
         pantalla.onNodeWithText("Mis cursos").assertIsDisplayed()
         pantalla.onNodeWithText("Logros").performClick().assertIsSelected()
@@ -736,7 +745,8 @@ class InterfazInfantilTest {
         pantalla.onNodeWithText("Mi cuy").performClick().assertIsSelected()
         pantalla.onNodeWithText("Mi cuy Mateo").assertIsDisplayed()
         pantalla.onNodeWithText("Inicio").performClick().assertIsSelected()
-        pantalla.onNodeWithText("Continuar").performClick()
+        lista.performScrollToNode(hasText("Continuar"))
+        pantalla.onNodeWithText("Continuar").performScrollTo().performClick()
         pantalla.onNodeWithText("Partida de ${aventura.titulo}").assertIsDisplayed()
     }
 }

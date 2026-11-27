@@ -104,7 +104,13 @@ fun AplicacionInfantil(
     Scaffold(containerColor = fondo, snackbarHost = { SnackbarHost(snackbar) }, topBar = {
         if (destino !in setOf("juego", "arranque", "bienvenida", "ingreso", "crear-cuy") &&
             destino != "inicio") TopAppBar(title = { MarcaKusi() },
-            navigationIcon = { if (aventura != null) BotonIconoKusi(R.drawable.ic_arrow_left, "Volver") { volver() } },
+            navigationIcon = {
+                if (aventura != null) {
+                    Box(Modifier.padding(horizontal = 6.dp)) {
+                        MandoIngreso(R.drawable.ic_ingreso_atras, "Volver", Color(0xFFFFF2CD), Color(0xFF985327), ::volver)
+                    }
+                }
+            },
             actions = { BotonIconoKusi(R.drawable.ic_question, "Necesito ayuda") { ayuda = true } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background))
     }) { margen ->
@@ -128,7 +134,7 @@ fun AplicacionInfantil(
                         }
                         "clave" -> NuevaClaveInfantil(estado, cambiarClave) { confirmarSalida = true }
                         "adulto" -> Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { AvisoKusi("Esta app es para estudiantes. Para enseñar o administrar, entra desde la web."); BotonKusi("Salir de Kusi", salir, habilitado = !estado.ocupado) }
-                        "mision" -> aventura?.let { MisionInfantil(it, voz) { paso = "juego" } }
+                        "mision" -> aventura?.let { MisionInfantil(it) { paso = "juego" } }
                         "juego" -> aventura?.let { contenidoJuego(it, { paso = "cierre" }, { paso = "mision" }) }
                         "cierre" -> aventura?.let { CierreInfantil(it, cierre, voz, { aventuraId = null }, { paso = "juego" }, reintentarGuardado) }
                         else -> estado.cuenta?.let {
@@ -273,13 +279,16 @@ private fun AventuraTarjeta(aventura: AventuraInfantil, habilitada: Boolean, ele
     }
 }
 @Composable
-private fun MisionInfantil(aventura: AventuraInfantil, voz: VozKusi, jugar: () -> Unit) {
+private fun MisionInfantil(aventura: AventuraInfantil, jugar: () -> Unit) {
     val compacto = LocalConfiguration.current.screenHeightDp < 450
-    PanelHorizontalInfantil(imagen = { CuyInteractivo(voz, Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge), aventura.consigna, aventura.portada) }) {
-        if (!compacto) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) { StickerKusi(R.drawable.ic_kusi_compass, Modifier.size(34.dp)); Text("TU MISIÓN", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+    PanelHorizontalInfantil(imagen = {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            // Conserva la composición de la portada incluso cuando hay poco alto en horizontal.
+            PortadaAventura(aventura, Modifier.aspectRatio(16f / 9f).clip(MaterialTheme.shapes.extraLarge))
+        }
+    }) {
         Text(aventura.titulo, style = MaterialTheme.typography.headlineMedium)
         Text(aventura.meta, style = MaterialTheme.typography.bodyMedium)
-        BotonKusi("Escuchar la misión", { voz.hablar(aventura.consigna) }, Modifier.fillMaxWidth(), icono = R.drawable.ic_kusi_sound, secundario = true, compacto = compacto)
         BotonKusi("¡Jugar!", jugar, Modifier.fillMaxWidth(), icono = R.drawable.ic_kusi_play, compacto = compacto)
     }
 }

@@ -1,6 +1,8 @@
 package pe.kusi.movil
 
+import android.graphics.BitmapFactory
 import android.speech.tts.TextToSpeech
+import android.util.LruCache
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -16,6 +18,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -31,15 +35,15 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import android.graphics.BitmapFactory
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 @Composable
 fun IconoKusi(recurso: Int, descripcion: String? = null, modifier: Modifier = Modifier, color: Color = LocalContentColor.current) {
@@ -208,28 +212,96 @@ fun recordarVozKusi(avisar: (String) -> Unit): VozKusi {
     })
 }
 
-/** La portada de un juego: la imagen que dibujó el taller si se puede descargar; si no (juego
- * del laberinto, sin conexión o todavía sin portada), la imagen de siempre. Se pide reducida a
- * la mitad porque en la tarjeta se ve pequeña y así no se gasta memoria del celular. */
+private class PortadaEnMemoria(
+    val imagen: ImageBitmap,
+    val bytesImagen: Int,
+    val muestra: Int,
+    val archivo: ByteArray?,
+)
+
+private val portadasEnMemoria = object : LruCache<String, PortadaEnMemoria>(20 * 1024 * 1024) {
+    override fun sizeOf(direccion: String, portada: PortadaEnMemoria): Int =
+        portada.bytesImagen + (portada.archivo?.size ?: 0)
+}
+
+// Una tarjeta y su misión comparten la descarga incluso si el niño abre la misión antes de que termine.
+private val bloqueosDePortada = Array(16) { Mutex() }
+
+private val cursosPorIcono = Curso.entries.associateBy { iconoCursoInfantil(it.titulo, false) }
+
 @Composable
-fun PortadaAventura(aventura: AventuraInfantil, modifier: Modifier = Modifier) {
-    val remota by produceState<ImageBitmap?>(null, aventura.portadaUrl) {
-        val direccion = aventura.portadaUrl ?: return@produceState
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                val conexion = URL(direccion).openConnection() as HttpURLConnection
-                conexion.connectTimeout = 5000
-                conexion.readTimeout = 8000
-                try {
-                    if (conexion.responseCode != HttpURLConnection.HTTP_OK) null
-                    else conexion.inputStream.use { BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = 2 }) }?.asImageBitmap()
-                } finally {
-                    conexion.disconnect()
-                }
-            }.getOrNull()
+internal fun PortadaAventura(aventura: AventuraInfantil, modifier: Modifier = Modifier, temaCurso: Curso? = null) {
+    val direccion = aventura.portadaUrl
+    // Usar la imagen en memoria desde el primer cuadro evita que reaparezca el dibujo al cambiar de pantalla.
+    var remota by remember(direccion) { mutableStateOf(direccion?.let { portadasEnMemoria.get(it)?.imagen }) }
+    BoxWithConstraints(modifier) {
+        val ancho = constraints.maxWidth
+        val alto = constraints.maxHeight
+        LaunchedEffect(direccion, ancho, alto) {
+            if (direccion != null && ancho > 0 && alto > 0) {
+                cargarPortada(direccion, ancho, alto)?.let { remota = it }
+            }
+        }
+        val imagen = remota
+        if (imagen != null) {
+            Image(imagen, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        } else {
+            SelloDeAventura(aventura, temaCurso, Modifier.matchParentSize())
         }
     }
-    val imagen = remota
-    if (imagen != null) Image(imagen, null, modifier, contentScale = ContentScale.Crop)
-    else Image(painterResource(aventura.portada), null, modifier, contentScale = ContentScale.Crop)
+}
+
+@Composable
+private fun SelloDeAventura(aventura: AventuraInfantil, temaCurso: Curso?, modifier: Modifier) {
+    val iconoCurso = iconoCursoInfantil(aventura.curso, false)
+    val curso = temaCurso ?: cursosPorIcono[iconoCurso]
+    val icono = if (aventura.icono == R.drawable.ic_kusi_compass) iconoCurso else aventura.icono
+    Box(modifier.background(curso?.papel ?: Color(0xFFE4F0D3)), contentAlignment = Alignment.Center) {
+        if (curso != null) {
+            Image(painterResource(curso.dibujoEnCursos), null, Modifier.fillMaxWidth(.36f).fillMaxHeight(.66f))
+        } else {
+            Icon(painterResource(icono), null, Modifier.fillMaxWidth(.24f).fillMaxHeight(.45f), tint = Color(0xFF365C39))
+        }
+    }
+}
+
+private suspend fun cargarPortada(direccion: String, ancho: Int, alto: Int): ImageBitmap? = withContext(Dispatchers.IO) {
+    val bloqueo = bloqueosDePortada[direccion.hashCode().ushr(1) % bloqueosDePortada.size]
+    bloqueo.withLock {
+        val guardada = portadasEnMemoria.get(direccion)
+        if (guardada != null && (guardada.muestra == 1 ||
+                (guardada.imagen.width >= ancho && guardada.imagen.height >= alto))) {
+            return@withLock guardada.imagen
+        }
+        val archivo = guardada?.archivo ?: descargarPortada(direccion) ?: return@withLock null
+        val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(archivo, 0, archivo.size, medidas)
+        // Reducimos solo si ambos lados alcanzan en píxeles para que el recorte no tenga que ampliar la imagen.
+        var muestra = 1
+        while (medidas.outWidth / (muestra * 2) >= ancho && medidas.outHeight / (muestra * 2) >= alto) {
+            muestra *= 2
+        }
+        if (guardada != null && guardada.muestra <= muestra) return@withLock guardada.imagen
+        val opciones = BitmapFactory.Options().apply { inSampleSize = muestra }
+        val bitmap = BitmapFactory.decodeByteArray(archivo, 0, archivo.size, opciones) ?: return@withLock guardada?.imagen
+        val imagen = bitmap.asImageBitmap()
+        // Solo guardamos el PNG si todavía hace falta para recuperar más detalle en una pantalla más grande.
+        portadasEnMemoria.put(direccion, PortadaEnMemoria(imagen, bitmap.allocationByteCount, muestra, archivo.takeIf { muestra > 1 }))
+        imagen
+    }
+}
+
+private fun descargarPortada(direccion: String): ByteArray? = try {
+    val conexion = URL(direccion).openConnection() as? HttpURLConnection
+    conexion?.run {
+        connectTimeout = 5000
+        readTimeout = 8000
+        try {
+            if (responseCode == HttpURLConnection.HTTP_OK) inputStream.use { it.readBytes() } else null
+        } finally {
+            disconnect()
+        }
+    }
+} catch (_: IOException) {
+    null
 }
