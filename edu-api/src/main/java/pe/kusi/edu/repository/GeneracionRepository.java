@@ -28,6 +28,8 @@ public interface GeneracionRepository extends JpaRepository<Generacion, UUID> {
     // El taller tarda minutos: si ya está creando el juego de esta solicitud, un segundo
     // «Generar» no encarga otro igual.
     boolean existsBySolicitudIdAndTallerTrueAndEstadoIn(UUID solicitudId, java.util.Collection<String> estados);
+    // Si el docente ya pidió otro juego de la misma solicitud, un juego fallido más viejo no se reabre.
+    boolean existsBySolicitudIdAndCreadoEnAfter(UUID solicitudId, java.time.Instant creadoEn);
 
     // El último juego del taller que quedó listo con una versión anterior de la propuesta:
     // es el que se corrige cuando el docente pidió un cambio por el chat.

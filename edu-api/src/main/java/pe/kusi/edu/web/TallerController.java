@@ -119,6 +119,19 @@ public class TallerController {
                 "disponible_desde", trabajo.getDisponibleDesde())));
     }
 
+    // Reabre un juego fallido para entregar la versión que el equipo corrigió a mano
+    // (taller/reentregar.mjs). Sin cuerpo. 404 si no existe; 409 si no está fallido, si es una
+    // propuesta o si el docente ya pidió otro juego de la misma solicitud.
+    @PostMapping("/{id}/reabrir")
+    public ResponseEntity<Map<String, Object>> reabrir(
+            @RequestHeader(value = "X-Taller-Clave", required = false) String clave,
+            @PathVariable UUID id) {
+        autorizar(clave);
+        TrabajoTaller trabajo = taller.reabrir(id);
+        return sinCache(200, Map.of("trabajo", Map.of(
+                "id", id, "estado", trabajo.getEstado(), "tomado_en", trabajo.getTomadoEn())));
+    }
+
     // { motivo }. El motivo es interno: el docente nunca lo ve. Si era una propuesta, entra el respaldo.
     @PostMapping("/{id}/fallo")
     public ResponseEntity<Map<String, Object>> fallo(

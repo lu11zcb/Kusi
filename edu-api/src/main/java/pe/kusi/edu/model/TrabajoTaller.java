@@ -136,6 +136,20 @@ public class TrabajoTaller {
     }
 
     /**
+     * Reabre un trabajo fallido para entregar a mano el juego que el equipo terminó de corregir.
+     * Queda «en proceso» con una toma nueva para que el resultado se reciba como cualquier otro,
+     * pero no suma un intento: ningún trabajador lo recogió y no cuenta para el vencimiento.
+     * El motivo del fallo se conserva hasta que llegue el resultado.
+     */
+    public void reabrir(String quien) {
+        this.estado = "en_proceso";
+        this.tomadoPor = quien;
+        this.tomadoEn = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        this.terminadoEn = null;
+        this.disponibleDesde = null;
+    }
+
+    /**
      * Devuelve el trabajo a la cola para permitir una corrección.
      */
     public void reencolar(String motivo) {

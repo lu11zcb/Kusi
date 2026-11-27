@@ -230,6 +230,42 @@ public class TallerService {
     }
 
     /**
+     * Reabre un juego que el taller no pudo terminar, para que el equipo entregue a mano la
+     * versión que corrigió en la carpeta del trabajo. Solo se reabre un trabajo «fallido» que
+     * crea un juego, y solo si el docente no pidió después otro juego de la misma solicitud.
+     * El trabajo queda «en proceso» y la generación «generando», como si el taller lo hubiera
+     * tomado; el resultado llega por la ruta de siempre y pasa la misma revisión. Si la entrega
+     * no pasa, quien lo reabrió lo vuelve a cerrar con «fallo» (taller/reentregar.mjs lo hace):
+     * si quedara abierto, el vencimiento lo devolvería a la cola y el taller lo haría de nuevo.
+     */
+    @Transactional
+    public TrabajoTaller reabrir(UUID id) {
+        TrabajoTaller trabajo = trabajos.bloquearPorId(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ese trabajo del taller."));
+        if (trabajo.esDePropuesta()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ese trabajo es una propuesta: solo se reabre un trabajo que crea un juego.");
+        }
+        if (!"fallido".equals(trabajo.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Solo se reabre un trabajo fallido (este está «" + trabajo.getEstado() + "»).");
+        }
+        Generacion generacion = generacionDe(trabajo);
+        if (generaciones.existsBySolicitudIdAndCreadoEnAfter(generacion.getSolicitudId(), generacion.getCreadoEn())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El docente ya pidió otro juego de esa solicitud: este no se reabre.");
+        }
+        trabajo.reabrir("equipo");
+        trabajos.save(trabajo);
+        generacion.registrarEstado("generando", null);
+        generaciones.save(generacion);
+        etapas.save(new EtapaGeneracion(generacion.getId(), "taller", "en_progreso",
+                "El equipo terminó de corregir el juego y lo entrega."));
+        registro.info("[taller] Se reabrió el trabajo " + id + " para entregar el juego corregido.");
+        return trabajo;
+    }
+
+    /**
      * El docente envió a su clase un juego del taller: sus piezas quedan aprobadas y, desde
      * entonces, el juego y sus piezas entran en la biblioteca que recibe el supervisor.
      */

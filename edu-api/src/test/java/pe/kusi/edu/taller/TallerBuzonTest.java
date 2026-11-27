@@ -424,6 +424,48 @@ class TallerBuzonTest {
         assertEquals("pendiente", estadoDelTrabajo(trabajoDe(juego)));
     }
 
+    // ---------- reabrir ----------
+
+    @Test
+    void un_juego_fallido_se_reabre_y_recibe_la_version_corregida_por_el_equipo() throws Exception {
+        UUID juego = generarJuegoDelTaller();
+        UUID trabajo = tomar();
+        taller(trabajo + "/fallo", CLAVE, Map.of("motivo", "Se agotaron las correcciones.")).andExpect(status().isOk());
+
+        taller(trabajo + "/reabrir", CLAVE, null).andExpect(status().isOk())
+            .andExpect(jsonPath("$.trabajo.estado").value("en_proceso"));
+        assertEquals("en_proceso", estadoDelTrabajo(trabajo));
+        assertEquals("generando", estadoDeLaGeneracion(juego));
+        // Reabrir no cuenta como una vez más del taller.
+        assertEquals(1, jdbc.queryForObject("select intentos from edu.trabajos_taller where id = ?", Integer.class, trabajo));
+
+        taller(trabajo + "/resultado", CLAVE, resultadoBueno(trabajo)).andExpect(status().isOk());
+        assertEquals("listo", estadoDelTrabajo(trabajo));
+        assertEquals("lista", estadoDeLaGeneracion(juego));
+        // Un juego que ya está listo no se vuelve a reabrir.
+        taller(trabajo + "/reabrir", CLAVE, null).andExpect(status().isConflict());
+    }
+
+    @Test
+    void reabrir_pide_la_clave_y_solo_acepta_un_juego_fallido_sin_otro_mas_nuevo() throws Exception {
+        taller(UUID.randomUUID() + "/reabrir", CLAVE, null).andExpect(status().isNotFound());
+        UUID juego = generarJuegoDelTaller();
+        UUID trabajo = trabajoDe(juego);
+        taller(trabajo + "/reabrir", "otra-clave", null).andExpect(status().isForbidden());
+        taller(trabajo + "/reabrir", null, null).andExpect(status().isForbidden());
+        // Pendiente o en proceso: todavía no está fallido.
+        taller(trabajo + "/reabrir", CLAVE, null).andExpect(status().isConflict());
+        tomar();
+        taller(trabajo + "/reabrir", CLAVE, null).andExpect(status().isConflict());
+        taller(trabajo + "/fallo", CLAVE, Map.of("motivo", "x")).andExpect(status().isOk());
+
+        // El docente ya pidió otro juego de la misma solicitud: el viejo queda fallido.
+        escribir(RUTA_SOLICITUDES + solicitudDe(juego) + "/versiones/1/generar/", Map.of()).andExpect(status().isCreated());
+        taller(trabajo + "/reabrir", CLAVE, null).andExpect(status().isConflict());
+        assertEquals("fallido", estadoDelTrabajo(trabajo));
+        assertEquals("fallida", estadoDeLaGeneracion(juego));
+    }
+
     // ---------- 15 minutos ----------
 
     @Test
