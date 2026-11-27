@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -119,6 +120,10 @@ fun JuegoLaberinto(
         inicio?.let { preparado -> key(preparado.aventura.id, recarga) {
             AndroidView(modifier = Modifier.weight(1f).fillMaxWidth(), factory = { contexto ->
                 WebView(contexto).apply {
+                    // Compose crea la vista con un alto «según su contenido» y la página del juego mide el 100 % de ese
+                    // alto: quedaba en 0 y el niño veía la pantalla oscura aunque el juego cargaba. Con MATCH_PARENT,
+                    // la página mide lo mismo que el espacio que el juego tiene en la pantalla.
+                    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                     val vista = this
                     vistaActual = vista
                     var activa = true
