@@ -270,3 +270,20 @@ class RegistroUsuariosTests(TestCase):
         self.assertEqual(usuario.correo, "inicial@example.com")
         self.assertTrue(usuario.groups.filter(name="administrador").exists())
         self.assertFalse(usuario.debe_cambiar_contrasena)
+
+
+class VariasSesionesTests(TestCase):
+    """En la Mac, cada dirección *.localhost tiene su propia sesión en el navegador: varias cuentas a la vez."""
+
+    def test_en_desarrollo_se_acepta_una_direccion_con_nombre_de_localhost(self):
+        from django.conf import settings
+
+        if "localhost" not in settings.ALLOWED_HOSTS:
+            self.skipTest("Solo cuando Kusi corre en esta máquina.")
+        self.assertIn("http://*.localhost:5173", settings.CSRF_TRUSTED_ORIGINS)
+        respuesta = Client().get("/api/registro/contexto/", HTTP_HOST="ivan.localhost:5173")
+        self.assertNotEqual(respuesta.status_code, 400)
+
+    def test_un_nombre_que_no_es_localhost_se_rechaza(self):
+        respuesta = Client().get("/api/registro/contexto/", HTTP_HOST="ivan.ejemplo.com")
+        self.assertEqual(respuesta.status_code, 400)

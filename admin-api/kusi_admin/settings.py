@@ -104,6 +104,12 @@ CSRF_TRUSTED_ORIGINS = [
     ).split(",")
     if origen.strip()
 ]
+# Varias cuentas a la vez en el mismo navegador (solo cuando Kusi corre en esta máquina): el navegador guarda una sesión
+# por dirección, así que ivan.localhost:5173 y jesus.localhost:5173 tienen cada una la suya. *.localhost siempre es esta
+# misma máquina; un servidor público no acepta «localhost» y por eso no se agrega.
+if "localhost" in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(".localhost")
+    CSRF_TRUSTED_ORIGINS.append("http://*.localhost:5173")
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_HTTPONLY = True
 
