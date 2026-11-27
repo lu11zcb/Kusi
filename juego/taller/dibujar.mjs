@@ -2,7 +2,10 @@
 // El supervisor lo llama con:
 //
 //   node juego/taller/dibujar.mjs --carpeta <carpeta del trabajo> --id olla-de-barro \
-//     --que "una olla de barro andina, para cocinar" [--apoyado] [--fondo | --cuento | --figura | --criatura | --tira <2-4>] [--mundo "<el mundo de la aventura>"] [--correccion "<motivos>"]
+//     --que "una olla de barro andina, para cocinar" [--apoyado] [--fondo [--lado] | --cuento | --figura | --criatura | --tira <2-4>] [--mundo "<el mundo de la aventura>"] [--correccion "<motivos>"]
+//
+// Un fondo es visto desde arriba (exploración); con --lado es el telón de un juego de plataformas visto de lado: cielo, horizonte
+// y paisaje lejano, con la parte de abajo tranquila porque el juego dibuja su propio suelo.
 //
 // Cada llamada es un intento: le pide el dibujo al rol «dibujante» (taller/roles.local.json),
 // guarda lo que entregó en piezas/origen/<id>-intento-<n>.png, quita el fondo y prepara la
@@ -33,7 +36,7 @@ const LAMINA = path.join(CARPETA_JUEGO, 'kit', 'estilo', 'lamina-modelos.png')
 
 // El pedido a la herramienta de imágenes (guía de estilo, sección 13). Va en inglés: las
 // piezas aprobadas del kit salieron de pedidos en inglés y estas frases ya funcionaron.
-export function pedidoDeDibujo({ id, que, fondo, cuento = false, portada = false, figura = false, criatura = false, tira = null, mundo = null, intento, correccion }) {
+export function pedidoDeDibujo({ id, que, fondo, lado = false, cuento = false, portada = false, figura = false, criatura = false, tira = null, mundo = null, intento, correccion }) {
   const archivo = id + '-intento-' + intento + '.png'
   const partes = tira !== null
     ? [
@@ -87,12 +90,23 @@ export function pedidoDeDibujo({ id, que, fondo, cuento = false, portada = false
     : fondo
     ? [
         'Use your image generation tool to create ONE landscape 16:9 background image, then copy it into the current folder as ' + archivo + '.',
-        'Subject: ' + que + '. Seen from directly above (top-down camera): no horizon, no sky, no building facades (only roofs).',
-        // Un suelo «vacío en el centro» salió liso y de un solo color (pareció un desierto, correcciones.md, 25): el
-        // suelo se trabaja en toda la imagen y solo se deja libre lo alto, que lo pone el juego.
-        'The ground fills the WHOLE picture and is varied and alive, never one flat color: areas of grass, paths, patches of soil and soft shadow, ' +
-          'with small flat details lying on the ground (tiny flowers, pebbles, leaves) spread everywhere, also in the middle.',
-        'In the central 75% of the width and 80% of the height there is nothing tall standing up (no trees, walls, furniture or buildings): the game places those.',
+        ...(lado
+          // De lado (plataformas): antes se pedía siempre «visto desde arriba», que contradecía el pedido y salía un prado sin
+          // cielo donde iban montañas y andenes (correcciones.md, 107).
+          ? [
+              'Subject: ' + que + '. Seen from the SIDE, like the backdrop of a side-scrolling platform game: sky at the top, a horizon and ' +
+                'distant scenery (hills, mountains, sea or buildings seen from the front), with soft depth: farther things are paler and smaller.',
+              'The lower quarter of the picture is calm and simple, without strong details or objects, because the game draws its own ground ' +
+                'and platforms there. Nothing that looks like a floor to walk on in the middle of the picture.',
+            ]
+          // Un suelo «vacío en el centro» salió liso y de un solo color (pareció un desierto, correcciones.md, 25): el
+          // suelo se trabaja en toda la imagen y solo se deja libre lo alto, que lo pone el juego.
+          : [
+              'Subject: ' + que + '. Seen from directly above (top-down camera): no horizon, no sky, no building facades (only roofs).',
+              'The ground fills the WHOLE picture and is varied and alive, never one flat color: areas of grass, paths, patches of soil and soft shadow, ' +
+                'with small flat details lying on the ground (tiny flowers, pebbles, leaves) spread everywhere, also in the middle.',
+              'In the central 75% of the width and 80% of the height there is nothing tall standing up (no trees, walls, furniture or buildings): the game places those.',
+            ]),
         'Use clean flat color areas with soft shapes, without fine noise or grain.',
         'No people, no animals, no food, no objects that look like something to tap, no text, no logos.',
         'Style: hand-painted cartoon style for children, softer and less saturated than the game objects, warm brown outlines on roofs and stones, dark green outlines on plants, not pixel art, not realistic 3D.',
@@ -158,7 +172,7 @@ async function anotar(carpeta, id, datos) {
 }
 
 // «lanzarRol» permite probarlo sin la herramienta de imágenes real.
-export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false, cuento = false, portada = false, figura = false, criatura = false, tira = null, mundo = null, correccion = null }, { roles, lanzarRol = lanzar } = {}) {
+export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false, lado = false, cuento = false, portada = false, figura = false, criatura = false, tira = null, mundo = null, correccion = null }, { roles, lanzarRol = lanzar } = {}) {
   const inicio = Date.now()
   const carpetaReal = path.resolve(carpeta)
   if (!esIdTrabajo(path.basename(carpetaReal)) || !existsSync(path.join(carpetaReal, 'trabajo.json'))) {
@@ -204,7 +218,7 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
   await rm(temporal, { recursive: true, force: true })
   await mkdir(temporal, { recursive: true })
   if (existsSync(LAMINA)) await copyFile(LAMINA, path.join(temporal, 'lamina-modelos.png'))
-  const pedido = pedidoDeDibujo({ id, que, fondo, cuento, portada, figura, criatura, tira, mundo, intento, correccion })
+  const pedido = pedidoDeDibujo({ id, que, fondo, lado, cuento, portada, figura, criatura, tira, mundo, intento, correccion })
   const comando = armarComando(roles.dibujante, { pedido, temporal, carpeta: carpetaReal, juego: CARPETA_JUEGO, raiz: path.resolve(CARPETA_JUEGO, '..') })
   let ejecucion
   try {
@@ -266,7 +280,7 @@ export async function dibujar({ carpeta, id, que, apoyado = false, fondo = false
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   const { values } = parseArgs({ options: {
     carpeta: { type: 'string' }, id: { type: 'string' }, que: { type: 'string' },
-    apoyado: { type: 'boolean', default: false }, fondo: { type: 'boolean', default: false }, cuento: { type: 'boolean', default: false }, portada: { type: 'boolean', default: false }, figura: { type: 'boolean', default: false }, criatura: { type: 'boolean', default: false }, mundo: { type: 'string' }, correccion: { type: 'string' },
+    apoyado: { type: 'boolean', default: false }, fondo: { type: 'boolean', default: false }, lado: { type: 'boolean', default: false }, cuento: { type: 'boolean', default: false }, portada: { type: 'boolean', default: false }, figura: { type: 'boolean', default: false }, criatura: { type: 'boolean', default: false }, mundo: { type: 'string' }, correccion: { type: 'string' },
     tira: { type: 'string' },
   } })
   // El dibujante solo necesita su rol; las claves del buzón corresponden al trabajador.

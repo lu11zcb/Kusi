@@ -132,6 +132,15 @@ test('la portada se mide como un fondo y su nombre «portada.png» pasa el filtr
   await rm(carpeta, { recursive: true })
 })
 
+test('un fondo de lado pide cielo y horizonte, y nunca «visto desde arriba»', () => {
+  const deLado = pedidoDeDibujo({ id: 'fondo-andes', que: 'andean terraces', fondo: true, lado: true, intento: 1 })
+  assert.match(deLado, /Seen from the SIDE/)
+  assert.match(deLado, /lower quarter of the picture is calm/)
+  assert.doesNotMatch(deLado, /directly above/)
+  // Sin --lado, el fondo sigue siendo el de exploración, visto desde arriba.
+  assert.match(pedidoDeDibujo({ id: 'fondo-plaza', que: 'village square', fondo: true, intento: 1 }), /directly above/)
+})
+
 test('el pedido sigue la guía de estilo, pide fondo blanco y nunca nombra programas', () => {
   const pedido = pedidoDeDibujo({ id: 'olla-de-barro', que: 'clay cooking pot', intento: 2, correccion: 'the outline was open' })
   for (const frase of ['hand-painted cartoon style', 'warm dark brown outlines', 'one highlight, light from the upper left',

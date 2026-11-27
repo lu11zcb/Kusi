@@ -93,10 +93,10 @@ decides, repartes, controlas y entregas.
    programador**: la primera deja el juego **jugable de principio a fin** (movimiento con el joystick, lo que se recoge, el
    adversario, los tres niveles con sus datos y el cierre); lo vistoso (suelo, decorado, ambiente) va en la segunda. Al dibujante le pides cada pieza
    con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"`
-   (más `--apoyado` si se apoya en algo y `--fondo` si es un fondo): qué es, para
+   (más `--apoyado` si se apoya en algo y `--fondo` si es un fondo; en un juego **de lado**, `--fondo --lado`, si no sale visto desde arriba): qué es, para
    qué sirve en el juego y cómo se ve. **Pide todas las piezas con un solo comando**,
    `node taller/dibujar_varias.mjs --carpeta <carpeta> --mundo "<el mundo>" --piezas '[{"id":"…","que":"…"},…]'`
-   (cada pieza lleva sus `fondo`, `cuento` o `apoyado` si los necesita): las dibuja a la vez
+   (cada pieza lleva sus `fondo`, `lado`, `cuento` o `apoyado` si los necesita): las dibuja a la vez
    y responde la lista de resultados. Una por una se pierden 10 minutos. Las correcciones sí
    se piden de una en una con `dibujar.mjs --correccion`. El programador y el dibujante pueden trabajar a la vez: mientras
    una pieza no llega, el programador usa una figura simple.
