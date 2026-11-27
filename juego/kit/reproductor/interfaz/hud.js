@@ -8,23 +8,36 @@
 //   abajo a la derecha      el botón Soltar, si el juego lo pide
 //
 //   const hud = crearHud(this, { alAyuda: () => … })
-//   hud.decir('Busca las luciérnagas')
+//   hud.decir('Busca las luciérnagas.', {
+//     alTerminar: ({ interrumpida }) => { if (!interrumpida) mostrarLuz() },
+//   })
 //   hud.decir('Ana también está buscando', { tipo: 'comentario' })
+//   hud.celebrar()
+//   hud.decirSeguidas(['¡Lo lograste!', 'Vamos al siguiente reto.'], {
+//     alTerminar: ({ interrumpida }) => { if (!interrumpida) empezarReto() },
+//   })
 //   const reunidas = hud.indicador({ icono: 'luciernaga', texto: '0 / 10' })
 //   reunidas.poner('3 / 10')
 //
+// `decir` acepta el mismo `alTerminar` para una sola frase. Se llama una vez
+// al acabar la voz o el tiempo de lectura. Una nueva respuesta puede cortar
+// el turno y, con `decirSeguidas`, cancela también las frases que faltaban.
+// `celebrar` anima a Kusi 2,5 s y se prolonga si sigue hablando.
 // Todo está en la pantalla (scrollFactor 0) y por encima del mundo. Kusi habla con voz y en su globo.
 // El botón Sonido controla la música y los efectos del juego.
 
 import { COLOR, NUMERO, estiloTexto } from '../medidas.js'
 import { ajustarATamano } from '../dibujos/dibujos.js'
 import { dibujarGlobo } from './piezas.js'
-import { decir, repetirVoz } from '../logica/voz.js'
-import { animarVozKusi, crearHablaKusi, avanzarHablaKusi } from '../logica/hablaKusi.js'
+import { callarVoz, decir, repetirVoz, vozOcupada } from '../logica/voz.js'
+import { animarVozKusi, crearHablaKusi, avanzarHablaKusi, iniciarCelebracionKusi, FILAS_KUSI } from '../logica/hablaKusi.js'
+import { normalizarFrase } from '../logica/textoVoz.js'
 import { vidaActiva } from '../efectos/vida.js'
 import { aplicarAvisoPuntos, crearPuntos, MAXIMO_PUNTOS } from '../logica/puntos.js'
 
 const PROFUNDIDAD = 4000
+const ALTURA_KUSI = 94
+const SALTO_KUSI = 9
 const LADO_BOTON = 76
 const DESFASE_ETIQUETA = LADO_BOTON / 2 + 12
 const ALTO_INDICADOR = 42
@@ -46,7 +59,8 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
 
   // Kusi, en un círculo claro, arriba a la izquierda.
   const aro = agregar(escena.add.circle(80, 80, 66, NUMERO.crema).setStrokeStyle(5, NUMERO.tinta).setScrollFactor(0).setDepth(PROFUNDIDAD))
-  const kusi = agregar(escena.add.image(80, 94, 'kusi-animado', 9).setDisplaySize(124, 124).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
+  const kusi = agregar(escena.add.image(80, ALTURA_KUSI, 'kusi-animado', FILAS_KUSI.respirar)
+    .setDisplaySize(124, 124).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
   kusi.setInteractive({ useHandCursor: true })
   const habla = crearHablaKusi(vidaActiva())
 
@@ -59,6 +73,7 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
   let ultimaMostrada = null
   let ultimaEscuchada = null
   let destruido = false
+  let conversacion = null
 
   const mostrarGlobo = (mensaje) => {
     ultimaMostrada = mensaje
@@ -86,40 +101,114 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
     ocultar?.remove()
   }
 
-  const programarOcultado = (mensaje) => {
-    if (mensaje.fijo) return
+  const programarOcultado = (mensaje, alLeer) => {
+    if (mensaje.fijo && !alLeer) return
     ocultar = escena.time.delayedCall(Math.min(9000, 3500 + mensaje.frase.length * 55), () => {
-      escena.tweens.add({ targets: [globo, texto], alpha: 0, duration: 400 })
+      if (!mensaje.fijo) escena.tweens.add({ targets: [globo, texto], alpha: 0, duration: 400 })
+      alLeer?.()
     })
+    return ocultar
   }
 
-  const hablar = (frase, { tipo, esperar, fijo = false } = {}, reproducir = decir) => {
+  const hablar = (frase, { tipo, esperar, fijo = false } = {}, reproducir = decir, paso = null) => {
     if (typeof frase !== 'string' || !frase.trim()) return
     const mensaje = { frase, tipo, esperar, fijo }
     const animacion = animarVozKusi(habla, frase)
+    const vigente = () => !destruido && (!paso || conversacion?.paso === paso)
     reproducir(frase, {
       tipo, esperar,
       alEmpezar() {
-        if (destruido) return
+        if (!vigente()) return
         ultimaEscuchada = mensaje
         mostrarGlobo(mensaje)
+        if (paso) paso.lectura = null
         animacion.alEmpezar()
       },
       alSinVoz() {
-        if (destruido) return
+        if (!vigente()) return
         mostrarGlobo(mensaje)
-        programarOcultado(mensaje)
+        if (paso) {
+          // Si la voz arranca tarde, alEmpezar sustituye este reloj por el fin del audio.
+          paso.lectura = programarOcultado(mensaje, () => terminarPaso(paso, false, true))
+        } else programarOcultado(mensaje)
       },
-      alTerminar() {
+      alTerminar({ interrumpida }) {
         if (destruido) return
         animacion.alTerminar()
         programarOcultado(mensaje)
+        if (paso) terminarPaso(paso, interrumpida)
       },
     })
   }
+
+  function cerrarConversacion(interrumpida) {
+    if (!conversacion) return
+    const { paso, alTerminar, secundaria } = conversacion
+    conversacion = null
+    paso?.lectura?.remove()
+    // La voz avisa dentro de un cambio de turno. El juego ya puede pedir otra
+    // frase cuando ese cambio terminó, incluso si su respuesta es inmediata.
+    queueMicrotask(() => {
+      alTerminar?.({ interrumpida })
+      if (!interrumpida && !conversacion && !destruido) secundaria?.()
+    })
+  }
+
+  function decirPaso() {
+    const { frases, indice, opciones } = conversacion
+    const paso = conversacion.paso = { lectura: null }
+    // El turno con seguimiento entra de inmediato. La cola de voz puede
+    // descartar frases que esperan, sin avisarles si nunca llegaron a sonar.
+    hablar(frases[indice], opciones, repetirVoz, paso)
+  }
+
+  function terminarPaso(paso, interrumpida, soloTexto = false) {
+    if (conversacion?.paso !== paso) return
+    if (interrumpida) return cerrarConversacion(true)
+    conversacion.paso = null
+    conversacion.indice += 1
+    if (conversacion.indice < conversacion.frases.length) {
+      decirPaso()
+    } else {
+      // Tras leer la última frase, se retira la voz que aún pudiera estar
+      // esperando el primer toque para que ese toque no reproduzca el texto viejo.
+      if (soloTexto && vozOcupada()) callarVoz()
+      cerrarConversacion(false)
+    }
+  }
+
+  const decirSeguidas = (frases, { alTerminar, ...opciones } = {}) => {
+    if (destruido) return
+    const validas = Array.isArray(frases) ? frases.filter((frase) => normalizarFrase(frase)) : []
+    if (validas.length === 0) {
+      if (alTerminar) queueMicrotask(() => alTerminar({ interrumpida: false }))
+      return
+    }
+    cerrarConversacion(true)
+    conversacion = { frases: validas, indice: 0, opciones, alTerminar, paso: null, secundaria: null }
+    decirPaso()
+  }
+
+  const decirDesdeHud = (frase, opciones = {}) => {
+    if (destruido || !normalizarFrase(frase)) return
+    const { alTerminar, tipo = opciones.esperar ? 'comentario' : 'respuesta' } = opciones
+    if (alTerminar) return decirSeguidas([frase], opciones)
+    if (!conversacion) return hablar(frase, opciones)
+    if (tipo !== 'respuesta') {
+      // Las frases de fondo esperan porque un globo nuevo taparía el texto que se está leyendo.
+      conversacion.secundaria = () => hablar(frase, opciones)
+      return
+    }
+    cerrarConversacion(true)
+    hablar(frase, opciones, repetirVoz)
+  }
+
   const repetirUltimo = () => {
     const ultimo = ultimaEscuchada ?? ultimaMostrada
-    if (ultimo) hablar(ultimo.frase, ultimo, repetirVoz)
+    if (ultimo) {
+      cerrarConversacion(true)
+      hablar(ultimo.frase, ultimo, repetirVoz)
+    }
     else alEscuchar?.()
   }
   kusi.on('pointerup', repetirUltimo)
@@ -201,11 +290,16 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
     return pastilla
   }
 
-  const alActualizar = (_tiempo, delta) => kusi.setFrame(avanzarHablaKusi(habla, delta / 1000).cuadro)
+  const alActualizar = (_tiempo, delta) => {
+    const { cuadro, rebote } = avanzarHablaKusi(habla, delta / 1000)
+    kusi.setFrame(cuadro)
+    kusi.y = ALTURA_KUSI - rebote * SALTO_KUSI
+  }
   escena.events.on('update', alActualizar)
   const destruir = () => {
     if (destruido) return
     destruido = true
+    cerrarConversacion(true)
     escena.events.off('update', alActualizar)
     ocultar?.remove()
     for (const colocar of recolocarBotones) escena.scale.off('resize', colocar)
@@ -216,7 +310,9 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
 
   return {
     // «tipo» elige el turno de voz. «fijo» conserva el globo al terminar.
-    decir: hablar,
+    decir: decirDesdeHud,
+    decirSeguidas,
+    celebrar: () => iniciarCelebracionKusi(habla),
     indicador,
     botonSoltar,
     // Cambia el dibujo del botón de sonido (apagado o encendido).

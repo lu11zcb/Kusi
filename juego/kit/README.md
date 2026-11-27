@@ -18,10 +18,10 @@ pero no lo cambia: si falta una pieza, la pide en lugar de inventarla.
 
 | Pieza | Qué tiene |
 | --- | --- |
-| Personajes | El cuy del niño y el zorro, cada uno en cuatro vistas con sus estados, y Kusi, el guía, que habla, saluda, parpadea y respira. |
+| Personajes | El cuy del niño y el zorro, cada uno en cuatro vistas con sus estados, y Kusi, el guía, que habla, saluda, parpadea, respira y celebra. |
 | Objetos | Ocho alimentos: cinco frutas (fresa, plátano, mango, mandarina y piña) y tres verduras (zanahoria, papa y choclo). |
 | Mundos | Patio andino visto desde arriba, con pasto y flores que se mueven, dos cubos de adobe, suelo, borde de pasto y portal. |
-| Interfaz | Barra de objetivos, globos de diálogo, botones de voz, ayuda y sonido, joystick, la mano que enseña y los destellos. |
+| Interfaz | Barra de objetivos, globos de diálogo, botones de voz, ayuda, sonido y salto, joystick, la mano que enseña y los destellos. |
 | Sonidos | Pasos, comer, error, captura, puerta, nivel y alerta del zorro (Kenney, CC0). |
 
 ## Cómo se conecta con los juegos
@@ -37,6 +37,35 @@ registro de `reproductor/datos/registroJuegos.js`. Los detalles están en
 Las piezas nuevas que dibuja el taller quedan «pendientes» en su trabajo hasta
 que el docente las aprueba; solo entonces pueden pasar a la biblioteca de
 piezas.
+
+## Diálogos y celebración de Kusi
+
+Usa `hud.decir(frase, { alTerminar })` si el juego necesita actuar cuando
+termine una frase. Para decir varias, usa `hud.decirSeguidas(frases, opciones)`.
+Cada frase espera el fin de la voz anterior. Cuando falta audio, espera el
+tiempo de lectura de su globo, incluso con `fijo: true`. Una respuesta nueva
+puede interrumpir el diálogo. En ambos métodos, `alTerminar` se ejecuta una
+sola vez y recibe `{ interrumpida }`. Para la voz nativa de Android, el
+reproductor estima cuándo termina la frase porque el puente solo confirma
+su envío.
+
+```js
+hud.decir('Busca dos cartas iguales.', {
+  alTerminar: ({ interrumpida }) => { if (!interrumpida) mostrarCartas() },
+})
+
+// Al encontrar la última pareja.
+hud.celebrar()
+hud.decirSeguidas(['¡Encontraste todas las parejas!', 'Sigamos con el próximo reto.'], {
+  alTerminar: ({ interrumpida }) => { if (!interrumpida) avanzarReto() },
+})
+```
+
+`hud.celebrar()` anima a Kusi unos 2,5 segundos y prolonga el gesto si Kusi
+sigue hablando. La quinta fila de su lámina contiene las tres poses. Los
+cuadros anteriores conservan sus números. El
+[original](originales/personajes/kusi-celebra-original.png) se guarda con los
+[pedidos del dibujo](originales/personajes/kusi-celebra-pedidos.txt).
 
 ## Puntos y monedas
 
@@ -62,6 +91,13 @@ La vista previa del panel (`?paquete=mensaje` dentro de un iframe) y
 `?prueba_docente` muestran el puntaje con el aviso de que no se guarda. En
 Android, el aviso que hace cerrar el juego se entrega al tocar «Continuar» o
 después de unos segundos con la tarjeta en pantalla.
+
+## Control de salto
+
+Los juegos de plataformas pueden pedir el botón **Saltar** con
+`crearControles(this, { saltar: true })`. Aparece abajo a la derecha y su zona
+de toque tiene 62 px de radio. Si falla la carga del dibujo, se muestra el
+círculo con la flecha y el salto sigue disponible.
 
 ## Tutorial jugable
 

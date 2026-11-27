@@ -42,6 +42,8 @@ async function abrir(pagina) {
   return errores
 }
 const estado = (pagina) => pagina.evaluate(() => window.__plataformas)
+const botonSaltar = (pagina) => pagina.evaluate(() =>
+  window.__kusiPantalla().cajas.find((caja) => caja.id.startsWith('boton-saltar (')))
 
 test('las flechas mueven al protagonista y la barra espaciadora lo hace saltar', async ({ page: pagina }) => {
   const errores = await abrir(pagina)
@@ -73,14 +75,43 @@ test('el joystick en pantalla mueve al protagonista y el botón de saltar lo hac
   expect((await estado(pagina)).x).toBeGreaterThan(inicio.x + 80)
   await pagina.mouse.up()
 
-  // Toca el botón de saltar.
-  const antes = await estado(pagina)
-  await pagina.mouse.click(controles.saltar.x, controles.saltar.y)
+  // El dibujo se achica al presionar, pero la zona de toque mantiene su radio.
+  const dibujo = await botonSaltar(pagina)
+  const etiquetas = await pagina.evaluate(() => window.__kusiPantalla().cajas
+    .filter((caja) => ['Saltar', 'Ayuda'].includes(caja.texto)))
+  const saltar = etiquetas.find((caja) => caja.texto === 'Saltar')
+  expect(saltar.letra).toEqual(etiquetas.find((caja) => caja.texto === 'Ayuda').letra)
+  expect(saltar.y + saltar.alto / 2).toBeGreaterThan(dibujo.y + dibujo.alto)
+  const { x, y, radio } = controles.saltar
+  expect(radio).toBe(62)
+  await pagina.mouse.click(x + radio + 2, y)
   await pagina.waitForTimeout(150)
+  expect((await estado(pagina)).enSuelo).toBe(true)
+
+  const antes = await estado(pagina)
+  await pagina.mouse.move(x + radio - 2, y)
+  await pagina.mouse.down()
+  await expect.poll(async () => (await botonSaltar(pagina)).ancho / dibujo.ancho).toBeCloseTo(0.92)
+  await pagina.waitForFunction((altura) => window.__plataformas.y < altura - 10, antes.y)
   const salto = await estado(pagina)
   expect(salto.enSuelo).toBe(false)
   expect(salto.y).toBeLessThan(antes.y - 10)
+  await pagina.mouse.up()
+  await expect.poll(async () => (await botonSaltar(pagina)).ancho).toBeCloseTo(dibujo.ancho)
   expect(errores).toEqual([])
+})
+
+test('si no carga el dibujo, el círculo de respaldo permite saltar', async ({ page: pagina }) => {
+  await pagina.route('**/dibujos/interfaz/boton-saltar.png', (ruta) => ruta.fulfill({ status: 404 }))
+  await abrir(pagina)
+  expect(await botonSaltar(pagina)).toBeUndefined()
+  const inicio = await estado(pagina)
+  const { x, y } = inicio.controles.saltar
+  const circulo = await pagina.evaluate(({ x, y }) => window.__kusiPantalla().cajas.some((caja) =>
+    caja.hud && caja.id.startsWith('Arc (') && caja.x + caja.ancho / 2 === x && caja.y + caja.alto / 2 === y), { x, y })
+  expect(circulo).toBe(true)
+  await pagina.mouse.click(x, y)
+  await pagina.waitForFunction((altura) => window.__plataformas.y < altura - 10, inicio.y)
 })
 
 test('con un salto largo cruza el hueco hasta la plataforma siguiente y reúne lo que hay en ella', async ({ page: pagina }) => {

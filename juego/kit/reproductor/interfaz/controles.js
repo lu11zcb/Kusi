@@ -17,8 +17,10 @@ import { vectorDeJoystick, vectorDeTeclas, combinarEntradas } from '../logica/co
 const PROFUNDIDAD = 5000
 const RADIO_BASE = 92
 const RADIO_PERILLA = 44
+const RADIO_SALTO = 62
 const RECORRIDO_PERILLA = RADIO_BASE - RADIO_PERILLA / 2
 const MARGEN = 36
+const CLAVE_SALTO = 'boton-saltar'
 
 export function crearControles(escena, { saltar = false, joystick = true } = {}) {
   const estado = { dedo: null, dx: 0, dy: 0, saltoPedido: false, saltoSostenido: false, saltoDedo: null }
@@ -27,17 +29,25 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
   const perilla = joystick ? escena.add.image(0, 0, 'joystick-perilla').setDisplaySize(RADIO_PERILLA * 2, RADIO_PERILLA * 2).setScrollFactor(0).setDepth(PROFUNDIDAD + 1) : null
   if (base) piezas.push(base, perilla)
 
-  // El botón de saltar: un círculo grande y claro con una flecha hacia arriba.
+  // Agrupar el dibujo permite achicarlo alrededor del centro sin mover la etiqueta ni la zona de toque.
   let boton = null
-  let flecha = null
   let etiqueta = null
-  let sombra = null
+  let circuloDeRespaldo = null
   if (saltar) {
-    sombra = escena.add.circle(0, 6, 62, NUMERO.terracota).setScrollFactor(0).setDepth(PROFUNDIDAD)
-    boton = escena.add.circle(0, 0, 62, NUMERO.naranja).setStrokeStyle(5, NUMERO.tinta).setScrollFactor(0).setDepth(PROFUNDIDAD + 1)
-    flecha = escena.add.triangle(0, -8, 0, -22, 22, 14, -22, 14, NUMERO.tinta).setScrollFactor(0).setDepth(PROFUNDIDAD + 2)
-    etiqueta = escena.add.text(0, 30, 'Saltar', estiloTexto(24, COLOR.tinta)).setOrigin(0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 2)
-    piezas.push(sombra, boton, flecha, etiqueta)
+    boton = escena.add.container(0, 0).setDepth(PROFUNDIDAD + 1)
+    if (escena.textures.exists(CLAVE_SALTO)) {
+      const lado = 2 * RADIO_SALTO
+      boton.add(escena.add.image(0, 0, CLAVE_SALTO).setDisplaySize(lado, lado))
+    } else {
+      // El juego sigue siendo jugable si el archivo del botón no llegó a cargarse.
+      const sombra = escena.add.circle(0, 6, RADIO_SALTO, NUMERO.terracota)
+      circuloDeRespaldo = escena.add.circle(0, 0, RADIO_SALTO, NUMERO.naranja).setStrokeStyle(5, NUMERO.tinta)
+      const flecha = escena.add.triangle(0, -12, 0, -22, 22, 14, -22, 14, NUMERO.tinta)
+      boton.add([sombra, circuloDeRespaldo, flecha])
+    }
+    boton.setScrollFactor(0, 0, true)
+    etiqueta = escena.add.text(0, 0, 'Saltar', estiloTexto(20, COLOR.tinta)).setOrigin(0.5).setScrollFactor(0).setDepth(PROFUNDIDAD + 2)
+    piezas.push(boton, etiqueta)
   }
   for (const pieza of piezas) pieza.setData('hud', true)
 
@@ -50,10 +60,8 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
     if (boton) {
       const centro = { x: ancho - MARGEN - 80, y: alto - MARGEN - 72 }
       estado.centroSalto = centro
-      sombra.setPosition(centro.x, centro.y + 6)
       boton.setPosition(centro.x, centro.y)
-      flecha.setPosition(centro.x, centro.y - 12)
-      etiqueta.setPosition(centro.x, centro.y + 36)
+      etiqueta.setPosition(centro.x, centro.y + RADIO_SALTO + 12)
     }
   }
   colocar()
@@ -61,11 +69,12 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
 
   // El dedo: el primero que toca el joystick lo maneja, y otro dedo puede tocar «Saltar» a la vez.
   const alBajar = (puntero) => {
-    if (boton && estado.saltoDedo === null && Phaser.Math.Distance.Between(puntero.x, puntero.y, estado.centroSalto.x, estado.centroSalto.y) <= 84) {
+    if (boton && estado.saltoDedo === null && Phaser.Math.Distance.Between(puntero.x, puntero.y, estado.centroSalto.x, estado.centroSalto.y) <= RADIO_SALTO) {
       estado.saltoDedo = puntero.id
       estado.saltoPedido = true
       estado.saltoSostenido = true
-      boton.setFillStyle(NUMERO.naranjaClaro)
+      boton.setScale(0.92)
+      circuloDeRespaldo?.setFillStyle(NUMERO.naranjaClaro)
       return
     }
     if (joystick && estado.dedo === null && Phaser.Math.Distance.Between(puntero.x, puntero.y, estado.centro.x, estado.centro.y) <= RADIO_BASE * 1.5) {
@@ -92,7 +101,8 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
     if (puntero.id === estado.saltoDedo) {
       estado.saltoDedo = null
       estado.saltoSostenido = false
-      boton?.setFillStyle(NUMERO.naranja)
+      boton.setScale(1)
+      circuloDeRespaldo?.setFillStyle(NUMERO.naranja)
     }
   }
   estado.vector = { x: 0, y: 0 }
@@ -144,7 +154,7 @@ export function crearControles(escena, { saltar = false, joystick = true } = {})
       return { x, y, saltar: saltoPedido, saltarSostenido: estado.saltoSostenido }
     },
     // Las pruebas y el revisor leen aquí dónde están los controles.
-    estado: () => ({ joystick: { ...estado.centro, radio: RADIO_BASE }, saltar: estado.centroSalto ? { ...estado.centroSalto, radio: 62 } : null }),
+    estado: () => ({ joystick: { ...estado.centro, radio: RADIO_BASE }, saltar: estado.centroSalto ? { ...estado.centroSalto, radio: RADIO_SALTO } : null }),
     // La mano guía empuja el dibujo. El vector de juego lo sigue dando el niño.
     demostrarJoystick(punto = estado.centro) {
       if (destruido || !perilla || estado.dedo !== null) return

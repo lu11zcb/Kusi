@@ -1,0 +1,21 @@
+Referencias de estilo: boton-ayuda.png y boton-escuchar.png.
+
+Create one raster game UI button icon, centered on a square of perfectly flat
+solid pure white (#FFFFFF) for later cutout. The two attached images are the
+real in-house Kusi 'help' and 'listen' button style references. Match the base
+of those buttons as closely as possible: nearly full-frame centered circular
+cream-yellow disk (~#ffda7a), very thick warm dark espresso-brown outer outline
+(~#4b210e), subtle short ocher lower rim shadow right underneath the circle,
+and a small curved pale cream highlight at the upper left. This is flat,
+simple, warm cartoon art, front view, no perspective or materials. Replace
+the interior symbol with ONE simple very bold round-ended dark espresso-brown
+jumping arrow. Its shaft starts toward the lower left, sweeps diagonally
+upward in a smooth arch with a slight flattening at the top, ending toward the
+upper-right with the arrowhead still pointing upward / diagonally upward right.
+The direction of the arrowhead must clearly say up/jump at a glance to a
+6-year-old; not a U-turn or a circle and no down-facing arrow. Center the mark
+optically, about 55% of the disk width and height, with stroke thickness
+comparable to the listening ear. A single icon, isolated, no words, other
+marks, extra shine, gradients, scenery or floating outside shadows. Leave an
+even narrow white margin all around. Generate as closely matching as possible
+to these two exact sibling UI buttons.
