@@ -81,11 +81,12 @@ function avisarQueAbrio(escena) {
     const datos = escena.sys.settings.data ?? {}
     const { paquete, partida, trabajo } = datos
     if (partida && paquete) {
-      const primero = avisarPartida(partida, 'listo', { familia: paquete.familia, nivel: (datos.indiceNivel ?? 0) + 1 })
-      // Cargado describe esta apertura, incluso si se reanuda una partida cuyo
-      // aviso educativo «listo» ya quedó guardado.
-      if (primero || (partida.reanudada && !partida.cargadoReanudado)) {
-        partida.cargadoReanudado = true
+      avisarPartida(partida, 'listo', { familia: paquete.familia, nivel: (datos.indiceNivel ?? 0) + 1 })
+      // Cargado describe esta apertura: se avisa una vez, la primera vez que un nivel está en pantalla. No depende
+      // de quién mandó el «listo»: muchos juegos lo mandan ellos mismos en su create, y entonces la app nunca se
+      // enteraba de que el juego abrió (su botón Pausa quedaba apagado). Tampoco de si la partida se reanuda.
+      if (!partida.cargadoAvisado) {
+        partida.cargadoAvisado = true
         leerPuente(escena.game)?.avisar({ tipo: AVISO_CARGADO, niveles: paquete.retos.length })
       }
     }

@@ -28,11 +28,14 @@ const ARCHIVOS = {
     "import * as Phaser from 'phaser'",
     "import { ANCHO, ALTO, estiloTexto } from '#kit/reproductor/medidas.js'",
     "import { crearProtagonista } from '#kit/reproductor/dibujos/protagonista.js'",
+    "import { avisarPartida } from '#kit/reproductor/logica/partida.js'",
     '',
     'export class EscenaPrueba extends Phaser.Scene {',
     "  constructor() { super('" + FAMILIA + "') }",
     '  init(datos) { this.datos = datos }',
     '  create() {',
+    // Muchos juegos mandan su propio «listo» al empezar (la plaza festiva lo hace): la prueba lo imita a pedido.
+    "    if (this.datos.paquete.listoPropio) avisarPartida(this.datos.partida, 'listo', { familia: '" + FAMILIA + "' })",
     '    const reto = this.datos.paquete.retos[this.datos.indiceNivel]',
     '    this.add.text(ANCHO / 2, 80, reto.consigna, estiloTexto(32)).setOrigin(0.5)',
     '    crearProtagonista(this, { alto: 120 }).setPosition(ANCHO / 2, ALTO / 2)',
@@ -237,4 +240,19 @@ test('el guion de un trabajo no abre el código de otro', async ({ page: pagina 
   const ajeno = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO, familia: 'otra_familia' }
   await pagina.evaluate((paquete) => window.postMessage({ tipo: 'paquete', paquete }, '*'), ajeno)
   expect(await esperarFallo(pagina)).toMatch(/familia/)
+})
+
+test('un juego que manda su propio «listo» igual avisa «cargado» a la app, que no tiene portada', async ({ page: pagina }) => {
+  await escucharAvisos(pagina)
+  // La app abre el juego sin portada ni cuento: el nivel es lo primero que se ve.
+  await pagina.goto('/?paquete=mensaje&vida=0&historia=0')
+  await pagina.waitForFunction(() => window.__avisosDelJuego.some((aviso) => aviso.tipo === 'listo'))
+  const guion = { ...JSON.parse(ARCHIVOS['juego/guion-ejemplo.json']), trabajo: TRABAJO, listoPropio: true }
+
+  await pagina.evaluate((paquete) => window.postMessage({ tipo: 'paquete', paquete }, '*'), guion)
+  await pagina.waitForFunction((trabajo) => window.kusi?.juego?.trabajo === trabajo, TRABAJO)
+
+  // El «listo» de la partida es uno solo (lo mandó el juego) y la página igual se entera de que abrió.
+  expect((await avisosDePartida(pagina)).filter((aviso) => aviso.tipo === 'listo')).toHaveLength(1)
+  await expect.poll(() => pagina.evaluate(() => window.__avisosDelJuego)).toEqual([{ tipo: 'listo' }, { tipo: 'cargado', niveles: 2 }])
 })
