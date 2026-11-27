@@ -14,9 +14,11 @@ test('el kit contiene los 2 cubos de muro y los ocho alimentos sin cara',()=>{
 test('cada pieza del kit está en la carpeta de su tipo: mundo o interfaz',()=>{
  for(const ruta of Object.values(RUTAS_KIT))assert.match(ruta,/^(mundo|interfaz)\/[a-z0-9-]+\.png$/)
 })
-test('el dibujo de Saltar se carga desde la interfaz y tiene el mismo formato que Ayuda', () => {
-  assert.equal(RUTAS_KIT['boton-saltar'], 'interfaz/boton-saltar.png')
-  assert.deepEqual(medidas(RUTAS_KIT['boton-saltar']), medidas(RUTAS_KIT['boton-ayuda']))
+test('Saltar, Subir y Bajar se cargan desde la interfaz con el mismo formato que Ayuda', () => {
+  for (const clave of ['boton-saltar', 'boton-subir', 'boton-bajar']) {
+    assert.equal(RUTAS_KIT[clave], 'interfaz/' + clave + '.png')
+    assert.deepEqual(medidas(RUTAS_KIT[clave]), medidas(RUTAS_KIT['boton-ayuda']))
+  }
 })
 test('el muro solo depende de la variante del nivel y siempre da la misma para la misma casilla',()=>{
  const m=['###','#.#','###']

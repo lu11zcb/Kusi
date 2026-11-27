@@ -21,7 +21,7 @@ pero no lo cambia: si falta una pieza, la pide en lugar de inventarla.
 | Personajes | El cuy del niño y el zorro, cada uno en cuatro vistas con sus estados, y Kusi, el guía, que habla, saluda, parpadea, respira y celebra. |
 | Objetos | Ocho alimentos: cinco frutas (fresa, plátano, mango, mandarina y piña) y tres verduras (zanahoria, papa y choclo). |
 | Mundos | Patio andino visto desde arriba, con pasto y flores que se mueven, dos cubos de adobe, suelo, borde de pasto y portal. |
-| Interfaz | Barra de objetivos, globos de diálogo, botones de voz, ayuda, sonido y salto, joystick, la mano que enseña y los destellos. |
+| Interfaz | Barra de objetivos, globos de diálogo, botones de voz, ayuda, sonido, salto y cambio de carril, joystick, la mano que enseña y los destellos. |
 | Sonidos | Pasos, comer, error, captura, puerta, nivel y alerta del zorro (Kenney, CC0). |
 
 ## Cómo se conecta con los juegos
@@ -98,6 +98,23 @@ Los juegos de plataformas pueden pedir el botón **Saltar** con
 `crearControles(this, { saltar: true })`. Aparece abajo a la derecha y su zona
 de toque tiene 62 px de radio. Si falla la carga del dibujo, se muestra el
 círculo con la flecha y el salto sigue disponible.
+
+## Control de carriles
+
+Usa `crearControles(this, { carriles: true })` para poner **Subir** abajo a la
+izquierda y **Bajar** abajo a la derecha, con 62 px de radio de toque. Este
+modo usa solo esos dos botones, con una flecha dibujada de respaldo si falta
+su imagen.
+
+En `update`, lee `const { y } = this.controles.leer()` una vez por cuadro.
+Cada toque devuelve un pulso de `-1` para subir o de `1` para bajar.
+Si no hay pulsos pendientes, devuelve `0`. Las flechas arriba y abajo y las
+teclas W y S funcionan igual. Mantener el botón o la tecla no repite.
+El juego aplica el pulso al número de carril y respeta los límites del camino.
+
+En el tutorial, usa `gesto: 'tocar'` y
+`objetivo: () => this.controles.estado().subir` para señalar Subir.
+Para Bajar, usa `estado().bajar`. Cada zona tiene `{ x, y, radio }`.
 
 ## Tutorial jugable
 
