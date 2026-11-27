@@ -12,7 +12,7 @@ import { validarLaberinto } from '../../../juegos/laberinto/datos/validarLaberin
 import { crearPartidaLaberinto, avisarPartida } from '../../../juegos/laberinto/logica/partidaLaberinto.js'
 import { nivelPedido } from '../../../juegos/laberinto/logica/parametrosLaberinto.js'
 import { avisos } from '../logica/avisos.js'
-import { leerPuente, MENSAJE_PAQUETE, MENSAJE_REINICIAR, AVISO_ERROR } from '../mensajes/puenteGuion.js'
+import { leerPuente, MENSAJE_PAQUETE, MENSAJE_REINICIAR, AVISO_CARGADO, AVISO_ERROR } from '../mensajes/puenteGuion.js'
 import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
 import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
@@ -249,6 +249,11 @@ export class EscenaCarga extends Phaser.Scene {
         const paginas = partirHistoria(paquete.historia)
         const contar = debeContarHistoria({ busqueda: window.location.search, partida: datos.partida, paginas })
         if (this.abrirPortada || contar || (usaMicrofono && necesitaPermisoMicrofono())) {
+          // El juego ya está abierto en su portada (o su cuento) esperando el primer toque: se avisa «cargado» ahora.
+          // Antes se avisaba recién al entrar al nivel, y el panel creía que seguía cargando hasta que alguien tocaba
+          // la portada («Tu juego está tardando en abrir» a los 30 s). El nivel lo vuelve a avisar al empezar.
+          this.scene.get('historia').events.once('create', () =>
+            this.puente?.avisar({ tipo: AVISO_CARGADO, niveles: paquete.retos.length }))
           // Sin cuento, la misma portada da el primer toque antes de entrar al nivel.
           this.scene.start('historia', { paginas: contar ? paginas : [], piezas: ficha.piezas, usaMicrofono, siguiente: { clave, datos } })
         } else {
