@@ -4,7 +4,7 @@
 // guarda aparte como portada.png. Si no sale, el juego se entrega igual y la app usa su
 // imagen de siempre.
 
-import { copyFile, readFile } from 'node:fs/promises'
+import { readFile, rename } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { dibujar } from '../dibujar.mjs'
@@ -39,7 +39,9 @@ export async function dibujarPortada({ carpeta, roles, lanzarRol, registrar, res
     registrar('Dibujando la portada del juego.')
     const resultado = await dibujarPieza({ carpeta, id: 'portada', que, portada: true, mundo }, { roles, lanzarRol })
     if (!resultado.pasa || !resultado.archivo) return { estado: 'sin_portada', motivo: resultado.motivo ?? 'La portada no pasó el filtro.' }
-    await copyFile(resultado.archivo, path.join(carpeta, ARCHIVO_PORTADA))
+    // Se mueve (no se copia): en piezas/ contaría como una pieza del juego sin revisar y la
+    // biblioteca la ofrecería a otros juegos.
+    await rename(resultado.archivo, path.join(carpeta, ARCHIVO_PORTADA))
     return { estado: 'dibujada' }
   } catch (error) {
     return { estado: 'sin_portada', motivo: error.message }

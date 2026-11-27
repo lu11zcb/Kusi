@@ -42,6 +42,7 @@ test('si el dibujo pasa, queda como portada.png aparte de las piezas del juego',
     assert.equal(pedido.id, 'portada')
     assert.equal(pedido.portada, true)
     assert.equal(await readFile(path.join(carpeta, 'portada.png'), 'utf8'), 'png-simulado')
+    assert.equal(existsSync(dibujada), false)
   } finally { await rm(carpeta, { recursive: true, force: true }) }
 })
 

@@ -119,6 +119,19 @@ test('la pieza se recorta con la visión de macOS, se centra en 256 × 256 y pas
   await rm(carpeta, { recursive: true })
 })
 
+test('la portada se mide como un fondo y su nombre «portada.png» pasa el filtro', async () => {
+  const carpeta = await mkdtemp(path.join(tmpdir(), 'kusi-portada-'))
+  // Un PNG opaco del tamaño de un fondo, con dos colores para que no sea liso.
+  const pixeles = new Uint8Array(1672 * 941 * 4)
+  for (let i = 0; i < pixeles.length; i += 4) pixeles.set(i % 8 === 0 ? [90, 170, 210, 255] : [240, 220, 170, 255], i)
+  escribirPng(path.join(carpeta, 'portada.png'), 1672, 941, pixeles)
+  escribirPng(path.join(carpeta, 'otra-cosa.png'), 1672, 941, pixeles)
+  assert.equal(comprobarPieza(path.join(carpeta, 'portada.png'), { fondo: true }).pasa, true)
+  // Cualquier otro nombre de fondo tiene que empezar con «fondo-».
+  assert.equal(comprobarPieza(path.join(carpeta, 'otra-cosa.png'), { fondo: true }).pasa, false)
+  await rm(carpeta, { recursive: true })
+})
+
 test('el pedido sigue la guía de estilo, pide fondo blanco y nunca nombra programas', () => {
   const pedido = pedidoDeDibujo({ id: 'olla-de-barro', que: 'clay cooking pot', intento: 2, correccion: 'the outline was open' })
   for (const frase of ['hand-painted cartoon style', 'warm dark brown outlines', 'one highlight, light from the upper left',

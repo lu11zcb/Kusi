@@ -183,8 +183,9 @@ export function comprobarPieza(archivo, { fondo = false, figura = false, criatur
       imagen.ancho === FONDO.ancho && imagen.alto === FONDO.alto && imagen.pixeles !== null && opacoEntero(imagen),
       'Mide ' + imagen.ancho + ' × ' + imagen.alto + (imagen.pixeles && !opacoEntero(imagen) ? ' y tiene transparencia' : '') + '.')
     responder('¿Pesa menos de 2,5 MB?', peso < PESO_FONDO, 'Pesa ' + Math.round(peso / 1024) + ' KB.')
-    responder('¿El nombre es fondo-<lugar>.png, en minúsculas, sin tildes y con guiones?',
-      id.startsWith('fondo-') && PATRON_NOMBRE.test(id), 'Se llama «' + id + '.png».')
+    // La portada del juego (taller/trabajador/portada.js) se mide como un fondo, pero se llama siempre «portada».
+    responder('¿El nombre es fondo-<lugar>.png (o portada.png), en minúsculas, sin tildes y con guiones?',
+      (id.startsWith('fondo-') || id === 'portada') && PATRON_NOMBRE.test(id), 'Se llama «' + id + '.png».')
     return { pasa: respuestas.every((respuesta) => respuesta.si), respuestas }
   }
 
