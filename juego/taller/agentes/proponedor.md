@@ -145,7 +145,8 @@ de algo, un reino, una isla… el que mejor haga sentir el tema.
   cosas por encontrar en medio de él (no es una hoja ni una plataforma pequeña, ni una explanada vacía). Solo si el
   juego es de **viaje**, el niño **maneja un vehículo** del mundo (barco flotante, globo, carreta, balsa…) entre
   lugares, y eso es toda su mecánica. Cada nivel cambia la vuelta del mismo verbo; no suma otra actividad.
-- **El niño maneja a su personaje** con un joystick (y un botón de saltar si es de plataformas), como en un videojuego, y
+- **El niño maneja a su personaje** con un joystick (y un botón de saltar si es de plataformas; en un juego de carriles,
+  dos botones, Subir y Bajar, nunca joystick: corrección 115), como en un videojuego, y
   recorre el lugar él mismo (sin tocar casillas ni botones de «ir»). Las `acciones` de la propuesta
   deben describir qué hace el niño con su personaje: caminar, manejar, saltar un charco, esquivar, recoger, llevar.
 - La `historia` de la propuesta cuenta esa aventura (adónde viajan y qué misión tienen),
@@ -172,6 +173,10 @@ de `por-motor.md` (solo los que tienen receta: plataformas, exploración, vehíc
 recetas `corredor` y `carrera`). Lee solo su ficha en `seleccion.md`. Adapta **cómo se juega** al tema, sin copiar
 dibujos, personajes ni niveles, y escribe las `acciones` con palabras propias.
 
+- **No repitas lo último.** Antes de elegir, mira los juegos que ya hizo el taller: el `README.md` de cada
+  `taller/trabajos/*/juego/` dice cómo se juega. **No elijas la receta ni la forma de jugar de los dos últimos** (si
+  fueron de correr por carriles, propón plataformas, exploración, viaje u otra cosa). Los juegos tienen que ser
+  variados: un docente que pide tres temas no recibe tres carreras (correcciones 108 y 125).
 - **Tiene acción.** Algo que se esquiva o persigue, una carrera contra un rival amable, o un ritmo que sube.
   **«Camina y recoge cosas» (hojas, letras, frutas del suelo) no es un juego**: recoger sirve dentro de uno con acción.
   Las vocales no se «juntan del suelo»: por ejemplo, se **corre** y se elige el carril de las vocales fuertes, o se
