@@ -13,6 +13,7 @@ import { elegirRenderizador } from '../../juegos/laberinto/logica/parametrosLabe
 import { CLAVE_RENDERIZADOR_PEDIDO } from './renderizador.js'
 import { crearPuente, CLAVE_PUENTE } from './mensajes/puenteGuion.js'
 import { instalarPausaJuego } from './mensajes/pausaJuego.js'
+import { crearPantallaPausa } from './interfaz/pantallaPausa.js'
 import { instalarActivacionVoz } from './logica/voz.js'
 import { recolectarPantalla } from './revisar/recolectar.js'
 
@@ -56,7 +57,20 @@ async function empezar() {
   juego.registry.set(CLAVE_RENDERIZADOR_PEDIDO, pedido)
   // Las escenas del laberinto encuentran el puente aquí, antes de su primer cuadro.
   juego.registry.set(CLAVE_PUENTE, puente)
-  instalarPausaJuego(juego, puente)
+  const pantallaPausa = crearPantallaPausa(document)
+  instalarPausaJuego(juego, puente, {
+    pantalla: pantallaPausa,
+    volverPortada() {
+      // El ejemplo normalmente entra directo al nivel. Al salir, la recarga
+      // abre la portada del mismo juego y espera otro toque para empezar.
+      const direccion = new URL(window.location.href)
+      if (direccion.searchParams.get('paquete') === 'mensaje') direccion.searchParams.delete('paquete')
+      direccion.searchParams.set('portada', '1')
+      window.history.replaceState(window.history.state, '', direccion)
+      window.location.reload()
+    },
+  })
+  juego.events.once('destroy', pantallaPausa.ocultar)
   window.__kusiPantalla = () => recolectarPantalla(juego, { ancho: window.innerWidth, alto: window.innerHeight })
 }
 

@@ -2,7 +2,7 @@
 // usan esta misma, en vez de inventar la suya:
 //
 //   arriba a la izquierda   Kusi, con su globo cuando habla (el globo se esconde solo; tocar a Kusi lo repite)
-//   arriba a la derecha     tres botones redondos: sonido, Escuchar y Ayuda
+//   arriba a la derecha     cuatro botones redondos: Pausa, Ayuda, Escuchar y Sonido
 //   debajo de los botones   indicadores con un dibujo y un número (nivel, cosas reunidas…)
 //   abajo                   los controles (./controles.js): el joystick
 //   abajo a la derecha      el botón Soltar, si el juego lo pide
@@ -34,6 +34,7 @@ import { animarVozKusi, crearHablaKusi, avanzarHablaKusi, iniciarCelebracionKusi
 import { normalizarFrase } from '../logica/textoVoz.js'
 import { vidaActiva } from '../efectos/vida.js'
 import { aplicarAvisoPuntos, crearPuntos, MAXIMO_PUNTOS } from '../logica/puntos.js'
+import { pedirPausa } from '../mensajes/pausaJuego.js'
 
 const PROFUNDIDAD = 4000
 const ALTURA_KUSI = 94
@@ -213,31 +214,24 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
   }
   kusi.on('pointerup', repetirUltimo)
 
-  const dibujarBoton = (clave, x, y, nombre) => {
-    const imagen = agregar(escena.add.image(x, y, clave).setDisplaySize(LADO_BOTON, LADO_BOTON)
-      .setScrollFactor(0).setDepth(PROFUNDIDAD))
-    const etiqueta = agregar(escena.add.text(x, y + DESFASE_ETIQUETA, nombre, estiloTexto(20, COLOR.tinta))
-      .setOrigin(0.5).setScrollFactor(0).setDepth(PROFUNDIDAD))
-    return { imagen, etiqueta }
-  }
-  const recibirToque = (pieza, accion) => {
-    pieza.setInteractive({ useHandCursor: true })
-    pieza.on('pointerdown', (_puntero, _x, _y, evento) => {
-      evento.stopPropagation()
-      accion?.()
-    })
-  }
+  const xSuperior = (indice) => ancho - 52 - indice * (LADO_BOTON + 22)
   const botonSuperior = (clave, indice, nombre, accion) => {
-    const boton = dibujarBoton(clave, ancho - 52 - indice * (LADO_BOTON + 22), 52, nombre)
+    const boton = dibujarBotonHud(escena, clave, xSuperior(indice), 52, nombre)
+    agregar(boton.imagen)
+    agregar(boton.etiqueta)
     recibirToque(boton.imagen, accion)
     return boton
   }
   const sonido = botonSuperior(silenciado ? 'boton-silencio' : 'boton-sonido', 0, 'Sonido', alSilenciar)
   botonSuperior('boton-escuchar', 1, 'Escuchar', repetirUltimo)
   botonSuperior('boton-ayuda', 2, 'Ayuda', alAyuda)
+  const pausa = crearBotonPausa(escena, xSuperior(3), 52)
+  piezas.push(pausa.imagen, pausa.etiqueta)
 
   const botonSoltar = ({ alTocar } = {}) => {
-    const { imagen, etiqueta } = dibujarBoton('boton-soltar', 0, 0, 'Soltar')
+    const { imagen, etiqueta } = dibujarBotonHud(escena, 'boton-soltar', 0, 0, 'Soltar')
+    agregar(imagen)
+    agregar(etiqueta)
     const dibujo = agregar(escena.add.image(0, 0).setScrollFactor(0).setDepth(PROFUNDIDAD + 1))
     // La zona queda fija a la pantalla y por encima del dibujo de la carga y la etiqueta.
     const zona = agregar(escena.add.zone(0, 0, LADO_BOTON, LADO_BOTON)
@@ -319,6 +313,30 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
     sonido: (apagado) => sonido.imagen.setTexture(apagado ? 'boton-silencio' : 'boton-sonido'),
     destruir,
   }
+}
+
+function dibujarBotonHud(escena, clave, x, y, nombre, { lado = LADO_BOTON, letra = 20, factorDesplazamiento = 0 } = {}) {
+  const imagen = escena.add.image(x, y, clave).setDisplaySize(lado, lado)
+    .setScrollFactor(factorDesplazamiento).setDepth(PROFUNDIDAD)
+  const etiqueta = escena.add.text(x, y + lado / 2 + letra * 0.6, nombre, estiloTexto(letra))
+    .setOrigin(0.5).setScrollFactor(factorDesplazamiento).setDepth(PROFUNDIDAD)
+  return { imagen, etiqueta }
+}
+
+function recibirToque(pieza, accion) {
+  pieza.setInteractive({ useHandCursor: true })
+  pieza.on('pointerdown', (_puntero, _x, _y, evento) => {
+    evento.stopPropagation()
+    accion?.()
+  })
+}
+
+export function crearBotonPausa(escena, x, y, medidas) {
+  const boton = dibujarBotonHud(escena, 'boton-pausa', x, y, 'Pausa', medidas)
+  boton.imagen.setData('hud', true).setData('idPantalla', 'Pausa')
+  boton.etiqueta.setData('hud', true)
+  recibirToque(boton.imagen, () => pedirPausa(escena.game))
+  return boton
 }
 
 function crearIndicador(escena, { x, y, inicial, nombre, agregar, icono }) {

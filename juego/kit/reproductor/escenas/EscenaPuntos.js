@@ -2,7 +2,7 @@ import * as Phaser from 'phaser'
 import { COLOR, NUMERO, estiloTexto } from '../medidas.js'
 import { observarAvisosPartida } from '../logica/partida.js'
 import { calcularMonedas } from '../logica/puntos.js'
-import { crearHudPuntos } from '../interfaz/hud.js'
+import { crearBotonPausa, crearHudPuntos } from '../interfaz/hud.js'
 import { mostrarPremio } from '../interfaz/premio.js'
 import { FRASE_PRUEBA_DOCENTE, fraseDeMonedas } from '../datos/frases.js'
 import { repetirVoz } from '../logica/voz.js'
@@ -51,8 +51,21 @@ export class EscenaPuntos extends Phaser.Scene {
 
   prepararLaberinto(escenaJuego) {
     const alAbrir = ({ settings }) => this.abrirJuego(escenaJuego, settings.data)
+    const agregarPausa = () => {
+      // El laberinto dibuja su propia fila. Usa la misma separación entre
+      // botones y deja Pausa junto a Ayuda, dentro de la cámara del mapa.
+      const { sonido: escuchar, ayuda } = escenaJuego.botones
+      const x = escuchar.x
+      escuchar.x -= ayuda.x - x
+      const { imagen } = crearBotonPausa(escenaJuego, x, ayuda.y - 3, { lado: 64, letra: 18, factorDesplazamiento: 1 })
+      escenaJuego.botones.pausa = imagen
+    }
     escenaJuego.events.on('start', alAbrir)
-    this.dejarDeEscucharJuego = () => escenaJuego.events.off('start', alAbrir)
+    escenaJuego.events.on('create', agregarPausa)
+    this.dejarDeEscucharJuego = () => {
+      escenaJuego.events.off('start', alAbrir)
+      escenaJuego.events.off('create', agregarPausa)
+    }
   }
 
   abrirJuego(escenaJuego, { paquete, partida } = {}) {

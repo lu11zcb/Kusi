@@ -8,3 +8,7 @@ export function emitirAlAnfitrion(ventana, mensaje, { nativo = true } = {}) {
 export function emitirAlPuenteNativo(ventana, mensaje) {
   try { ventana?.KusiPuente?.emitir(JSON.stringify(mensaje)) } catch { /* La web sigue recibiendo sus avisos. */ }
 }
+
+export function hayAnfitrion(ventana) {
+  return ventana.parent !== ventana || typeof ventana.KusiPuente?.emitir === 'function'
+}

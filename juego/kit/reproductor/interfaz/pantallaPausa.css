@@ -1,0 +1,54 @@
+.pantalla-pausa {
+  box-sizing: border-box;
+  width: min(440px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  margin: auto;
+  padding: clamp(12px, 5vh, 32px) 16px;
+  border: 4px solid #4b211b;
+  border-radius: 32px;
+  background: #fff7e8;
+  color: #4b211b;
+  text-align: center;
+  box-shadow: 0 10px 28px #2f1d1740;
+  font-family: Fredoka, sans-serif;
+}
+
+.pantalla-pausa::backdrop {
+  background: #25140eb3;
+}
+
+.pantalla-pausa h2 {
+  margin: 0;
+  font-size: clamp(30px, 11vh, 52px);
+  font-weight: 600;
+}
+
+.pantalla-pausa-botones:not([hidden]) {
+  display: flex;
+  justify-content: center;
+  gap: clamp(12px, 5vw, 44px);
+  margin-top: clamp(8px, 4vh, 24px);
+}
+
+.pantalla-pausa button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: inherit;
+  font: 600 24px Fredoka, sans-serif;
+  cursor: pointer;
+}
+
+.pantalla-pausa button:focus-visible {
+  outline: 3px solid #805340;
+  outline-offset: 3px;
+}
+
+.pantalla-pausa img {
+  width: clamp(64px, min(27vw, 33vh), 128px);
+  height: auto;
+}

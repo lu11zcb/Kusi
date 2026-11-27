@@ -162,6 +162,9 @@
     "botones": [
       "dibujos/interfaz/boton-voz.png",
       "dibujos/interfaz/boton-ayuda.png",
+      "dibujos/interfaz/boton-pausa.png",
+      "dibujos/interfaz/boton-seguir.png",
+      "dibujos/interfaz/boton-salir.png",
       "dibujos/interfaz/boton-sonido.png",
       "dibujos/interfaz/boton-silencio.png"
     ],

@@ -6,7 +6,7 @@ import { cargarModulo } from './cargar-modulo.mjs'
 import { etapa, generacion, instante, juegoListo, paquete } from './fixtures-generaciones.mjs'
 
 const { DetalleGeneracion } = await import(await cargarModulo(new URL('../src/docente/DetalleGeneracion.tsx', import.meta.url)))
-const { pasosDeGeneracion, problemasDeComprobacion, etiquetaReglaJuego, segundosTranscurridos, direccionVistaPrevia, atenderMensajeJuego, aportesDelJuego, recursosDelPaquete } = await import(await cargarModulo(new URL('../src/docente/utilidadesGeneracion.ts', import.meta.url)))
+const { pasosDeGeneracion, problemasDeComprobacion, etiquetaReglaJuego, segundosTranscurridos, direccionVistaPrevia, atenderMensajeJuego, esSalidaDelJuego, aportesDelJuego, recursosDelPaquete } = await import(await cargarModulo(new URL('../src/docente/utilidadesGeneracion.ts', import.meta.url)))
 const mostrar = (datos) => renderToStaticMarkup(createElement(DetalleGeneracion, { generacion: datos }))
 
 test('HU27: empareja inicio y cierre por intento sin borrar correcciones ni fallos de comprobación', () => {
@@ -160,4 +160,15 @@ test('si el juego no sale, el mensaje amable trae el botón para intentarlo de n
   for (const texto of ['taller', 'revisor', 'correcciones', 'Esta vez no pudimos']) assert.ok(!conBoton.includes(texto), texto)
   // Sin quien lo atienda (por ejemplo, mientras se guarda otro cambio), no hay botón.
   assert.ok(!mostrar(datos).includes('Intentarlo de nuevo'))
+})
+
+test('«Salir» de la pausa del juego solo cuenta si viene del marco de la vista previa', () => {
+  const ventana = {}
+  const origen = 'http://127.0.0.1:5174'
+  const evento = { source: ventana, origin: origen, data: { tipo: 'salir' } }
+  assert.equal(esSalidaDelJuego(evento, ventana, origen), true)
+  assert.equal(esSalidaDelJuego({ ...evento, origin: 'http://otro.ejemplo' }, ventana, origen), false)
+  assert.equal(esSalidaDelJuego({ ...evento, source: {} }, ventana, origen), false)
+  assert.equal(esSalidaDelJuego({ ...evento, data: { tipo: 'pausado' } }, ventana, origen), false)
+  assert.equal(esSalidaDelJuego(evento, null, origen), false)
 })

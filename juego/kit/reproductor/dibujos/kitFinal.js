@@ -6,6 +6,7 @@ export const PIEZAS_PANEL = Object.freeze([
   'barra-frutas', 'globo-dialogo-160', 'globo-dialogo-232', 'globo-dialogo-304',
   'boton-voz', 'boton-ayuda', 'boton-silencio', 'boton-sonido', 'boton-empezar', 'boton-soltar', 'boton-escuchar',
   'boton-saltar', 'boton-subir', 'boton-bajar', 'check-fruta', 'joystick-base', 'joystick-perilla',
+  'boton-pausa', 'boton-seguir', 'boton-salir',
 ])
 // Dónde está cada pieza dentro de dibujos/: el mundo o la interfaz. La clave de
 // Phaser no cambia aunque el archivo esté en otra carpeta.

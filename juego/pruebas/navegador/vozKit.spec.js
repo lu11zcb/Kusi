@@ -129,7 +129,7 @@ test('el cuento avanza al terminar cada lectura y el globo del juego sigue la vo
   await expect.poll(eventos).toEqual(hastaConsigna)
   await iniciarAudio()
   expect(await texto()).toBe(CONSIGNA)
-  expect(await page.evaluate(() => window.iconosDelHud)).toEqual(['boton-sonido', 'boton-escuchar', 'boton-ayuda'])
+  expect(await page.evaluate(() => window.iconosDelHud)).toEqual(['boton-sonido', 'boton-escuchar', 'boton-ayuda', 'boton-pausa'])
 
   // Sonido solo controla la música y los efectos. La ayuda espera el fin de la consigna.
   await page.mouse.click(1228, 52)

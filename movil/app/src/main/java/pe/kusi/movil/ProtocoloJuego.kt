@@ -70,6 +70,8 @@ fun leerMensajeJuego(texto: String): MensajeJuego? = try {
         when (val tipo = datos.optString("tipo")) {
             "listo", "cargado" -> MensajeJuego(tipo)
             "reanudado" -> MensajeJuego(tipo)
+            // El niño tocó «Salir» en la pantalla de pausa del juego: la app guarda el avance y cierra el juego.
+            "salir" -> MensajeJuego(tipo)
             "pausado" -> {
                 val partida = datos.getString("partida")
                 val orden = datos.getInt("orden")

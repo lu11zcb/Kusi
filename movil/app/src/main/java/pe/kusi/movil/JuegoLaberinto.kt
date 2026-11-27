@@ -53,6 +53,8 @@ fun JuegoLaberinto(
     var guardando by remember { mutableStateOf(false) }
     var guardado by remember { mutableStateOf(false) }
     var errorGuardado by remember { mutableStateOf<String?>(null) }
+    // El niño pidió salir desde la pausa del juego: al confirmarse el guardado, se vuelve a la lista.
+    var saliendo by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val hiloPrincipal = remember { Handler(Looper.getMainLooper()) }
 
@@ -61,8 +63,14 @@ fun JuegoLaberinto(
         val juegoId = inicio?.aventura?.id ?: return
         guardando = true; guardado = false; errorGuardado = null
         scope.launch {
-            try { guardarPausa(juegoId, pausa); guardado = true }
-            catch (_: Exception) { errorGuardado = "No pudimos confirmar tu avance. Sigue en pausa; puedes volver a guardarlo." }
+            try {
+                guardarPausa(juegoId, pausa); guardado = true
+                if (saliendo) volver()
+            } catch (_: Exception) {
+                errorGuardado = "No pudimos confirmar tu avance. Sigue en pausa; puedes volver a guardarlo."
+                // Si quería salir, se muestra la ventana de pausa de la app para reintentar o volver igual.
+                if (saliendo) { saliendo = false; solicitaPausa = true; pausado = true }
+            }
             finally { guardando = false }
         }
     }
@@ -127,6 +135,17 @@ fun JuegoLaberinto(
                                     "error" -> error = "No se pudo abrir la aventura."
                                     "pausado" -> mensaje.pausa?.let {
                                         pausado = true; punto = it; callarActual(); guardar(it)
+                                    }
+                                    "reanudado" -> if (!solicitaPausa) { pausado = false; saliendo = false }
+                                    // Salir desde la pausa del juego: si el avance ya se guardó se vuelve al instante;
+                                    // si se está guardando, vuelve al terminar (en guardar); sin partida, vuelve igual.
+                                    "salir" -> {
+                                        callarActual(); saliendo = true
+                                        val actual = punto
+                                        when {
+                                            guardado || actual == null -> volver()
+                                            !guardando -> guardar(actual)
+                                        }
                                     }
                                     "aviso" -> mensaje.aviso?.let { aviso ->
                                         registrarActual(preparado.aventura.id, aviso)

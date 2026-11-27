@@ -38,6 +38,14 @@ class ProtocoloJuegoTest {
         assertFalse(avisoJuegoValido(aviso().put("tipo", "pausado")))
     }
 
+    @Test fun salirDesdeLaPausaDelJuegoEsUnMensajeDelAnfitrionYNoUnAvisoEducativo() {
+        val salir = leerMensajeJuego("{\"tipo\":\"salir\"}")
+        assertEquals("salir", salir?.tipo)
+        assertNull(salir?.aviso)
+        assertNull(salir?.pausa)
+        assertFalse(avisoJuegoValido(aviso().put("tipo", "salir")))
+    }
+
     @Test fun elAvanceRestauraLaVersionExactaLaPartidaYElNivelConfirmados() {
         val paquete = paqueteDelTaller().put("retos", org.json.JSONArray(List(3) { JSONObject() })).toString()
         val semilla = JSONObject().put("id", "partida-guardada").put("orden", 8).put("cerrada", false)

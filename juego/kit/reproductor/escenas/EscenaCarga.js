@@ -63,6 +63,7 @@ export class EscenaCarga extends Phaser.Scene {
     // El ejemplo se abre directamente; el modo mensaje espera el guion del panel.
     // La partida existe desde la carga para registrar también cualquier fallo.
     const parametros = new URLSearchParams(window.location.search)
+    this.abrirPortada = parametros.get('portada') === '1'
     // Solo se pide la pieza si está en el kit. El tutorial dibuja su propia mano
     // mientras llega el arte y también puede seguir si la imagen falla al cargar.
     const hayManoGuia = Object.keys(import.meta.glob('../../recursos/dibujos/interfaz/mano-guia.png')).length > 0
@@ -156,7 +157,11 @@ export class EscenaCarga extends Phaser.Scene {
           if (this.partidaRecibida) this.scene.get('laberinto').events.once('create', () =>
             this.puente?.avisar({ tipo: 'cargado', niveles: paquete.retos.length }))
           this.scene.get('puntos')?.prepararLaberinto(this.scene.get('laberinto'))
-          this.scene.start('laberinto', datos)
+          if (this.abrirPortada) {
+            this.scene.start('historia', { siguiente: { clave: 'laberinto', datos } })
+          } else {
+            this.scene.start('laberinto', datos)
+          }
         } catch (error) {
           this.mostrarError(error)
         }
@@ -243,7 +248,7 @@ export class EscenaCarga extends Phaser.Scene {
         // un nivel o ?historia=0, o que la partida se reanude donde se dejó.
         const paginas = partirHistoria(paquete.historia)
         const contar = debeContarHistoria({ busqueda: window.location.search, partida: datos.partida, paginas })
-        if (contar || (usaMicrofono && necesitaPermisoMicrofono())) {
+        if (this.abrirPortada || contar || (usaMicrofono && necesitaPermisoMicrofono())) {
           // Sin cuento, la misma portada da el primer toque antes de entrar al nivel.
           this.scene.start('historia', { paginas: contar ? paginas : [], piezas: ficha.piezas, usaMicrofono, siguiente: { clave, datos } })
         } else {

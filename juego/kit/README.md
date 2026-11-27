@@ -21,7 +21,7 @@ pero no lo cambia: si falta una pieza, la pide en lugar de inventarla.
 | Personajes | El cuy del niño y el zorro, cada uno en cuatro vistas con sus estados, y Kusi, el guía, que habla, saluda, parpadea, respira y celebra. |
 | Objetos | Ocho alimentos: cinco frutas (fresa, plátano, mango, mandarina y piña) y tres verduras (zanahoria, papa y choclo). |
 | Mundos | Patio andino visto desde arriba, con pasto y flores que se mueven, dos cubos de adobe, suelo, borde de pasto y portal. |
-| Interfaz | Barra de objetivos, globos de diálogo, botones de voz, ayuda, sonido, salto y cambio de carril, joystick, la mano que enseña y los destellos. |
+| Interfaz | Barra de objetivos, globos de diálogo, botones de voz, ayuda, sonido, pausa, salto y cambio de carril, joystick, la mano que enseña y los destellos. |
 | Sonidos | Pasos, comer, error, captura, puerta, nivel y alerta del zorro (Kenney, CC0). |
 
 ## Cómo se conecta con los juegos
@@ -91,6 +91,23 @@ La vista previa del panel (`?paquete=mensaje` dentro de un iframe) y
 `?prueba_docente` muestran el puntaje con el aviso de que no se guarda. En
 Android, el aviso que hace cerrar el juego se entrega al tocar «Continuar» o
 después de unos segundos con la tarjeta en pantalla.
+
+## Pausar y salir
+
+El botón **Pausa** queda arriba, a la izquierda de Ayuda. Lo añade `crearHud`.
+Al tocarlo, se detienen las escenas, los controles y los sonidos, se calla la
+voz y aparece una tarjeta con **Seguir** y **Salir**. **Seguir** cierra la
+tarjeta y reanuda la partida. La orden `pausar` del anfitrión congela el juego
+con el mismo mecanismo y deja a la app mostrar su propia pantalla. La orden
+`reanudar` vuelve al juego.
+
+En ambos casos el reproductor avisa `{ tipo: 'pausado', partida, orden, nivel }`
+para que el anfitrión guarde el avance confirmado. Al reanudar avisa
+`{ tipo: 'reanudado' }`. **Salir** deja el mensaje «¡Hasta pronto!» y envía
+`{ tipo: 'salir' }` una sola vez por `window.parent.postMessage` y
+`KusiPuente.emitir`. El anfitrión debe guardar el avance de la pausa, esperar la
+confirmación y cerrar el juego. En un navegador con el juego abierto por su
+cuenta, **Salir** recarga la página en la portada.
 
 ## Control de salto
 

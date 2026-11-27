@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { MensajeDocente } from './ElementosDocente'
 import { IconoDocente } from './IconoDocente'
-import { atenderMensajeJuego, direccionVistaPrevia } from './utilidadesGeneracion'
+import { atenderMensajeJuego, direccionVistaPrevia, esSalidaDelJuego } from './utilidadesGeneracion'
 import { avisoDelIframe, RegistroAvisos } from '../servicios/partidas'
 import type { AvisoVistaPrevia } from './utilidadesGeneracion'
 
@@ -33,6 +33,14 @@ export function VistaPreviaJuego({ paquete, alCargar }: { paquete: string; alCar
     if (!direccion) return
     callback.current?.(false)
     const recibir = (evento: MessageEvent) => {
+      // «Salir» desde la pantalla de pausa del juego: en la prueba del docente se vuelve al panel y el juego
+      // regresa a su portada (en la app, en cambio, se guarda el avance y se cierra).
+      if (esSalidaDelJuego(evento, marco.current?.contentWindow ?? null, direccion.origen)) {
+        if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined)
+        marco.current?.contentWindow?.postMessage({ tipo: 'reiniciar' }, direccion.origen)
+        establecerAviso({ estado: 'cargando' }); establecerDemora(false); callback.current?.(false)
+        return
+      }
       const partida = avisoDelIframe(evento, marco.current?.contentWindow ?? null, direccion.origen)
       if (partida) {
         // El registro sigue funcionando aunque ya no se muestre en la prueba.

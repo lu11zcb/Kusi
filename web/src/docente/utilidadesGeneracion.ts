@@ -32,6 +32,13 @@ export function direccionVistaPrevia(configurada?: string) {
   return { url: direccion.href, origen: direccion.origin }
 }
 export type AvisoVistaPrevia = { estado: 'cargando' } | { estado: 'lista'; niveles: number } | { estado: 'error'; motivo: string }
+// «Salir» desde la pantalla de pausa del juego, solo si lo manda el marco de esta vista previa.
+export function esSalidaDelJuego(evento: Pick<MessageEvent, 'source' | 'origin' | 'data'>, ventana: Window | null, origen: string): boolean {
+  if (!ventana || evento.source !== ventana || evento.origin !== origen) return false
+  const datos: unknown = evento.data
+  return Boolean(datos && typeof datos === 'object' && !Array.isArray(datos) && 'tipo' in datos && datos.tipo === 'salir')
+}
+
 export function atenderMensajeJuego(evento: Pick<MessageEvent, 'source' | 'origin' | 'data'>, ventana: Window | null, origen: string, paquete: string): AvisoVistaPrevia | null {
   // El origen solo no basta: otra ventana del mismo servidor tampoco puede
   // hacerse pasar por la vista previa que está viendo este docente.

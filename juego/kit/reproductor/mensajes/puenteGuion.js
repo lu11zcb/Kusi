@@ -1,4 +1,4 @@
-import { emitirAlAnfitrion } from '../logica/salidasPuente.js'
+import { emitirAlAnfitrion, hayAnfitrion } from '../logica/salidasPuente.js'
 // El puente entre el juego y la página que lo contiene (por ejemplo, la vista previa
 // del panel docente, que muestra el juego dentro de un iframe). Con él la página le
 // manda al juego el guion que generó la IA, sin que el juego tenga que pedirlo a
@@ -14,6 +14,7 @@ import { emitirAlAnfitrion } from '../logica/salidasPuente.js'
 //   { tipo: 'listo' }                      el juego ya puede recibir un guion; se avisa una sola vez.
 //   { tipo: 'cargado', niveles: N }        el primer nivel del guion está en pantalla.
 //   { tipo: 'error', motivo: '...' }       el guion no se puede jugar; el motivo dice por qué.
+//   { tipo: 'salir' }                      el niño pidió cerrar desde su menú de pausa.
 //
 // Un mensaje que llega antes de que el juego esté listo no se pierde: espera su turno.
 
@@ -74,6 +75,7 @@ export function crearPuente(ventana) {
 
   return {
     controlar(funcion) { controlar = funcion },
+    tieneAnfitrion: () => hayAnfitrion(ventana),
     // Quien atiende las órdenes (la carga, o el nivel que se está jugando) se registra
     // aquí; el que llega después reemplaza al anterior. Lo que esperaba se entrega en orden.
     // La primera vez que alguien atiende, el juego ya puede recibir: se le avisa a la página.

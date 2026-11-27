@@ -20,6 +20,12 @@ test('Saltar, Subir y Bajar se cargan desde la interfaz con el mismo formato que
     assert.deepEqual(medidas(RUTAS_KIT[clave]), medidas(RUTAS_KIT['boton-ayuda']))
   }
 })
+test('Pausa, Seguir y Salir se cargan con el mismo tamaño y transparencia que Ayuda', () => {
+  for (const clave of ['boton-pausa', 'boton-seguir', 'boton-salir']) {
+    assert.equal(RUTAS_KIT[clave], 'interfaz/' + clave + '.png')
+    assert.deepEqual(medidas(RUTAS_KIT[clave]), medidas(RUTAS_KIT['boton-ayuda']))
+  }
+})
 test('el muro solo depende de la variante del nivel y siempre da la misma para la misma casilla',()=>{
  const m=['###','#.#','###']
  for(let fila=0;fila<3;fila++)for(let columna=0;columna<3;columna++){
