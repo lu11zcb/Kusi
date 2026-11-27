@@ -180,6 +180,15 @@ y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/corre
       `revisar` (14.1) [89].
 - [ ] **Capturas cuadro a cuadro** de cada animación importante (ponerse algo, un gesto, celebrar) en `revision/`: lo que se ve bien en una
       foto quieta puede verse mal en movimiento [48].
+- [ ] **Kusi no se enreda:** toca rápido cinco veces seguidas; cada respuesta se oye entera, una por vez, y las frases seguidas no se
+      cortan entre sí. Los pedidos son frases completas y ninguna ayuda contradice la regla (14.1) [92, 102, 104].
+- [ ] **De plataformas:** cada nivel mide de 4 a 6 pantallas; lo que se elige está repartido (sin filas ni uno sobre otro); salta cada
+      charco, hueco y adversario y comprueba que no cuenta ningún error; pisa al adversario (lo vence) y chócalo (se ve perder y
+      reaparece); llega al lado de quien espera y comprueba que el protagonista queda a su costado, en el suelo (14.17) [93–97, 105].
+- [ ] **Enseña de a uno:** al empezar cada nivel, una palabra nueva por vez, con su práctica, sin adversarios (14.18) [91].
+- [ ] **El mundo:** ninguna pieza estirada o aplastada; nada cruza un camino de otra capa; el fondo no acompaña a la cámara; lo que se
+      pisa se distingue; ninguna transparencia fantasma; mide los cuadros por segundo al caminar (60, sin tirones) (14.7) [98, 99, 103, 106].
+- [ ] **Quien espera** tiene su dibujo de esperar y el de celebrar, y Kusi celebra al ganar (14.3) [101].
 
 ### 2.5 La lista de promesas (regla 14.16)
 

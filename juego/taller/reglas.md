@@ -598,6 +598,11 @@ corchetes es la fila). Valen para todo juego. El revisor las comprueba con `revi
   ya respondió se corta; los comentarios del mundo (el viento, lo que hace un personaje) esperan un momento libre o se callan
   (`decir(frase, { tipo })`: `'respuesta'`, `'pregunta'` o `'comentario'`) [70, 73]. El globo muestra lo que suena.
 - Cada personaje habla con su propio globo; Kusi no dice las frases de otro [39]. Kusi habla en primera persona (regla 7) [63].
+- **Kusi nunca se enreda**: las frases seguidas se encadenan cuando termina la anterior (`hud.decirSeguidas` o `alTerminar` de
+  `hud.decir`), nunca con relojes fijos; mientras Kusi responde a un toque, el juego no acepta otro igual (el niño puede moverse). El
+  revisor lo prueba tocando rápido muchas veces [102].
+- Un **pedido es una frase completa** que dice qué hacer y qué buscar («Busca el globo *three*, *red*: el tres rojo.»), nunca solo las
+  palabras sueltas [92]. Una **ayuda nunca contradice la regla del juego**: acerca a la respuesta correcta [104].
 - Kusi solo pide cosas que el niño puede **ver y hacer** en ese juego: ningún texto nombra algo que no está en la pantalla («busca un
   refugio» sin refugios) [72].
 - El juego exporta `frasesDeKusi()` (en `frases.js`) con **todas** las frases que puede decir Kusi: el taller las graba con **la voz de
@@ -628,6 +633,8 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   otro (una foca con una morsa), se redibuja [80].
 - **Nada aparece ni desaparece de la nada**: entra y sale por un lugar con sentido (se zambulle con salpicadura, se va detrás de algo,
   sale del agua de un salto) [68, 83].
+- Quien espera al niño (en la meta, en un puesto) tiene su dibujo de **esperar** y el de **celebrar** (tiras de 3 cuadros), y **Kusi
+  celebra** con su fila de celebrar (`hud.celebrar()`) cuando el niño gana un nivel [101].
 
 **14.4 La ropa y lo que se pone un personaje.**
 - La pieza que se busca en el mundo **no** es la que se ve puesta. Un personaje que cambia de ropa se **dibuja entero en cada estado**
@@ -667,11 +674,20 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   [30]. Las plantas chicas se ven parte del suelo o no se ponen [31]. El borde del mundo lo cierran cosas del lugar, no muros repetidos [33].
 - Con el viento, lo rígido no se dobla (troncos, postes): se mueven las hojas y la tela, y todo empieza y termina de a poco [28, 43]. El
   agua de una fuente sale de su boca y cae en arco dentro de la pila [53].
+- **Ninguna pieza se estira ni se aplasta**: se escala parejo (`setScale` con un solo factor); si un apoyo necesita otro ancho, cambia
+  cuántas piezas hay, no su forma. **Nada atraviesa un camino de otra capa** (un barril de abajo no asoma por las tablas de arriba) [98].
+- Lo del fondo (un barco, una isla lejana) **se queda en su lugar** y queda atrás al avanzar: nunca acompaña a la cámara. Lo lejano se
+  aclara con un tinte, no con transparencia (una palmera semitransparente sobre otra cosa parece un fantasma) [98].
+- **Lo que se pisa se ve distinto de lo que adorna**: plataformas con borde, sombra y color claro; los adornos, pocos, más chicos y detrás
+  de la línea por la que camina el protagonista [99]. Lo que se toca nunca queda tapado por el decorado [103].
+- El juego **corre fluido** (60 cuadros por segundo, sin tirones al caminar ni al saltar); el revisor lo mide sin otros programas
+  pesados prendidos (grabar la voz ocupa la máquina y da tirones que no son del juego) [106].
 
 **14.8 La interfaz.**
 - La interfaz ocupa lo mínimo: indicadores chicos en el borde, que no tapan el mundo ni lo que se busca [21, 59].
 - Los botones son **dibujos** con el estilo del kit (`boton-empezar`, `boton-soltar`, `boton-escuchar`, …), nunca círculos de código; van
   donde no tapan lo importante; si la pantalla pide «toca para…», se puede tocar en cualquier parte [66].
+  El botón **Saltar** del kit es el dibujo `boton-saltar` con su etiqueta, como los demás [100].
 - Un globo sale de la boca o la cabeza de quien habla, nunca se corta en el borde ni se cruza con otra cosa (sombrero, brazos, botones)
   durante toda la animación [45, 69].
 
@@ -724,6 +740,24 @@ en qué cambia el nuestro: se toma la idea, nunca sus personajes, su arte ni su 
 acción, regla, reto y ayuda) va numerado en el plan (`## Promesas`) y el revisor lo marca en `revision/promesas.tsv` como hecho,
 falta, roto o no comprobado, con una captura o la línea de código que lo muestra. Lo que no se puede mostrar se declara «no
 comprobado», nunca «hecho». Un juego con una promesa en falta o rota no se entrega [90].
+
+**14.17 Plataformas como en Mario.** Cuando el juego es de plataformas (de lado, con salto):
+- **El recorrido es largo**: cada nivel mide de 4 a 6 pantallas que se avanzan de izquierda a derecha, con tramos distintos (llano,
+  subida, agua que se salta, muelle); nunca un nivel que cabe en una o dos pantallas [95].
+- **Lo que se elige va repartido con naturalidad**, como las monedas de Mario: a distintas alturas y distancias, algunos solos y otros
+  en grupitos de 2 o 3, nunca uno sobre otro ni en un patrón fijo (hueco, globo, hueco, globo). Entre dos cosas para elegir cabe el
+  protagonista (al menos 2 × el radio de toque + 20 px) [93, 94].
+- **Saltar un obstáculo nunca toca una respuesta**: sobre un charco, un hueco o el tramo de un adversario no hay nada para elegir al
+  alcance del salto, tampoco en las transiciones (al acertar el último de una ronda) [93, 105]. El validador del juego lo rechaza.
+- **Al adversario se le vence saltándole encima** (se aplasta y desaparece en un *puf*) y **chocarlo de frente es perder**. **Perder
+  se ve**: el protagonista se asusta, salta y cae; al caer al agua, salpica y se hunde. Después reaparece cerca, en un punto seguro,
+  parpadeando, sin vidas, sin perder lo logrado y sin avisos nuevos. Lo que dice Kusi («salta encima del cangrejo») funciona [96].
+- **La meta es llegar al lado de quien espera**, como la bandera al final de un nivel: el protagonista se detiene a su costado, en el
+  suelo, y los dos celebran. Nunca queda encima de otro personaje ni flotando. Si llega antes de terminar, Kusi dice qué falta [97].
+
+**14.18 Lo nuevo se enseña de a uno, jugando.** Al empezar un nivel con palabras o ideas nuevas, Kusi presenta **una sola** («Este es
+*one*. *One* es uno.»), aparece algo para practicarla («Salta y tócalo.») y recién al hacerlo viene la siguiente; sin adversarios mientras
+tanto. Nunca una lista seguida de palabras nuevas. En los niveles siguientes se presenta solo lo nuevo [91].
 
 ## 12. Nombres neutrales
 
