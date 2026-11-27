@@ -81,7 +81,9 @@ export function crearControles(escena, { saltar = false, joystick = true, carril
     base?.setPosition(estado.centro.x, estado.centro.y)
     perilla?.setPosition(estado.centro.x + estado.dx, estado.centro.y + estado.dy)
     for (const boton of botones) {
-      const { x, y } = boton === subir ? estado.centro : { x: ancho - MARGEN - 80, y: alto - MARGEN - 72 }
+      const x = boton === subir ? estado.centro.x : ancho - MARGEN - 80
+      // Los botones de carril comparten una altura para que sus etiquetas también queden alineadas.
+      const y = boton === salto ? alto - MARGEN - 72 : estado.centro.y
       boton.dibujo.setPosition(x, y)
       boton.etiqueta.setPosition(x, y + RADIO_BOTON + 12)
     }

@@ -60,14 +60,14 @@ function prepararEscena({ conImagenes = true } = {}) {
   return { escena, dibujos, tecla: nombre => teclas[nombre] }
 }
 
-test('los botones de carril ocupan las zonas del joystick y de salto y tienen su etiqueta debajo', () => {
+test('los botones de carril ocupan los lados de la pantalla y tienen su etiqueta debajo', () => {
   const { escena, dibujos } = prepararEscena()
   const controles = crearControles(escena, { carriles: true, saltar: true })
   const { subir, bajar } = controles.estado()
   assert.deepEqual(controles.estado(), {
     joystick: null, saltar: null,
     subir: { x: 142, y: 592, radio: 62 },
-    bajar: { x: 1164, y: 612, radio: 62 },
+    bajar: { x: 1164, y: 592, radio: 62 },
   })
   assert.deepEqual(dibujos.filter(pieza => pieza.tipo === 'image').map(pieza => pieza.nombre),
     ['boton-subir', 'boton-bajar'])
@@ -75,6 +75,25 @@ test('los botones de carril ocupan las zonas del joystick y de salto y tienen su
     ['Subir', subir.x, subir.y + subir.radio + 12],
     ['Bajar', bajar.x, bajar.y + bajar.radio + 12],
   ])
+})
+
+test('los botones de carril y sus etiquetas quedan a la misma altura antes y después de resize', () => {
+  const { escena, dibujos } = prepararEscena()
+  crearControles(escena, { carriles: true })
+  const [botonSubir, botonBajar] = dibujos.filter(pieza => pieza.tipo === 'container')
+  const [etiquetaSubir, etiquetaBajar] = dibujos.filter(pieza => pieza.tipo === 'text')
+  assert.equal(botonSubir.y, botonBajar.y)
+  assert.equal(etiquetaSubir.y, etiquetaBajar.y)
+
+  // Cambiamos la altura para comprobar que ambos controles se recolocan con el lienzo.
+  const alturaInicial = botonSubir.y
+  const cambioDeAltura = 100
+  escena.scale.height += cambioDeAltura
+  escena.scale.emit('resize')
+  assert.equal(botonSubir.y, alturaInicial + cambioDeAltura)
+  assert.equal(botonSubir.y, botonBajar.y)
+  assert.equal(etiquetaSubir.y, botonSubir.y + 62 + 12)
+  assert.equal(etiquetaSubir.y, etiquetaBajar.y)
 })
 
 test('cada toque de carril da un solo pulso, aunque se mantenga o se arrastre el dedo', () => {
@@ -135,6 +154,7 @@ test('el modo de salto conserva el joystick y distingue entre tocar y sostener S
   const { escena } = prepararEscena()
   const controles = crearControles(escena, { saltar: true })
   const { joystick, saltar } = controles.estado()
+  assert.deepEqual(saltar, { x: 1164, y: 612, radio: 62 })
   escena.input.emit('pointerdown', { id: 1, x: joystick.x + joystick.radio, y: joystick.y })
   escena.input.emit('pointerdown', { id: 2, ...saltar })
   assert.deepEqual(controles.leer(), { x: 1, y: 0, saltar: true, saltarSostenido: true })
