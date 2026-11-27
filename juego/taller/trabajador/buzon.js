@@ -70,6 +70,9 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch, ahora = D
     },
     // Si el trabajo era una propuesta, Spring usa su respaldo; el trabajador no lo sabe ni lo necesita.
     fallo: (id, motivo) => pedir(id + '/fallo', { motivo }),
+    // Reabre un juego fallido que el equipo corrigió a mano (taller/reentregar.mjs): 200 en proceso,
+    // 404 si no existe, 409 si no está fallido o si el docente ya pidió otro juego de esa solicitud.
+    reabrir: (id) => pedir(id + '/reabrir'),
     // La pregunta a Kusi Sabio más antigua ({ id, con_actividad, contexto }), o null si no hay.
     async siguienteConsulta() {
       const { estado, datos } = await pedir('siguiente', undefined, raizConsultas)

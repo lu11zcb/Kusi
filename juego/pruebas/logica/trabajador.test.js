@@ -73,6 +73,21 @@ test('el buzón entrega la propuesta en su ruta y el fallo en la de siempre', as
   assert.deepEqual(pedidos[1].cuerpo, { motivo: 'sin tokens' })
 })
 
+test('el buzón reabre un juego fallido sin cuerpo y con la clave, para la entrega del equipo', async () => {
+  const pedidos = []
+  const pedirHttp = async (direccion, opciones) => {
+    pedidos.push({ direccion, opciones })
+    return { status: 409, text: async () => '{"mensaje":"Solo se reabre un trabajo fallido."}' }
+  }
+  const buzon = crearBuzon({ url: 'http://spring/', clave: 'secreta', pedirHttp })
+  const respuesta = await buzon.reabrir('j1')
+  assert.equal(pedidos[0].direccion, 'http://spring/interno/taller/trabajos/j1/reabrir')
+  assert.equal(pedidos[0].opciones.method, 'POST')
+  assert.equal(pedidos[0].opciones.headers['X-Taller-Clave'], 'secreta')
+  assert.equal(pedidos[0].opciones.body, undefined)
+  assert.deepEqual(respuesta, { estado: 409, datos: { mensaje: 'Solo se reabre un trabajo fallido.' } })
+})
+
 test('arma la línea de comando de un rol con sus marcadores, y un marcador sin valor es un error', () => {
   const rol = { programa: 'programa-del-rol', carpeta: '{temporal}', argumentos: ['--pedido', '{pedido}', 'Edit(/{carpeta}/**)'] }
   assert.deepEqual(armarComando(rol, { pedido: 'Haz el juego', carpeta: '/t/123', temporal: '/tmp/x' }), {
