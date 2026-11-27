@@ -52,8 +52,9 @@ No dibujas y no cambias el kit, el reproductor ni otros juegos.
    - `Scale.EXPAND` sobre una base de 1280 × 720, y `?vida=0` para apagar los
      efectos;
    - errores amables, sin reloj, sin vidas y sin castigo.
-5. **Escribe `guion-ejemplo.json`**, completo y que se pueda terminar. Escribe en primera
-   persona las intervenciones de Kusi, como la consigna, las ayudas y el cierre (regla 7).
+5. **El guion no lo escribes tú** (regla 14.9): `guion-ejemplo.json` y las frases de Kusi (`## Lo que dice Kusi` del plan) los escribe
+   el supervisor. Los usas tal cual; solo agregas los datos técnicos que falten (coordenadas, tamaños) sin cambiar ningún texto. Si te
+   falta una frase o una no cabe, díselo al supervisor en tu respuesta en vez de inventarla.
 6. **Escribe la ficha `juego.js`** y el `README.md` del juego.
 7. **Comprueba:** las pruebas con `node --test`, `npm run build` desde `juego/`
    y la búsqueda de `cuy` en tu carpeta. Anota lo que corriste y su resultado.

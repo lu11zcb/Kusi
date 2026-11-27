@@ -82,10 +82,14 @@ decides, repartes, controlas y entregas.
    las piezas ya aprobadas. Pueden faltar objetos, un fondo y, si el juego lo pide, **personajes secundarios, enemigos y
    objetos nuevos** (regla 13.25): lo que se mueve es una `criatura-<nombre>` (tira de 3 cuadros); lo que casi no se mueve, una
    `figura-<nombre>`. El protagonista no se dibuja: lo da el reproductor. Los enemigos y personajes son del tema.
+   **De la biblioteca, solo lo del mismo mundo** (regla 14.7): una pieza de otro juego que no combina con este lugar no se usa.
 5. **Busca riesgos.** Si el tema pide una figura sagrada, planea un símbolo (una
    luz, rayos) o la voz de Kusi, y anótalo para que decida el docente. Si toca
    una fiesta o una creencia, anota las opciones.
-6. **Escribe `plan.md`** (ver abajo).
+6. **Escribe `plan.md`** (ver abajo) y **el guion** (regla 14.9): tú escribes `juego/guion-ejemplo.json` con la historia, las consignas,
+   las ayudas, el cierre y lo que trae cada nivel, y en el plan, bajo `## Lo que dice Kusi`, **cada frase** que Kusi dice en el juego
+   (presentar, pedir, responder, animar, celebrar). El programador los programa tal cual y no inventa textos. Elige una **receta
+   distinta** de la de los juegos anteriores del taller (mira la biblioteca), salvo que el contenido solo se pueda jugar así.
 7. **Reparte.** Al programador le encargas el código con
    `node taller/programar.mjs --carpeta <carpeta> --tarea-archivo programador/tarea-<n>.md`: **la tarea va siempre en un
    archivo** (la escribes con Write en `programador/tarea-<n>.md` de la carpeta del trabajo; por la terminal, entre comillas,

@@ -603,6 +603,8 @@ corchetes es la fila). Valen para todo juego. El revisor las comprueba con `revi
   revisor lo prueba tocando rápido muchas veces [102].
 - Un **pedido es una frase completa** que dice qué hacer y qué buscar («Busca el globo *three*, *red*: el tres rojo.»), nunca solo las
   palabras sueltas [92]. Una **ayuda nunca contradice la regla del juego**: acerca a la respuesta correcta [104].
+- Kusi nunca usa una palabra que un niño de 6 años no conoce sin explicarla en la misma frase («la tejedora, la señora que hace
+  mantas») [113].
 - Kusi solo pide cosas que el niño puede **ver y hacer** en ese juego: ningún texto nombra algo que no está en la pantalla («busca un
   refugio» sin refugios) [72].
 - El juego exporta `frasesDeKusi()` (en `frases.js`) con **todas** las frases que puede decir Kusi: el taller las graba con **la voz de
@@ -635,6 +637,8 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   sale del agua de un salto) [68, 83].
 - Quien espera al niño (en la meta, en un puesto) tiene su dibujo de **esperar** y el de **celebrar** (tiras de 3 cuadros), y **Kusi
   celebra** con su fila de celebrar (`hud.celebrar()`) cuando el niño gana un nivel [101].
+- **Quien pide la misión se ve y se entiende**: aparece grande y cerca al empezar, se presenta con palabras de niño, y el juego lo
+  usa (habla, espera, celebra); nunca queda chico en un rincón [113].
 
 **14.4 La ropa y lo que se pone un personaje.**
 - La pieza que se busca en el mundo **no** es la que se ve puesta. Un personaje que cambia de ropa se **dibuja entero en cada estado**
@@ -682,6 +686,10 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   de la línea por la que camina el protagonista [99]. Lo que se toca nunca queda tapado por el decorado [103].
 - El juego **corre fluido** (60 cuadros por segundo, sin tirones al caminar ni al saltar); el revisor lo mide sin otros programas
   pesados prendidos (grabar la voz ocupa la máquina y da tirones que no son del juego) [106].
+- **Lo que se pisa llega hasta abajo**: un andén, un muelle o una plataforma tiene debajo su muro, sus postes o tierra hasta el borde de
+  abajo de la pantalla; nunca un camino que flota sobre el fondo [110].
+- **De la biblioteca solo se usa lo que es del mismo mundo**: una pieza de otro juego entra si su lugar, su material y su estilo
+  combinan (regla 13.10); si no, se dibuja una propia o no se pone (una fuente de plaza no va en los andenes) [112].
 
 **14.8 La interfaz.**
 - La interfaz ocupa lo mínimo: indicadores chicos en el borde, que no tapan el mundo ni lo que se busca [21, 59].
@@ -697,6 +705,12 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
 - Un mundo lleno y vivo necesita sus propias piezas: **unas 20 piezas sueltas** como guía (personajes, objetos, escondites, adornos,
   láminas), pedidas en tandas y revisadas una por una; los dibujos de estados o gestos de un personaje cuentan aparte y se piden solo si
   el juego los usa. Antes de pedir una pieza, se mira si el kit ya la tiene [26].
+- **Los juegos varían**: el supervisor no repite la receta de los juegos que el taller hizo antes (plataformas, exploración desde
+  arriba, viaje, corredor, carrera); la elige por lo que el niño hace con el contenido. Que un tipo tenga reglas (14.17) no lo vuelve
+  el preferido [108].
+- **El guion lo escribe el supervisor**: la historia, las consignas, las ayudas, todo lo que dice Kusi y lo que trae cada nivel van en
+  el plan y en `guion-ejemplo.json` escritos por él; el programador los programa tal cual y no inventa textos; si necesita otro texto,
+  se lo pide al supervisor [109].
 
 **14.10 Un tutorial corto al empezar.** Todo juego empieza con un tutorial que **se juega** (no se lee): en el nivel 1, la mano guía del
 kit (`crearTutorial`, `kit/reproductor/interfaz/tutorial.js`) muestra el gesto sobre la cosa de verdad (tocar, arrastrar o mover el
@@ -749,6 +763,8 @@ comprobado», nunca «hecho». Un juego con una promesa en falta o rota no se en
   protagonista (al menos 2 × el radio de toque + 20 px) [93, 94].
 - **Saltar un obstáculo nunca toca una respuesta**: sobre un charco, un hueco o el tramo de un adversario no hay nada para elegir al
   alcance del salto, tampoco en las transiciones (al acertar el último de una ronda) [93, 105]. El validador del juego lo rechaza.
+- **Nadie se cae sin querer**: en el nivel 1 no hay huecos; después, cada hueco es pequeño, se ve de lejos y se cruza igual de ida y
+  de vuelta (volver por donde se vino no hace caer) [111].
 - **Al adversario se le vence saltándole encima** (se aplasta y desaparece en un *puf*) y **chocarlo de frente es perder**. **Perder
   se ve**: el protagonista se asusta, salta y cae; al caer al agua, salpica y se hunde. Después reaparece cerca, en un punto seguro,
   parpadeando, sin vidas, sin perder lo logrado y sin avisos nuevos. Lo que dice Kusi («salta encima del cangrejo») funciona [96].

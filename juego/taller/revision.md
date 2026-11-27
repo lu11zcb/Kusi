@@ -189,6 +189,9 @@ y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/corre
 - [ ] **El mundo:** ninguna pieza estirada o aplastada; nada cruza un camino de otra capa; el fondo no acompaña a la cámara; lo que se
       pisa se distingue; ninguna transparencia fantasma; mide los cuadros por segundo al caminar (60, sin tirones) (14.7) [98, 99, 103, 106].
 - [ ] **Quien espera** tiene su dibujo de esperar y el de celebrar, y Kusi celebra al ganar (14.3) [101].
+- [ ] **Lo que se pisa llega hasta abajo** (sin caminos que flotan sobre el fondo); ninguna pieza de la biblioteca que no sea del mismo
+      mundo (14.7) [110, 112]. **Nadie se cae sin querer:** recorre cada nivel de ida y **de vuelta** (14.17) [111].
+- [ ] **Quien pide la misión** se ve grande y se presenta con palabras de niño; ninguna palabra difícil sin explicar (14.1, 14.3) [113].
 
 ### 2.5 La lista de promesas (regla 14.16)
 
