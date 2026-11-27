@@ -60,7 +60,7 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
   }
   return <section id="solicitar-propuesta" className="doc-pagina" aria-label="Crear propuesta">
     {solicitud ? <>
-      <div className="doc-volver"><button type="button" className="secundario" disabled={revisando} onClick={alSalir}><IconoDocente nombre="atras" />Mis juegos</button><button type="button" className="doc-texto-boton secundario" disabled={revisando} onClick={nuevaPropuesta}>Crear otra propuesta</button></div>
+      <div className="doc-volver"><button type="button" className="secundario" disabled={revisando} onClick={alSalir}><IconoDocente nombre="atras" />Mis juegos</button><button type="button" className="doc-texto-boton secundario" disabled={revisando} onClick={nuevaPropuesta}>Crear otra propuesta</button>{contexto && <span>{contexto.curso_nombre}{contexto.seccion_nombre ? ' · Sección ' + contexto.seccion_nombre : ''}</span>}</div>
       <RevisionPropuesta key={solicitud.id_solicitud} solicitud={solicitud} seccion={contexto?.seccion_nombre ?? undefined} alCambiar={(valor) => establecerResultado({ huella, solicitud: valor })} alOcupar={ocuparRevision} activo={activo} />
     </> : <>
       <CabeceraDocente icono="editar" color="c-dorado" titulo="Una idea para tu clase" descripcion="Cuéntale a Kusi qué quieres enseñar. Podrás revisar la idea y pedir cambios antes de preparar tu juego." />

@@ -65,7 +65,7 @@ export function VistaPreviaJuego({ paquete, alCargar }: { paquete: string; alCar
   }
   function abrirOtraVez() { establecerAviso(null); establecerDemora(false); establecerRecarga((valor) => valor + 1) }
   return <div className="doc-vista-previa" ref={contenedor}>
-    <div className="doc-prueba-controles"><p role="status">{aviso?.estado === 'lista' ? 'Mueve a Kusi con el joystick o con las flechas.' : aviso?.estado === 'error' ? 'Vamos a abrir el juego otra vez.' : 'Abriendo tu juego…'}</p><div className="acciones">
+    <div className="doc-prueba-controles"><p role="status">{aviso?.estado === 'lista' ? 'Juégalo como lo hará tu estudiante.' : aviso?.estado === 'error' ? 'Vamos a abrir el juego otra vez.' : 'Abriendo tu juego…'}</p><div className="acciones">
       <button type="button" className="secundario" disabled={aviso?.estado !== 'lista'} onClick={reiniciar}><IconoDocente nombre="atras" />Volver a empezar</button>
       <button type="button" className="secundario" onClick={() => { if (ampliado) void document.exitFullscreen().catch(() => undefined); else void contenedor.current?.requestFullscreen?.().catch(() => undefined) }}>{ampliado ? 'Volver al panel' : 'Ampliar juego'}</button>
     </div></div>

@@ -61,7 +61,7 @@ export function MisPropuestas({ contextos, crear, alOcupar, activo, abrirId }: {
     finally { bloqueo.current = false; ocupar(false) }
   }
   return <section id="mis-propuestas" className="doc-pagina" aria-label="Mis juegos">
-    {actual ? <><div className="doc-volver"><button className="secundario" type="button" disabled={ocupado} onClick={volver}><IconoDocente nombre="atras" />Mis juegos</button><span>{nombreCurso(actual.curso_id)}</span></div><RevisionPropuesta key={actual.id_solicitud} solicitud={actual} seccion={seccionDe(actual)} alCambiar={actualizar} alOcupar={ocupar} activo={activo} /></> : <div ref={lista} tabIndex={-1}>
+    {actual ? <><div className="doc-volver"><button className="secundario" type="button" disabled={ocupado} onClick={volver}><IconoDocente nombre="atras" />Mis juegos</button><span>{nombreCurso(actual.curso_id)}{seccionDe(actual) ? ' · Sección ' + seccionDe(actual) : ''}</span></div><RevisionPropuesta key={actual.id_solicitud} solicitud={actual} seccion={seccionDe(actual)} alCambiar={actualizar} alOcupar={ocupar} activo={activo} /></> : <div ref={lista} tabIndex={-1}>
       <CabeceraDocente icono="juegos" color="c-morado" titulo="Mis juegos" descripcion="Tus ideas y juegos, listos para seguir trabajando con tu clase."><button type="button" onClick={crear}><IconoDocente nombre="mas" />Crear propuesta</button></CabeceraDocente>
       {error && <MensajeDocente titulo="Vamos a buscar tus juegos otra vez" error><p>{error}</p><button className="secundario" type="button" onClick={() => establecerRecarga((n) => n + 1)}>Volver a cargar</button></MensajeDocente>}
       {trabajos === null && !error && <CargandoDocente texto="Buscando tus juegos…" />}
