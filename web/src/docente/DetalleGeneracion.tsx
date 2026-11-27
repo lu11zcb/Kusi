@@ -33,7 +33,7 @@ export function DetalleGeneracion({ generacion, seccion, alEnviar, alReintentar 
     {/* El estado («Para probar», «Enviado») ya se ve arriba, junto al título de la idea: aquí no se repite. */}
     {generacion.paquete && <VistaPreviaJuego paquete={generacion.paquete} alCargar={establecerLista} encabezado={<><span className="doc-sobre-titulo">{enviada ? 'En tu clase' : 'Tu juego está listo'}</span><h2>{enviada ? 'Así juegan tus estudiantes' : 'Pruébalo antes de enviarlo'}</h2></>} />}
     <div className="doc-envio">
-      <div><strong>{enviada ? 'Tu juego ya está en la app' : '¿Listo para tu clase?'}</strong><p>{enviada ? 'Tus estudiantes' + (seccion ? ' de ' + seccion : '') + ' ya pueden abrirlo.' : 'Al enviarlo, aparecerá en la app de tus estudiantes' + (seccion ? ' de ' + seccion : '') + '.'}</p></div>
+      <div><strong>{enviada ? 'Tu juego ya está en la app' : '¿Listo para tu clase?'}</strong><p>{enviada ? 'Tus estudiantes' + (seccion ? ' de la sección ' + seccion : '') + ' ya pueden abrirlo en la app.' : 'Al enviarlo, aparecerá en la app de tus estudiantes' + (seccion ? ' de la sección ' + seccion : '') + '.'}</p></div>
       {!enviada && <button type="button" disabled={enviando || !lista} onClick={() => void enviar()}><IconoDocente nombre="check" />{enviando ? 'Enviando…' : 'Enviar a mi clase'}</button>}
     </div>
     {error && <MensajeDocente titulo="El envío necesita otro intento" error><p>{error}</p><button type="button" className="secundario" disabled={enviando || !lista} onClick={() => void enviar()}>Volver a intentar</button></MensajeDocente>}
