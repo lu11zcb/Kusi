@@ -1,11 +1,13 @@
 import { ErrorApi } from './django'
+import { cabeceraDeSesion } from './sesionPestana'
 
 export async function solicitar<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
   let respuesta: Response
   try {
     respuesta = await fetch(ruta, {
       ...opciones, credentials: 'same-origin', mode: 'same-origin', cache: 'no-store',
-      headers: { Accept: 'application/json', ...opciones.headers },
+      // Cada pestaña manda su propia sesión (varias cuentas a la vez en el mismo navegador).
+      headers: { Accept: 'application/json', ...cabeceraDeSesion(), ...opciones.headers },
     })
   } catch {
     throw new ErrorApi(opciones.method && opciones.method !== 'GET'

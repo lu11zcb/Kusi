@@ -1,6 +1,7 @@
 import type { Rol, UsuarioSesion } from './django'
 import { ErrorApi } from './django'
 import { enviar, solicitar } from './http'
+import { olvidarSesionDeEstaPestana, recordarSesionDeEstaPestana } from './sesionPestana'
 
 export type Cuenta = UsuarioSesion & { roles: Rol[]; debe_cambiar_contrasena: boolean }
 export type Sesion = { usuario: Cuenta | null; csrf_token: string }
@@ -16,7 +17,18 @@ export async function obtenerSesion(signal?: AbortSignal): Promise<Sesion> {
   return datos
 }
 
-export const ingresar = (correo: string, contrasena: string) => enviar<Sesion>('/api/acceso/ingreso/', { correo, contrasena })
-export const salir = () => enviar<Sesion>('/api/acceso/salida/', {})
-export const cambiarContrasena = (datos: { contrasena_actual: string; nueva_contrasena: string; confirmacion: string }) =>
-  enviar<Sesion>('/api/acceso/contrasena/', datos)
+// Entrar y cambiar la contraseña renuevan la sesión de esta pestaña; salir la olvida (sesionPestana.ts).
+export async function ingresar(correo: string, contrasena: string) {
+  const datos = await enviar<Sesion>('/api/acceso/ingreso/', { correo, contrasena })
+  recordarSesionDeEstaPestana(datos)
+  return datos
+}
+export async function salir() {
+  try { return await enviar<Sesion>('/api/acceso/salida/', {}) }
+  finally { olvidarSesionDeEstaPestana() }
+}
+export async function cambiarContrasena(datos: { contrasena_actual: string; nueva_contrasena: string; confirmacion: string }) {
+  const respuesta = await enviar<Sesion>('/api/acceso/contrasena/', datos)
+  recordarSesionDeEstaPestana(respuesta)
+  return respuesta
+}

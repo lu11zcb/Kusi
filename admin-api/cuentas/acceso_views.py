@@ -18,7 +18,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.debug import sensitive_variables
 
 from .models import Usuario
-from .middleware import validar_identidad_sesion
+from .middleware import CABECERA_SESION, validar_identidad_sesion
 
 
 ROLES = ("administrador", "docente", "estudiante")
@@ -77,7 +77,15 @@ def ingresar(request):
     if usuario is None or not usuario.is_active:
         return JsonResponse({"mensaje": "Correo o contraseña incorrectos"}, status=401)
     login(request, usuario)
-    return JsonResponse({"usuario": datos_usuario(usuario), "csrf_token": get_token(request)})
+    return JsonResponse(con_sesion_de_pestana(request, {"usuario": datos_usuario(usuario), "csrf_token": get_token(request)}))
+
+
+def con_sesion_de_pestana(request, datos):
+    """A una pestaña del panel (manda X-Kusi-Sesion) se le devuelve su sesión nueva: entrar y cambiar la contraseña
+    la renuevan, y la pestaña la guarda para mandarla en cada pedido. La app no la pide y no la recibe."""
+    if CABECERA_SESION in request.META and request.session.session_key:
+        datos["sesion"] = request.session.session_key
+    return datos
 
 
 @never_cache
@@ -115,7 +123,7 @@ def cambiar_contrasena(request):
         usuario.debe_cambiar_contrasena = False
         usuario.save(update_fields=["password", "debe_cambiar_contrasena"])
     update_session_auth_hash(request, usuario)
-    return JsonResponse({"usuario": datos_usuario(usuario), "csrf_token": get_token(request)})
+    return JsonResponse(con_sesion_de_pestana(request, {"usuario": datos_usuario(usuario), "csrf_token": get_token(request)}))
 
 
 @never_cache

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { cargarModulo } from './cargar-modulo.mjs'
 import ts from 'typescript'
 
 const cache = new Map()
@@ -62,4 +63,22 @@ test('salida y cambio de contraseña se envían como POST con CSRF', async (t) =
   await cambiarContrasena({ contrasena_actual: 'temporal-qa', nueva_contrasena: 'nueva-qa', confirmacion: 'nueva-qa' })
   await salir()
   assert.deepEqual(rutas, ['/api/acceso/contrasena/', '/api/acceso/salida/'])
+})
+
+test('cada pestaña guarda su sesión y la manda en X-Kusi-Sesion; una pestaña nueva va vacía', async () => {
+  const datos = new Map()
+  globalThis.sessionStorage = {
+    getItem: (clave) => datos.get(clave) ?? null, setItem: (clave, valor) => datos.set(clave, String(valor)),
+    removeItem: (clave) => datos.delete(clave),
+  }
+  const pestana = await import(await cargarModulo(new URL('../src/servicios/sesionPestana.ts', import.meta.url)))
+  assert.deepEqual(pestana.cabeceraDeSesion(), { 'X-Kusi-Sesion': '' })
+  pestana.recordarSesionDeEstaPestana({ usuario: {}, sesion: 'abc123xyz' })
+  assert.deepEqual(pestana.cabeceraDeSesion(), { 'X-Kusi-Sesion': 'abc123xyz' })
+  // Algo que no es una clave de sesión no se guarda.
+  pestana.recordarSesionDeEstaPestana({ sesion: '<script>' })
+  assert.equal(pestana.sesionDeEstaPestana(), 'abc123xyz')
+  pestana.olvidarSesionDeEstaPestana()
+  assert.equal(pestana.sesionDeEstaPestana(), '')
+  delete globalThis.sessionStorage
 })

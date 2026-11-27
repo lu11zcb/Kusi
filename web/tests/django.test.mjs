@@ -1,15 +1,10 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import ts from 'typescript'
+import { cargarModulo } from './cargar-modulo.mjs'
 
-// Usa el TypeScript ya instalado, sin añadir un runner ni escribir compilados.
-const fuente = await readFile(new URL('../src/servicios/django.ts', import.meta.url), 'utf8')
-const { outputText } = ts.transpileModule(fuente, {
-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
-})
+// Usa el TypeScript ya instalado y resuelve sus import (django.ts usa sesionPestana.ts).
 const { ErrorApi, obtenerContextoRegistro, registrarUsuario } = await import(
-  'data:text/javascript;base64,' + Buffer.from(outputText).toString('base64')
+  await cargarModulo(new URL('../src/servicios/django.ts', import.meta.url))
 )
 
 const usuario = { id: 'b0afffc6-0ecb-423c-9795-e23cb68ec504', nombre: 'Persona de prueba', correo: 'persona@example.com' }

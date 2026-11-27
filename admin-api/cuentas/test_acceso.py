@@ -211,3 +211,43 @@ class AccesoTests(TestCase):
                 self.assertEqual(respuesta.status_code, 401)
                 self.assertEqual(respuesta.json(), {"mensaje": "Sesión inválida."})
                 self.assertFalse(Session.objects.filter(session_key=clave).exists())
+
+
+class SesionPorPestanaTests(TestCase):
+    """Cada pestaña del panel manda su sesión en X-Kusi-Sesion: dos cuentas a la vez en el mismo navegador."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.ivan = Usuario.objects.create_user(
+            correo="ivan@example.com", nombre="Ivan QA", password="ClaveInicialSegura2026!", debe_cambiar_contrasena=False)
+        cls.jesus = Usuario.objects.create_user(
+            correo="jesus@example.com", nombre="Jesus QA", password="ClaveInicialSegura2026!", debe_cambiar_contrasena=False)
+
+    def entrar(self, cliente, correo):
+        token = cliente.get(reverse("acceso:sesion"), HTTP_X_KUSI_SESION="").json()["csrf_token"]
+        respuesta = cliente.post(reverse("acceso:ingresar"), json.dumps({"correo": correo, "contrasena": "ClaveInicialSegura2026!"}),
+                                 content_type="application/json", HTTP_X_CSRFTOKEN=token, HTTP_X_KUSI_SESION="")
+        self.assertEqual(respuesta.status_code, 200)
+        return respuesta.json()["sesion"]
+
+    def test_dos_pestanas_del_mismo_navegador_tienen_cada_una_su_cuenta(self):
+        # Un solo cliente = un solo navegador: la cookie de sesión queda con la última cuenta que entró.
+        navegador = Client(enforce_csrf_checks=True)
+        sesion_ivan = self.entrar(navegador, "ivan@example.com")
+        sesion_jesus = self.entrar(navegador, "jesus@example.com")
+        self.assertNotEqual(sesion_ivan, sesion_jesus)
+        ver = lambda sesion: navegador.get(reverse("acceso:sesion"), HTTP_X_KUSI_SESION=sesion).json()["usuario"]
+        self.assertEqual(ver(sesion_ivan)["id"], str(self.ivan.id))
+        self.assertEqual(ver(sesion_jesus)["id"], str(self.jesus.id))
+        # Una pestaña nueva (cabecera vacía) no hereda la cookie de la otra: empieza sin sesión.
+        self.assertIsNone(ver(""))
+        # Una clave rara se descarta.
+        self.assertIsNone(ver("<script>"))
+
+    def test_sin_la_cabecera_sigue_la_cookie_y_no_se_devuelve_la_sesion(self):
+        app = Client(enforce_csrf_checks=True)
+        token = app.get(reverse("acceso:sesion")).json()["csrf_token"]
+        respuesta = app.post(reverse("acceso:ingresar"), json.dumps({"correo": "ivan@example.com", "contrasena": "ClaveInicialSegura2026!"}),
+                             content_type="application/json", HTTP_X_CSRFTOKEN=token)
+        self.assertNotIn("sesion", respuesta.json())
+        self.assertEqual(app.get(reverse("acceso:sesion")).json()["usuario"]["id"], str(self.ivan.id))

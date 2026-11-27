@@ -1,3 +1,4 @@
+import { cabeceraDeSesion } from './sesionPestana'
 export type Rol = 'administrador' | 'docente' | 'estudiante'
 // Nombres y apellidos se envían por separado; Django guarda además el nombre completo.
 export type DatosRegistro = { nombres: string; apellidos: string; correo: string; dni: string; rol: Rol | '' }
@@ -70,7 +71,7 @@ export async function obtenerContextoRegistro(signal?: AbortSignal): Promise<Con
     mode: 'same-origin',
     cache: 'no-store',
     signal,
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...cabeceraDeSesion() },
   })
   const datos = await leerRespuesta(respuesta, 'No se pudo comprobar el acceso. Intenta de nuevo.')
   if (!esObjeto(datos) || !esUsuario(datos.usuario) || typeof datos.csrf_token !== 'string' || !datos.csrf_token) {
@@ -98,6 +99,7 @@ export async function registrarUsuario(datos: DatosRegistro): Promise<RegistroCr
         Accept: 'application/json',
         'Content-Type': 'application/json',
         'X-CSRFToken': contexto.csrf_token,
+        ...cabeceraDeSesion(),
       },
       body: JSON.stringify(cuerpo),
     })
