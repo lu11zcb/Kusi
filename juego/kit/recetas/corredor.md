@@ -41,6 +41,9 @@ que esquivar. Es **acción**, se entiende en 5 segundos, y cada vuelta sale un p
 
 ## Lo que no se hace
 
+- Que algo aparezca en medio de la pantalla. Todo entra por el borde derecho y se acerca con el suelo, como en el juego
+  del dinosaurio sin internet: el niño lo ve venir (corrección 119).
+
 - Perder por chocar o empezar de cero. Aquí solo se frena.
 - Tres carriles con cosas tan pegadas que no se pueda decidir. Siempre hay un carril libre.
 - Fondo quieto: el mundo se mueve (nubes, árboles, suelo pasando) o parece que el protagonista no avanza.

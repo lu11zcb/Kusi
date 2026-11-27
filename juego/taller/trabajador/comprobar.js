@@ -330,7 +330,10 @@ export async function revisarCodigo(carpetaJuego) {
     '#kit/reproductor/interfaz/controles.js (el joystick; reglas.md, regla 13.16).')
   if (!/\bcrearHud\s*\(/.test(todo)) motivos.push('El juego no usa la interfaz común del kit: llama a crearHud de #kit/reproductor/interfaz/hud.js (reglas.md, 13.17).')
   // Un mundo que se ve y se mueve (reglas.md, 13.22): decorado repartido, cosas que se mueven y ambiente.
-  if (!/\brepartirYColocar\s*\(|\brepartirDecorado\s*\(/.test(todo)) motivos.push('El juego no reparte el decorado del mundo: usa repartirYColocar de #kit/reproductor/efectos/mundoVivo.js para llenar el lugar (reglas.md, 13.22).')
+  // «Lleno no es relleno» (correcciones.md, 116): un lugar puede llenarse con una fila de casas propia en vez de
+  // adornos repartidos al azar. Que se vea lleno es un juicio del revisor, así que aquí es un aviso, no un bloqueo.
+  if (!/\brepartirYColocar\s*\(|\brepartirDecorado\s*\(/.test(todo)) avisos.push('El juego no usa repartirYColocar ni repartirDecorado: ' +
+    'mira en las capturas que el lugar se vea lleno con lo que de verdad hay ahí (reglas.md, 13.22 y 14.7).')
   if (!/\bdarVida\s*\(/.test(todo)) motivos.push('Nada del mundo se mueve: usa darVida de #kit/reproductor/efectos/mundoVivo.js en las piezas y los personajes (reglas.md, 13.22).')
   if (!/\bambiente\s*\(/.test(todo)) motivos.push('Falta el ambiente del mundo: usa ambiente de #kit/reproductor/efectos/mundoVivo.js para cosas que flotan o pasan (reglas.md, 13.22).')
   // El zoom de la cámara agranda la interfaz del kit y deja franjas del color del lienzo: el mundo se dibuja a su

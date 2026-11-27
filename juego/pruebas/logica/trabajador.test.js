@@ -247,9 +247,11 @@ test('la revisión del código encuentra lo prohibido, el cuy y las importacione
     "localStorage.setItem('a', 1)",
     'window.parent.postMessage(1)',
   ].join('\n'))
-  const { motivos } = await revisarCodigo(juego)
-  // Cinco fallos del código, cinco del kit (incluido el tutorial) y dos archivos obligatorios ausentes.
-  assert.equal(motivos.length, 12, motivos.join('\n'))
+  const { motivos, avisos } = await revisarCodigo(juego)
+  // Cinco fallos del código, cuatro del kit (incluido el tutorial) y dos archivos obligatorios ausentes.
+  // El decorado sin repartir ya no bloquea: es un aviso para el revisor (correcciones.md, 116).
+  assert.equal(motivos.length, 11, motivos.join('\n'))
+  assert.ok(avisos.some((aviso) => /no usa repartirYColocar ni repartirDecorado/.test(aviso)))
   assert.match(motivos[0], /Falta juego\/README\.md/)
   assert.ok(motivos.some((motivo) => /E\.js se conecta a la red/.test(motivo)))
   assert.ok(motivos.some((motivo) => /guarda datos en el navegador/.test(motivo)))
