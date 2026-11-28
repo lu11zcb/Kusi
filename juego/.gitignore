@@ -6,7 +6,7 @@ playwright-report/
 evidencias/
 # Pasos intermedios de las herramientas (recortes, hojas normalizadas y medidas).
 # Se rehacen al volver a preparar una pieza.
-kit/originales/*/preparacion/
+kit/originales/**/preparacion/
 # El programa compilado de kit/herramientas/preparar_pieza.swift (se rehace solo).
 kit/herramientas/.compilado/
 # Entorno local de grabación y muestra privada de la voz de Kusi.

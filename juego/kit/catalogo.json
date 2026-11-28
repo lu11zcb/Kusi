@@ -12,6 +12,12 @@
       "manifiesto": "dibujos/personajes/cuy.json",
       "imagen": "dibujos/personajes/cuy.png",
       "por_omision": true
+    },
+    {
+      "id": "cuy-nino",
+      "nombre": "Cuy del niño",
+      "manifiesto": "dibujos/personajes/cuy-nino.json",
+      "imagen": "dibujos/personajes/cuy-nino.png"
     }
   ],
   "molde": {

@@ -17,6 +17,7 @@ import { crearBoton } from '../interfaz/piezas.js'
 import { validarSpriteCuy } from '../datos/validarSpriteCuy.js'
 import { validarSpritePersonaje } from '../datos/validarSpritePersonaje.js'
 import { elegirProtagonista } from '../datos/protagonistas.js'
+import { leerApariencia } from '../datos/aparienciaCuy.js'
 import {
   trabajoPedido, esIdTrabajo, elegirJuego, revisarFicha, erroresDelValidar,
   clasificarPiezas, rutaGuionEjemplo, rutaPieza, claveEscena,
@@ -95,8 +96,12 @@ export class EscenaCarga extends Phaser.Scene {
     }
     this.load.json(CLAVE_MANIFIESTO_CUY, ARCHIVO_MANIFIESTO_CUY)
     this.load.json(CLAVE_MANIFIESTO_ZORRO, ARCHIVO_MANIFIESTO_ZORRO)
-    // Un juego del taller no nombra al cuy: recibe «el protagonista» (hoy, el de siempre).
-    this.protagonista = elegirProtagonista(null).protagonista
+    // Un juego del taller no nombra al cuy: recibe «el protagonista». Si la app mandó el cuy que armó el niño
+    // (?cuy=crema.GORRA_CELESTE…), es ese, con sus prendas; si no, el de siempre.
+    const { apariencia, avisos: avisosDelCuy } = leerApariencia(new URLSearchParams(window.location.search).get('cuy'))
+    for (const aviso of avisosDelCuy) console.warn('[protagonista] ' + aviso)
+    this.apariencia = apariencia
+    this.protagonista = elegirProtagonista(apariencia ? 'cuy-nino' : null).protagonista
     pedirManifiestoProtagonista(this, this.protagonista)
   }
 
@@ -212,7 +217,7 @@ export class EscenaCarga extends Phaser.Scene {
 
     // Lo común: el protagonista, el zorro (por si el juego tiene un enemigo), Kusi, el
     // patio, la interfaz y los sonidos. Después, las piezas que pide la ficha.
-    const datosProtagonista = prepararProtagonista(this, this.protagonista)
+    const datosProtagonista = prepararProtagonista(this, this.protagonista, this.apariencia)
     const zorroAnimado = validarSpritePersonaje(this.cache.json.get(CLAVE_MANIFIESTO_ZORRO), 'zorro')
     pedirHojaZorro(this, zorroAnimado)
     pedirKitFinal(this)

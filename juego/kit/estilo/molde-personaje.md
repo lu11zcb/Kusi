@@ -102,3 +102,15 @@ Para que el niño pueda cambiar de personaje sin cambiar ningún juego:
 - su manifiesto indica el nombre de su imagen, sus filas y sus animaciones;
 - los juegos nunca nombran al cuy: usan **el protagonista** que les da el
   reproductor (ver `juego/taller/reglas.md`).
+
+### El cuy que arma el niño (por capas)
+
+El niño arma su cuy en la app (pelaje y prendas). En el juego es el protagonista `cuy-nino`, y se arma **con capas**
+al cargar, no con una imagen por combinación (serían más de 160 000 dibujos):
+
+- `dibujos/personajes/cuy-nino.png`: el cuy de la app sin prendas, en café, con todo el molde.
+- `dibujos/personajes/prendas-cuy/<prenda>.png`: la prenda en cada cuadro del molde, y `<prenda>-quita.png`, lo que la
+  prenda tapa del cuy (por ejemplo, la punta de la oreja bajo la gorra). Se ponen en orden: ropa, lentes, cabeza.
+- El pelaje se cambia con código a partir del café (`teñirPelaje`, `kit/reproductor/datos/aparienciaCuy.js`).
+- La app manda el cuy en la dirección del juego: `?cuy=crema.GORRA_CELESTE.LENTES_CUADRADOS.POLERON_MENTA`. Una prenda
+  que todavía no está dibujada para el juego se omite y el niño juega igual.

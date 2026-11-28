@@ -19,6 +19,14 @@ export const PROTAGONISTAS = Object.freeze([
     // Los sonidos son los del catálogo: el paso y el quejido cuando lo atrapan.
     sonidos: Object.freeze({ paso: 'paso_cuy', quejido: 'captura' }),
   }),
+  // El cuy que el niño arma en la app, con el mismo molde: el reproductor le pone sus prendas y su pelaje
+  // al cargar (datos/aparienciaCuy.js y dibujos/protagonista.js).
+  Object.freeze({
+    id: 'cuy-nino',
+    nombre: 'Cuy del niño',
+    manifiesto: 'dibujos/personajes/cuy-nino.json?v=1',
+    sonidos: Object.freeze({ paso: 'paso_cuy', quejido: 'captura' }),
+  }),
 ])
 
 // El molde base usa 3 × 6 celdas de 256 px con los pies en (128, 244).
