@@ -119,13 +119,18 @@ fun mensajePaqueteJuego(paquete: String, partida: JSONObject? = null): String {
     return "window.postMessage(" + mensaje.toString() + ", '*');"
 }
 
-fun direccionJuego(base: String, generado: Boolean, nivel: Int? = null): String {
+// El cuy del niño viaja tal como lo arma el vestidor: pelaje en minúsculas y prendas en mayúsculas («crema.GORRA_CELESTE»).
+private val CuyParaElJuego = Regex("[a-z]+(\\.[A-Z_]+)*")
+
+fun direccionJuego(base: String, generado: Boolean, nivel: Int? = null, cuy: String? = null): String {
     val uri = URI(base)
     require(uri.scheme in listOf("http", "https") && uri.host != null && uri.userInfo == null)
     require(nivel == null || nivel in 1..5)
-    val parametros = uri.rawQuery?.split('&')?.filterNot { it.substringBefore('=') in listOf("paquete", "nivel") }?.toMutableList() ?: mutableListOf()
+    require(cuy == null || CuyParaElJuego.matches(cuy))
+    val parametros = uri.rawQuery?.split('&')?.filterNot { it.substringBefore('=') in listOf("paquete", "nivel", "cuy") }?.toMutableList() ?: mutableListOf()
     if (generado) parametros.add("paquete=mensaje")
     if (nivel != null) parametros.add("nivel=" + nivel)
+    if (cuy != null) parametros.add("cuy=" + cuy)
     return URI(uri.scheme + "://" + uri.rawAuthority + (uri.rawPath.ifEmpty { "/" }) +
         (if (parametros.isEmpty()) "" else "?" + parametros.joinToString("&"))).toString()
 }

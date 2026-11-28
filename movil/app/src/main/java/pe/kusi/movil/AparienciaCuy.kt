@@ -68,6 +68,13 @@ internal data class AparienciaCuy(
         get() = CategoriaCuy.entries.joinToString("-") { piezas[it]?.name ?: "0" }
 
     /**
+     * El cuy como lo pide el juego en su dirección (`?cuy=crema.GORRA_CELESTE.LENTES_CUADRADOS`): el pelaje y las
+     * prendas puestas. El juego arma al protagonista con eso y omite las prendas que todavía no tiene dibujadas.
+     */
+    val paraElJuego: String
+        get() = pelaje.name.lowercase() + CategoriaCuy.entries.mapNotNull { piezas[it] }.joinToString("") { "." + it.name }
+
+    /**
      * El nombre de la hoja ya armada que sí existe en `assets/vestidor/`. Si todavía no está el dibujo de una
      * combinación con prendas de la tienda, se muestra el cuy sin ellas: así la app nunca se cierra por un dibujo.
      */

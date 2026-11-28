@@ -152,6 +152,15 @@ class ProtocoloJuegoTest {
         assertEquals(base + "?paquete=mensaje", direccionJuego(base, true))
         assertEquals(base, direccionJuego(base, false))
     }
+    @Test fun elJuegoRecibeElCuyQueArmoElNinoEnElVestidor() {
+        val apariencia = AparienciaCuy(PelajeCuy.CREMA, piezasGuardadas(listOf("POLERON_MENTA", "GORRA_CELESTE", "LENTES_CUADRADOS")))
+        assertEquals("crema.GORRA_CELESTE.LENTES_CUADRADOS.POLERON_MENTA", apariencia.paraElJuego)
+        assertEquals("cafe", AparienciaCuy().paraElJuego)
+        val base = "http://localhost:5174/?cuy=viejo"
+        assertEquals("http://localhost:5174/?paquete=mensaje&cuy=" + apariencia.paraElJuego, direccionJuego(base, true, cuy = apariencia.paraElJuego))
+        assertEquals("http://localhost:5174/", direccionJuego(base, false))
+        assertThrows(IllegalArgumentException::class.java) { direccionJuego(base, false, cuy = "crema&nivel=5") }
+    }
     @Test fun reenviarTrasUnaRespuestaPerdidaNoCambiaElAvisoNiDuplicaConfirmados() {
         val registro = RegistroAvisosJuego()
         val original = aviso()

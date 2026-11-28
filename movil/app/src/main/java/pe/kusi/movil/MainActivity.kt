@@ -89,7 +89,10 @@ fun AccesoPantalla(modelo: AccesoViewModel = viewModel()) {
         cierre = modelo.cierre, reintentarGuardado = modelo::reenviarAvisosJuego,
         alVerMision = modelo::marcarAventuraVista,
         contenidoJuego = { aventura, finalizar, volver ->
+            // El niño juega con el cuy que armó en el vestidor (se guarda en este celular, por cuenta).
+            val preferenciasCuy = LocalContext.current.getSharedPreferences("kusi_mi_cuy", Context.MODE_PRIVATE)
+            val cuy = cuenta?.id?.let { aparienciaGuardada(preferenciasCuy, it).paraElJuego }
             JuegoLaberinto(aventura, modelo::registrarAvisoJuego, finalizar, volver,
-                preparar = modelo::prepararJuego, guardarPausa = modelo::guardarPausaJuego)
+                preparar = modelo::prepararJuego, guardarPausa = modelo::guardarPausaJuego, cuy = cuy)
         })
 }

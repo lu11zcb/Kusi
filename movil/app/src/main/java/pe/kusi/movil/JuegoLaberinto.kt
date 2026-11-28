@@ -34,7 +34,9 @@ import org.json.JSONObject
 fun JuegoLaberinto(
     aventura: AventuraInfantil, registrar: (String, JSONObject) -> Unit, finalizar: () -> Unit, volver: () -> Unit,
     preparar: suspend (AventuraInfantil) -> InicioJuego = { InicioJuego(it) },
-    guardarPausa: suspend (String, PuntoPausa) -> Unit = { _, _ -> error("El guardado no está conectado.") }
+    guardarPausa: suspend (String, PuntoPausa) -> Unit = { _, _ -> error("El guardado no está conectado.") },
+    // El cuy que armó el niño en el vestidor (AparienciaCuy.paraElJuego): el juego lo usa de protagonista.
+    cuy: String? = null,
 ) {
     val voz = recordarVozKusi { }
     val registrarActual by rememberUpdatedState(registrar)
@@ -194,7 +196,7 @@ fun JuegoLaberinto(
                         }
                     }
                     addJavascriptInterface(puente, "KusiPuente")
-                    loadUrl(direccionJuego(BuildConfig.JUEGO_URL, preparado.aventura.paquete != null, preparado.nivel))
+                    loadUrl(direccionJuego(BuildConfig.JUEGO_URL, preparado.aventura.paquete != null, preparado.nivel, cuy))
                 }
             }, onRelease = { vista ->
                 @Suppress("UNCHECKED_CAST")
