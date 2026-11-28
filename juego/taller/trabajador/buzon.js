@@ -73,6 +73,9 @@ export function crearBuzon({ url, clave, pedirHttp = globalThis.fetch, ahora = D
     // Reabre un juego fallido que el equipo corrigió a mano (taller/reentregar.mjs): 200 en proceso,
     // 404 si no existe, 409 si no está fallido o si el docente ya pidió otro juego de esa solicitud.
     reabrir: (id) => pedir(id + '/reabrir'),
+    // Vuelve a poner en la cola, desde ya, un juego fallido o en pausa (taller/retomar.mjs):
+    // 200 pendiente, 404 si no existe, 409 si está en proceso, listo o hay otro juego más nuevo.
+    retomar: (id) => pedir(id + '/retomar'),
     // La pregunta a Kusi Sabio más antigua ({ id, con_actividad, contexto }), o null si no hay.
     async siguienteConsulta() {
       const { estado, datos } = await pedir('siguiente', undefined, raizConsultas)
