@@ -27,9 +27,13 @@ kusi:
   internal-key: ${CLAVE_INTERNA:}
   # Clave del trabajador del taller (encabezado X-Taller-Clave). Vacía: el buzón responde 503.
   taller-clave: ${TALLER_CLAVE:}
-  # Quién escribe la propuesta: «taller» (por el buzón; la IA directa queda de respaldo) o
-  # «ia» (siempre la IA directa, Groq o Tecsup).
+  # Quién escribe la propuesta: «taller» (por el buzón) o «ia» (siempre la IA directa, Groq o Tecsup).
   propuestas-por: ${PROPUESTAS_POR:taller}
-  # Segundos que se espera a que el taller tome el pedido y a que lo entregue antes de usar el respaldo.
-  propuesta-espera-taller-seg: ${PROPUESTA_ESPERA_TALLER_SEG:60}
-  propuesta-tiempo-taller-seg: ${PROPUESTA_TIEMPO_TALLER_SEG:480}
+  # Con «taller», la IA directa no escribe propuestas aunque el taller falle: no ve el kit, la biblioteca, el currículo ni
+  # las correcciones, y se equivoca (27 nov). Si el taller no puede, la solicitud queda para reintentar. «true» la vuelve
+  # a usar de respaldo.
+  propuesta-respaldo-ia: ${PROPUESTA_RESPALDO_IA:false}
+  # Segundos que se espera a que el taller tome el pedido (sus trabajadores pueden estar ocupados creando un juego) y a
+  # que lo entregue (el trabajador se limita a 9 minutos).
+  propuesta-espera-taller-seg: ${PROPUESTA_ESPERA_TALLER_SEG:600}
+  propuesta-tiempo-taller-seg: ${PROPUESTA_TIEMPO_TALLER_SEG:600}

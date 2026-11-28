@@ -28,9 +28,10 @@ import java.util.concurrent.Executors;
 // transacción queda abierta durante esa llamada HTTP.
 //
 // Quién escribe la propuesta: por defecto, el taller (un trabajo «proponer» en el buzón
-// que el trabajador de la Mac atiende con sus roles). La IA directa (Groq o Tecsup) queda
-// de respaldo: entra sola si el trabajo falla (por ejemplo, sin tokens) o si nadie del
-// taller lo toma a tiempo. Con kusi.propuestas-por=ia se usa siempre la IA directa.
+// que el trabajador de la Mac atiende con sus roles). Si el taller falla o no llega a tiempo,
+// la solicitud queda para reintentar: la IA directa (Groq o Tecsup) no ve el kit, la biblioteca,
+// el currículo ni las correcciones, y solo entra de respaldo con kusi.propuesta-respaldo-ia=true.
+// Con kusi.propuestas-por=ia se usa siempre la IA directa.
 @Service
 public class PropuestasService {
     private static final Logger registro=LoggerFactory.getLogger(PropuestasService.class);
@@ -57,10 +58,12 @@ public class PropuestasService {
     });
 
     @Value("${kusi.propuestas-por:taller}") private String propuestasPor;
-    // Si nadie del taller toma el trabajo en este tiempo, entra el respaldo.
-    @Value("${kusi.propuesta-espera-taller-seg:60}") private int esperaSinTomarSeg;
-    // Si el taller lo tomó y no lo entrega en este tiempo, también (el trabajador se limita a 5 minutos).
-    @Value("${kusi.propuesta-tiempo-taller-seg:480}") private int tiempoDelTallerSeg;
+    // Si el taller no puede, ¿escribe la propuesta la IA directa? Por defecto no (ver arriba).
+    @Value("${kusi.propuesta-respaldo-ia:false}") private boolean respaldoIa;
+    // Si nadie del taller toma el trabajo en este tiempo, deja de esperarlo.
+    @Value("${kusi.propuesta-espera-taller-seg:600}") private int esperaSinTomarSeg;
+    // Si el taller lo tomó y no lo entrega en este tiempo, también (el trabajador se limita a 9 minutos).
+    @Value("${kusi.propuesta-tiempo-taller-seg:600}") private int tiempoDelTallerSeg;
 
     public PropuestasService(SolicitudPropuestaRepository solicitudes, PropuestaRepository propuestas, AsignacionDocenteRepository asignaciones,
                              GeneradorPropuestas generador, ValidadorPropuesta validador, DjangoInternoClient django,
@@ -438,12 +441,12 @@ public class PropuestasService {
         });
     }
 
-    // El respaldo: la IA directa (Groq o Tecsup) escribe la propuesta, sin fuentes. Sin ella
-    // configurada, la solicitud queda como falló y el docente puede reintentar. Corre en otro
-    // hilo: la llamada a la IA puede tardar y quien llama (el trabajador, el reloj) no espera.
+    // El respaldo: la IA directa (Groq o Tecsup) escribe la propuesta, sin fuentes. Si está apagado
+    // (lo normal) o no hay IA configurada, la solicitud queda como falló y el docente puede reintentar.
+    // Corre en otro hilo: la llamada a la IA puede tardar y quien llama (el trabajador, el reloj) no espera.
     private void pedirRespaldo(UUID id, PedidoPropuesta pedido, String motivo) {
         String estadoSiFalla=pedido.versionBase() == null ? "fallida" : "generada";
-        if (!generador.configurado()) {
+        if (!respaldoIa || !generador.configurado()) {
             registro.warn("[propuestas] El taller no pudo con la solicitud " + id + " (" + motivo + ") y no hay IA de respaldo.");
             terminarConFallo(id, estadoSiFalla, "No se pudo preparar la propuesta. Puedes reintentarla.");
             return;

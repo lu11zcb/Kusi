@@ -29,12 +29,14 @@ Antes del juego está la **propuesta**: lo que el docente lee y aprueba. La escr
 3. El trabajador la entrega a Spring (`POST …/{id}/propuesta`). Spring revisa cada
    campo; si algo no pasa, devuelve los motivos y el proponedor corrige, hasta 2
    veces. Las fuentes quedan guardadas por dentro: el docente no las ve.
-4. **El respaldo.** Si el proponedor no puede (sin tokens, un error, se acaba el
-   tiempo de 5 minutos, `TALLER_LIMITE_PROPUESTA_MS`) o si nadie toma el trabajo en
-   60 segundos (el taller está apagado), Spring usa la IA directa (Groq o la de
-   Tecsup) para que el docente no espere. Esa propuesta queda sin fuentes. Sin IA de
-   respaldo configurada, la solicitud queda «fallida» y el docente puede reintentar.
-   Con `PROPUESTAS_POR=ia` en el `.env`, Spring usa siempre la IA directa.
+4. **Si el taller no puede.** Si el proponedor no puede (sin tokens, un error, se acaba
+   el tiempo de 9 minutos, `TALLER_LIMITE_PROPUESTA_MS`) o si nadie toma el trabajo en
+   10 minutos (el taller está apagado u ocupado), la solicitud queda «fallida» y el
+   docente puede reintentar. La IA directa (Groq o la de Tecsup) ya no escribe
+   propuestas de respaldo: no ve el kit, la biblioteca, el currículo ni las
+   correcciones, y se equivocaba. Con `PROPUESTA_RESPALDO_IA=true` vuelve a entrar de
+   respaldo, sin fuentes. Con `PROPUESTAS_POR=ia` en el `.env`, Spring usa siempre la
+   IA directa.
 
 ## Cómo funciona el juego
 

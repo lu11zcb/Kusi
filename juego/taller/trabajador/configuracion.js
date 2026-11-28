@@ -40,7 +40,8 @@ export function cargarConfiguracion(entorno = process.env) {
     // 75 minutos por trabajo: Spring da por perdido uno que pasa 90 en proceso.
     limiteMs: Number(entorno.TALLER_LIMITE_MS ?? 75 * 60 * 1000),
     // 5 minutos por propuesta: Spring pasa al respaldo si a los 8 no la entregan.
-    limitePropuestaMs: Number(entorno.TALLER_LIMITE_PROPUESTA_MS ?? 5 * 60 * 1000),
+    // 9 minutos: Spring espera la propuesta 10 y ya no usa la IA directa de respaldo (el proponedor lee el kit y busca fuentes).
+    limitePropuestaMs: Number(entorno.TALLER_LIMITE_PROPUESTA_MS ?? 9 * 60 * 1000),
     esperaMs: Number(entorno.TALLER_ESPERA_MS ?? 5000),
   }
 }

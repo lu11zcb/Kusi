@@ -24,6 +24,7 @@ import pe.kusi.edu.service.PropuestasService;
 
 import java.time.Instant;
 import java.util.*;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.datasource.url=jdbc:h2:mem:kusi_edu_propuestas_taller;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
     "spring.datasource.username=sa", "spring.datasource.password=", "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.config.import=", "kusi.internal-key=clave-solo-para-pruebas-aisladas",
-    "kusi.taller-clave=clave-del-taller-solo-para-pruebas", "kusi.propuestas-por=taller"
+    "kusi.taller-clave=clave-del-taller-solo-para-pruebas", "kusi.propuestas-por=taller",
+    // Estas pruebas cubren también el respaldo con la IA directa, que en la Mac viene apagado.
+    "kusi.propuesta-respaldo-ia=true", "kusi.propuesta-espera-taller-seg=60", "kusi.propuesta-tiempo-taller-seg=480"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -222,6 +225,26 @@ class PropuestasTallerTest {
         docente(SOLICITUDES + solicitud + "/reintentar/", Map.of()).andExpect(status().isOk())
             .andExpect(jsonPath("$.solicitud.estado").value("generando"));
         tomar();
+    }
+
+    @Test
+    void conElRespaldoApagadoLaIaDirectaNoEscribeLaPropuestaAunqueEsteConfigurada() throws Exception {
+        when(generador.configurado()).thenReturn(true);
+        ReflectionTestUtils.setField(servicio, "respaldoIa", false);
+        try {
+            UUID solicitud = pedirPropuesta("Los cinco sentidos");
+            taller(tomar() + "/fallo", Map.of("motivo", "Se acabó el tiempo de la propuesta")).andExpect(status().isOk());
+            consultar(solicitud).andExpect(jsonPath("$.solicitud.estado").value("fallida"));
+            // Pasado cualquier tiempo de espera tampoco entra: la IA directa no se llama nunca.
+            servicio.revisarEspera(Instant.now().plusSeconds(3600));
+            verify(generador, never()).generar(any());
+            // El docente reintenta y el pedido vuelve al taller.
+            docente(SOLICITUDES + solicitud + "/reintentar/", Map.of()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.solicitud.estado").value("generando"));
+            tomar();
+        } finally {
+            ReflectionTestUtils.setField(servicio, "respaldoIa", true);
+        }
     }
 
     @Test
