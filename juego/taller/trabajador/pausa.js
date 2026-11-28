@@ -4,6 +4,8 @@ import { escribirJson, leerJson } from './carpeta.js'
 import { armarComando, consumoDe } from './roles.js'
 
 export const INTERVALO_SONDEO_MS = 15 * 60 * 1000
+// Hasta cuánto antes de ahora una hora de vuelta sin fecha todavía se entiende como la de hoy.
+const HORA_RECIEN_PASADA_MS = 5 * 60 * 1000
 const LIMITE = /\b(?:session|usage) limit\b|\bl[ií]mite (?:de uso|de sesi[oó]n)\b/i
 const REINICIO = /\b(?:try again at|resets?(?: at)?|vuelve a las)\s+([\d][^\r\n]*)/i
 const ROL_NOMBRADO = /^(?:PAUSA\s+)?(supervisor|programador|dibujante|revisor|proponedor)\s*:/im
@@ -44,7 +46,13 @@ function horaDeReinicio(texto, ahora) {
   if (hora[3]) horas = horas % 12 + (/^p/i.test(hora[3]) ? 12 : 0)
   const vuelta = new Date(ahora)
   vuelta.setHours(horas, minutos, 0, 0)
-  if (vuelta.getTime() <= ahora) vuelta.setDate(vuelta.getDate() + 1)
+  if (vuelta.getTime() <= ahora) {
+    // El aviso da la hora sin segundos: «8:58 PM» puede ser las 20:58:49 aunque ya sean las 20:58:02.
+    // Una hora que pasó hace poco es la de hoy y el rol se prueba en un minuto; solo una que pasó hace
+    // rato es la de mañana (pasó el 27 de noviembre: el juego se pausó 24 horas por 47 segundos).
+    if (ahora - vuelta.getTime() < HORA_RECIEN_PASADA_MS) return ahora + 60 * 1000
+    vuelta.setDate(vuelta.getDate() + 1)
+  }
   return vuelta.getTime()
 }
 

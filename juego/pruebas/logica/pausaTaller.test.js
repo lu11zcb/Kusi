@@ -23,6 +23,13 @@ test('reconoce límites en texto y eventos y calcula la próxima hora local', ()
   const noche = new Date(2026, 10, 23, 23, 55).getTime()
   assert.equal(limiteDe({ errores: 'try again at 12:05 a.m.' }, 'dibujante', noche).hasta,
     new Date(2026, 10, 24, 0, 5).getTime())
+  // La hora llega sin segundos: «8:58 PM» a las 20:58:02 es de hoy (vuelve en un minuto), no de mañana.
+  const recien = new Date(2026, 10, 27, 20, 58, 2).getTime()
+  assert.equal(limiteDe({ errores: 'usage limit; try again at 8:58 PM' }, 'programador', recien).hasta, recien + 60 * 1000)
+  // Una hora que pasó hace rato sí es la de mañana.
+  const tarde = new Date(2026, 10, 27, 21, 30).getTime()
+  assert.equal(limiteDe({ errores: 'usage limit; try again at 8:58 PM' }, 'programador', tarde).hasta,
+    new Date(2026, 10, 28, 20, 58).getTime())
   assert.deepEqual(limiteDe({ salida: 'programador: usage limit' }, 'supervisor', MADRUGADA), {
     rol: 'programador', hasta: MADRUGADA + INTERVALO_SONDEO_MS, sondear: true,
   })
