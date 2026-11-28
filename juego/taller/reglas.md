@@ -622,6 +622,9 @@ corchetes es la fila). Valen para todo juego. El revisor las comprueba con `revi
 - **Un sonido a la vez**: mientras Kusi habla no suena otro sonido largo; al elegir, el efecto y la respuesta salen al instante y una
   sola vez [117].
 - El cuento se narra solo, sin botones (regla 13.1) [65, 71, 76].
+- **El cuento y la primera explicación se entienden a la primera**: una sola idea por página, en el orden en que pasa, con causas
+  simples («Mañana es la fiesta.», «Las lanchas no tienen color.», «Llevemos pintura.»), sin datos que no hacen falta para jugar. Si un
+  adulto tiene que leerlo dos veces, se reescribe [138].
 
 **14.2 Nada promete lo que el juego no hace.** La propuesta, el guion y el informe no aseguran que el niño aprenderá: dicen qué
 **presenta**, qué **practica** y qué **comprueba** el juego, qué se puede ganar sin saber y qué conviene que haga el docente. Si se puede
@@ -649,6 +652,8 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   usa (habla, espera, celebra); nunca queda chico en un rincón [113].
 - **Nadie espera tieso en la pantalla**: un personaje aparece cuando empieza su parte y entra moviéndose por el borde; mientras Kusi
   explica, el rival todavía no está [127].
+- **Un personaje es uno solo**: nunca hay dos copias del mismo personaje en la pantalla. Lo logrado se muestra en el mismo lugar o con
+  un cambio claro (la lancha queda pintada y zarpa contenta fuera de la pantalla), no apilando copias a otra escala en un costado [136].
 
 **14.4 La ropa y lo que se pone un personaje.**
 - La pieza que se busca en el mundo **no** es la que se ve puesta. Un personaje que cambia de ropa se **dibuja entero en cada estado**
@@ -681,6 +686,9 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   pantalla [119]. Cada nivel trae más obstáculos que el anterior, siempre con un camino libre [120].
 - **Un premio nunca te mete en un choque**: después de un impulso hay al menos 2 s para esquivar el obstáculo siguiente, a la velocidad
   que lleva el niño; si no alcanza, el impulso se apaga suave [132].
+- **Se choca con lo que se ve**: la zona de choque de un obstáculo es del tamaño de su dibujo, no más grande. Entre dos obstáculos, o
+  cabe el protagonista con holgura, o no hay hueco (se ven juntos, como una barrera). Chocar se nota con un rebote suave y un sonido,
+  sin trabarse [135].
 - **En una carrera, el rival se ve todo el tiempo** y se nota quién va adelante por dónde está, sin una barra que repita lo que ya se ve;
   Kusi lo presenta como rival [122, 126]. **Equivocarse se nota**: el rival se adelanta en cada error y, si llega primero, se corre otra
   vez el nivel con una frase amable (sin vidas ni «perdiste»); quien acierta casi todo gana [123].
@@ -713,6 +721,10 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
 - **Nada flota**: cada cosa está donde estaría de verdad, apoyada en un suelo que se ve y con su sombra; un pájaro se posa en algo
   parado en el suelo (un poste, un árbol); solo vuela lo que vuela (una mariposa, aleteando, con su sombra abajo). Una sombra siempre
   está debajo de algo, y no se reparten plantitas sobre la línea del horizonte [124, 131].
+- **Lo construido en el agua sale de la orilla**: un muelle nace en la playa y entra al agua unido a la tierra; nunca una plataforma
+  suelta en medio del mar [134].
+- **Delante del camino no va nada por llenar**: delante de la línea por la que camina el protagonista va solo lo que hay ahí de verdad
+  (el borde de la vereda, pasto); nunca objetos sueltos en fila. Si se pone algo, es del lugar y está donde estaría [142].
 
 **14.8 La interfaz.**
 - La interfaz ocupa lo mínimo: indicadores chicos en el borde, que no tapan el mundo ni lo que se busca [21, 59].
@@ -737,6 +749,13 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
 - **El guion lo escribe el supervisor**: la historia, las consignas, las ayudas, todo lo que dice Kusi y lo que trae cada nivel van en
   el plan y en `guion-ejemplo.json` escritos por él; el programador los programa tal cual y no inventa textos; si necesita otro texto,
   se lo pide al supervisor [109].
+- **Lo que hace el niño tiene sentido en la vida real**: lo que lleva y adónde lo lleva tiene que poder pasar de verdad (un letrero de
+  «perro» va donde están los perros, no a un puesto de frutas: parecería que venden perros). Si la idea obliga a algo raro, se cambia
+  la idea, no se fuerza [140].
+- **Cada cosa parece lo que es**: si el juego la llama puesto, se ve como puesto a primera vista (mesa, toldo, lo que vende); nunca una
+  estatua o un símbolo en su lugar [143].
+- **Como máximo 20 piezas nuevas por juego**: Spring rechaza la entrega con más (el Puerto de las Lanchas tuvo que quitar una al final).
+  El plan las cuenta antes de pedirlas.
 
 **14.10 Un tutorial corto al empezar.** Todo juego empieza con un tutorial que **se juega** (no se lee): en el nivel 1, la mano guía del
 kit (`crearTutorial`, `kit/reproductor/interfaz/tutorial.js`) muestra el gesto sobre la cosa de verdad (tocar, arrastrar o mover el
@@ -748,6 +767,9 @@ prenda) antes de que empiece el nivel. Una vez por partida; con `?tutorial=0` no
 así, con palabras de niño y algo que el niño ve y hace: en las vocales, la boca dibujada de cada vocal junto a la letra, «Al decir aaa, tu
 boca se abre grande.» y «Dilo conmigo», y un momento para «el secreto» (A, E, O se llaman abiertas o fuertes **porque** la boca se abre
 mucho). Las respuestas y pistas repiten ese porqué («¡Sí! La O es fuerte: la boca se abre mucho.») [85]. Ver 14.1 para las frases [86].
+**Una idea se explica con un ejemplo que se ve, no con una definición**: «Todos estos son perros. Este perro se llama Rufo, como tú
+tienes tu nombre.», con los perros en la pantalla. Nunca categorías abstractas («nombres de todos», «de uno solo») como nombre de una
+cosa del juego [139].
 
 **14.12 Lo que se toca, se lanza y se rompe.**
 - La acción la hace el protagonista **con su cuerpo y su animación** (lanzar como una piedra con su estado `lanzar`), no un efecto que sale
@@ -796,10 +818,14 @@ comprobado», nunca «hecho». Un juego con una promesa en falta o rota no se en
   parpadeando, sin vidas, sin perder lo logrado y sin avisos nuevos. Lo que dice Kusi («salta encima del cangrejo») funciona [96].
 - **La meta es llegar al lado de quien espera**, como la bandera al final de un nivel: el protagonista se detiene a su costado, en el
   suelo, y los dos celebran. Nunca queda encima de otro personaje ni flotando. Si llega antes de terminar, Kusi dice qué falta [97].
+- **Lo sólido es sólido por todos lados**: una caja, un escalón o un bloque frena al protagonista también de lado y de vuelta
+  (caminando hacia la izquierda); solo se cruza desde abajo lo que se ve delgado (una tabla). El revisor lo prueba yendo y volviendo [141].
 
 **14.18 Lo nuevo se enseña de a uno, jugando.** Al empezar un nivel con palabras o ideas nuevas, Kusi presenta **una sola** («Este es
 *one*. *One* es uno.»), aparece algo para practicarla («Salta y tócalo.») y recién al hacerlo viene la siguiente; sin adversarios mientras
-tanto. Nunca una lista seguida de palabras nuevas. En los niveles siguientes se presenta solo lo nuevo [91].
+tanto. Nunca una lista seguida de palabras nuevas. En los niveles siguientes se presenta solo lo nuevo [91]. **Una palabra nueva va
+junto a lo que nombra**: cuando Kusi dice una palabra de otro idioma o nueva, en ese momento se ve aquello a lo que se refiere (la
+palabra escrita con ese color y una mancha de pintura al lado en el globo; el muelle de ese color late) [137].
 
 ## 12. Nombres neutrales
 

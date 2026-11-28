@@ -199,6 +199,15 @@ y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/corre
       126, 127, 132]. En carriles, botones Subir y Bajar, sin joystick (14.8) [115].
 - [ ] **Nada flota y nada sobra:** cada cosa apoyada donde estaría de verdad, con su sombra; ninguna sombra sin nada encima; sin adornos
       sueltos de relleno; el dibujo de cada indicador es lo que cuenta (14.7, 14.8) [116, 124, 130, 131, 133].
+- [ ] **Se entiende a la primera:** lee el cuento y la primera explicación como un niño de 6 años: una idea por página, causas
+      simples; una idea se explica con un ejemplo que está en la pantalla («este perro se llama Rufo»), no con categorías; cada palabra
+      nueva o de otro idioma sale junto a lo que nombra (14.1, 14.11, 14.18) [137, 138, 139].
+- [ ] **Tiene sentido de verdad:** lo que el niño lleva y adónde podría pasar en la vida real; cada cosa parece lo que el juego dice que
+      es; ningún personaje sale dos veces en la pantalla; los muelles salen de la orilla; delante del camino no hay objetos en fila
+      (14.3, 14.7, 14.9) [134, 136, 140, 142, 143].
+- [ ] **Se choca con lo que se ve:** pasa entre cada par de obstáculos con hueco y choca de frente con cada uno; la zona de choque es
+      la del dibujo; en plataformas, ve y vuelve (también hacia la izquierda) contra cada caja y escalón: ninguno se atraviesa de lado
+      (14.6, 14.17) [135, 141]. El juego trae 20 piezas nuevas o menos (14.9).
 
 ### 2.5 La lista de promesas (regla 14.16)
 
