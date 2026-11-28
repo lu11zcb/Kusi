@@ -613,6 +613,14 @@ corchetes es la fila). Valen para todo juego. El revisor las comprueba con `revi
 - **Cada frase se entiende sola** para un niño de 6 años: dice qué es, qué hacer o por qué, con frase completa; nada telegráfico
   («Boca bien abierta.», «Casi cierro la boca.»). «Mira» solo si de verdad pasa algo que mirar; «¡Ahora tú!» solo si antes alguien lo
   hizo [86].
+- **Lo que Kusi pide se termina de oír antes de tener que elegir**: al menos 2 s antes de que llegue lo que se elige. Kusi pide apenas
+  aparece lo que hay que mirar y, si aún habla, el mundo va más lento. **Ninguna frase corta a otra**: el mundo espera su turno; después
+  de cada elección va una reacción corta, y no hay frases de relleno (impulsos, rachas, «nos pasó») [121, 128].
+- **El tema se dice con palabras del niño**: al empezar, Kusi dice de qué trata el juego («hoy usamos nuestros sentidos»); cada pregunta
+  lleva el verbo («¿con qué la olemos?») y cada respuesta repite la idea («con la nariz olemos»). Nada de palabras que el niño no usa
+  («la puerta que lo descubre») [129].
+- **Un sonido a la vez**: mientras Kusi habla no suena otro sonido largo; al elegir, el efecto y la respuesta salen al instante y una
+  sola vez [117].
 - El cuento se narra solo, sin botones (regla 13.1) [65, 71, 76].
 
 **14.2 Nada promete lo que el juego no hace.** La propuesta, el guion y el informe no aseguran que el niño aprenderá: dicen qué
@@ -639,6 +647,8 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   celebra** con su fila de celebrar (`hud.celebrar()`) cuando el niño gana un nivel [101].
 - **Quien pide la misión se ve y se entiende**: aparece grande y cerca al empezar, se presenta con palabras de niño, y el juego lo
   usa (habla, espera, celebra); nunca queda chico en un rincón [113].
+- **Nadie espera tieso en la pantalla**: un personaje aparece cuando empieza su parte y entra moviéndose por el borde; mientras Kusi
+  explica, el rival todavía no está [127].
 
 **14.4 La ropa y lo que se pone un personaje.**
 - La pieza que se busca en el mundo **no** es la que se ve puesta. Un personaje que cambia de ropa se **dibuja entero en cada estado**
@@ -667,6 +677,13 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   esconde) y afectan lo logrado de forma visible y recuperable, sin trabar el paso de nivel [58, 67].
 - La historia tiene una causa simple que un niño de 6 años entiende [19] y **se juega desde el primer minuto**: no se muestra un juego al
   que le falta lo que la historia promete [22]. Cada página del cuento tiene su propia lámina [27].
+- **En un juego que avanza, todo entra por el borde** y se acerca con el suelo, a su misma velocidad: nada aparece en medio de la
+  pantalla [119]. Cada nivel trae más obstáculos que el anterior, siempre con un camino libre [120].
+- **Un premio nunca te mete en un choque**: después de un impulso hay al menos 2 s para esquivar el obstáculo siguiente, a la velocidad
+  que lleva el niño; si no alcanza, el impulso se apaga suave [132].
+- **En una carrera, el rival se ve todo el tiempo** y se nota quién va adelante por dónde está, sin una barra que repita lo que ya se ve;
+  Kusi lo presenta como rival [122, 126]. **Equivocarse se nota**: el rival se adelanta en cada error y, si llega primero, se corre otra
+  vez el nivel con una frase amable (sin vidas ni «perdiste»); quien acierta casi todo gana [123].
 - **Cada nivel se prueba de punta a punta como lo jugaría un niño** antes de mostrarlo; si algo lo traba, no se muestra [36].
 
 **14.7 El mundo.**
@@ -679,7 +696,8 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
 - Con el viento, lo rígido no se dobla (troncos, postes): se mueven las hojas y la tela, y todo empieza y termina de a poco [28, 43]. El
   agua de una fuente sale de su boca y cae en arco dentro de la pila [53].
 - **Ninguna pieza se estira ni se aplasta**: se escala parejo (`setScale` con un solo factor); si un apoyo necesita otro ancho, cambia
-  cuántas piezas hay, no su forma. **Nada atraviesa un camino de otra capa** (un barril de abajo no asoma por las tablas de arriba) [98].
+  cuántas piezas hay, no su forma; si no sirve de frente, no se usa (una hoja aplastada para parecer acostada se ve mal) [98, 133].
+  **Nada atraviesa un camino de otra capa** (un barril de abajo no asoma por las tablas de arriba) [98].
 - Lo del fondo (un barco, una isla lejana) **se queda en su lugar** y queda atrás al avanzar: nunca acompaña a la cámara. Lo lejano se
   aclara con un tinte, no con transparencia (una palmera semitransparente sobre otra cosa parece un fantasma) [98].
 - **Lo que se pisa se ve distinto de lo que adorna**: plataformas con borde, sombra y color claro; los adornos, pocos, más chicos y detrás
@@ -690,12 +708,20 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   abajo de la pantalla; nunca un camino que flota sobre el fondo [110].
 - **De la biblioteca solo se usa lo que es del mismo mundo**: una pieza de otro juego entra si su lugar, su material y su estilo
   combinan (regla 13.10); si no, se dibuja una propia o no se pone (una fuente de plaza no va en los andenes) [112].
+- **Lleno no es relleno**: el lugar se llena con lo que de verdad hay ahí (una calle de fiesta tiene casas en fila), no con adornos
+  sueltos de la biblioteca repartidos delante [116].
+- **Nada flota**: cada cosa está donde estaría de verdad, apoyada en un suelo que se ve y con su sombra; un pájaro se posa en algo
+  parado en el suelo (un poste, un árbol); solo vuela lo que vuela (una mariposa, aleteando, con su sombra abajo). Una sombra siempre
+  está debajo de algo, y no se reparten plantitas sobre la línea del horizonte [124, 131].
 
 **14.8 La interfaz.**
 - La interfaz ocupa lo mínimo: indicadores chicos en el borde, que no tapan el mundo ni lo que se busca [21, 59].
 - Los botones son **dibujos** con el estilo del kit (`boton-empezar`, `boton-soltar`, `boton-escuchar`, …), nunca círculos de código; van
   donde no tapan lo importante; si la pantalla pide «toca para…», se puede tocar en cualquier parte [66].
   El botón **Saltar** del kit es el dibujo `boton-saltar` con su etiqueta, como los demás [100].
+- **En un juego de carriles no hay joystick**: los botones del kit **Subir** (abajo a la izquierda) y **Bajar** (abajo a la derecha),
+  un carril por toque (`crearControles(escena, { carriles: true })`) [115].
+- **El dibujo de un indicador muestra lo que cuenta** (si cuenta puertas acertadas, una puerta), nunca otra cosa del juego [130].
 - Un globo sale de la boca o la cabeza de quien habla, nunca se corta en el borde ni se cruza con otra cosa (sombrero, brazos, botones)
   durante toda la animación [45, 69].
 
@@ -707,7 +733,7 @@ ganar sin saber, el juego suma al final un **repaso corto sin pistas** que el do
   el juego los usa. Antes de pedir una pieza, se mira si el kit ya la tiene [26].
 - **Los juegos varían**: el supervisor no repite la receta de los juegos que el taller hizo antes (plataformas, exploración desde
   arriba, viaje, corredor, carrera); la elige por lo que el niño hace con el contenido. Que un tipo tenga reglas (14.17) no lo vuelve
-  el preferido [108].
+  el preferido [108]. Lo mismo el proponedor: mira los juegos ya hechos y no repite la receta de los dos últimos [114, 125].
 - **El guion lo escribe el supervisor**: la historia, las consignas, las ayudas, todo lo que dice Kusi y lo que trae cada nivel van en
   el plan y en `guion-ejemplo.json` escritos por él; el programador los programa tal cual y no inventa textos; si necesita otro texto,
   se lo pide al supervisor [109].

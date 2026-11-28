@@ -192,6 +192,13 @@ y, entre corchetes, la corrección del equipo de donde salió (`kit/estilo/corre
 - [ ] **Lo que se pisa llega hasta abajo** (sin caminos que flotan sobre el fondo); ninguna pieza de la biblioteca que no sea del mismo
       mundo (14.7) [110, 112]. **Nadie se cae sin querer:** recorre cada nivel de ida y **de vuelta** (14.17) [111].
 - [ ] **Quien pide la misión** se ve grande y se presenta con palabras de niño; ninguna palabra difícil sin explicar (14.1, 14.3) [113].
+- [ ] **Kusi a tiempo y claro:** mide que cada pedido termina 2 s antes de tener que elegir; ninguna frase corta a otra; sin frases de
+      relleno; al empezar dice de qué trata el tema y cada pregunta lleva el verbo; un sonido a la vez (14.1) [117, 121, 128, 129].
+- [ ] **Si el juego avanza o es carrera:** todo entra por el borde; tras un impulso hay 2 s para esquivar; el rival se ve y se nota quién
+      va adelante; con muchos errores el rival gana y se corre otra vez; nadie espera tieso al empezar (14.3, 14.6) [119, 120, 122, 123,
+      126, 127, 132]. En carriles, botones Subir y Bajar, sin joystick (14.8) [115].
+- [ ] **Nada flota y nada sobra:** cada cosa apoyada donde estaría de verdad, con su sombra; ninguna sombra sin nada encima; sin adornos
+      sueltos de relleno; el dibujo de cada indicador es lo que cuenta (14.7, 14.8) [116, 124, 130, 131, 133].
 
 ### 2.5 La lista de promesas (regla 14.16)
 
