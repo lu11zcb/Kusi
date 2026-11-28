@@ -266,6 +266,40 @@ public class TallerService {
     }
 
     /**
+     * Devuelve a la cola, desde ya, un juego fallido o en pausa para que el primer trabajador libre
+     * lo siga donde quedó (taller/retomar.mjs). 404 si no existe; 409 si es una propuesta, si está
+     * en proceso o listo, o si el docente ya pidió otro juego de esa solicitud.
+     */
+    @Transactional
+    public TrabajoTaller retomar(UUID id) {
+        TrabajoTaller trabajo = trabajos.bloquearPorId(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe ese trabajo del taller."));
+        if (trabajo.esDePropuesta()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ese trabajo es una propuesta: solo se retoma un trabajo que crea un juego.");
+        }
+        boolean fallido = "fallido".equals(trabajo.getEstado());
+        if (!fallido && !"pendiente".equals(trabajo.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Solo se retoma un trabajo fallido o en espera (este está «" + trabajo.getEstado() + "»).");
+        }
+        Generacion generacion = generacionDe(trabajo);
+        if (generaciones.existsBySolicitudIdAndCreadoEnAfter(generacion.getSolicitudId(), generacion.getCreadoEn())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El docente ya pidió otro juego de esa solicitud: este no se retoma.");
+        }
+        if (fallido) {
+            generacion.registrarEstado("pendiente", null);
+            generaciones.save(generacion);
+            etapas.save(new EtapaGeneracion(generacion.getId(), "taller", "en_progreso",
+                    "El taller retoma el juego donde quedó."));
+        }
+        trabajo.retomar();
+        registro.info("[taller] Se retomó el trabajo " + id + ": vuelve a la cola desde ahora.");
+        return trabajos.save(trabajo);
+    }
+
+    /**
      * El docente envió a su clase un juego del taller: sus piezas quedan aprobadas y, desde
      * entonces, el juego y sus piezas entran en la biblioteca que recibe el supervisor.
      */

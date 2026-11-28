@@ -150,6 +150,18 @@ public class TrabajoTaller {
     }
 
     /**
+     * El equipo retoma un juego que se detuvo (falló o quedó en pausa hasta más tarde): vuelve a la
+     * cola desde ya y el trabajador lo sigue donde quedó (taller/retomar.mjs). No suma un intento:
+     * ningún trabajador lo recogió.
+     */
+    public void retomar() {
+        dejarPendiente();
+        this.motivoFallo = null;
+        this.motivoPausa = null;
+        this.disponibleDesde = null;
+    }
+
+    /**
      * Devuelve el trabajo a la cola para permitir una corrección.
      */
     public void reencolar(String motivo) {

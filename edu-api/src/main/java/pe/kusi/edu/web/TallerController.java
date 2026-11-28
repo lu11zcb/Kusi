@@ -132,6 +132,19 @@ public class TallerController {
                 "id", id, "estado", trabajo.getEstado(), "tomado_en", trabajo.getTomadoEn())));
     }
 
+    // Vuelve a poner en la cola, desde ya, un juego fallido o en pausa para que un trabajador lo siga
+    // donde quedó (taller/retomar.mjs). Sin cuerpo. 404 si no existe; 409 si es una propuesta, si está
+    // en proceso o listo, o si el docente ya pidió otro juego de la misma solicitud.
+    @PostMapping("/{id}/retomar")
+    public ResponseEntity<Map<String, Object>> retomar(
+            @RequestHeader(value = "X-Taller-Clave", required = false) String clave,
+            @PathVariable UUID id) {
+        autorizar(clave);
+        TrabajoTaller trabajo = taller.retomar(id);
+        return sinCache(200, Map.of("trabajo", Map.of(
+                "id", id, "estado", trabajo.getEstado(), "intentos", trabajo.getIntentos())));
+    }
+
     // { motivo }. El motivo es interno: el docente nunca lo ve. Si era una propuesta, entra el respaldo.
     @PostMapping("/{id}/fallo")
     public ResponseEntity<Map<String, Object>> fallo(

@@ -164,7 +164,7 @@ class TallerBuzonTest {
             .path("trabajo").path("id").asText());
     }
 
-    // Como si el trabajador lo hubiera tomado hace 31 minutos y se hubiera colgado.
+    // Como si el trabajador lo hubiera tomado hace más del vencimiento y se hubiera colgado.
     private void envejecer(UUID trabajo) {
         jdbc.update("update edu.trabajos_taller set tomado_en = ? where id = ?",
             Timestamp.from(Instant.now().minus(TallerService.VENCIMIENTO).minusSeconds(60)), trabajo);
@@ -422,6 +422,53 @@ class TallerBuzonTest {
         taller(trabajoDe(juego) + "/fallo", CLAVE, Map.of("motivo", "x")).andExpect(status().isConflict());
         taller(trabajoDe(juego) + "/resultado", CLAVE, resultadoBueno(trabajoDe(juego))).andExpect(status().isConflict());
         assertEquals("pendiente", estadoDelTrabajo(trabajoDe(juego)));
+    }
+
+    // ---------- retomar ----------
+
+    @Test
+    void un_juego_en_pausa_o_fallido_se_retoma_desde_ya_donde_quedo() throws Exception {
+        taller(UUID.randomUUID() + "/retomar", CLAVE, null).andExpect(status().isNotFound());
+        UUID juego = generarJuegoDelTaller();
+        UUID trabajo = trabajoDe(juego);
+        JsonNode tomado = cuerpo(taller("siguiente", CLAVE, null).andExpect(status().isOk())).path("trabajo");
+        taller(trabajo + "/retomar", null, null).andExpect(status().isForbidden());
+        // En proceso: lo tiene un trabajador.
+        taller(trabajo + "/retomar", CLAVE, null).andExpect(status().isConflict());
+
+        // En pausa hasta mañana: nadie lo toma hasta que se retoma.
+        Map<String, String> pausa = Map.of("motivo", "El programador llegó a su límite de uso.",
+            "hasta", Instant.now().plusSeconds(86400).toString(), "tomado_en", tomado.path("tomado_en").asText());
+        taller(trabajo + "/pausa", CLAVE, pausa).andExpect(status().isOk());
+        taller("siguiente", CLAVE, null).andExpect(status().isNoContent());
+        taller(trabajo + "/retomar", CLAVE, null).andExpect(status().isOk())
+            .andExpect(jsonPath("$.trabajo.estado").value("pendiente"))
+            .andExpect(jsonPath("$.trabajo.intentos").value(0));
+        assertNull(jdbc.queryForObject("select motivo_pausa from edu.trabajos_taller where id = ?", String.class, trabajo));
+        assertEquals(trabajo, tomar());
+
+        // Fallido: vuelve a la cola con su generación, sin sumar un intento.
+        taller(trabajo + "/fallo", CLAVE, Map.of("motivo", "Se acabó el tiempo.")).andExpect(status().isOk());
+        assertEquals("fallida", estadoDeLaGeneracion(juego));
+        taller(trabajo + "/retomar", CLAVE, null).andExpect(status().isOk())
+            .andExpect(jsonPath("$.trabajo.intentos").value(1));
+        assertEquals("pendiente", estadoDeLaGeneracion(juego));
+        assertNull(jdbc.queryForObject("select motivo_fallo from edu.trabajos_taller where id = ?", String.class, trabajo));
+        assertEquals(trabajo, tomar());
+        assertEquals("generando", estadoDeLaGeneracion(juego));
+        taller(trabajo + "/resultado", CLAVE, resultadoBueno(trabajo)).andExpect(status().isOk());
+        // Listo: ya no se retoma.
+        taller(trabajo + "/retomar", CLAVE, null).andExpect(status().isConflict());
+    }
+
+    @Test
+    void no_se_retoma_un_juego_si_el_docente_ya_pidio_otro_de_la_misma_solicitud() throws Exception {
+        UUID juego = generarJuegoDelTaller();
+        UUID trabajo = tomar();
+        taller(trabajo + "/fallo", CLAVE, Map.of("motivo", "x")).andExpect(status().isOk());
+        escribir(RUTA_SOLICITUDES + solicitudDe(juego) + "/versiones/1/generar/", Map.of()).andExpect(status().isCreated());
+        taller(trabajo + "/retomar", CLAVE, null).andExpect(status().isConflict());
+        assertEquals("fallido", estadoDelTrabajo(trabajo));
     }
 
     // ---------- reabrir ----------
