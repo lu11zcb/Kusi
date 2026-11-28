@@ -4,12 +4,14 @@ import { ARCHIVO_MODELO, PYTHON, REFERENCIA } from '../vozKusi.mjs'
 import { CARPETA_JUEGO, CARPETA_TALLER } from './configuracion.js'
 import { lanzar } from './roles.js'
 
-const LIMITE_VOZ_MS = 12 * 60 * 1000
+// La voz no tiene tiempo límite (27 de noviembre: con 12 minutos, el Puerto de las Lanchas se quedó sin voz).
+// Solo se corta si el motor deja de escribir su avance este rato: entonces se colgó.
+const SILENCIO_VOZ_MS = 5 * 60 * 1000
 
 export async function grabarVozDelTrabajo({ carpeta, restanteMs, registrar,
   lanzarVoz = lanzar, archivosMotor = [PYTHON, REFERENCIA, ARCHIVO_MODELO] }) {
   const sinGrabacion = { grabadas: 0, para_revisar: 0, fallidas: 0 }
-  const limiteMs = Math.min(LIMITE_VOZ_MS, restanteMs)
+  const limiteMs = restanteMs
   if (limiteMs <= 0) {
     return { ...sinGrabacion, estado: 'omitida', motivo: 'Se acabó el tiempo del trabajo.' }
   }
@@ -27,8 +29,9 @@ export async function grabarVozDelTrabajo({ carpeta, restanteMs, registrar,
     const ejecucion = await lanzarVoz({
       programa: process.execPath,
       argumentos: [path.join(CARPETA_TALLER, 'vozKusi.mjs'), '--carpeta', path.resolve(carpeta)],
-      carpeta: CARPETA_JUEGO,
+      carpeta: CARPETA_JUEGO, silencioMs: SILENCIO_VOZ_MS,
     }, { limiteMs })
+    if (ejecucion.silencio) throw new Error('El motor de voz dejó de avanzar ' + SILENCIO_VOZ_MS / 60000 + ' minutos: se cortó.')
     if (ejecucion.agotado) throw new Error('La grabación superó el tiempo disponible (' + Math.ceil(limiteMs / 1000) + ' s).')
     if (ejecucion.codigo !== 0) {
       throw new Error(ejecucion.errores.trim().slice(-500) || 'El grabador terminó con código ' + ejecucion.codigo + '.')

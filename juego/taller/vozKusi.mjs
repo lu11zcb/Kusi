@@ -9,7 +9,7 @@
 // Requisitos: el entorno local en taller/voz/.entorno, y la muestra y el
 // modelo de voz en taller/voz/referencia/. Nada de eso se sube al repositorio.
 
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,10 +32,21 @@ const GUION_DEL_MOTOR = path.join(CARPETA_VOZ, 'decir.py')
 const MAX_INTENTOS_DURACION = 3
 const MAX_REINTENTOS_FALLO = 3
 
+// El motor escribe su avance («[voz] 12/95 …») en la salida de este proceso: así el trabajador ve que
+// sigue vivo y solo lo corta si se queda callado (taller/trabajador/voz.js), sin un tiempo límite.
+function ejecutarConAvance(programa, argumentos) {
+  return new Promise((resolver, rechazar) => {
+    const proceso = spawn(programa, argumentos, { stdio: ['ignore', 'inherit', 'inherit'] })
+    proceso.on('error', rechazar)
+    proceso.on('close', (codigo) => codigo === 0 ? resolver()
+      : rechazar(new Error('El motor de voz terminó con código ' + codigo + '.')))
+  })
+}
+
 // Un proceso por tanda: cargar el modelo de voz tarda más que decir una frase.
 // El JSON de salida distingue un fallo de una frase de un fallo de todo el proceso.
 export async function decirConPython({ trabajos, referencia = REFERENCIA, textoReferencia = TEXTO_REFERENCIA,
-  archivoModelo = ARCHIVO_MODELO, carpeta = path.dirname(trabajos[0]?.salida ?? '.'), ejecutarPython = ejecutar }) {
+  archivoModelo = ARCHIVO_MODELO, carpeta = path.dirname(trabajos[0]?.salida ?? '.'), ejecutarPython = ejecutarConAvance }) {
   const modelo = (await readFile(archivoModelo, 'utf8').catch((error) => {
     if (error.code === 'ENOENT') return ''
     throw error
@@ -53,7 +64,7 @@ export async function decirConPython({ trabajos, referencia = REFERENCIA, textoR
     '--referencia', referencia,
     '--referencia-texto', textoReferencia,
     '--modelo', modelo,
-  ], { maxBuffer: 1024 * 1024 * 16 })
+  ])
   return JSON.parse(await readFile(informe, 'utf8'))
 }
 

@@ -408,7 +408,9 @@ test('el trabajador graba con el motor instalado después de comprobar y antes d
     },
   })
   assert.equal(final.resultado, 'listo')
-  assert.deepEqual(registro.grabaciones, [12 * 60 * 1000])
+  // La voz ya no tiene su tope de 12 minutos: usa lo que le queda al trabajo (sin límite, todo).
+  assert.equal(registro.grabaciones.length, 1)
+  assert.ok(registro.grabaciones[0] > 70 * 60 * 1000)
   assert.equal(registro.seEntregoConVoz, true)
   assert.deepEqual(registro.resultados[0].evidencia.voz, {
     voz: 'Kusi', estado: 'terminada', grabadas: 1, ya_estaban: 0, total: 2, para_revisar: 1, fallidas: 1,
