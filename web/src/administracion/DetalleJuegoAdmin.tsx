@@ -43,7 +43,7 @@ export function DetalleJuegoAdmin({ juego, volver }: { juego: string; volver: ()
           <span className="admin-detalle-icono" aria-hidden="true"><Icono nombre="carpeta" /></span>
           <div>
             <h2 id="admin-detalle-juego-titulo" ref={titulo} tabIndex={-1}>{detalle.juego.titulo}</h2>
-            <p>{detalle.juego.curso}{detalle.juego.seccion ? ' · ' + detalle.juego.seccion : ''} · creado el <time dateTime={detalle.juego.creado_en}>{fecha.format(new Date(detalle.juego.creado_en))}</time></p>
+            <p>{detalle.juego.curso}{detalle.juego.seccion ? ' · Sección ' + detalle.juego.seccion : ''} · creado el <time dateTime={detalle.juego.creado_en}>{fecha.format(new Date(detalle.juego.creado_en))}</time></p>
           </div>
         </header>
 

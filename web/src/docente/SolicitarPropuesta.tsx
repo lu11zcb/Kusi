@@ -73,7 +73,7 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
           <div className="campo"><label id="curso-propuesta-etiqueta" htmlFor="curso-propuesta">Curso y sección</label><SelectorDesplegable id="curso-propuesta" valor={seleccionVigente} alCambiar={(valor) => cambiar('seleccion', valor)}
             required disabled={ocupado || revisando || cargando || !contextos?.contextos.length} opciones={[
               { id: '', nombre: 'Elige un curso de tu clase' },
-              ...(contextos?.contextos ?? []).map((c) => ({ id: c.curso_id + '/' + (c.seccion_id ?? ''), nombre: c.curso_nombre + (c.seccion_nombre ? ' · ' + c.seccion_nombre : '') })),
+              ...(contextos?.contextos ?? []).map((c) => ({ id: c.curso_id + '/' + (c.seccion_id ?? ''), nombre: c.curso_nombre + (c.seccion_nombre ? ' · Sección ' + c.seccion_nombre : '') })),
             ]} /></div>
           <div className="campo"><label htmlFor="tema-propuesta">¿Qué tema quieres enseñar? <span>Obligatorio</span></label><textarea id="tema-propuesta" value={tema} onChange={(e) => cambiar('tema', e.target.value)} required maxLength={2000} rows={3} placeholder="Por ejemplo: patrones con frutas" /><p className="doc-ayuda">Puedes contar qué necesitan practicar tus estudiantes.</p></div>
           <div className="campo"><label htmlFor="objetivo-propuesta">¿Qué deben aprender? <span>Opcional</span></label><textarea id="objetivo-propuesta" value={objetivo} onChange={(e) => cambiar('objetivo', e.target.value)} maxLength={4000} rows={3} placeholder="Por ejemplo: reconocer un patrón y continuarlo" /><p className="doc-ayuda">Si lo dejas vacío, Kusi te propondrá un objetivo.</p></div>
@@ -81,7 +81,7 @@ export function SolicitarPropuesta({ borrador, alCambiarBorrador, alOcupar, acti
         </fieldset>
         <div className="doc-formulario-pie"><p>Primero revisarás la idea. Después podrás probar el juego y enviarlo a tu clase.</p><button type="submit" disabled={ocupado || revisando || cargando || !contextos?.contextos.length}><IconoDocente nombre={ocupado ? 'reloj' : 'editar'} />{ocupado ? 'Preparando tu idea…' : intentoPara === huella ? 'Recuperar mi idea' : 'Preparar propuesta'}</button></div>
         {ocupado && <p role="status">Estamos preparando tu idea. Espera un momento.</p>}
-      </form><aside className="doc-guia"><IconoCurso nombre={contexto?.curso_nombre ?? 'Curso'} /><h2>{contexto?.curso_nombre ?? 'Tu clase, tu idea'}</h2><p>{contexto?.seccion_nombre ?? nombreGrado(contexto?.grado ?? 1)}</p><hr /><h3>Empieza con lo que tu clase necesita</h3><p>Kusi preparará una idea para aprender jugando. Puedes pedirle cambios con tus palabras.</p><h3>Revísala y pruébala</h3><p>Tú decides cuándo el juego está listo para compartirlo con tus estudiantes.</p></aside></div>
+      </form><aside className="doc-guia"><IconoCurso nombre={contexto?.curso_nombre ?? 'Curso'} /><h2>{contexto?.curso_nombre ?? 'Tu clase, tu idea'}</h2><p>{nombreGrado(contexto?.grado ?? 1) + (contexto?.seccion_nombre ? ' · Sección ' + contexto.seccion_nombre : '')}</p><hr /><h3>Empieza con lo que tu clase necesita</h3><p>Kusi preparará una idea para aprender jugando. Puedes pedirle cambios con tus palabras.</p><h3>Revísala y pruébala</h3><p>Tú decides cuándo el juego está listo para compartirlo con tus estudiantes.</p></aside></div>
       <p className="doc-nota"><IconoDocente nombre="info" />Puedes cambiar de sección y volver a lo que estás escribiendo. Antes de cerrar el panel, prepara tu propuesta para guardarla.</p>
     </>}
   </section>
