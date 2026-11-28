@@ -31,7 +31,9 @@ test('lo que ya está en el entorno gana al archivo, y sin archivo hay valores p
   const configuracion = cargarConfiguracion({ TALLER_ENV: path.join(carpeta, '.env'), TALLER_CLAVE: 'del-entorno' })
   assert.equal(configuracion.eduApiUrl, 'http://del-archivo')
   assert.equal(configuracion.clave, 'del-entorno')
-  assert.equal(configuracion.limiteMs, 75 * 60 * 1000)
+  // Sin tiempo límite por omisión; TALLER_LIMITE_MS pone uno.
+  assert.equal(configuracion.limiteMs, Infinity)
+  assert.equal(cargarConfiguracion({ TALLER_ENV: path.join(carpeta, '.env'), TALLER_LIMITE_MS: '60000' }).limiteMs, 60000)
   assert.equal(cargarConfiguracion({ TALLER_ENV: path.join(carpeta, 'no-existe') }).clave, '')
   await rm(carpeta, { recursive: true })
 })

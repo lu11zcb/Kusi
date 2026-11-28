@@ -168,9 +168,9 @@ Un juego que no pasa esta crítica no se programa. Anota en `plan.md` qué cambi
 
 ## Tiempo
 
-El trabajo entero tiene un tope. Reparte así: crítica y plan, 10 minutos; piezas y código a la vez, 25; **una sola
-revisión de hasta 15 minutos** (juega cada nivel una vez, mira unas pocas capturas, repite solo lo que falló). Si se
-acaba el tiempo, el taller entrega lo que esté en la carpeta y pase las comprobaciones: déjala siempre entregable.
+El trabajo no tiene un tope, pero el docente espera su juego. Reparte así: crítica y plan, 10 minutos; piezas y código a
+la vez, 25; **una sola revisión de hasta 15 minutos** (juega cada nivel una vez, mira unas pocas capturas, repite solo lo
+que falló). Deja la carpeta siempre entregable.
 
 ## El plan
 

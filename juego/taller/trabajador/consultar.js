@@ -101,7 +101,7 @@ export async function procesarConsulta(consulta, dependencias) {
 }
 
 // Atiende las preguntas mientras «seguir()» sea verdadero, aparte de los juegos: una pregunta no espera a que
-// termine un juego de 75 minutos. Pregunta cada «esperaMs» cuando no hay ninguna.
+// termine un juego, que puede tardar más de una hora. Pregunta cada «esperaMs» cuando no hay ninguna.
 export async function atenderConsultas(dependencias) {
   const { buzon, seguir, esperaMs = 2000 } = dependencias
   const registrar = dependencias.registrar ?? ((texto) => console.log('[taller] ' + texto))

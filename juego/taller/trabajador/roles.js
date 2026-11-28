@@ -105,7 +105,9 @@ export function lanzar({ programa, argumentos, carpeta, silencioMs = null }, { l
     proceso.stderr.on('data', (parte) => { ultimaSalida = Date.now(); guardar(errores, parte) })
     const cortar = (senal) => { try { process.kill(-proceso.pid, senal) } catch { /* ya terminó */ } }
     let abandonar = null
-    const temporizador = setTimeout(() => {
+    // Sin límite (Infinity, lo normal desde el 27 de noviembre) no hay temporizador: el rol trabaja hasta
+    // terminar, y solo el vigía de silencio lo corta si se cuelga.
+    const temporizador = Number.isFinite(limiteMs) ? setTimeout(() => {
       agotado = true
       cortar('SIGTERM')
       setTimeout(() => cortar('SIGKILL'), 5000).unref()
@@ -118,7 +120,7 @@ export function lanzar({ programa, argumentos, carpeta, silencioMs = null }, { l
         terminar(null)
       }, 8000)
       abandonar.unref()
-    }, Math.max(0, limiteMs))
+    }, Math.max(0, limiteMs)) : null
     // El rol dejó de responder (la conexión con su modelo se quedó esperando, por ejemplo):
     // se corta antes de gastar todo el tiempo del trabajo, y quien lo lanzó puede reintentar.
     const vigia = silencioMs ? setInterval(() => {

@@ -124,7 +124,7 @@ test('si el programador dice que no pudo o se acaba su tiempo, toca corregir', a
   assert.deepEqual([primero.pasa, primero.siguiente, primero.motivo], [false, 'corregir', 'FALLÓ: falta la pieza olla'])
   const segundo = await programar({ carpeta, tarea: 'Escribe la escena', correccion: 'usa una figura simple' }, { roles, agentes, lanzarRol })
   assert.deepEqual([segundo.encargo, segundo.pasa], [2, false])
-  assert.match(segundo.motivo, /no terminó en/)
+  assert.match(segundo.motivo, /no terminó/)
   await rm(path.dirname(carpeta), { recursive: true })
 })
 

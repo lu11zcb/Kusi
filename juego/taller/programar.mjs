@@ -31,7 +31,9 @@ export const MAX_ENCARGOS = Number(process.env.TALLER_MAX_ENCARGOS ?? 6)
 const ENTORNO = /permiso|bloquead|EPERM|sandbox|entorno|Permission denied|MachPort|Chromium|Playwright|npm run build/i
 // Y las que muestran que el problema es del juego mismo.
 const ERROR_DEL_JUEGO = /fall(a|an|aron) (las |\d+ )?pruebas|prueba[s]? (falla|fallan|fallida)|\d+ (pruebas )?fallan|SyntaxError|ReferenceError|TypeError|no (se )?(pudo|puede) escribir/i
-const LIMITE_ENCARGO_MS = Number(process.env.TALLER_LIMITE_PROGRAMADOR_MS ?? 12 * 60 * 1000)
+// Sin tiempo límite por encargo (27 de noviembre): el vigía de silencio de roles.local.json corta al
+// programador si se cuelga. TALLER_LIMITE_PROGRAMADOR_MS pone uno si hace falta.
+const LIMITE_ENCARGO_MS = Number(process.env.TALLER_LIMITE_PROGRAMADOR_MS ?? Infinity)
 // Cuánto se espera antes de relanzar a un programador que se quedó callado (3 minutos).
 const ESPERA_REINTENTO_MS = Number(process.env.TALLER_ESPERA_REINTENTO_MS ?? 3 * 60 * 1000)
 
@@ -152,7 +154,8 @@ export async function programar({ carpeta, tarea, correccion = null }, { roles, 
   const termino = ejecucion.codigo === 0 && !ejecucion.agotado && !consumo.con_error && (soloEntorno || !/^\s*FALL[OÓ]/i.test(respuesta))
   const motivo = termino ? null
     : ejecucion.silencio ? 'El programador dejó de responder dos veces seguidas.'
-    : ejecucion.agotado ? 'El programador no terminó en ' + Math.round(LIMITE_ENCARGO_MS / 60000) + ' minutos.'
+    : ejecucion.agotado ? 'El programador no terminó' +
+      (Number.isFinite(LIMITE_ENCARGO_MS) ? ' en ' + Math.round(LIMITE_ENCARGO_MS / 60000) + ' minutos.' : '.')
       : respuesta || ejecucion.errores.slice(-500) || 'El programador terminó con un error.'
   const segundos = Math.round((Date.now() - inicio) / 1000)
   registro.push({ encargo, termino, motivo, segundos, tokens_entrada: consumo.tokens_entrada, tokens_salida: consumo.tokens_salida,

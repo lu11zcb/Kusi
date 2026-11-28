@@ -90,8 +90,8 @@ npm run taller -- --una-vez
   nombre al cuy, las importaciones y `node --test`, y abre el juego en un
   navegador sin pantalla con el `validar` de su ficha. Si algo falla, o si Spring
   responde 422, el supervisor recibe los motivos y corrige, hasta 2 veces; si no,
-  o si se acaban los 75 minutos (`TALLER_LIMITE_MS`), informa el fallo. Spring da por
-  perdido un trabajo a los 90.
+  informa el fallo. Un juego no tiene tiempo límite (`TALLER_LIMITE_MS` pone uno si hace
+  falta); Spring solo da por perdido un trabajo a las 8 horas en proceso, cuando el trabajador se cayó.
 - **El dibujante** también es un rol de `roles.local.json`. El supervisor le pide
   cada pieza con `node taller/dibujar.mjs --carpeta <carpeta> --id <id> --que "<qué es>"
   [--apoyado] [--fondo] [--correccion "<motivos>"]`. Cada llamada es un intento: el
