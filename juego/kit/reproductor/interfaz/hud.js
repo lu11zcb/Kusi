@@ -24,7 +24,7 @@
 // el turno y, con `decirSeguidas`, cancela también las frases que faltaban.
 // `celebrar` anima a Kusi 2,5 s y se prolonga si sigue hablando.
 // Todo está en la pantalla (scrollFactor 0) y por encima del mundo. Kusi habla con voz y en su globo.
-// El botón Sonido controla la música y los efectos del juego.
+// El botón Sonido controla la música (efectos/musica.js) y los efectos del juego; Kusi sigue hablando.
 
 import { COLOR, NUMERO, estiloTexto } from '../medidas.js'
 import { ajustarATamano } from '../dibujos/dibujos.js'
@@ -33,6 +33,7 @@ import { callarVoz, decir, repetirVoz, vozOcupada } from '../logica/voz.js'
 import { animarVozKusi, crearHablaKusi, avanzarHablaKusi, iniciarCelebracionKusi, FILAS_KUSI } from '../logica/hablaKusi.js'
 import { normalizarFrase } from '../logica/textoVoz.js'
 import { vidaActiva } from '../efectos/vida.js'
+import { musicaDeLaEscena } from '../efectos/musica.js'
 import { aplicarAvisoPuntos, crearPuntos, MAXIMO_PUNTOS } from '../logica/puntos.js'
 import { pedirPausa } from '../mensajes/pausaJuego.js'
 
@@ -306,11 +307,18 @@ export function crearHud(escena, { alEscuchar = null, alAyuda = null, alSilencia
     // «tipo» elige el turno de voz. «fijo» conserva el globo al terminar.
     decir: decirDesdeHud,
     decirSeguidas,
-    celebrar: () => iniciarCelebracionKusi(habla),
+    // Si el juego tiene música (efectos/musica.js), al celebrar suena también su fiesta.
+    celebrar: () => {
+      iniciarCelebracionKusi(habla)
+      musicaDeLaEscena(escena)?.celebrar()
+    },
     indicador,
     botonSoltar,
-    // Cambia el dibujo del botón de sonido (apagado o encendido).
-    sonido: (apagado) => sonido.imagen.setTexture(apagado ? 'boton-silencio' : 'boton-sonido'),
+    // Cambia el dibujo del botón de sonido (apagado o encendido) y apaga o prende la música del juego.
+    sonido: (apagado) => {
+      sonido.imagen.setTexture(apagado ? 'boton-silencio' : 'boton-sonido')
+      musicaDeLaEscena(escena)?.silenciar(apagado)
+    },
     destruir,
   }
 }
