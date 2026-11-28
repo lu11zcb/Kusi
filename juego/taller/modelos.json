@@ -1,5 +1,5 @@
 {
-  "nota": "Juegos modelo: los hizo el equipo con el supervisor, el programador y el dibujante, revisando cada pieza a mano (correcciones 1 a 90, reglas.md sección 14). Entran a la biblioteca del supervisor como juegos terminados y con sus piezas aprobadas. Sus carpetas viven en taller/trabajos/ (no se suben): en otra máquina se omiten.",
+  "nota": "Juegos modelo: los hizo el equipo con el supervisor, el programador y el dibujante, revisando cada pieza a mano (correcciones 1 a 107, reglas.md sección 14). Entran a la biblioteca del supervisor como juegos terminados y con sus piezas aprobadas. Sus carpetas viven en taller/trabajos/ (no se suben): en otra máquina se omiten.",
   "modelos": [
     {
       "trabajo": "32982efd-9127-45a8-b857-dd6e1cd9a260",
@@ -14,6 +14,13 @@
       "familia": "vocales_hielo",
       "tema": "Las vocales y las vocales fuertes y débiles (Comunicación, 1.º)",
       "como_se_juega": "Lanza bolas de nieve a los bloques de hielo con la vocal que pide el coro de pingüinos; usa el canto y el micrófono."
+    },
+    {
+      "trabajo": "d54f2b92-2f0e-4865-bd49-c05a476f113d",
+      "titulo": "Isla de los Globos Numéricos",
+      "familia": "globos_isla",
+      "tema": "Los números y los colores en inglés (Inglés, 1.º)",
+      "como_se_juega": "Plataformas de lado por una isla: salta y toca el globo con el número y el color que pide Kusi, cae encima del cangrejo para aplastarlo y llega al lado del loro para colgar los globos."
     }
   ]
 }

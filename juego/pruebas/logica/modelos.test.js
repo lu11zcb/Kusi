@@ -27,9 +27,9 @@ test('un juego modelo entra a la biblioteca con sus piezas como aprobadas', asyn
   } finally { await rm(trabajos, { recursive: true, force: true }) }
 })
 
-test('los modelos del taller son los dos juegos que hizo el equipo', async () => {
+test('los modelos del taller son los juegos que terminó el equipo con las correcciones del docente', async () => {
   const modelos = await leerModelos()
-  assert.deepEqual(modelos.map((m) => m.titulo), ['El traje de Inti', 'Las vocales congeladas'])
+  assert.deepEqual(modelos.map((m) => m.titulo), ['El traje de Inti', 'Las vocales congeladas', 'Isla de los Globos Numéricos'])
   assert.equal(tipoDePieza('fondo-cuento-1'), 'cuento')
   assert.equal(tipoDePieza('criatura-lobito'), 'criatura')
 })
