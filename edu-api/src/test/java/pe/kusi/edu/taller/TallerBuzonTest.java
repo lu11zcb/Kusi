@@ -167,7 +167,7 @@ class TallerBuzonTest {
     // Como si el trabajador lo hubiera tomado hace 31 minutos y se hubiera colgado.
     private void envejecer(UUID trabajo) {
         jdbc.update("update edu.trabajos_taller set tomado_en = ? where id = ?",
-            Timestamp.from(Instant.now().minus(Duration.ofMinutes(91))), trabajo);
+            Timestamp.from(Instant.now().minus(TallerService.VENCIMIENTO).minusSeconds(60)), trabajo);
     }
 
     private ObjectNode resultadoBueno(UUID trabajo) {
@@ -482,7 +482,7 @@ class TallerBuzonTest {
             assertEquals("generando", estadoDeLaGeneracion(juego));
         }
 
-        // Un trabajo que lleva menos de 90 minutos no se toca.
+        // Un trabajo que lleva menos de 8 horas no se toca.
         taller("siguiente", CLAVE, null).andExpect(status().isNoContent());
         assertEquals("en_proceso", estadoDelTrabajo(trabajo));
 

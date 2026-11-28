@@ -43,10 +43,10 @@ public class TallerService {
 
     private static final Logger registro = LoggerFactory.getLogger(TallerService.class);
 
-    // El trabajador se limita a 75 minutos. Si a los 90 un trabajo sigue «en proceso»,
-    // el trabajador se cayó: el trabajo vuelve a «pendiente» para intentarlo otra vez.
-    // Un juego con su cuento, sus piezas y sus correcciones tarda más de 25 minutos.
-    public static final Duration VENCIMIENTO = Duration.ofMinutes(90);
+    // Un juego no tiene tiempo límite en el trabajador (27 de noviembre): con su cuento, sus piezas
+    // y su revisión puede pasar de una hora. Si a las 8 horas un trabajo sigue «en proceso», el
+    // trabajador se cayó (la Mac se apagó, por ejemplo): vuelve a «pendiente» para intentarlo otra vez.
+    public static final Duration VENCIMIENTO = Duration.ofHours(8);
     // Al tercer vencimiento el trabajo queda «fallido»: algo lo traba siempre.
     public static final int MAX_VENCIMIENTOS = 3;
     public static final int MAX_CARACTERES_MOTIVO = 2000;
@@ -140,7 +140,7 @@ public class TallerService {
         Generacion generacion = generacionDe(trabajo);
         if (trabajo.getIntentos() >= MAX_VENCIMIENTOS) {
             String motivo = "Se venció el tiempo " + MAX_VENCIMIENTOS + " veces: el taller no terminó en "
-                    + VENCIMIENTO.toMinutes() + " minutos.";
+                    + VENCIMIENTO.toHours() + " horas.";
             trabajo.registrarFallo(motivo);
             generacion.registrarEstado("fallida", MENSAJE_PARA_EL_DOCENTE);
             etapas.save(new EtapaGeneracion(generacion.getId(), "taller", "fallida", MENSAJE_PARA_EL_DOCENTE));
